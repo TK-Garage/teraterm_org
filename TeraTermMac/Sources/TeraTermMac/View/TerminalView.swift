@@ -11,6 +11,16 @@
 import AppKit
 import CoreText
 
+// MARK: - Localization Helper
+
+private func L(_ key: String) -> String {
+    #if SWIFT_PACKAGE
+    return NSLocalizedString(key, bundle: Bundle.module, comment: "")
+    #else
+    return NSLocalizedString(key, bundle: Bundle.main, comment: "")
+    #endif
+}
+
 // MARK: - Terminal View Delegate
 
 protocol TerminalViewDelegate: AnyObject {
@@ -623,11 +633,11 @@ class TerminalView: NSView {
         } else {
             // Show context menu
             let menu = NSMenu()
-            menu.addItem(withTitle: "Copy", action: #selector(copyText(_:)), keyEquivalent: "c")
-            menu.addItem(withTitle: "Paste", action: #selector(pasteText(_:)), keyEquivalent: "v")
+            menu.addItem(withTitle: L("contextMenu.copy"), action: #selector(copyText(_:)), keyEquivalent: "c")
+            menu.addItem(withTitle: L("contextMenu.paste"), action: #selector(pasteText(_:)), keyEquivalent: "v")
             menu.addItem(NSMenuItem.separator())
-            menu.addItem(withTitle: "Select All", action: #selector(selectAllText(_:)), keyEquivalent: "a")
-            menu.addItem(withTitle: "Clear Buffer", action: #selector(clearBuffer(_:)), keyEquivalent: "")
+            menu.addItem(withTitle: L("contextMenu.selectAll"), action: #selector(selectAllText(_:)), keyEquivalent: "a")
+            menu.addItem(withTitle: L("contextMenu.clearBuffer"), action: #selector(clearBuffer(_:)), keyEquivalent: "")
             NSMenu.popUpContextMenu(menu, with: event, for: self)
         }
     }

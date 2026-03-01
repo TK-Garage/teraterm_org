@@ -1,0 +1,128 @@
+/* Application Menu */
+"menu.app.about" = "About Tera Term Mac";
+"menu.app.preferences" = "Preferences…";
+"menu.app.hide" = "Hide Tera Term Mac";
+"menu.app.hideOthers" = "Hide Others";
+"menu.app.showAll" = "Show All";
+"menu.app.quit" = "Quit Tera Term Mac";
+
+/* File Menu */
+"menu.file" = "File";
+"menu.file.newConnection" = "New Connection…";
+"menu.file.newWindow" = "New Window";
+"menu.file.duplicateSession" = "Duplicate Session";
+"menu.file.log" = "Log…";
+"menu.file.stopLog" = "Stop Log";
+"menu.file.fileTransfer" = "File Transfer";
+"menu.file.xmodemSend" = "XMODEM Send…";
+"menu.file.xmodemReceive" = "XMODEM Receive…";
+"menu.file.zmodemSend" = "ZMODEM Send…";
+"menu.file.zmodemReceive" = "ZMODEM Receive…";
+"menu.file.kermitSend" = "Kermit Send…";
+"menu.file.kermitReceive" = "Kermit Receive…";
+"menu.file.disconnect" = "Disconnect";
+"menu.file.close" = "Close";
+
+/* Edit Menu */
+"menu.edit" = "Edit";
+"menu.edit.copy" = "Copy";
+"menu.edit.paste" = "Paste";
+"menu.edit.selectAll" = "Select All";
+"menu.edit.clearScreen" = "Clear Screen";
+"menu.edit.clearBuffer" = "Clear Buffer";
+
+/* Setup Menu */
+"menu.setup" = "Setup";
+"menu.setup.terminal" = "Terminal…";
+"menu.setup.window" = "Window…";
+"menu.setup.font" = "Font…";
+"menu.setup.keyboard" = "Keyboard…";
+"menu.setup.serialPort" = "Serial Port…";
+"menu.setup.saveSetup" = "Save Setup…";
+"menu.setup.restoreSetup" = "Restore Setup…";
+
+/* Control Menu */
+"menu.control" = "Control";
+"menu.control.resetTerminal" = "Reset Terminal";
+"menu.control.areYouThere" = "Are You There";
+"menu.control.sendBreak" = "Send Break";
+
+/* Window Menu */
+"menu.window" = "Window";
+"menu.window.minimize" = "Minimize";
+"menu.window.zoom" = "Zoom";
+
+/* Help Menu */
+"menu.help" = "Help";
+"menu.help.help" = "Tera Term Mac Help";
+
+/* Connection Dialog */
+"dialog.connection.title" = "New Connection";
+"dialog.connection.message" = "Enter host to connect:";
+"dialog.connection.host" = "Host:";
+"dialog.connection.hostPlaceholder" = "hostname or IP";
+"dialog.connection.port" = "Port:";
+"dialog.connection.telnet" = "Telnet";
+"dialog.connection.localShell" = "Local Shell";
+"dialog.connection.connect" = "Connect";
+"dialog.connection.cancel" = "Cancel";
+
+/* Terminal Setup Dialog */
+"dialog.terminalSetup.title" = "Terminal Setup";
+"dialog.terminalSetup.message" = "Terminal emulation settings";
+"dialog.terminalSetup.terminalId" = "Terminal ID:";
+"dialog.terminalSetup.size" = "Size:";
+"dialog.terminalSetup.encoding" = "Encoding:";
+"dialog.terminalSetup.newLine" = "New Line:";
+"dialog.terminalSetup.localEcho" = "Local Echo";
+"dialog.terminalSetup.autoWrap" = "Auto Wrap";
+"dialog.terminalSetup.ok" = "OK";
+"dialog.terminalSetup.cancel" = "Cancel";
+
+/* Serial Port Dialog */
+"dialog.serialPort.title" = "Serial Port Setup";
+"dialog.serialPort.port" = "Port:";
+"dialog.serialPort.baudRate" = "Baud Rate:";
+"dialog.serialPort.dataBits" = "Data Bits:";
+"dialog.serialPort.parity" = "Parity:";
+"dialog.serialPort.parityNone" = "None";
+"dialog.serialPort.parityOdd" = "Odd";
+"dialog.serialPort.parityEven" = "Even";
+"dialog.serialPort.flow" = "Flow:";
+"dialog.serialPort.flowNone" = "None";
+"dialog.serialPort.flowXonXoff" = "XON/XOFF";
+"dialog.serialPort.flowHardware" = "Hardware";
+"dialog.serialPort.noPortsFound" = "(No ports found)";
+"dialog.serialPort.connect" = "Connect";
+"dialog.serialPort.cancel" = "Cancel";
+
+/* About Dialog */
+"dialog.about.title" = "Tera Term Mac";
+"dialog.about.message" = "macOS port of Tera Term\nTerminal Emulator\n\nOriginal: (C) 1994-1998 T. Teranishi\n(C) 2004- TeraTerm Project\n\nmacOS Port: Swift/AppKit";
+"dialog.about.ok" = "OK";
+
+/* Quit Confirmation */
+"dialog.quit.title" = "Active Connections";
+"dialog.quit.message" = "There are %d active connection(s). Quit anyway?";
+"dialog.quit.quit" = "Quit";
+"dialog.quit.cancel" = "Cancel";
+
+/* Connection Errors */
+"error.connection.title" = "Connection Error";
+"error.connection.ok" = "OK";
+
+/* File Transfer */
+"transfer.complete.title" = "Transfer Complete";
+"transfer.complete.message" = "%@: %lld bytes";
+"transfer.failed.title" = "Transfer Failed";
+"transfer.ok" = "OK";
+
+/* Window Title */
+"window.title.disconnected" = "Disconnected";
+"window.title.localShell" = "Local Shell";
+
+/* Context Menu */
+"contextMenu.copy" = "Copy";
+"contextMenu.paste" = "Paste";
+"contextMenu.selectAll" = "Select All";
+"contextMenu.clearBuffer" = "Clear Buffer";

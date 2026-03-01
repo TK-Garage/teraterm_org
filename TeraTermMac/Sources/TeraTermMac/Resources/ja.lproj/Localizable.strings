@@ -1,0 +1,128 @@
+/* Application Menu */
+"menu.app.about" = "Tera Term Mac について";
+"menu.app.preferences" = "環境設定…";
+"menu.app.hide" = "Tera Term Mac を隠す";
+"menu.app.hideOthers" = "ほかを隠す";
+"menu.app.showAll" = "すべてを表示";
+"menu.app.quit" = "Tera Term Mac を終了";
+
+/* File Menu */
+"menu.file" = "ファイル";
+"menu.file.newConnection" = "新しい接続…";
+"menu.file.newWindow" = "新しいウインドウ";
+"menu.file.duplicateSession" = "セッションの複製";
+"menu.file.log" = "ログ…";
+"menu.file.stopLog" = "ログ停止";
+"menu.file.fileTransfer" = "ファイル転送";
+"menu.file.xmodemSend" = "XMODEM 送信…";
+"menu.file.xmodemReceive" = "XMODEM 受信…";
+"menu.file.zmodemSend" = "ZMODEM 送信…";
+"menu.file.zmodemReceive" = "ZMODEM 受信…";
+"menu.file.kermitSend" = "Kermit 送信…";
+"menu.file.kermitReceive" = "Kermit 受信…";
+"menu.file.disconnect" = "切断";
+"menu.file.close" = "閉じる";
+
+/* Edit Menu */
+"menu.edit" = "編集";
+"menu.edit.copy" = "コピー";
+"menu.edit.paste" = "ペースト";
+"menu.edit.selectAll" = "すべてを選択";
+"menu.edit.clearScreen" = "画面クリア";
+"menu.edit.clearBuffer" = "バッファクリア";
+
+/* Setup Menu */
+"menu.setup" = "設定";
+"menu.setup.terminal" = "端末…";
+"menu.setup.window" = "ウインドウ…";
+"menu.setup.font" = "フォント…";
+"menu.setup.keyboard" = "キーボード…";
+"menu.setup.serialPort" = "シリアルポート…";
+"menu.setup.saveSetup" = "設定の保存…";
+"menu.setup.restoreSetup" = "設定の復元…";
+
+/* Control Menu */
+"menu.control" = "制御";
+"menu.control.resetTerminal" = "端末リセット";
+"menu.control.areYouThere" = "Are You There";
+"menu.control.sendBreak" = "ブレーク送信";
+
+/* Window Menu */
+"menu.window" = "ウインドウ";
+"menu.window.minimize" = "しまう";
+"menu.window.zoom" = "拡大/縮小";
+
+/* Help Menu */
+"menu.help" = "ヘルプ";
+"menu.help.help" = "Tera Term Mac ヘルプ";
+
+/* Connection Dialog */
+"dialog.connection.title" = "新しい接続";
+"dialog.connection.message" = "接続先のホストを入力してください:";
+"dialog.connection.host" = "ホスト:";
+"dialog.connection.hostPlaceholder" = "ホスト名またはIPアドレス";
+"dialog.connection.port" = "ポート:";
+"dialog.connection.telnet" = "Telnet";
+"dialog.connection.localShell" = "ローカルシェル";
+"dialog.connection.connect" = "接続";
+"dialog.connection.cancel" = "キャンセル";
+
+/* Terminal Setup Dialog */
+"dialog.terminalSetup.title" = "端末の設定";
+"dialog.terminalSetup.message" = "ターミナルエミュレーションの設定";
+"dialog.terminalSetup.terminalId" = "端末ID:";
+"dialog.terminalSetup.size" = "サイズ:";
+"dialog.terminalSetup.encoding" = "文字コード:";
+"dialog.terminalSetup.newLine" = "改行コード:";
+"dialog.terminalSetup.localEcho" = "ローカルエコー";
+"dialog.terminalSetup.autoWrap" = "自動折り返し";
+"dialog.terminalSetup.ok" = "OK";
+"dialog.terminalSetup.cancel" = "キャンセル";
+
+/* Serial Port Dialog */
+"dialog.serialPort.title" = "シリアルポートの設定";
+"dialog.serialPort.port" = "ポート:";
+"dialog.serialPort.baudRate" = "ボーレート:";
+"dialog.serialPort.dataBits" = "データビット:";
+"dialog.serialPort.parity" = "パリティ:";
+"dialog.serialPort.parityNone" = "なし";
+"dialog.serialPort.parityOdd" = "奇数";
+"dialog.serialPort.parityEven" = "偶数";
+"dialog.serialPort.flow" = "フロー:";
+"dialog.serialPort.flowNone" = "なし";
+"dialog.serialPort.flowXonXoff" = "XON/XOFF";
+"dialog.serialPort.flowHardware" = "ハードウェア";
+"dialog.serialPort.noPortsFound" = "(ポートが見つかりません)";
+"dialog.serialPort.connect" = "接続";
+"dialog.serialPort.cancel" = "キャンセル";
+
+/* About Dialog */
+"dialog.about.title" = "Tera Term Mac";
+"dialog.about.message" = "Tera Term の macOS 移植版\nターミナルエミュレータ\n\nオリジナル: (C) 1994-1998 T. Teranishi\n(C) 2004- TeraTerm Project\n\nmacOS 移植: Swift/AppKit";
+"dialog.about.ok" = "OK";
+
+/* Quit Confirmation */
+"dialog.quit.title" = "アクティブな接続";
+"dialog.quit.message" = "%d 個のアクティブな接続があります。終了しますか？";
+"dialog.quit.quit" = "終了";
+"dialog.quit.cancel" = "キャンセル";
+
+/* Connection Errors */
+"error.connection.title" = "接続エラー";
+"error.connection.ok" = "OK";
+
+/* File Transfer */
+"transfer.complete.title" = "転送完了";
+"transfer.complete.message" = "%@: %lld バイト";
+"transfer.failed.title" = "転送失敗";
+"transfer.ok" = "OK";
+
+/* Window Title */
+"window.title.disconnected" = "未接続";
+"window.title.localShell" = "ローカルシェル";
+
+/* Context Menu */
+"contextMenu.copy" = "コピー";
+"contextMenu.paste" = "ペースト";
+"contextMenu.selectAll" = "すべてを選択";
+"contextMenu.clearBuffer" = "バッファクリア";

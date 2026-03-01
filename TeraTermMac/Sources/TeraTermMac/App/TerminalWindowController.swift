@@ -10,6 +10,16 @@
 #if canImport(AppKit)
 import AppKit
 
+// MARK: - Localization Helper
+
+private func L(_ key: String) -> String {
+    #if SWIFT_PACKAGE
+    return NSLocalizedString(key, bundle: Bundle.module, comment: "")
+    #else
+    return NSLocalizedString(key, bundle: Bundle.main, comment: "")
+    #endif
+}
+
 // MARK: - Terminal Window Controller (port of CVTWindow)
 
 class TerminalWindowController: NSWindowController {
@@ -151,7 +161,7 @@ class TerminalWindowController: NSWindowController {
         if isConnected {
             if let conn = connectionManager.currentConnection {
                 if conn is LocalShellConnection {
-                    title += " - Local Shell"
+                    title += " - " + L("window.title.localShell")
                 } else if let tcp = conn as? TCPConnection {
                     title += " - \(tcp.host):\(tcp.port)"
                 } else if let serial = conn as? SerialConnection {
@@ -159,7 +169,7 @@ class TerminalWindowController: NSWindowController {
                 }
             }
         } else {
-            title += " - [Disconnected]"
+            title += " - [\(L("window.title.disconnected"))]"
         }
         window?.title = title
     }
@@ -386,10 +396,10 @@ extension TerminalWindowController: ConnectionDelegate {
         updateWindowTitle()
 
         let alert = NSAlert()
-        alert.messageText = "Connection Error"
+        alert.messageText = L("error.connection.title")
         alert.informativeText = error.localizedDescription
         alert.alertStyle = .warning
-        alert.addButton(withTitle: "OK")
+        alert.addButton(withTitle: L("error.connection.ok"))
         if let win = window {
             alert.beginSheetModal(for: win)
         }
@@ -493,20 +503,20 @@ extension TerminalWindowController: FileTransferDelegate {
             case .completed(let name, let bytes):
                 self?.updateWindowTitle()
                 let alert = NSAlert()
-                alert.messageText = "Transfer Complete"
-                alert.informativeText = "\(name): \(bytes) bytes"
+                alert.messageText = L("transfer.complete.title")
+                alert.informativeText = String(format: L("transfer.complete.message"), name, bytes)
                 alert.alertStyle = .informational
-                alert.addButton(withTitle: "OK")
+                alert.addButton(withTitle: L("transfer.ok"))
                 if let win = self?.window {
                     alert.beginSheetModal(for: win)
                 }
             case .failed(let error):
                 self?.updateWindowTitle()
                 let alert = NSAlert()
-                alert.messageText = "Transfer Failed"
+                alert.messageText = L("transfer.failed.title")
                 alert.informativeText = error
                 alert.alertStyle = .warning
-                alert.addButton(withTitle: "OK")
+                alert.addButton(withTitle: L("transfer.ok"))
                 if let win = self?.window {
                     alert.beginSheetModal(for: win)
                 }

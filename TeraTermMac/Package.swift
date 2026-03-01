@@ -14,7 +14,7 @@ let package = Package(
             name: "TeraTermMac",
             path: "Sources/TeraTermMac",
             resources: [
-                .copy("Resources"),
+                .process("Resources"),
             ],
             linkerSettings: [
                 .linkedFramework("AppKit"),

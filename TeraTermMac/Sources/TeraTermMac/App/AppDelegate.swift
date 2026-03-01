@@ -10,6 +10,16 @@
 #if canImport(AppKit)
 import AppKit
 
+// MARK: - Localization Helper
+
+private func L(_ key: String) -> String {
+    #if SWIFT_PACKAGE
+    return NSLocalizedString(key, bundle: Bundle.module, comment: "")
+    #else
+    return NSLocalizedString(key, bundle: Bundle.main, comment: "")
+    #endif
+}
+
 class AppDelegate: NSObject, NSApplicationDelegate {
     // Window controllers
     private var windowControllers: [TerminalWindowController] = []
@@ -48,11 +58,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let activeConnections = windowControllers.filter { $0.connectionManager.state != .disconnected }
         if !activeConnections.isEmpty && settings.confirmOnDisconnect {
             let alert = NSAlert()
-            alert.messageText = "Active Connections"
-            alert.informativeText = "There are \(activeConnections.count) active connection(s). Quit anyway?"
+            alert.messageText = L("dialog.quit.title")
+            alert.informativeText = String(format: L("dialog.quit.message"), activeConnections.count)
             alert.alertStyle = .warning
-            alert.addButton(withTitle: "Quit")
-            alert.addButton(withTitle: "Cancel")
+            alert.addButton(withTitle: L("dialog.quit.quit"))
+            alert.addButton(withTitle: L("dialog.quit.cancel"))
             if alert.runModal() == .alertSecondButtonReturn {
                 return .terminateCancel
             }
@@ -95,100 +105,100 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         mainMenu.addItem(appMenuItem)
         let appMenu = NSMenu()
         appMenuItem.submenu = appMenu
-        appMenu.addItem(withTitle: "About Tera Term Mac", action: #selector(showAbout(_:)), keyEquivalent: "")
+        appMenu.addItem(withTitle: L("menu.app.about"), action: #selector(showAbout(_:)), keyEquivalent: "")
         appMenu.addItem(NSMenuItem.separator())
-        appMenu.addItem(withTitle: "Preferences...", action: #selector(showPreferences(_:)), keyEquivalent: ",")
+        appMenu.addItem(withTitle: L("menu.app.preferences"), action: #selector(showPreferences(_:)), keyEquivalent: ",")
         appMenu.addItem(NSMenuItem.separator())
-        appMenu.addItem(withTitle: "Hide Tera Term Mac", action: #selector(NSApplication.hide(_:)), keyEquivalent: "h")
-        let hideOthers = NSMenuItem(title: "Hide Others", action: #selector(NSApplication.hideOtherApplications(_:)), keyEquivalent: "h")
+        appMenu.addItem(withTitle: L("menu.app.hide"), action: #selector(NSApplication.hide(_:)), keyEquivalent: "h")
+        let hideOthers = NSMenuItem(title: L("menu.app.hideOthers"), action: #selector(NSApplication.hideOtherApplications(_:)), keyEquivalent: "h")
         hideOthers.keyEquivalentModifierMask = [.command, .option]
         appMenu.addItem(hideOthers)
-        appMenu.addItem(withTitle: "Show All", action: #selector(NSApplication.unhideAllApplications(_:)), keyEquivalent: "")
+        appMenu.addItem(withTitle: L("menu.app.showAll"), action: #selector(NSApplication.unhideAllApplications(_:)), keyEquivalent: "")
         appMenu.addItem(NSMenuItem.separator())
-        appMenu.addItem(withTitle: "Quit Tera Term Mac", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+        appMenu.addItem(withTitle: L("menu.app.quit"), action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
 
         // File menu
         let fileMenuItem = NSMenuItem()
         mainMenu.addItem(fileMenuItem)
-        let fileMenu = NSMenu(title: "File")
+        let fileMenu = NSMenu(title: L("menu.file"))
         fileMenuItem.submenu = fileMenu
-        fileMenu.addItem(withTitle: "New Connection...", action: #selector(newConnection(_:)), keyEquivalent: "n")
-        fileMenu.addItem(withTitle: "New Window", action: #selector(newWindow(_:)), keyEquivalent: "t")
-        fileMenu.addItem(withTitle: "Duplicate Session", action: #selector(duplicateSession(_:)), keyEquivalent: "d")
+        fileMenu.addItem(withTitle: L("menu.file.newConnection"), action: #selector(newConnection(_:)), keyEquivalent: "n")
+        fileMenu.addItem(withTitle: L("menu.file.newWindow"), action: #selector(newWindow(_:)), keyEquivalent: "t")
+        fileMenu.addItem(withTitle: L("menu.file.duplicateSession"), action: #selector(duplicateSession(_:)), keyEquivalent: "d")
         fileMenu.addItem(NSMenuItem.separator())
-        fileMenu.addItem(withTitle: "Log...", action: #selector(startLog(_:)), keyEquivalent: "")
-        fileMenu.addItem(withTitle: "Stop Log", action: #selector(stopLog(_:)), keyEquivalent: "")
+        fileMenu.addItem(withTitle: L("menu.file.log"), action: #selector(startLog(_:)), keyEquivalent: "")
+        fileMenu.addItem(withTitle: L("menu.file.stopLog"), action: #selector(stopLog(_:)), keyEquivalent: "")
         fileMenu.addItem(NSMenuItem.separator())
 
         // File transfer submenu
-        let transferMenu = NSMenu(title: "Transfer")
-        let transferMenuItem = NSMenuItem(title: "File Transfer", action: nil, keyEquivalent: "")
+        let transferMenu = NSMenu(title: L("menu.file.fileTransfer"))
+        let transferMenuItem = NSMenuItem(title: L("menu.file.fileTransfer"), action: nil, keyEquivalent: "")
         transferMenuItem.submenu = transferMenu
         fileMenu.addItem(transferMenuItem)
-        transferMenu.addItem(withTitle: "XMODEM Send...", action: #selector(xmodemSend(_:)), keyEquivalent: "")
-        transferMenu.addItem(withTitle: "XMODEM Receive...", action: #selector(xmodemRecv(_:)), keyEquivalent: "")
+        transferMenu.addItem(withTitle: L("menu.file.xmodemSend"), action: #selector(xmodemSend(_:)), keyEquivalent: "")
+        transferMenu.addItem(withTitle: L("menu.file.xmodemReceive"), action: #selector(xmodemRecv(_:)), keyEquivalent: "")
         transferMenu.addItem(NSMenuItem.separator())
-        transferMenu.addItem(withTitle: "ZMODEM Send...", action: #selector(zmodemSend(_:)), keyEquivalent: "")
-        transferMenu.addItem(withTitle: "ZMODEM Receive...", action: #selector(zmodemRecv(_:)), keyEquivalent: "")
+        transferMenu.addItem(withTitle: L("menu.file.zmodemSend"), action: #selector(zmodemSend(_:)), keyEquivalent: "")
+        transferMenu.addItem(withTitle: L("menu.file.zmodemReceive"), action: #selector(zmodemRecv(_:)), keyEquivalent: "")
         transferMenu.addItem(NSMenuItem.separator())
-        transferMenu.addItem(withTitle: "Kermit Send...", action: #selector(kermitSend(_:)), keyEquivalent: "")
-        transferMenu.addItem(withTitle: "Kermit Receive...", action: #selector(kermitRecv(_:)), keyEquivalent: "")
+        transferMenu.addItem(withTitle: L("menu.file.kermitSend"), action: #selector(kermitSend(_:)), keyEquivalent: "")
+        transferMenu.addItem(withTitle: L("menu.file.kermitReceive"), action: #selector(kermitRecv(_:)), keyEquivalent: "")
 
         fileMenu.addItem(NSMenuItem.separator())
-        fileMenu.addItem(withTitle: "Disconnect", action: #selector(doDisconnect(_:)), keyEquivalent: "")
+        fileMenu.addItem(withTitle: L("menu.file.disconnect"), action: #selector(doDisconnect(_:)), keyEquivalent: "")
         fileMenu.addItem(NSMenuItem.separator())
-        fileMenu.addItem(withTitle: "Close", action: #selector(NSWindow.performClose(_:)), keyEquivalent: "w")
+        fileMenu.addItem(withTitle: L("menu.file.close"), action: #selector(NSWindow.performClose(_:)), keyEquivalent: "w")
 
         // Edit menu
         let editMenuItem = NSMenuItem()
         mainMenu.addItem(editMenuItem)
-        let editMenu = NSMenu(title: "Edit")
+        let editMenu = NSMenu(title: L("menu.edit"))
         editMenuItem.submenu = editMenu
-        editMenu.addItem(withTitle: "Copy", action: #selector(NSText.copy(_:)), keyEquivalent: "c")
-        editMenu.addItem(withTitle: "Paste", action: #selector(NSText.paste(_:)), keyEquivalent: "v")
-        editMenu.addItem(withTitle: "Select All", action: #selector(NSText.selectAll(_:)), keyEquivalent: "a")
+        editMenu.addItem(withTitle: L("menu.edit.copy"), action: #selector(NSText.copy(_:)), keyEquivalent: "c")
+        editMenu.addItem(withTitle: L("menu.edit.paste"), action: #selector(NSText.paste(_:)), keyEquivalent: "v")
+        editMenu.addItem(withTitle: L("menu.edit.selectAll"), action: #selector(NSText.selectAll(_:)), keyEquivalent: "a")
         editMenu.addItem(NSMenuItem.separator())
-        editMenu.addItem(withTitle: "Clear Screen", action: #selector(clearScreen(_:)), keyEquivalent: "")
-        editMenu.addItem(withTitle: "Clear Buffer", action: #selector(clearBuffer(_:)), keyEquivalent: "k")
+        editMenu.addItem(withTitle: L("menu.edit.clearScreen"), action: #selector(clearScreen(_:)), keyEquivalent: "")
+        editMenu.addItem(withTitle: L("menu.edit.clearBuffer"), action: #selector(clearBuffer(_:)), keyEquivalent: "k")
 
         // Setup menu
         let setupMenuItem = NSMenuItem()
         mainMenu.addItem(setupMenuItem)
-        let setupMenu = NSMenu(title: "Setup")
+        let setupMenu = NSMenu(title: L("menu.setup"))
         setupMenuItem.submenu = setupMenu
-        setupMenu.addItem(withTitle: "Terminal...", action: #selector(setupTerminal(_:)), keyEquivalent: "")
-        setupMenu.addItem(withTitle: "Window...", action: #selector(setupWindow(_:)), keyEquivalent: "")
-        setupMenu.addItem(withTitle: "Font...", action: #selector(setupFont(_:)), keyEquivalent: "")
-        setupMenu.addItem(withTitle: "Keyboard...", action: #selector(setupKeyboard(_:)), keyEquivalent: "")
-        setupMenu.addItem(withTitle: "Serial Port...", action: #selector(setupSerialPort(_:)), keyEquivalent: "")
+        setupMenu.addItem(withTitle: L("menu.setup.terminal"), action: #selector(setupTerminal(_:)), keyEquivalent: "")
+        setupMenu.addItem(withTitle: L("menu.setup.window"), action: #selector(setupWindow(_:)), keyEquivalent: "")
+        setupMenu.addItem(withTitle: L("menu.setup.font"), action: #selector(setupFont(_:)), keyEquivalent: "")
+        setupMenu.addItem(withTitle: L("menu.setup.keyboard"), action: #selector(setupKeyboard(_:)), keyEquivalent: "")
+        setupMenu.addItem(withTitle: L("menu.setup.serialPort"), action: #selector(setupSerialPort(_:)), keyEquivalent: "")
         setupMenu.addItem(NSMenuItem.separator())
-        setupMenu.addItem(withTitle: "Save Setup...", action: #selector(saveSetup(_:)), keyEquivalent: "")
-        setupMenu.addItem(withTitle: "Restore Setup...", action: #selector(restoreSetup(_:)), keyEquivalent: "")
+        setupMenu.addItem(withTitle: L("menu.setup.saveSetup"), action: #selector(saveSetup(_:)), keyEquivalent: "")
+        setupMenu.addItem(withTitle: L("menu.setup.restoreSetup"), action: #selector(restoreSetup(_:)), keyEquivalent: "")
 
         // Control menu
         let controlMenuItem = NSMenuItem()
         mainMenu.addItem(controlMenuItem)
-        let controlMenu = NSMenu(title: "Control")
+        let controlMenu = NSMenu(title: L("menu.control"))
         controlMenuItem.submenu = controlMenu
-        controlMenu.addItem(withTitle: "Reset Terminal", action: #selector(resetTerminal(_:)), keyEquivalent: "")
-        controlMenu.addItem(withTitle: "Are You There", action: #selector(areYouThere(_:)), keyEquivalent: "")
-        controlMenu.addItem(withTitle: "Send Break", action: #selector(sendBreak(_:)), keyEquivalent: "")
+        controlMenu.addItem(withTitle: L("menu.control.resetTerminal"), action: #selector(resetTerminal(_:)), keyEquivalent: "")
+        controlMenu.addItem(withTitle: L("menu.control.areYouThere"), action: #selector(areYouThere(_:)), keyEquivalent: "")
+        controlMenu.addItem(withTitle: L("menu.control.sendBreak"), action: #selector(sendBreak(_:)), keyEquivalent: "")
 
         // Window menu
         let windowMenuItem = NSMenuItem()
         mainMenu.addItem(windowMenuItem)
-        let windowMenu = NSMenu(title: "Window")
+        let windowMenu = NSMenu(title: L("menu.window"))
         windowMenuItem.submenu = windowMenu
-        windowMenu.addItem(withTitle: "Minimize", action: #selector(NSWindow.performMiniaturize(_:)), keyEquivalent: "m")
-        windowMenu.addItem(withTitle: "Zoom", action: #selector(NSWindow.performZoom(_:)), keyEquivalent: "")
+        windowMenu.addItem(withTitle: L("menu.window.minimize"), action: #selector(NSWindow.performMiniaturize(_:)), keyEquivalent: "m")
+        windowMenu.addItem(withTitle: L("menu.window.zoom"), action: #selector(NSWindow.performZoom(_:)), keyEquivalent: "")
         NSApp.windowsMenu = windowMenu
 
         // Help menu
         let helpMenuItem = NSMenuItem()
         mainMenu.addItem(helpMenuItem)
-        let helpMenu = NSMenu(title: "Help")
+        let helpMenu = NSMenu(title: L("menu.help"))
         helpMenuItem.submenu = helpMenu
-        helpMenu.addItem(withTitle: "Tera Term Mac Help", action: #selector(showHelp(_:)), keyEquivalent: "?")
+        helpMenu.addItem(withTitle: L("menu.help.help"), action: #selector(showHelp(_:)), keyEquivalent: "?")
         NSApp.helpMenu = helpMenu
 
         NSApp.mainMenu = mainMenu
@@ -198,15 +208,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc func showAbout(_ sender: Any?) {
         let alert = NSAlert()
-        alert.messageText = "Tera Term Mac"
-        alert.informativeText = "macOS port of Tera Term\nTerminal Emulator\n\nOriginal: (C) 1994-1998 T. Teranishi\n(C) 2004- TeraTerm Project\n\nmacOS Port: Swift/AppKit"
+        alert.messageText = L("dialog.about.title")
+        alert.informativeText = L("dialog.about.message")
         alert.alertStyle = .informational
-        alert.addButton(withTitle: "OK")
+        alert.addButton(withTitle: L("dialog.about.ok"))
         alert.runModal()
     }
 
     @objc func showPreferences(_ sender: Any?) {
-        // Show preferences window
         showTerminalSetupDialog()
     }
 
@@ -340,21 +349,21 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func showConnectionDialog() {
         let alert = NSAlert()
-        alert.messageText = "New Connection"
-        alert.informativeText = "Enter host to connect:"
+        alert.messageText = L("dialog.connection.title")
+        alert.informativeText = L("dialog.connection.message")
 
         let accessoryView = NSView(frame: NSRect(x: 0, y: 0, width: 300, height: 100))
 
-        let hostLabel = NSTextField(labelWithString: "Host:")
+        let hostLabel = NSTextField(labelWithString: L("dialog.connection.host"))
         hostLabel.frame = NSRect(x: 0, y: 70, width: 60, height: 20)
         accessoryView.addSubview(hostLabel)
 
         let hostField = NSTextField(frame: NSRect(x: 65, y: 70, width: 230, height: 24))
         hostField.stringValue = settings.hostname
-        hostField.placeholderString = "hostname or IP"
+        hostField.placeholderString = L("dialog.connection.hostPlaceholder")
         accessoryView.addSubview(hostField)
 
-        let portLabel = NSTextField(labelWithString: "Port:")
+        let portLabel = NSTextField(labelWithString: L("dialog.connection.port"))
         portLabel.frame = NSRect(x: 0, y: 40, width: 60, height: 20)
         accessoryView.addSubview(portLabel)
 
@@ -362,18 +371,18 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         portField.integerValue = settings.defaultPort
         accessoryView.addSubview(portField)
 
-        let telnetCheck = NSButton(checkboxWithTitle: "Telnet", target: nil, action: nil)
+        let telnetCheck = NSButton(checkboxWithTitle: L("dialog.connection.telnet"), target: nil, action: nil)
         telnetCheck.frame = NSRect(x: 65, y: 10, width: 80, height: 20)
         telnetCheck.state = settings.telnet ? .on : .off
         accessoryView.addSubview(telnetCheck)
 
-        let localShellCheck = NSButton(checkboxWithTitle: "Local Shell", target: nil, action: nil)
+        let localShellCheck = NSButton(checkboxWithTitle: L("dialog.connection.localShell"), target: nil, action: nil)
         localShellCheck.frame = NSRect(x: 155, y: 10, width: 120, height: 20)
         accessoryView.addSubview(localShellCheck)
 
         alert.accessoryView = accessoryView
-        alert.addButton(withTitle: "Connect")
-        alert.addButton(withTitle: "Cancel")
+        alert.addButton(withTitle: L("dialog.connection.connect"))
+        alert.addButton(withTitle: L("dialog.connection.cancel"))
 
         if alert.runModal() == .alertFirstButtonReturn {
             let wc = newTerminalWindow()
@@ -394,13 +403,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func showTerminalSetupDialog() {
         let alert = NSAlert()
-        alert.messageText = "Terminal Setup"
-        alert.informativeText = "Terminal emulation settings"
+        alert.messageText = L("dialog.terminalSetup.title")
+        alert.informativeText = L("dialog.terminalSetup.message")
 
         let accessoryView = NSView(frame: NSRect(x: 0, y: 0, width: 350, height: 180))
 
         // Terminal ID
-        let idLabel = NSTextField(labelWithString: "Terminal ID:")
+        let idLabel = NSTextField(labelWithString: L("dialog.terminalSetup.terminalId"))
         idLabel.frame = NSRect(x: 0, y: 150, width: 100, height: 20)
         accessoryView.addSubview(idLabel)
 
@@ -412,7 +421,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         accessoryView.addSubview(idPopup)
 
         // Size
-        let sizeLabel = NSTextField(labelWithString: "Size:")
+        let sizeLabel = NSTextField(labelWithString: L("dialog.terminalSetup.size"))
         sizeLabel.frame = NSRect(x: 0, y: 120, width: 100, height: 20)
         accessoryView.addSubview(sizeLabel)
 
@@ -429,7 +438,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         accessoryView.addSubview(rowsField)
 
         // Encoding
-        let encLabel = NSTextField(labelWithString: "Encoding:")
+        let encLabel = NSTextField(labelWithString: L("dialog.terminalSetup.encoding"))
         encLabel.frame = NSRect(x: 0, y: 88, width: 100, height: 20)
         accessoryView.addSubview(encLabel)
 
@@ -441,7 +450,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         accessoryView.addSubview(encPopup)
 
         // New Line
-        let nlLabel = NSTextField(labelWithString: "New Line:")
+        let nlLabel = NSTextField(labelWithString: L("dialog.terminalSetup.newLine"))
         nlLabel.frame = NSRect(x: 0, y: 56, width: 100, height: 20)
         accessoryView.addSubview(nlLabel)
 
@@ -452,19 +461,19 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         accessoryView.addSubview(nlPopup)
 
         // Local echo
-        let echoCheck = NSButton(checkboxWithTitle: "Local Echo", target: nil, action: nil)
-        echoCheck.frame = NSRect(x: 110, y: 24, width: 120, height: 20)
+        let echoCheck = NSButton(checkboxWithTitle: L("dialog.terminalSetup.localEcho"), target: nil, action: nil)
+        echoCheck.frame = NSRect(x: 110, y: 24, width: 140, height: 20)
         echoCheck.state = settings.localEcho ? .on : .off
         accessoryView.addSubview(echoCheck)
 
         // Auto wrap
-        let wrapCheck = NSButton(checkboxWithTitle: "Auto Wrap", target: nil, action: nil)
-        wrapCheck.frame = NSRect(x: 230, y: 24, width: 120, height: 20)
+        let wrapCheck = NSButton(checkboxWithTitle: L("dialog.terminalSetup.autoWrap"), target: nil, action: nil)
+        wrapCheck.frame = NSRect(x: 250, y: 24, width: 120, height: 20)
         accessoryView.addSubview(wrapCheck)
 
         alert.accessoryView = accessoryView
-        alert.addButton(withTitle: "OK")
-        alert.addButton(withTitle: "Cancel")
+        alert.addButton(withTitle: L("dialog.terminalSetup.ok"))
+        alert.addButton(withTitle: L("dialog.terminalSetup.cancel"))
 
         if alert.runModal() == .alertFirstButtonReturn {
             if let selected = TerminalID.allCases.first(where: { $0.displayName == idPopup.selectedItem?.title }) {
@@ -483,12 +492,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func showSerialPortDialog() {
         let alert = NSAlert()
-        alert.messageText = "Serial Port Setup"
+        alert.messageText = L("dialog.serialPort.title")
 
         let accessoryView = NSView(frame: NSRect(x: 0, y: 0, width: 300, height: 140))
 
         // Port
-        let portLabel = NSTextField(labelWithString: "Port:")
+        let portLabel = NSTextField(labelWithString: L("dialog.serialPort.port"))
         portLabel.frame = NSRect(x: 0, y: 110, width: 80, height: 20)
         accessoryView.addSubview(portLabel)
 
@@ -499,12 +508,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             portPopup.addItem(withTitle: port)
         }
         if serialPorts.isEmpty {
-            portPopup.addItem(withTitle: "(No ports found)")
+            portPopup.addItem(withTitle: L("dialog.serialPort.noPortsFound"))
         }
         accessoryView.addSubview(portPopup)
 
         // Baud rate
-        let baudLabel = NSTextField(labelWithString: "Baud Rate:")
+        let baudLabel = NSTextField(labelWithString: L("dialog.serialPort.baudRate"))
         baudLabel.frame = NSRect(x: 0, y: 78, width: 80, height: 20)
         accessoryView.addSubview(baudLabel)
 
@@ -516,7 +525,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         accessoryView.addSubview(baudPopup)
 
         // Data bits
-        let dataLabel = NSTextField(labelWithString: "Data Bits:")
+        let dataLabel = NSTextField(labelWithString: L("dialog.serialPort.dataBits"))
         dataLabel.frame = NSRect(x: 0, y: 46, width: 80, height: 20)
         accessoryView.addSubview(dataLabel)
 
@@ -528,30 +537,30 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         accessoryView.addSubview(dataPopup)
 
         // Parity
-        let parityLabel = NSTextField(labelWithString: "Parity:")
+        let parityLabel = NSTextField(labelWithString: L("dialog.serialPort.parity"))
         parityLabel.frame = NSRect(x: 160, y: 46, width: 50, height: 20)
         accessoryView.addSubview(parityLabel)
 
         let parityPopup = NSPopUpButton(frame: NSRect(x: 215, y: 44, width: 80, height: 24))
-        parityPopup.addItem(withTitle: "None")
-        parityPopup.addItem(withTitle: "Odd")
-        parityPopup.addItem(withTitle: "Even")
+        parityPopup.addItem(withTitle: L("dialog.serialPort.parityNone"))
+        parityPopup.addItem(withTitle: L("dialog.serialPort.parityOdd"))
+        parityPopup.addItem(withTitle: L("dialog.serialPort.parityEven"))
         accessoryView.addSubview(parityPopup)
 
         // Flow control
-        let flowLabel = NSTextField(labelWithString: "Flow:")
+        let flowLabel = NSTextField(labelWithString: L("dialog.serialPort.flow"))
         flowLabel.frame = NSRect(x: 0, y: 14, width: 80, height: 20)
         accessoryView.addSubview(flowLabel)
 
         let flowPopup = NSPopUpButton(frame: NSRect(x: 85, y: 12, width: 120, height: 24))
-        flowPopup.addItem(withTitle: "None")
-        flowPopup.addItem(withTitle: "XON/XOFF")
-        flowPopup.addItem(withTitle: "Hardware")
+        flowPopup.addItem(withTitle: L("dialog.serialPort.flowNone"))
+        flowPopup.addItem(withTitle: L("dialog.serialPort.flowXonXoff"))
+        flowPopup.addItem(withTitle: L("dialog.serialPort.flowHardware"))
         accessoryView.addSubview(flowPopup)
 
         alert.accessoryView = accessoryView
-        alert.addButton(withTitle: "Connect")
-        alert.addButton(withTitle: "Cancel")
+        alert.addButton(withTitle: L("dialog.serialPort.connect"))
+        alert.addButton(withTitle: L("dialog.serialPort.cancel"))
 
         if alert.runModal() == .alertFirstButtonReturn {
             if let port = portPopup.selectedItem?.title, !port.starts(with: "(") {
