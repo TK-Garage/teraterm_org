@@ -1,0 +1,6 @@
+{
+    "name": "Tera Term Mac",
+    "identifier": "com.teraterm.mac",
+    "version": "1.0.0",
+    "description": "macOS port of Tera Term terminal emulator"
+}
