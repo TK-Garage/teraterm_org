@@ -4,14 +4,25 @@
  * All rights reserved.
  *
  * Tera Term Mac - macOS port entry point
+ * Sets up process as a foreground GUI application and launches NSApplication.
  */
 
 #if canImport(AppKit)
 import AppKit
 
+// Transform the process into a foreground (GUI) application.
+// Without this, SPM executables run as background processes
+// and won't show a Dock icon or menu bar.
+let app = NSApplication.shared
+app.setActivationPolicy(.regular)
+
 let delegate = AppDelegate()
-NSApplication.shared.delegate = delegate
-_ = NSApplicationMain(CommandLine.argc, CommandLine.unsafeArgv)
+app.delegate = delegate
+
+// Activate the app and bring it to front
+app.activate(ignoringOtherApps: true)
+
+app.run()
 #else
 import Foundation
 print("Tera Term Mac requires macOS with AppKit.")

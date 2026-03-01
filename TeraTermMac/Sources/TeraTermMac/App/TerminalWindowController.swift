@@ -34,13 +34,9 @@ class TerminalWindowController: NSWindowController {
     init(settings: TerminalSettings = TerminalSettings()) {
         self.settings = settings
 
-        // Create window
-        let contentSize = NSSize(
-            width: CGFloat(settings.terminalWidth) * 8.0,
-            height: CGFloat(settings.terminalHeight) * 16.0
-        )
+        // Create a temporary window; real size set after font metrics are known
         let window = NSWindow(
-            contentRect: NSRect(origin: .zero, size: contentSize),
+            contentRect: NSRect(x: 0, y: 0, width: 640, height: 400),
             styleMask: [.titled, .closable, .miniaturizable, .resizable],
             backing: .buffered,
             defer: false
@@ -53,14 +49,9 @@ class TerminalWindowController: NSWindowController {
 
         setupComponents()
         setupTerminalView()
-        setupMenus()
 
         window.delegate = self
-
-        // Set window alpha
         window.alphaValue = CGFloat(settings.windowAlpha)
-
-        // Center window
         window.center()
     }
 
@@ -71,49 +62,37 @@ class TerminalWindowController: NSWindowController {
     // MARK: - Component Setup
 
     private func setupComponents() {
-        // Terminal emulator
         terminalEmulator = TerminalEmulator(settings: settings)
         terminalEmulator.delegate = self
 
-        // Connection manager
         connectionManager = ConnectionManager(settings: settings)
         connectionManager.delegate = self
 
-        // Keyboard handler
         keyboardHandler = KeyboardHandler(settings: settings)
 
-        // Telnet protocol
         telnetProtocol = TelnetProtocol()
         telnetProtocol.terminalType = settings.termType
         telnetProtocol.delegate = self
 
-        // File transfer manager
         fileTransferManager = FileTransferManager()
 
-        // Logger
         logger = TerminalLogger()
     }
 
     private func setupTerminalView() {
         guard let window = window else { return }
 
-        terminalView = TerminalView(frame: window.contentView!.bounds)
+        // Place TerminalView directly as contentView (no NSScrollView wrapper).
+        // Scrollback is handled internally by TerminalBuffer / TerminalView.
+        terminalView = TerminalView(frame: NSRect(x: 0, y: 0, width: 640, height: 400))
         terminalView.autoresizingMask = [.width, .height]
         terminalView.buffer = terminalEmulator.buffer
         terminalView.settings = settings
         terminalView.terminalDelegate = self
 
-        // Create scroll view
-        let scrollView = NSScrollView(frame: window.contentView!.bounds)
-        scrollView.autoresizingMask = [.width, .height]
-        scrollView.documentView = terminalView
-        scrollView.hasVerticalScroller = true
-        scrollView.hasHorizontalScroller = false
-        scrollView.autohidesScrollers = true
+        window.contentView = terminalView
 
-        window.contentView = scrollView
-
-        // Set initial size based on font metrics
+        // Now that the view is in a window, compute font metrics and resize
         terminalView.updateFont()
         let preferredSize = terminalView.preferredSize(
             columns: settings.terminalWidth,
@@ -124,16 +103,17 @@ class TerminalWindowController: NSWindowController {
         window.makeFirstResponder(terminalView)
     }
 
-    // MARK: - Menu Setup (port of vtwin.cpp InitMenu)
-
-    private func setupMenus() {
-        // Menus are managed by AppDelegate
-    }
-
     // MARK: - Connection Actions
 
     func connectLocalShell() {
         connectionManager.connectLocalShell()
+
+        // Tell the PTY about the current terminal size
+        if let pty = connectionManager.currentConnection as? LocalShellConnection {
+            let size = terminalView.terminalSize
+            pty.resize(cols: UInt16(size.columns), rows: UInt16(size.rows))
+        }
+
         updateWindowTitle()
     }
 
@@ -141,7 +121,6 @@ class TerminalWindowController: NSWindowController {
         settings.hostname = host
         settings.defaultPort = port
         useTelnet = telnet
-
         connectionManager.connect(type: .tcpip(host: host, port: port))
         updateWindowTitle()
     }
@@ -247,15 +226,14 @@ class TerminalWindowController: NSWindowController {
 
     private func handleResize() {
         let size = terminalView.terminalSize
+        guard size.columns > 0 && size.rows > 0 else { return }
 
         terminalEmulator.resize(width: size.columns, height: size.rows)
 
-        // Update PTY window size
         if let pty = connectionManager.currentConnection as? LocalShellConnection {
             pty.resize(cols: UInt16(size.columns), rows: UInt16(size.rows))
         }
 
-        // Update telnet NAWS
         if useTelnet {
             telnetProtocol.updateWindowSize(width: size.columns, height: size.rows)
         }
@@ -314,7 +292,6 @@ extension TerminalWindowController: TerminalEmulatorDelegate {
         case .system:
             NSSound.beep()
         case .visual:
-            // Flash the screen
             let overlay = NSView(frame: terminalView.bounds)
             overlay.wantsLayer = true
             overlay.layer?.backgroundColor = NSColor.white.withAlphaComponent(0.3).cgColor
@@ -384,14 +361,11 @@ extension TerminalWindowController: ConnectionDelegate {
     }
 
     func connectionDidReceiveData(_ data: Data) {
-        // Log raw data
         logger.logData(data)
 
         if useTelnet {
-            // Process through Telnet protocol first
             let terminalData = telnetProtocol.processIncoming(data)
             if !terminalData.isEmpty {
-                // Check for file transfer
                 if fileTransferManager.isTransferActive {
                     fileTransferManager.processIncomingData(terminalData)
                 } else {
@@ -416,7 +390,9 @@ extension TerminalWindowController: ConnectionDelegate {
         alert.informativeText = error.localizedDescription
         alert.alertStyle = .warning
         alert.addButton(withTitle: "OK")
-        alert.beginSheetModal(for: window!)
+        if let win = window {
+            alert.beginSheetModal(for: win)
+        }
     }
 
     func connectionStateChanged(_ state: ConnectionState) {
@@ -430,12 +406,10 @@ extension TerminalWindowController: TerminalViewDelegate {
     func terminalViewDidReceiveKeyEvent(_ event: TerminalKeyEvent) {
         guard let data = keyboardHandler.processKeyEvent(event) else { return }
 
-        // Local echo
         if settings.localEcho {
             terminalEmulator.processData(data)
         }
 
-        // Send to connection
         if useTelnet {
             let escaped = telnetProtocol.escapeData(data)
             connectionManager.send(escaped)
@@ -478,17 +452,9 @@ extension TerminalWindowController: TerminalViewDelegate {
 
     private func sendPasteText(_ text: String) {
         var data = Data()
-
-        // Bracketed paste start
-        let start = keyboardHandler.bracketedPasteStart()
-        data.append(start)
-
-        // Text data
+        data.append(keyboardHandler.bracketedPasteStart())
         data.append(Data(text.utf8))
-
-        // Bracketed paste end
-        let end = keyboardHandler.bracketedPasteEnd()
-        data.append(end)
+        data.append(keyboardHandler.bracketedPasteEnd())
 
         if useTelnet {
             let escaped = telnetProtocol.escapeData(data)
@@ -519,7 +485,6 @@ extension TerminalWindowController: TelnetProtocolDelegate {
 
 extension TerminalWindowController: FileTransferDelegate {
     func transferDidUpdateState(_ state: TransferState) {
-        // Update transfer progress UI
         DispatchQueue.main.async { [weak self] in
             switch state {
             case .inProgress(let bytes, let total, let name):

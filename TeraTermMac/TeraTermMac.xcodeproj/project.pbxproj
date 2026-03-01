@@ -1,0 +1,556 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		BB0001000000000000000001 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0001000000000000000001 /* main.swift */; };
+		BB0001000000000000000002 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0001000000000000000002 /* AppDelegate.swift */; };
+		BB0001000000000000000003 /* TerminalWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0001000000000000000003 /* TerminalWindowController.swift */; };
+		BB0001000000000000000004 /* TerminalLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0001000000000000000004 /* TerminalLog.swift */; };
+		BB0001000000000000000005 /* VTParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0001000000000000000005 /* VTParser.swift */; };
+		BB0001000000000000000006 /* TerminalEmulator.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0001000000000000000006 /* TerminalEmulator.swift */; };
+		BB0001000000000000000007 /* TerminalBuffer.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0001000000000000000007 /* TerminalBuffer.swift */; };
+		BB0001000000000000000008 /* TerminalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0001000000000000000008 /* TerminalView.swift */; };
+		BB0001000000000000000009 /* ConnectionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0001000000000000000009 /* ConnectionManager.swift */; };
+		BB000100000000000000000A /* TelnetProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000100000000000000000A /* TelnetProtocol.swift */; };
+		BB000100000000000000000B /* KeyboardHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000100000000000000000B /* KeyboardHandler.swift */; };
+		BB000100000000000000000C /* EncodingConverter.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000100000000000000000C /* EncodingConverter.swift */; };
+		BB000100000000000000000D /* FileTransferProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000100000000000000000D /* FileTransferProtocol.swift */; };
+		BB000100000000000000000E /* TerminalSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000100000000000000000E /* TerminalSettings.swift */; };
+		BB000100000000000000000F /* VTParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0001000000000000000010 /* VTParserTests.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		FF0001000000000000000007 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = DD0001000000000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = DD0001000000000000000002;
+			remoteInfo = TeraTermMac;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		AA0001000000000000000001 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
+		AA0001000000000000000002 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		AA0001000000000000000003 /* TerminalWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerminalWindowController.swift; sourceTree = "<group>"; };
+		AA0001000000000000000004 /* TerminalLog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerminalLog.swift; sourceTree = "<group>"; };
+		AA0001000000000000000005 /* VTParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VTParser.swift; sourceTree = "<group>"; };
+		AA0001000000000000000006 /* TerminalEmulator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerminalEmulator.swift; sourceTree = "<group>"; };
+		AA0001000000000000000007 /* TerminalBuffer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerminalBuffer.swift; sourceTree = "<group>"; };
+		AA0001000000000000000008 /* TerminalView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerminalView.swift; sourceTree = "<group>"; };
+		AA0001000000000000000009 /* ConnectionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectionManager.swift; sourceTree = "<group>"; };
+		AA000100000000000000000A /* TelnetProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TelnetProtocol.swift; sourceTree = "<group>"; };
+		AA000100000000000000000B /* KeyboardHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardHandler.swift; sourceTree = "<group>"; };
+		AA000100000000000000000C /* EncodingConverter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EncodingConverter.swift; sourceTree = "<group>"; };
+		AA000100000000000000000D /* FileTransferProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileTransferProtocol.swift; sourceTree = "<group>"; };
+		AA000100000000000000000E /* TerminalSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerminalSettings.swift; sourceTree = "<group>"; };
+		AA000100000000000000000F /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		AA0001000000000000000010 /* VTParserTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VTParserTests.swift; sourceTree = "<group>"; };
+		DD0001000000000000000004 /* TeraTermMac.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TeraTermMac.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		DD0001000000000000000005 /* TeraTermMacTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TeraTermMacTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		FF0001000000000000000002 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		FF0001000000000000000005 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		CC0001000000000000000001 = {
+			isa = PBXGroup;
+			children = (
+				CC0001000000000000000002 /* Sources */,
+				CC000100000000000000000D /* Tests */,
+				CC000100000000000000000F /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		CC0001000000000000000002 /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				CC0001000000000000000003 /* App */,
+				CC0001000000000000000004 /* Terminal */,
+				CC0001000000000000000005 /* Buffer */,
+				CC0001000000000000000006 /* View */,
+				CC0001000000000000000007 /* Communication */,
+				CC0001000000000000000008 /* Keyboard */,
+				CC0001000000000000000009 /* Encoding */,
+				CC000100000000000000000A /* FileTransfer */,
+				CC000100000000000000000B /* Settings */,
+				CC000100000000000000000C /* Resources */,
+			);
+			path = "Sources/TeraTermMac";
+			sourceTree = "<group>";
+		};
+		CC0001000000000000000003 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				AA0001000000000000000001 /* main.swift */,
+				AA0001000000000000000002 /* AppDelegate.swift */,
+				AA0001000000000000000003 /* TerminalWindowController.swift */,
+				AA0001000000000000000004 /* TerminalLog.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		CC0001000000000000000004 /* Terminal */ = {
+			isa = PBXGroup;
+			children = (
+				AA0001000000000000000005 /* VTParser.swift */,
+				AA0001000000000000000006 /* TerminalEmulator.swift */,
+			);
+			path = Terminal;
+			sourceTree = "<group>";
+		};
+		CC0001000000000000000005 /* Buffer */ = {
+			isa = PBXGroup;
+			children = (
+				AA0001000000000000000007 /* TerminalBuffer.swift */,
+			);
+			path = Buffer;
+			sourceTree = "<group>";
+		};
+		CC0001000000000000000006 /* View */ = {
+			isa = PBXGroup;
+			children = (
+				AA0001000000000000000008 /* TerminalView.swift */,
+			);
+			path = View;
+			sourceTree = "<group>";
+		};
+		CC0001000000000000000007 /* Communication */ = {
+			isa = PBXGroup;
+			children = (
+				AA0001000000000000000009 /* ConnectionManager.swift */,
+				AA000100000000000000000A /* TelnetProtocol.swift */,
+			);
+			path = Communication;
+			sourceTree = "<group>";
+		};
+		CC0001000000000000000008 /* Keyboard */ = {
+			isa = PBXGroup;
+			children = (
+				AA000100000000000000000B /* KeyboardHandler.swift */,
+			);
+			path = Keyboard;
+			sourceTree = "<group>";
+		};
+		CC0001000000000000000009 /* Encoding */ = {
+			isa = PBXGroup;
+			children = (
+				AA000100000000000000000C /* EncodingConverter.swift */,
+			);
+			path = Encoding;
+			sourceTree = "<group>";
+		};
+		CC000100000000000000000A /* FileTransfer */ = {
+			isa = PBXGroup;
+			children = (
+				AA000100000000000000000D /* FileTransferProtocol.swift */,
+			);
+			path = FileTransfer;
+			sourceTree = "<group>";
+		};
+		CC000100000000000000000B /* Settings */ = {
+			isa = PBXGroup;
+			children = (
+				AA000100000000000000000E /* TerminalSettings.swift */,
+			);
+			path = Settings;
+			sourceTree = "<group>";
+		};
+		CC000100000000000000000C /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				AA000100000000000000000F /* Info.plist */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		CC000100000000000000000D /* Tests */ = {
+			isa = PBXGroup;
+			children = (
+				CC000100000000000000000E /* TeraTermMacTests */,
+			);
+			path = Tests;
+			sourceTree = "<group>";
+		};
+		CC000100000000000000000E /* TeraTermMacTests */ = {
+			isa = PBXGroup;
+			children = (
+				AA0001000000000000000010 /* VTParserTests.swift */,
+			);
+			path = TeraTermMacTests;
+			sourceTree = "<group>";
+		};
+		CC000100000000000000000F /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				DD0001000000000000000004 /* TeraTermMac.app */,
+				DD0001000000000000000005 /* TeraTermMacTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		DD0001000000000000000002 /* TeraTermMac */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = EE0001000000000000000002 /* Build configuration list for PBXNativeTarget "TeraTermMac" */;
+			buildPhases = (
+				FF0001000000000000000001 /* Sources */,
+				FF0001000000000000000002 /* Frameworks */,
+				FF0001000000000000000003 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = TeraTermMac;
+			productName = TeraTermMac;
+			productReference = DD0001000000000000000004 /* TeraTermMac.app */;
+			productType = "com.apple.product-type.application";
+		};
+		DD0001000000000000000003 /* TeraTermMacTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = EE0001000000000000000003 /* Build configuration list for PBXNativeTarget "TeraTermMacTests" */;
+			buildPhases = (
+				FF0001000000000000000004 /* Sources */,
+				FF0001000000000000000005 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				FF0001000000000000000006 /* PBXTargetDependency */,
+			);
+			name = TeraTermMacTests;
+			productName = TeraTermMacTests;
+			productReference = DD0001000000000000000005 /* TeraTermMacTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		DD0001000000000000000001 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1500;
+				LastUpgradeCheck = 1500;
+				TargetAttributes = {
+					DD0001000000000000000002 = {
+						CreatedOnToolsVersion = 15.0;
+					};
+					DD0001000000000000000003 = {
+						CreatedOnToolsVersion = 15.0;
+						TestTargetID = DD0001000000000000000002;
+					};
+				};
+			};
+			buildConfigurationList = EE0001000000000000000001 /* Build configuration list for PBXProject "TeraTermMac" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = CC0001000000000000000001;
+			productRefGroup = CC000100000000000000000F /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				DD0001000000000000000002 /* TeraTermMac */,
+				DD0001000000000000000003 /* TeraTermMacTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		FF0001000000000000000003 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		FF0001000000000000000001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				BB0001000000000000000001 /* main.swift in Sources */,
+				BB0001000000000000000002 /* AppDelegate.swift in Sources */,
+				BB0001000000000000000003 /* TerminalWindowController.swift in Sources */,
+				BB0001000000000000000004 /* TerminalLog.swift in Sources */,
+				BB0001000000000000000005 /* VTParser.swift in Sources */,
+				BB0001000000000000000006 /* TerminalEmulator.swift in Sources */,
+				BB0001000000000000000007 /* TerminalBuffer.swift in Sources */,
+				BB0001000000000000000008 /* TerminalView.swift in Sources */,
+				BB0001000000000000000009 /* ConnectionManager.swift in Sources */,
+				BB000100000000000000000A /* TelnetProtocol.swift in Sources */,
+				BB000100000000000000000B /* KeyboardHandler.swift in Sources */,
+				BB000100000000000000000C /* EncodingConverter.swift in Sources */,
+				BB000100000000000000000D /* FileTransferProtocol.swift in Sources */,
+				BB000100000000000000000E /* TerminalSettings.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		FF0001000000000000000004 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				BB000100000000000000000F /* VTParserTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		FF0001000000000000000006 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = DD0001000000000000000002 /* TeraTermMac */;
+			targetProxy = FF0001000000000000000007 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		EE0001000000000000000004 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) DEBUG";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		EE0001000000000000000005 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+			};
+			name = Release;
+		};
+		EE0001000000000000000006 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Sources/TeraTermMac/Resources/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.teraterm.mac;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		EE0001000000000000000007 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Sources/TeraTermMac/Resources/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.teraterm.mac;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		EE0001000000000000000008 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.teraterm.mac.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/TeraTermMac.app/Contents/MacOS/TeraTermMac";
+			};
+			name = Debug;
+		};
+		EE0001000000000000000009 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.teraterm.mac.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/TeraTermMac.app/Contents/MacOS/TeraTermMac";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		EE0001000000000000000001 /* Build configuration list for PBXProject "TeraTermMac" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				EE0001000000000000000004 /* Debug */,
+				EE0001000000000000000005 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		EE0001000000000000000002 /* Build configuration list for PBXNativeTarget "TeraTermMac" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				EE0001000000000000000006 /* Debug */,
+				EE0001000000000000000007 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		EE0001000000000000000003 /* Build configuration list for PBXNativeTarget "TeraTermMacTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				EE0001000000000000000008 /* Debug */,
+				EE0001000000000000000009 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = DD0001000000000000000001 /* Project object */;
+}
