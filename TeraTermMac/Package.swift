@@ -5,6 +5,7 @@ import PackageDescription
 
 let package = Package(
     name: "TeraTermMac",
+    defaultLocalization: "en",
     platforms: [
         .macOS(.v13)
     ],
@@ -12,6 +13,9 @@ let package = Package(
         .executableTarget(
             name: "TeraTermMac",
             path: "Sources/TeraTermMac",
+            resources: [
+                .copy("Resources"),
+            ],
             linkerSettings: [
                 .linkedFramework("AppKit"),
                 .linkedFramework("CoreText"),
