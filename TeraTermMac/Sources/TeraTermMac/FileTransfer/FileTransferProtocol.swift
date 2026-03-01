@@ -516,7 +516,7 @@ class ZMODEMProtocol: FileTransferProtocol {
             header.append(hexByte(flag))
         }
         // CRC
-        var crcVal = crc16(Data([frameType] + flags.prefix(4)))
+        let crcVal = crc16(Data([frameType] + flags.prefix(4)))
         header.append(hexByte(UInt8(crcVal >> 8)))
         header.append(hexByte(UInt8(crcVal & 0xFF)))
         header.append(0x0D) // CR

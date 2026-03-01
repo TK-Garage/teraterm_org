@@ -11,13 +11,14 @@ import Foundation
 
 // MARK: - Connection State
 
-enum ConnectionState {
+enum ConnectionState: Equatable {
     case disconnected
     case connecting
     case connected
     case disconnecting
     case error(String)
 }
+
 
 // MARK: - Connection Type
 
@@ -421,7 +422,7 @@ class SerialConnection: Connection {
             // Clear O_NONBLOCK after configuration
             var flags = fcntl(self.fileDescriptor, F_GETFL)
             flags &= ~O_NONBLOCK
-            fcntl(self.fileDescriptor, F_SETFL, flags)
+            _ = fcntl(self.fileDescriptor, F_SETFL, flags)
 
             self.isRunning = true
             DispatchQueue.main.async {
@@ -538,7 +539,6 @@ class LocalShellConnection: Connection {
 
         // Create PTY pair
         var masterFD: Int32 = 0
-        var slaveFD: Int32 = 0
 
         var ws = winsize()
         ws.ws_col = windowSize.cols
@@ -571,7 +571,7 @@ class LocalShellConnection: Connection {
             }
 
             // Execute shell
-            var args = [command] + arguments
+            let args = [command] + arguments
             let cArgs = args.map { strdup($0) } + [nil]
             execvp(command, cArgs)
 
@@ -586,7 +586,7 @@ class LocalShellConnection: Connection {
 
         // Set non-blocking
         let flags = fcntl(masterFD, F_GETFL)
-        fcntl(masterFD, F_SETFL, flags | O_NONBLOCK)
+        _ = fcntl(masterFD, F_SETFL, flags | O_NONBLOCK)
 
         state = .connected
         delegate?.connectionDidConnect()
@@ -632,7 +632,7 @@ class LocalShellConnection: Connection {
         ws.ws_row = windowSize.rows
         ws.ws_xpixel = 0
         ws.ws_ypixel = 0
-        ioctl(masterFD, TIOCSWINSZ, &ws)
+        _ = ioctl(masterFD, TIOCSWINSZ, &ws)
     }
 
     func resize(cols: UInt16, rows: UInt16) {

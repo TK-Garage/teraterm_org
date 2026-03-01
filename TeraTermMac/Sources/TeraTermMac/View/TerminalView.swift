@@ -61,8 +61,8 @@ class TerminalView: NSView {
 
     // IME
     private var markedText: NSMutableAttributedString?
-    private var markedRange: NSRange = NSRange(location: NSNotFound, length: 0)
-    private var selectedRange_: NSRange = NSRange(location: 0, length: 0)
+    private var imeMarkedRange: NSRange = NSRange(location: NSNotFound, length: 0)
+    private var _selectedRange: NSRange = NSRange(location: 0, length: 0)
 
     override var acceptsFirstResponder: Bool { true }
     override var isFlipped: Bool { true }
@@ -120,10 +120,8 @@ class TerminalView: NSView {
         cellHeight = ceil(ascent + descent + leading)
 
         // Measure 'M' width for cell width
-        let mString = "M" as CFString
         var glyph = CGGlyph()
-        var point = CGPoint.zero
-        let chars = [UniChar](("M" as NSString).utf16)
+        let chars: [UniChar] = Array("M".utf16)
         CTFontGetGlyphsForCharacters(ctFont!, chars, &glyph, 1)
         var advance = CGSize.zero
         CTFontGetAdvancesForGlyphs(ctFont!, .horizontal, &glyph, &advance, 1)
@@ -383,7 +381,7 @@ class TerminalView: NSView {
             return NSColor(red: CGFloat(c.r) / 255.0, green: CGFloat(c.g) / 255.0, blue: CGFloat(c.b) / 255.0, alpha: 1.0)
         }
 
-        var color = cell.color
+        let color = cell.color
         let attrs = cell.attributes
 
         // Handle reverse video
@@ -416,7 +414,7 @@ class TerminalView: NSView {
             return NSColor(red: CGFloat(c.r) / 255.0, green: CGFloat(c.g) / 255.0, blue: CGFloat(c.b) / 255.0, alpha: 1.0)
         }
 
-        var color = cell.color
+        let color = cell.color
         let attrs = cell.attributes
 
         let reversed = attrs.contains(.reverse) != modes.reverseVideo
@@ -625,10 +623,10 @@ class TerminalView: NSView {
         } else {
             // Show context menu
             let menu = NSMenu()
-            menu.addItem(withTitle: "Copy", action: #selector(copy(_:)), keyEquivalent: "c")
-            menu.addItem(withTitle: "Paste", action: #selector(paste(_:)), keyEquivalent: "v")
+            menu.addItem(withTitle: "Copy", action: #selector(copyText(_:)), keyEquivalent: "c")
+            menu.addItem(withTitle: "Paste", action: #selector(pasteText(_:)), keyEquivalent: "v")
             menu.addItem(NSMenuItem.separator())
-            menu.addItem(withTitle: "Select All", action: #selector(selectAll(_:)), keyEquivalent: "a")
+            menu.addItem(withTitle: "Select All", action: #selector(selectAllText(_:)), keyEquivalent: "a")
             menu.addItem(withTitle: "Clear Buffer", action: #selector(clearBuffer(_:)), keyEquivalent: "")
             NSMenu.popUpContextMenu(menu, with: event, for: self)
         }
@@ -724,19 +722,19 @@ class TerminalView: NSView {
 
     // MARK: - Copy/Paste
 
-    @objc override func copy(_ sender: Any?) {
+    @objc func copyText(_ sender: Any?) {
         guard let text = buffer?.getSelectedText() else { return }
         let pb = NSPasteboard.general
         pb.clearContents()
         pb.setString(text, forType: .string)
     }
 
-    @objc override func paste(_ sender: Any?) {
+    @objc func pasteText(_ sender: Any?) {
         guard let text = NSPasteboard.general.string(forType: .string) else { return }
         terminalDelegate?.terminalViewDidRequestPaste(text)
     }
 
-    @objc override func selectAll(_ sender: Any?) {
+    @objc func selectAllText(_ sender: Any?) {
         guard let buffer = buffer else { return }
         buffer.selection.isActive = true
         buffer.selection.startX = 0
@@ -788,7 +786,7 @@ extension TerminalView: NSTextInputClient {
         }
 
         markedText = nil
-        markedRange = NSRange(location: NSNotFound, length: 0)
+        imeMarkedRange = NSRange(location: NSNotFound, length: 0)
 
         // Send as key events
         for char in text {
@@ -808,27 +806,27 @@ extension TerminalView: NSTextInputClient {
         } else if let attrStr = string as? NSAttributedString {
             markedText = NSMutableAttributedString(attributedString: attrStr)
         }
-        markedRange = NSRange(location: 0, length: markedText?.length ?? 0)
-        selectedRange_ = selectedRange
+        imeMarkedRange = NSRange(location: 0, length: markedText?.length ?? 0)
+        _selectedRange = selectedRange
         needsDisplay = true
     }
 
     func unmarkText() {
         markedText = nil
-        markedRange = NSRange(location: NSNotFound, length: 0)
+        imeMarkedRange = NSRange(location: NSNotFound, length: 0)
         needsDisplay = true
     }
 
     func selectedRange() -> NSRange {
-        return selectedRange_
+        return _selectedRange
     }
 
     func markedRange() -> NSRange {
-        return markedRange
+        return imeMarkedRange
     }
 
     func hasMarkedText() -> Bool {
-        return markedText != nil && markedRange.location != NSNotFound
+        return markedText != nil && imeMarkedRange.location != NSNotFound
     }
 
     func attributedSubstring(forProposedRange range: NSRange, actualRange: NSRangePointer?) -> NSAttributedString? {

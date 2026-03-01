@@ -163,9 +163,8 @@ class TerminalLogger {
                 if byte == 0x1B {
                     escapeState = .escape
                 } else if byte >= 0x20 || byte == 0x0A || byte == 0x0D || byte == 0x09 {
-                    if let scalar = UnicodeScalar(byte) {
-                        result.append(Character(scalar))
-                    }
+                    let scalar = UnicodeScalar(byte)
+                    result.append(Character(scalar))
                 }
 
             case .escape:

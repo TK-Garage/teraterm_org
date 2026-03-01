@@ -194,7 +194,7 @@ class TerminalWindowController: NSWindowController {
 
         panel.beginSheetModal(for: window!) { [weak self] response in
             guard response == .OK, let url = panel.url else { return }
-            self?.logger.startLogging(to: url.path)
+            _ = self?.logger.startLogging(to: url.path)
         }
     }
 

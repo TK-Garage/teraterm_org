@@ -268,7 +268,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc func setupFont(_ sender: Any?) {
-        guard let wc = activeWindowController else { return }
+        guard activeWindowController != nil else { return }
         let fontManager = NSFontManager.shared
         fontManager.target = self
         fontManager.action = #selector(changeFont(_:))
