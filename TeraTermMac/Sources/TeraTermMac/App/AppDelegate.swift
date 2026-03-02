@@ -392,28 +392,34 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let helper = ConnectionDialogHelper()
         objc_setAssociatedObject(alert, "helper", helper, .OBJC_ASSOCIATION_RETAIN)
 
-        let accessoryView = NSView(frame: NSRect(x: 0, y: 0, width: 400, height: 260))
+        // Layout matches original TTSSH IDD_HOSTDLG exactly:
+        //   y=8:  TCP/IP radio  | Host: [combobox]
+        //   y=34: Service: (*) Telnet          TCP port#: [  ]
+        //   y=46:          ( ) SSH             SSH ver: [v]
+        //   y=58:          ( ) Other           IP ver:  [v]
+        //   y=87: Serial radio  | Port: [combobox]
+        let accessoryView = NSView(frame: NSRect(x: 0, y: 0, width: 420, height: 195))
 
-        // ╔══ TCP/IP Group Box (port of GroupBox 4,0,228,78) ══╗
-        let tcpBox = NSBox(frame: NSRect(x: 0, y: 100, width: 400, height: 160))
+        // ── TCP/IP Group Box (original: GroupBox 4,0,228,78) ──
+        let tcpBox = NSBox(frame: NSRect(x: 0, y: 55, width: 420, height: 140))
         tcpBox.title = ""
         tcpBox.titlePosition = .noTitle
         accessoryView.addSubview(tcpBox)
 
+        // Row 1: TCP/IP radio + Host (original y=8-10)
         let tcpRadio = NSButton(radioButtonWithTitle: L("dialog.connection.tcpip"),
                                 target: helper, action: #selector(ConnectionDialogHelper.connectionTypeChanged(_:)))
-        tcpRadio.frame = NSRect(x: 8, y: 238, width: 80, height: 18)
+        tcpRadio.frame = NSRect(x: 8, y: 172, width: 75, height: 18)
         tcpRadio.tag = 0
         tcpRadio.state = (settings.portType != .serial) ? .on : .off
         accessoryView.addSubview(tcpRadio)
 
-        // Host: combobox with history (port of IDC_HOSTNAME CBS_DROPDOWN)
         let hostLabel = NSTextField(labelWithString: L("dialog.connection.host"))
-        hostLabel.frame = NSRect(x: 25, y: 212, width: 70, height: 17)
+        hostLabel.frame = NSRect(x: 68, y: 172, width: 45, height: 17)
         hostLabel.alignment = .right
         accessoryView.addSubview(hostLabel)
 
-        let hostCombo = NSComboBox(frame: NSRect(x: 100, y: 209, width: 288, height: 24))
+        let hostCombo = NSComboBox(frame: NSRect(x: 118, y: 169, width: 290, height: 24))
         hostCombo.isEditable = true
         hostCombo.completes = true
         hostCombo.stringValue = settings.hostname
@@ -423,54 +429,45 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
         accessoryView.addSubview(hostCombo)
 
-        // Service: Telnet / SSH / Other radio group (port of IDC_HOSTTELNET/IDC_HOSTSSH/IDC_HOSTOTHER)
+        // Row 2: Service: Telnet | TCP port# (original y=28-34)
         let serviceLabel = NSTextField(labelWithString: L("dialog.connection.service"))
-        serviceLabel.frame = NSRect(x: 25, y: 185, width: 70, height: 17)
+        serviceLabel.frame = NSRect(x: 20, y: 140, width: 90, height: 17)
         serviceLabel.alignment = .right
         accessoryView.addSubview(serviceLabel)
 
-        // Service radios use a DIFFERENT action from TCP/Serial radios, so they form a separate group
         let telnetRadio = NSButton(radioButtonWithTitle: L("dialog.connection.telnet"),
                                    target: helper, action: #selector(ConnectionDialogHelper.serviceChanged(_:)))
-        telnetRadio.frame = NSRect(x: 100, y: 185, width: 65, height: 18)
+        telnetRadio.frame = NSRect(x: 118, y: 140, width: 70, height: 18)
         telnetRadio.tag = 0
         telnetRadio.state = (settings.serviceType == .telnet) ? .on : .off
         accessoryView.addSubview(telnetRadio)
 
-        let sshRadio = NSButton(radioButtonWithTitle: "SSH",
-                                target: helper, action: #selector(ConnectionDialogHelper.serviceChanged(_:)))
-        sshRadio.frame = NSRect(x: 170, y: 185, width: 55, height: 18)
-        sshRadio.tag = 1
-        sshRadio.state = (settings.serviceType == .ssh) ? .on : .off
-        accessoryView.addSubview(sshRadio)
-
-        let otherRadio = NSButton(radioButtonWithTitle: L("dialog.connection.other"),
-                                  target: helper, action: #selector(ConnectionDialogHelper.serviceChanged(_:)))
-        otherRadio.frame = NSRect(x: 230, y: 185, width: 70, height: 18)
-        otherRadio.tag = 2
-        otherRadio.state = (settings.serviceType == .other) ? .on : .off
-        accessoryView.addSubview(otherRadio)
-
-        // TCP port#: (port of IDC_HOSTTCPPORT)
         let tcpPortLabel = NSTextField(labelWithString: L("dialog.connection.tcpPort"))
-        tcpPortLabel.frame = NSRect(x: 15, y: 158, width: 80, height: 17)
+        tcpPortLabel.frame = NSRect(x: 240, y: 140, width: 90, height: 17)
         tcpPortLabel.alignment = .right
         accessoryView.addSubview(tcpPortLabel)
 
-        let tcpPortField = NSTextField(frame: NSRect(x: 100, y: 155, width: 55, height: 24))
+        let tcpPortField = NSTextField(frame: NSRect(x: 335, y: 137, width: 55, height: 24))
         tcpPortField.integerValue = settings.defaultPort
         accessoryView.addSubview(tcpPortField)
         helper.tcpPortField = tcpPortField
 
-        // SSH version: (port of IDC_SSH_VERSION)
+        // Row 3: SSH | SSH version (original y=45-46)
+        let sshRadio = NSButton(radioButtonWithTitle: "SSH",
+                                target: helper, action: #selector(ConnectionDialogHelper.serviceChanged(_:)))
+        sshRadio.frame = NSRect(x: 118, y: 116, width: 50, height: 18)
+        sshRadio.tag = 1
+        sshRadio.state = (settings.serviceType == .ssh) ? .on : .off
+        accessoryView.addSubview(sshRadio)
+
         let sshVerLabel = NSTextField(labelWithString: L("dialog.connection.sshVersion"))
-        sshVerLabel.frame = NSRect(x: 165, y: 158, width: 85, height: 17)
+        sshVerLabel.frame = NSRect(x: 210, y: 116, width: 120, height: 17)
         sshVerLabel.alignment = .right
         sshVerLabel.isEnabled = (settings.serviceType == .ssh)
         accessoryView.addSubview(sshVerLabel)
         helper.sshVersionLabel = sshVerLabel
 
-        let sshVerPopup = NSPopUpButton(frame: NSRect(x: 255, y: 155, width: 70, height: 24))
+        let sshVerPopup = NSPopUpButton(frame: NSRect(x: 335, y: 113, width: 75, height: 24))
         for v in SSHVersion.allCases {
             sshVerPopup.addItem(withTitle: v.displayName)
         }
@@ -479,13 +476,20 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         accessoryView.addSubview(sshVerPopup)
         helper.sshVersionPopup = sshVerPopup
 
-        // IP version: (port of IDC_HOSTTCPPROTOCOL)
+        // Row 4: Other | IP version (original y=58-63)
+        let otherRadio = NSButton(radioButtonWithTitle: L("dialog.connection.other"),
+                                  target: helper, action: #selector(ConnectionDialogHelper.serviceChanged(_:)))
+        otherRadio.frame = NSRect(x: 118, y: 92, width: 70, height: 18)
+        otherRadio.tag = 2
+        otherRadio.state = (settings.serviceType == .other) ? .on : .off
+        accessoryView.addSubview(otherRadio)
+
         let ipVerLabel = NSTextField(labelWithString: L("dialog.connection.ipVersion"))
-        ipVerLabel.frame = NSRect(x: 15, y: 128, width: 80, height: 17)
+        ipVerLabel.frame = NSRect(x: 210, y: 92, width: 120, height: 17)
         ipVerLabel.alignment = .right
         accessoryView.addSubview(ipVerLabel)
 
-        let ipVerPopup = NSPopUpButton(frame: NSRect(x: 100, y: 125, width: 80, height: 24))
+        let ipVerPopup = NSPopUpButton(frame: NSRect(x: 335, y: 89, width: 75, height: 24))
         for pf in ProtocolFamily.allCases {
             ipVerPopup.addItem(withTitle: pf.displayName)
         }
@@ -498,26 +502,26 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                               sshVerLabel, sshVerPopup,
                               ipVerLabel, ipVerPopup]
 
-        // ╔══ Serial Group Box (port of GroupBox 4,79,228,24) ══╗
-        let serialBox = NSBox(frame: NSRect(x: 0, y: 0, width: 400, height: 90))
+        // ── Serial Group Box (original: GroupBox 4,79,228,24) ──
+        let serialBox = NSBox(frame: NSRect(x: 0, y: 0, width: 420, height: 50))
         serialBox.title = ""
         serialBox.titlePosition = .noTitle
         accessoryView.addSubview(serialBox)
 
+        // Row 5: Serial radio + Port (original y=87-89)
         let serialRadio = NSButton(radioButtonWithTitle: L("dialog.connection.serial"),
                                    target: helper, action: #selector(ConnectionDialogHelper.connectionTypeChanged(_:)))
-        serialRadio.frame = NSRect(x: 8, y: 68, width: 80, height: 18)
+        serialRadio.frame = NSRect(x: 8, y: 28, width: 80, height: 18)
         serialRadio.tag = 1
         serialRadio.state = (settings.portType == .serial) ? .on : .off
         accessoryView.addSubview(serialRadio)
 
-        // Port: popup (port of IDC_HOSTCOM CBS_DROPDOWNLIST)
         let serialPortLabel = NSTextField(labelWithString: L("dialog.connection.serialPort"))
-        serialPortLabel.frame = NSRect(x: 25, y: 38, width: 70, height: 17)
+        serialPortLabel.frame = NSRect(x: 68, y: 28, width: 45, height: 17)
         serialPortLabel.alignment = .right
         accessoryView.addSubview(serialPortLabel)
 
-        let serialPortPopup = NSPopUpButton(frame: NSRect(x: 100, y: 35, width: 288, height: 24))
+        let serialPortPopup = NSPopUpButton(frame: NSRect(x: 118, y: 25, width: 290, height: 24))
         let serialPorts = findSerialPorts()
         for port in serialPorts {
             serialPortPopup.addItem(withTitle: port)
@@ -543,7 +547,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         if serialPorts.isEmpty {
             serialRadio.isEnabled = false
             if settings.portType == .serial {
-                // Force TCP/IP if no serial ports
                 tcpRadio.state = .on
                 serialRadio.state = .off
                 for ctrl in helper.tcpControls { ctrl.isEnabled = true }
@@ -558,24 +561,20 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         if alert.runModal() == .alertFirstButtonReturn {
             let wc = targetWC ?? newTerminalWindow()
 
-            // Disconnect existing connection if any
             if wc.connectionManager.state != .disconnected {
                 wc.disconnect()
             }
 
             if serialRadio.state == .on {
-                // Serial connection
                 if let port = serialPortPopup.selectedItem?.title, !port.starts(with: "(") {
                     settings.serialPort = port
                     settings.portType = .serial
                     wc.connectSerial(device: port)
                 }
             } else {
-                // TCP/IP connection
                 let host = hostCombo.stringValue
                 let port = tcpPortField.integerValue
 
-                // Determine service type
                 let service: ServiceType
                 if sshRadio.state == .on {
                     service = .ssh
@@ -587,12 +586,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 settings.serviceType = service
                 settings.telnet = (service == .telnet)
 
-                // Save SSH version
                 if let selectedSSH = SSHVersion.allCases.first(where: { $0.displayName == sshVerPopup.selectedItem?.title }) {
                     settings.sshVersion = selectedSSH
                 }
-
-                // Save IP version
                 if let selectedPF = ProtocolFamily.allCases.first(where: { $0.displayName == ipVerPopup.selectedItem?.title }) {
                     settings.protocolFamily = selectedPF
                 }
