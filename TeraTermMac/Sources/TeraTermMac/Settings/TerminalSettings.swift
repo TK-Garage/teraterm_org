@@ -154,6 +154,22 @@ enum Parity: Int, Codable {
     case space = 4
 }
 
+// MARK: - Protocol Family (port of AF_UNSPEC/AF_INET/AF_INET6 selection)
+
+enum ProtocolFamily: Int, Codable, CaseIterable {
+    case auto_ = 0   // AF_UNSPEC
+    case ipv6 = 1    // AF_INET6
+    case ipv4 = 2    // AF_INET
+
+    var displayName: String {
+        switch self {
+        case .auto_: return "AUTO"
+        case .ipv6: return "IPv6"
+        case .ipv4: return "IPv4"
+        }
+    }
+}
+
 // MARK: - Beep Type
 
 enum BeepType: Int, Codable {
@@ -255,6 +271,9 @@ class TerminalSettings: Codable {
     var defaultPort: Int = 23
     var hostname: String = ""
     var telnet: Bool = true
+    var protocolFamily: ProtocolFamily = .auto_
+    var hostHistory: [String] = []
+    var telnetPort: Int = 23
     var termType: String = "xterm"
 
     // Serial Port

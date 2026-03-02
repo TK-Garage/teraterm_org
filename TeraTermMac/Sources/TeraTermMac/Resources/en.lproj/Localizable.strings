@@ -56,19 +56,19 @@
 "menu.help" = "Help";
 "menu.help.help" = "Tera Term Mac Help";
 
-/* Connection Dialog */
-"dialog.connection.title" = "New Connection";
-"dialog.connection.message" = "Enter host to connect:";
+/* Connection Dialog (port of IDD_HOSTDLG) */
+"dialog.connection.title" = "Tera Term: New connection";
 "dialog.connection.host" = "Host:";
 "dialog.connection.hostPlaceholder" = "hostname or IP";
-"dialog.connection.port" = "Port:";
 "dialog.connection.tcpip" = "TCP/IP";
 "dialog.connection.tcpPort" = "TCP port#:";
+"dialog.connection.ipVersion" = "IP version:";
 "dialog.connection.telnet" = "Telnet";
 "dialog.connection.serial" = "Serial";
-"dialog.connection.localShell" = "Local Shell";
-"dialog.connection.connect" = "Connect";
+"dialog.connection.serialPort" = "Port:";
+"dialog.connection.ok" = "OK";
 "dialog.connection.cancel" = "Cancel";
+"dialog.connection.localShell" = "Local Shell";
 
 /* Terminal Setup Dialog */
 "dialog.terminalSetup.title" = "Terminal Setup";

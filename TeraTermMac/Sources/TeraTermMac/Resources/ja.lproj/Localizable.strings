@@ -56,19 +56,19 @@
 "menu.help" = "ヘルプ";
 "menu.help.help" = "Tera Term Mac ヘルプ";
 
-/* Connection Dialog */
-"dialog.connection.title" = "新しい接続";
-"dialog.connection.message" = "接続先のホストを入力してください:";
+/* Connection Dialog (port of IDD_HOSTDLG) */
+"dialog.connection.title" = "Tera Term: 新しい接続";
 "dialog.connection.host" = "ホスト:";
 "dialog.connection.hostPlaceholder" = "ホスト名またはIPアドレス";
-"dialog.connection.port" = "ポート:";
 "dialog.connection.tcpip" = "TCP/IP";
 "dialog.connection.tcpPort" = "TCPポート#:";
+"dialog.connection.ipVersion" = "IPバージョン:";
 "dialog.connection.telnet" = "Telnet";
 "dialog.connection.serial" = "シリアル";
-"dialog.connection.localShell" = "ローカルシェル";
-"dialog.connection.connect" = "接続";
+"dialog.connection.serialPort" = "ポート:";
+"dialog.connection.ok" = "OK";
 "dialog.connection.cancel" = "キャンセル";
+"dialog.connection.localShell" = "ローカルシェル";
 
 /* Terminal Setup Dialog */
 "dialog.terminalSetup.title" = "端末の設定";
