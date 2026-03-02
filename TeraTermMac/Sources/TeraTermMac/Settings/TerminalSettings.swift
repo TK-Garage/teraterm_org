@@ -119,6 +119,36 @@ enum PortType: Int, Codable {
     case namedPipe = 3
 }
 
+// MARK: - Service Type (port of IDC_HOSTTELNET / IDC_HOSTSSH / IDC_HOSTOTHER)
+
+enum ServiceType: Int, Codable {
+    case telnet = 0
+    case ssh = 1
+    case other = 2
+
+    var defaultPort: Int {
+        switch self {
+        case .telnet: return 23
+        case .ssh: return 22
+        case .other: return 0
+        }
+    }
+}
+
+// MARK: - SSH Version (port of IDC_SSH_VERSION)
+
+enum SSHVersion: Int, Codable, CaseIterable {
+    case ssh1 = 1
+    case ssh2 = 2
+
+    var displayName: String {
+        switch self {
+        case .ssh1: return "SSH1"
+        case .ssh2: return "SSH2"
+        }
+    }
+}
+
 // MARK: - Cursor Shape
 
 enum CursorShape: Int, Codable {
@@ -268,12 +298,13 @@ class TerminalSettings: Codable {
 
     // Connection
     var portType: PortType = .tcpip
+    var serviceType: ServiceType = .telnet
     var defaultPort: Int = 23
     var hostname: String = ""
     var telnet: Bool = true
     var protocolFamily: ProtocolFamily = .auto_
     var hostHistory: [String] = []
-    var telnetPort: Int = 23
+    var sshVersion: SSHVersion = .ssh2
     var termType: String = "xterm"
 
     // Serial Port
