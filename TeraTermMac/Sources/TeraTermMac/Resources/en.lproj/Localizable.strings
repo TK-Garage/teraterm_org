@@ -84,6 +84,43 @@
 "dialog.terminalSetup.ok" = "OK";
 "dialog.terminalSetup.cancel" = "Cancel";
 
+/* Window Setup Dialog */
+"dialog.windowSetup.title" = "Window Setup";
+"dialog.windowSetup.title_label" = "Title:";
+"dialog.windowSetup.alpha" = "Opacity:";
+"dialog.windowSetup.cursorShape" = "Cursor:";
+"dialog.windowSetup.cursorBlock" = "Block";
+"dialog.windowSetup.cursorVertical" = "Vertical Bar";
+"dialog.windowSetup.cursorHorizontal" = "Underline";
+"dialog.windowSetup.cursorBlink" = "Blink";
+"dialog.windowSetup.cursorColor" = "Cursor:";
+"dialog.windowSetup.colors" = "Colors";
+"dialog.windowSetup.foreground" = "Foreground:";
+"dialog.windowSetup.background" = "Background:";
+"dialog.windowSetup.selection" = "Selection:";
+"dialog.windowSetup.scrollBuffer" = "Scroll Buffer:";
+"dialog.windowSetup.enableScroll" = "Enable";
+"dialog.windowSetup.lines" = "lines";
+"dialog.windowSetup.beep" = "Beep:";
+"dialog.windowSetup.beepNone" = "None";
+"dialog.windowSetup.beepSystem" = "System Sound";
+"dialog.windowSetup.beepVisual" = "Visual Bell";
+"dialog.windowSetup.ok" = "OK";
+"dialog.windowSetup.cancel" = "Cancel";
+
+/* Keyboard Setup Dialog */
+"dialog.keyboardSetup.title" = "Keyboard Setup";
+"dialog.keyboardSetup.bsKey" = "Backspace Key:";
+"dialog.keyboardSetup.deleteKey" = "Delete Key:";
+"dialog.keyboardSetup.deleteEscSeq" = "ESC Sequence";
+"dialog.keyboardSetup.metaKey" = "Meta Key (Option):";
+"dialog.keyboardSetup.metaOff" = "Off";
+"dialog.keyboardSetup.metaOn" = "On (Send ESC)";
+"dialog.keyboardSetup.answerback" = "Answerback:";
+"dialog.keyboardSetup.answerbackPlaceholder" = "ENQ response";
+"dialog.keyboardSetup.ok" = "OK";
+"dialog.keyboardSetup.cancel" = "Cancel";
+
 /* Serial Port Dialog */
 "dialog.serialPort.title" = "Serial Port Setup";
 "dialog.serialPort.port" = "Port:";

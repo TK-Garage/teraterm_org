@@ -84,6 +84,43 @@
 "dialog.terminalSetup.ok" = "OK";
 "dialog.terminalSetup.cancel" = "キャンセル";
 
+/* Window Setup Dialog */
+"dialog.windowSetup.title" = "ウインドウの設定";
+"dialog.windowSetup.title_label" = "タイトル:";
+"dialog.windowSetup.alpha" = "不透明度:";
+"dialog.windowSetup.cursorShape" = "カーソル:";
+"dialog.windowSetup.cursorBlock" = "ブロック";
+"dialog.windowSetup.cursorVertical" = "縦線";
+"dialog.windowSetup.cursorHorizontal" = "下線";
+"dialog.windowSetup.cursorBlink" = "点滅";
+"dialog.windowSetup.cursorColor" = "カーソル:";
+"dialog.windowSetup.colors" = "カラー";
+"dialog.windowSetup.foreground" = "前景色:";
+"dialog.windowSetup.background" = "背景色:";
+"dialog.windowSetup.selection" = "選択:";
+"dialog.windowSetup.scrollBuffer" = "スクロール:";
+"dialog.windowSetup.enableScroll" = "有効";
+"dialog.windowSetup.lines" = "行";
+"dialog.windowSetup.beep" = "ビープ:";
+"dialog.windowSetup.beepNone" = "なし";
+"dialog.windowSetup.beepSystem" = "システム音";
+"dialog.windowSetup.beepVisual" = "ビジュアルベル";
+"dialog.windowSetup.ok" = "OK";
+"dialog.windowSetup.cancel" = "キャンセル";
+
+/* Keyboard Setup Dialog */
+"dialog.keyboardSetup.title" = "キーボードの設定";
+"dialog.keyboardSetup.bsKey" = "Backspaceキー:";
+"dialog.keyboardSetup.deleteKey" = "Deleteキー:";
+"dialog.keyboardSetup.deleteEscSeq" = "ESCシーケンス";
+"dialog.keyboardSetup.metaKey" = "Metaキー (Option):";
+"dialog.keyboardSetup.metaOff" = "オフ";
+"dialog.keyboardSetup.metaOn" = "オン (ESC送信)";
+"dialog.keyboardSetup.answerback" = "応答文字列:";
+"dialog.keyboardSetup.answerbackPlaceholder" = "ENQ応答";
+"dialog.keyboardSetup.ok" = "OK";
+"dialog.keyboardSetup.cancel" = "キャンセル";
+
 /* Serial Port Dialog */
 "dialog.serialPort.title" = "シリアルポートの設定";
 "dialog.serialPort.port" = "ポート:";

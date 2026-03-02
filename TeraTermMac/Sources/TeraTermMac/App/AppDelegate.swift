@@ -133,6 +133,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     // MARK: - Main Menu (port of vtwin.cpp InitMenu)
 
+    /// Assign an SF Symbol image to an NSMenuItem (macOS 11+).
+    private func setSymbol(_ name: String, for item: NSMenuItem) {
+        if #available(macOS 11.0, *) {
+            item.image = NSImage(systemSymbolName: name, accessibilityDescription: nil)
+        }
+    }
+
     private func buildMainMenu() {
         let mainMenu = NSMenu()
 
@@ -141,92 +148,136 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         mainMenu.addItem(appMenuItem)
         let appMenu = NSMenu()
         appMenuItem.submenu = appMenu
-        appMenu.addItem(withTitle: L("menu.app.about"), action: #selector(showAbout(_:)), keyEquivalent: "")
+
+        let aboutItem = appMenu.addItem(withTitle: L("menu.app.about"), action: #selector(showAbout(_:)), keyEquivalent: "")
+        setSymbol("info.circle", for: aboutItem)
         appMenu.addItem(NSMenuItem.separator())
-        appMenu.addItem(withTitle: L("menu.app.preferences"), action: #selector(showPreferences(_:)), keyEquivalent: ",")
+        let prefItem = appMenu.addItem(withTitle: L("menu.app.preferences"), action: #selector(showPreferences(_:)), keyEquivalent: ",")
+        setSymbol("gearshape", for: prefItem)
         appMenu.addItem(NSMenuItem.separator())
-        appMenu.addItem(withTitle: L("menu.app.hide"), action: #selector(NSApplication.hide(_:)), keyEquivalent: "h")
+        let hideItem = appMenu.addItem(withTitle: L("menu.app.hide"), action: #selector(NSApplication.hide(_:)), keyEquivalent: "h")
+        setSymbol("eye.slash", for: hideItem)
         let hideOthers = NSMenuItem(title: L("menu.app.hideOthers"), action: #selector(NSApplication.hideOtherApplications(_:)), keyEquivalent: "h")
         hideOthers.keyEquivalentModifierMask = [.command, .option]
+        setSymbol("eye.slash.circle", for: hideOthers)
         appMenu.addItem(hideOthers)
-        appMenu.addItem(withTitle: L("menu.app.showAll"), action: #selector(NSApplication.unhideAllApplications(_:)), keyEquivalent: "")
+        let showAllItem = appMenu.addItem(withTitle: L("menu.app.showAll"), action: #selector(NSApplication.unhideAllApplications(_:)), keyEquivalent: "")
+        setSymbol("eye", for: showAllItem)
         appMenu.addItem(NSMenuItem.separator())
-        appMenu.addItem(withTitle: L("menu.app.quit"), action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+        let quitItem = appMenu.addItem(withTitle: L("menu.app.quit"), action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+        setSymbol("power", for: quitItem)
 
         // File menu
         let fileMenuItem = NSMenuItem()
         mainMenu.addItem(fileMenuItem)
         let fileMenu = NSMenu(title: L("menu.file"))
         fileMenuItem.submenu = fileMenu
-        fileMenu.addItem(withTitle: L("menu.file.newConnection"), action: #selector(newConnection(_:)), keyEquivalent: "n")
-        fileMenu.addItem(withTitle: L("menu.file.newWindow"), action: #selector(newWindow(_:)), keyEquivalent: "t")
-        fileMenu.addItem(withTitle: L("menu.file.duplicateSession"), action: #selector(duplicateSession(_:)), keyEquivalent: "d")
+
+        let newConnItem = fileMenu.addItem(withTitle: L("menu.file.newConnection"), action: #selector(newConnection(_:)), keyEquivalent: "n")
+        setSymbol("network", for: newConnItem)
+        let newWinItem = fileMenu.addItem(withTitle: L("menu.file.newWindow"), action: #selector(newWindow(_:)), keyEquivalent: "t")
+        setSymbol("macwindow.badge.plus", for: newWinItem)
+        let dupItem = fileMenu.addItem(withTitle: L("menu.file.duplicateSession"), action: #selector(duplicateSession(_:)), keyEquivalent: "d")
+        setSymbol("doc.on.doc", for: dupItem)
         fileMenu.addItem(NSMenuItem.separator())
-        fileMenu.addItem(withTitle: L("menu.file.log"), action: #selector(startLog(_:)), keyEquivalent: "")
-        fileMenu.addItem(withTitle: L("menu.file.stopLog"), action: #selector(stopLog(_:)), keyEquivalent: "")
+        let logItem = fileMenu.addItem(withTitle: L("menu.file.log"), action: #selector(startLog(_:)), keyEquivalent: "")
+        setSymbol("doc.text", for: logItem)
+        let stopLogItem = fileMenu.addItem(withTitle: L("menu.file.stopLog"), action: #selector(stopLog(_:)), keyEquivalent: "")
+        setSymbol("doc.text.fill", for: stopLogItem)
         fileMenu.addItem(NSMenuItem.separator())
 
         // File transfer submenu
         let transferMenu = NSMenu(title: L("menu.file.fileTransfer"))
         let transferMenuItem = NSMenuItem(title: L("menu.file.fileTransfer"), action: nil, keyEquivalent: "")
+        setSymbol("arrow.left.arrow.right", for: transferMenuItem)
         transferMenuItem.submenu = transferMenu
         fileMenu.addItem(transferMenuItem)
-        transferMenu.addItem(withTitle: L("menu.file.xmodemSend"), action: #selector(xmodemSend(_:)), keyEquivalent: "")
-        transferMenu.addItem(withTitle: L("menu.file.xmodemReceive"), action: #selector(xmodemRecv(_:)), keyEquivalent: "")
+
+        let xmSend = transferMenu.addItem(withTitle: L("menu.file.xmodemSend"), action: #selector(xmodemSend(_:)), keyEquivalent: "")
+        setSymbol("arrow.up.doc", for: xmSend)
+        let xmRecv = transferMenu.addItem(withTitle: L("menu.file.xmodemReceive"), action: #selector(xmodemRecv(_:)), keyEquivalent: "")
+        setSymbol("arrow.down.doc", for: xmRecv)
         transferMenu.addItem(NSMenuItem.separator())
-        transferMenu.addItem(withTitle: L("menu.file.zmodemSend"), action: #selector(zmodemSend(_:)), keyEquivalent: "")
-        transferMenu.addItem(withTitle: L("menu.file.zmodemReceive"), action: #selector(zmodemRecv(_:)), keyEquivalent: "")
+        let zmSend = transferMenu.addItem(withTitle: L("menu.file.zmodemSend"), action: #selector(zmodemSend(_:)), keyEquivalent: "")
+        setSymbol("arrow.up.doc", for: zmSend)
+        let zmRecv = transferMenu.addItem(withTitle: L("menu.file.zmodemReceive"), action: #selector(zmodemRecv(_:)), keyEquivalent: "")
+        setSymbol("arrow.down.doc", for: zmRecv)
         transferMenu.addItem(NSMenuItem.separator())
-        transferMenu.addItem(withTitle: L("menu.file.kermitSend"), action: #selector(kermitSend(_:)), keyEquivalent: "")
-        transferMenu.addItem(withTitle: L("menu.file.kermitReceive"), action: #selector(kermitRecv(_:)), keyEquivalent: "")
+        let kmSend = transferMenu.addItem(withTitle: L("menu.file.kermitSend"), action: #selector(kermitSend(_:)), keyEquivalent: "")
+        setSymbol("arrow.up.doc", for: kmSend)
+        let kmRecv = transferMenu.addItem(withTitle: L("menu.file.kermitReceive"), action: #selector(kermitRecv(_:)), keyEquivalent: "")
+        setSymbol("arrow.down.doc", for: kmRecv)
 
         fileMenu.addItem(NSMenuItem.separator())
-        fileMenu.addItem(withTitle: L("menu.file.disconnect"), action: #selector(doDisconnect(_:)), keyEquivalent: "")
+        let disconnItem = fileMenu.addItem(withTitle: L("menu.file.disconnect"), action: #selector(doDisconnect(_:)), keyEquivalent: "")
+        setSymbol("xmark.circle", for: disconnItem)
         fileMenu.addItem(NSMenuItem.separator())
-        fileMenu.addItem(withTitle: L("menu.file.close"), action: #selector(NSWindow.performClose(_:)), keyEquivalent: "w")
+        let closeItem = fileMenu.addItem(withTitle: L("menu.file.close"), action: #selector(NSWindow.performClose(_:)), keyEquivalent: "w")
+        setSymbol("xmark.square", for: closeItem)
 
         // Edit menu
         let editMenuItem = NSMenuItem()
         mainMenu.addItem(editMenuItem)
         let editMenu = NSMenu(title: L("menu.edit"))
         editMenuItem.submenu = editMenu
-        editMenu.addItem(withTitle: L("menu.edit.copy"), action: #selector(NSText.copy(_:)), keyEquivalent: "c")
-        editMenu.addItem(withTitle: L("menu.edit.paste"), action: #selector(NSText.paste(_:)), keyEquivalent: "v")
-        editMenu.addItem(withTitle: L("menu.edit.selectAll"), action: #selector(NSText.selectAll(_:)), keyEquivalent: "a")
+
+        let copyItem = editMenu.addItem(withTitle: L("menu.edit.copy"), action: #selector(NSText.copy(_:)), keyEquivalent: "c")
+        setSymbol("doc.on.doc", for: copyItem)
+        let pasteItem = editMenu.addItem(withTitle: L("menu.edit.paste"), action: #selector(NSText.paste(_:)), keyEquivalent: "v")
+        setSymbol("doc.on.clipboard", for: pasteItem)
+        let selAllItem = editMenu.addItem(withTitle: L("menu.edit.selectAll"), action: #selector(NSText.selectAll(_:)), keyEquivalent: "a")
+        setSymbol("selection.pin.in.out", for: selAllItem)
         editMenu.addItem(NSMenuItem.separator())
-        editMenu.addItem(withTitle: L("menu.edit.clearScreen"), action: #selector(clearScreen(_:)), keyEquivalent: "")
-        editMenu.addItem(withTitle: L("menu.edit.clearBuffer"), action: #selector(clearBuffer(_:)), keyEquivalent: "k")
+        let clsItem = editMenu.addItem(withTitle: L("menu.edit.clearScreen"), action: #selector(clearScreen(_:)), keyEquivalent: "")
+        setSymbol("rectangle.slash", for: clsItem)
+        let clbItem = editMenu.addItem(withTitle: L("menu.edit.clearBuffer"), action: #selector(clearBuffer(_:)), keyEquivalent: "k")
+        setSymbol("trash", for: clbItem)
 
         // Setup menu
         let setupMenuItem = NSMenuItem()
         mainMenu.addItem(setupMenuItem)
         let setupMenu = NSMenu(title: L("menu.setup"))
         setupMenuItem.submenu = setupMenu
-        setupMenu.addItem(withTitle: L("menu.setup.terminal"), action: #selector(setupTerminal(_:)), keyEquivalent: "")
-        setupMenu.addItem(withTitle: L("menu.setup.window"), action: #selector(setupWindow(_:)), keyEquivalent: "")
-        setupMenu.addItem(withTitle: L("menu.setup.font"), action: #selector(setupFont(_:)), keyEquivalent: "")
-        setupMenu.addItem(withTitle: L("menu.setup.keyboard"), action: #selector(setupKeyboard(_:)), keyEquivalent: "")
-        setupMenu.addItem(withTitle: L("menu.setup.serialPort"), action: #selector(setupSerialPort(_:)), keyEquivalent: "")
+
+        let termItem = setupMenu.addItem(withTitle: L("menu.setup.terminal"), action: #selector(setupTerminal(_:)), keyEquivalent: "")
+        setSymbol("terminal", for: termItem)
+        let winItem = setupMenu.addItem(withTitle: L("menu.setup.window"), action: #selector(setupWindow(_:)), keyEquivalent: "")
+        setSymbol("macwindow", for: winItem)
+        let fontItem = setupMenu.addItem(withTitle: L("menu.setup.font"), action: #selector(setupFont(_:)), keyEquivalent: "")
+        setSymbol("textformat.size", for: fontItem)
+        let kbItem = setupMenu.addItem(withTitle: L("menu.setup.keyboard"), action: #selector(setupKeyboard(_:)), keyEquivalent: "")
+        setSymbol("keyboard", for: kbItem)
+        let serialItem = setupMenu.addItem(withTitle: L("menu.setup.serialPort"), action: #selector(setupSerialPort(_:)), keyEquivalent: "")
+        setSymbol("cable.connector", for: serialItem)
         setupMenu.addItem(NSMenuItem.separator())
-        setupMenu.addItem(withTitle: L("menu.setup.saveSetup"), action: #selector(saveSetup(_:)), keyEquivalent: "")
-        setupMenu.addItem(withTitle: L("menu.setup.restoreSetup"), action: #selector(restoreSetup(_:)), keyEquivalent: "")
+        let saveItem = setupMenu.addItem(withTitle: L("menu.setup.saveSetup"), action: #selector(saveSetup(_:)), keyEquivalent: "")
+        setSymbol("square.and.arrow.down", for: saveItem)
+        let restoreItem = setupMenu.addItem(withTitle: L("menu.setup.restoreSetup"), action: #selector(restoreSetup(_:)), keyEquivalent: "")
+        setSymbol("square.and.arrow.up", for: restoreItem)
 
         // Control menu
         let controlMenuItem = NSMenuItem()
         mainMenu.addItem(controlMenuItem)
         let controlMenu = NSMenu(title: L("menu.control"))
         controlMenuItem.submenu = controlMenu
-        controlMenu.addItem(withTitle: L("menu.control.resetTerminal"), action: #selector(resetTerminal(_:)), keyEquivalent: "")
-        controlMenu.addItem(withTitle: L("menu.control.areYouThere"), action: #selector(areYouThere(_:)), keyEquivalent: "")
-        controlMenu.addItem(withTitle: L("menu.control.sendBreak"), action: #selector(sendBreak(_:)), keyEquivalent: "")
+
+        let resetItem = controlMenu.addItem(withTitle: L("menu.control.resetTerminal"), action: #selector(resetTerminal(_:)), keyEquivalent: "")
+        setSymbol("arrow.counterclockwise", for: resetItem)
+        let aytItem = controlMenu.addItem(withTitle: L("menu.control.areYouThere"), action: #selector(areYouThere(_:)), keyEquivalent: "")
+        setSymbol("questionmark.circle", for: aytItem)
+        let breakItem = controlMenu.addItem(withTitle: L("menu.control.sendBreak"), action: #selector(sendBreak(_:)), keyEquivalent: "")
+        setSymbol("exclamationmark.triangle", for: breakItem)
 
         // Window menu
         let windowMenuItem = NSMenuItem()
         mainMenu.addItem(windowMenuItem)
         let windowMenu = NSMenu(title: L("menu.window"))
         windowMenuItem.submenu = windowMenu
-        windowMenu.addItem(withTitle: L("menu.window.minimize"), action: #selector(NSWindow.performMiniaturize(_:)), keyEquivalent: "m")
-        windowMenu.addItem(withTitle: L("menu.window.zoom"), action: #selector(NSWindow.performZoom(_:)), keyEquivalent: "")
+
+        let minItem = windowMenu.addItem(withTitle: L("menu.window.minimize"), action: #selector(NSWindow.performMiniaturize(_:)), keyEquivalent: "m")
+        setSymbol("minus.square", for: minItem)
+        let zoomItem = windowMenu.addItem(withTitle: L("menu.window.zoom"), action: #selector(NSWindow.performZoom(_:)), keyEquivalent: "")
+        setSymbol("arrow.up.left.and.arrow.down.right", for: zoomItem)
         NSApp.windowsMenu = windowMenu
 
         // Help menu
@@ -234,7 +285,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         mainMenu.addItem(helpMenuItem)
         let helpMenu = NSMenu(title: L("menu.help"))
         helpMenuItem.submenu = helpMenu
-        helpMenu.addItem(withTitle: L("menu.help.help"), action: #selector(showHelp(_:)), keyEquivalent: "?")
+
+        let helpItem = helpMenu.addItem(withTitle: L("menu.help.help"), action: #selector(showHelp(_:)), keyEquivalent: "?")
+        setSymbol("questionmark.circle", for: helpItem)
         NSApp.helpMenu = helpMenu
 
         NSApp.mainMenu = mainMenu
@@ -309,7 +362,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc func setupWindow(_ sender: Any?) {
-        showTerminalSetupDialog()
+        showWindowSetupDialog()
     }
 
     @objc func setupFont(_ sender: Any?) {
@@ -336,7 +389,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc func setupKeyboard(_ sender: Any?) {
-        showTerminalSetupDialog()
+        showKeyboardSetupDialog()
     }
 
     @objc func setupSerialPort(_ sender: Any?) {
@@ -699,6 +752,243 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             if let wc = activeWindowController {
                 wc.terminalView.settings = settings
                 wc.terminalView.updateFont()
+            }
+        }
+    }
+
+    // MARK: Window Setup Dialog (port of ttpdlg Window dialog)
+
+    private func showWindowSetupDialog() {
+        let alert = NSAlert()
+        alert.messageText = L("dialog.windowSetup.title")
+        alert.informativeText = ""
+
+        let accessoryView = NSView(frame: NSRect(x: 0, y: 0, width: 380, height: 260))
+
+        // ── Window Title ──
+        let titleLabel = NSTextField(labelWithString: L("dialog.windowSetup.title_label"))
+        titleLabel.frame = NSRect(x: 0, y: 230, width: 100, height: 20)
+        accessoryView.addSubview(titleLabel)
+
+        let titleField = NSTextField(frame: NSRect(x: 110, y: 228, width: 260, height: 24))
+        titleField.stringValue = settings.title
+        accessoryView.addSubview(titleField)
+
+        // ── Window Alpha (Transparency) ──
+        let alphaLabel = NSTextField(labelWithString: L("dialog.windowSetup.alpha"))
+        alphaLabel.frame = NSRect(x: 0, y: 196, width: 100, height: 20)
+        accessoryView.addSubview(alphaLabel)
+
+        let alphaSlider = NSSlider(frame: NSRect(x: 110, y: 196, width: 200, height: 20))
+        alphaSlider.minValue = 0.2
+        alphaSlider.maxValue = 1.0
+        alphaSlider.doubleValue = settings.windowAlpha
+        alphaSlider.isContinuous = true
+        accessoryView.addSubview(alphaSlider)
+
+        let alphaValueLabel = NSTextField(labelWithString: String(format: "%d%%", Int(settings.windowAlpha * 100)))
+        alphaValueLabel.frame = NSRect(x: 320, y: 196, width: 50, height: 20)
+        accessoryView.addSubview(alphaValueLabel)
+
+        // ── Cursor Shape ──
+        let cursorLabel = NSTextField(labelWithString: L("dialog.windowSetup.cursorShape"))
+        cursorLabel.frame = NSRect(x: 0, y: 162, width: 100, height: 20)
+        accessoryView.addSubview(cursorLabel)
+
+        let cursorPopup = NSPopUpButton(frame: NSRect(x: 110, y: 160, width: 140, height: 24))
+        cursorPopup.addItem(withTitle: L("dialog.windowSetup.cursorBlock"))
+        cursorPopup.addItem(withTitle: L("dialog.windowSetup.cursorVertical"))
+        cursorPopup.addItem(withTitle: L("dialog.windowSetup.cursorHorizontal"))
+        cursorPopup.selectItem(at: settings.cursorShape.rawValue)
+        accessoryView.addSubview(cursorPopup)
+
+        let blinkCheck = NSButton(checkboxWithTitle: L("dialog.windowSetup.cursorBlink"), target: nil, action: nil)
+        blinkCheck.frame = NSRect(x: 260, y: 162, width: 110, height: 20)
+        blinkCheck.state = settings.cursorBlink ? .on : .off
+        accessoryView.addSubview(blinkCheck)
+
+        // ── Colors ──
+        let colorGroupLabel = NSTextField(labelWithString: L("dialog.windowSetup.colors"))
+        colorGroupLabel.frame = NSRect(x: 0, y: 128, width: 100, height: 20)
+        colorGroupLabel.font = NSFont.boldSystemFont(ofSize: 12)
+        accessoryView.addSubview(colorGroupLabel)
+
+        // Foreground
+        let fgLabel = NSTextField(labelWithString: L("dialog.windowSetup.foreground"))
+        fgLabel.frame = NSRect(x: 20, y: 100, width: 85, height: 20)
+        accessoryView.addSubview(fgLabel)
+
+        let fgColor = settings.colorTheme.foreground
+        let fgWell = NSColorWell(frame: NSRect(x: 110, y: 98, width: 40, height: 24))
+        fgWell.color = NSColor(red: CGFloat(fgColor.r)/255, green: CGFloat(fgColor.g)/255, blue: CGFloat(fgColor.b)/255, alpha: 1)
+        accessoryView.addSubview(fgWell)
+
+        // Background
+        let bgLabel = NSTextField(labelWithString: L("dialog.windowSetup.background"))
+        bgLabel.frame = NSRect(x: 170, y: 100, width: 85, height: 20)
+        accessoryView.addSubview(bgLabel)
+
+        let bgColor = settings.colorTheme.background
+        let bgWell = NSColorWell(frame: NSRect(x: 260, y: 98, width: 40, height: 24))
+        bgWell.color = NSColor(red: CGFloat(bgColor.r)/255, green: CGFloat(bgColor.g)/255, blue: CGFloat(bgColor.b)/255, alpha: 1)
+        accessoryView.addSubview(bgWell)
+
+        // Cursor color
+        let ccLabel = NSTextField(labelWithString: L("dialog.windowSetup.cursorColor"))
+        ccLabel.frame = NSRect(x: 20, y: 68, width: 85, height: 20)
+        accessoryView.addSubview(ccLabel)
+
+        let ccColor = settings.colorTheme.cursorColor
+        let ccWell = NSColorWell(frame: NSRect(x: 110, y: 66, width: 40, height: 24))
+        ccWell.color = NSColor(red: CGFloat(ccColor.r)/255, green: CGFloat(ccColor.g)/255, blue: CGFloat(ccColor.b)/255, alpha: 1)
+        accessoryView.addSubview(ccWell)
+
+        // Selection
+        let selLabel = NSTextField(labelWithString: L("dialog.windowSetup.selection"))
+        selLabel.frame = NSRect(x: 170, y: 68, width: 85, height: 20)
+        accessoryView.addSubview(selLabel)
+
+        let selColor = settings.colorTheme.selectionBackground
+        let selWell = NSColorWell(frame: NSRect(x: 260, y: 66, width: 40, height: 24))
+        selWell.color = NSColor(red: CGFloat(selColor.r)/255, green: CGFloat(selColor.g)/255, blue: CGFloat(selColor.b)/255, alpha: 1)
+        accessoryView.addSubview(selWell)
+
+        // ── Scroll Buffer ──
+        let scrollLabel = NSTextField(labelWithString: L("dialog.windowSetup.scrollBuffer"))
+        scrollLabel.frame = NSRect(x: 0, y: 34, width: 100, height: 20)
+        accessoryView.addSubview(scrollLabel)
+
+        let scrollCheck = NSButton(checkboxWithTitle: L("dialog.windowSetup.enableScroll"), target: nil, action: nil)
+        scrollCheck.frame = NSRect(x: 110, y: 34, width: 80, height: 20)
+        scrollCheck.state = settings.enableScrollBuffer ? .on : .off
+        accessoryView.addSubview(scrollCheck)
+
+        let scrollSizeField = NSTextField(frame: NSRect(x: 195, y: 32, width: 80, height: 24))
+        scrollSizeField.integerValue = settings.scrollBufferSize
+        accessoryView.addSubview(scrollSizeField)
+
+        let scrollLinesLabel = NSTextField(labelWithString: L("dialog.windowSetup.lines"))
+        scrollLinesLabel.frame = NSRect(x: 280, y: 34, width: 60, height: 20)
+        accessoryView.addSubview(scrollLinesLabel)
+
+        // ── Beep ──
+        let beepLabel = NSTextField(labelWithString: L("dialog.windowSetup.beep"))
+        beepLabel.frame = NSRect(x: 0, y: 2, width: 100, height: 20)
+        accessoryView.addSubview(beepLabel)
+
+        let beepPopup = NSPopUpButton(frame: NSRect(x: 110, y: 0, width: 140, height: 24))
+        beepPopup.addItem(withTitle: L("dialog.windowSetup.beepNone"))
+        beepPopup.addItem(withTitle: L("dialog.windowSetup.beepSystem"))
+        beepPopup.addItem(withTitle: L("dialog.windowSetup.beepVisual"))
+        beepPopup.selectItem(at: settings.beepType.rawValue)
+        accessoryView.addSubview(beepPopup)
+
+        alert.accessoryView = accessoryView
+        alert.addButton(withTitle: L("dialog.windowSetup.ok"))
+        alert.addButton(withTitle: L("dialog.windowSetup.cancel"))
+
+        if alert.runModal() == .alertFirstButtonReturn {
+            settings.title = titleField.stringValue
+            settings.windowAlpha = alphaSlider.doubleValue
+            settings.cursorShape = CursorShape(rawValue: cursorPopup.indexOfSelectedItem) ?? .block
+            settings.cursorBlink = blinkCheck.state == .on
+            settings.enableScrollBuffer = scrollCheck.state == .on
+            settings.scrollBufferSize = scrollSizeField.integerValue
+            settings.beepType = BeepType(rawValue: beepPopup.indexOfSelectedItem) ?? .system
+
+            // Colors
+            let fg = fgWell.color.usingColorSpace(.sRGB) ?? fgWell.color
+            settings.colorTheme.foreground = TerminalColor(
+                r: UInt8(fg.redComponent * 255), g: UInt8(fg.greenComponent * 255), b: UInt8(fg.blueComponent * 255))
+            let bg = bgWell.color.usingColorSpace(.sRGB) ?? bgWell.color
+            settings.colorTheme.background = TerminalColor(
+                r: UInt8(bg.redComponent * 255), g: UInt8(bg.greenComponent * 255), b: UInt8(bg.blueComponent * 255))
+            let cc = ccWell.color.usingColorSpace(.sRGB) ?? ccWell.color
+            settings.colorTheme.cursorColor = TerminalColor(
+                r: UInt8(cc.redComponent * 255), g: UInt8(cc.greenComponent * 255), b: UInt8(cc.blueComponent * 255))
+            let sel = selWell.color.usingColorSpace(.sRGB) ?? selWell.color
+            settings.colorTheme.selectionBackground = TerminalColor(
+                r: UInt8(sel.redComponent * 255), g: UInt8(sel.greenComponent * 255), b: UInt8(sel.blueComponent * 255))
+
+            // Apply to active window
+            if let wc = activeWindowController {
+                wc.terminalView.settings = settings
+                wc.terminalView.needsDisplay = true
+                wc.window?.title = settings.title
+                wc.window?.alphaValue = CGFloat(settings.windowAlpha)
+            }
+        }
+    }
+
+    // MARK: Keyboard Setup Dialog (port of ttpdlg Keyboard dialog)
+
+    private func showKeyboardSetupDialog() {
+        let alert = NSAlert()
+        alert.messageText = L("dialog.keyboardSetup.title")
+        alert.informativeText = ""
+
+        let accessoryView = NSView(frame: NSRect(x: 0, y: 0, width: 340, height: 130))
+
+        // ── Backspace Key ──
+        let bsLabel = NSTextField(labelWithString: L("dialog.keyboardSetup.bsKey"))
+        bsLabel.frame = NSRect(x: 0, y: 102, width: 120, height: 20)
+        accessoryView.addSubview(bsLabel)
+
+        let bsPopup = NSPopUpButton(frame: NSRect(x: 130, y: 100, width: 140, height: 24))
+        bsPopup.addItem(withTitle: "BS (0x08)")
+        bsPopup.addItem(withTitle: "DEL (0x7F)")
+        bsPopup.selectItem(at: settings.bsKey == 8 ? 0 : 1)
+        accessoryView.addSubview(bsPopup)
+
+        // ── Delete Key ──
+        let delLabel = NSTextField(labelWithString: L("dialog.keyboardSetup.deleteKey"))
+        delLabel.frame = NSRect(x: 0, y: 68, width: 120, height: 20)
+        accessoryView.addSubview(delLabel)
+
+        let delPopup = NSPopUpButton(frame: NSRect(x: 130, y: 66, width: 140, height: 24))
+        delPopup.addItem(withTitle: "DEL (0x7F)")
+        delPopup.addItem(withTitle: "BS (0x08)")
+        delPopup.addItem(withTitle: L("dialog.keyboardSetup.deleteEscSeq"))
+        delPopup.selectItem(at: settings.deleteKey == 127 ? 0 : (settings.deleteKey == 8 ? 1 : 2))
+        accessoryView.addSubview(delPopup)
+
+        // ── Meta Key ──
+        let metaLabel = NSTextField(labelWithString: L("dialog.keyboardSetup.metaKey"))
+        metaLabel.frame = NSRect(x: 0, y: 34, width: 120, height: 20)
+        accessoryView.addSubview(metaLabel)
+
+        let metaPopup = NSPopUpButton(frame: NSRect(x: 130, y: 32, width: 140, height: 24))
+        metaPopup.addItem(withTitle: L("dialog.keyboardSetup.metaOff"))
+        metaPopup.addItem(withTitle: L("dialog.keyboardSetup.metaOn"))
+        metaPopup.selectItem(at: settings.metaKey)
+        accessoryView.addSubview(metaPopup)
+
+        // ── Answerback ──
+        let ansLabel = NSTextField(labelWithString: L("dialog.keyboardSetup.answerback"))
+        ansLabel.frame = NSRect(x: 0, y: 2, width: 120, height: 20)
+        accessoryView.addSubview(ansLabel)
+
+        let ansField = NSTextField(frame: NSRect(x: 130, y: 0, width: 200, height: 24))
+        ansField.stringValue = settings.answerback
+        ansField.placeholderString = L("dialog.keyboardSetup.answerbackPlaceholder")
+        accessoryView.addSubview(ansField)
+
+        alert.accessoryView = accessoryView
+        alert.addButton(withTitle: L("dialog.keyboardSetup.ok"))
+        alert.addButton(withTitle: L("dialog.keyboardSetup.cancel"))
+
+        if alert.runModal() == .alertFirstButtonReturn {
+            settings.bsKey = bsPopup.indexOfSelectedItem == 0 ? 8 : 127
+            switch delPopup.indexOfSelectedItem {
+            case 0: settings.deleteKey = 127
+            case 1: settings.deleteKey = 8
+            default: settings.deleteKey = 0  // escape sequence
+            }
+            settings.metaKey = metaPopup.indexOfSelectedItem
+            settings.answerback = ansField.stringValue
+
+            if let wc = activeWindowController {
+                wc.terminalView.settings = settings
             }
         }
     }

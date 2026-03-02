@@ -635,13 +635,19 @@ class TerminalView: NSView {
             let mods = mouseModifiers(event)
             terminalDelegate?.terminalViewDidReceiveMouseEvent(button: 2, x: pos.x, y: pos.y, isRelease: false, modifiers: mods)
         } else {
-            // Show context menu
+            // Show context menu with SF Symbols
             let menu = NSMenu()
-            menu.addItem(withTitle: L("contextMenu.copy"), action: #selector(copyText(_:)), keyEquivalent: "c")
-            menu.addItem(withTitle: L("contextMenu.paste"), action: #selector(pasteText(_:)), keyEquivalent: "v")
+            let copyItem = menu.addItem(withTitle: L("contextMenu.copy"), action: #selector(copyText(_:)), keyEquivalent: "c")
+            let pasteItem = menu.addItem(withTitle: L("contextMenu.paste"), action: #selector(pasteText(_:)), keyEquivalent: "v")
             menu.addItem(NSMenuItem.separator())
-            menu.addItem(withTitle: L("contextMenu.selectAll"), action: #selector(selectAllText(_:)), keyEquivalent: "a")
-            menu.addItem(withTitle: L("contextMenu.clearBuffer"), action: #selector(clearBuffer(_:)), keyEquivalent: "")
+            let selItem = menu.addItem(withTitle: L("contextMenu.selectAll"), action: #selector(selectAllText(_:)), keyEquivalent: "a")
+            let clrItem = menu.addItem(withTitle: L("contextMenu.clearBuffer"), action: #selector(clearBuffer(_:)), keyEquivalent: "")
+            if #available(macOS 11.0, *) {
+                copyItem.image = NSImage(systemSymbolName: "doc.on.doc", accessibilityDescription: nil)
+                pasteItem.image = NSImage(systemSymbolName: "doc.on.clipboard", accessibilityDescription: nil)
+                selItem.image = NSImage(systemSymbolName: "selection.pin.in.out", accessibilityDescription: nil)
+                clrItem.image = NSImage(systemSymbolName: "trash", accessibilityDescription: nil)
+            }
             NSMenu.popUpContextMenu(menu, with: event, for: self)
         }
     }
