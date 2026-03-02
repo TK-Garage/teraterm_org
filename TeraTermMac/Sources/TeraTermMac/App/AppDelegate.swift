@@ -34,9 +34,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // Build main menu
         buildMainMenu()
 
-        // Open first terminal window with local shell
+        // Open first terminal window (disconnected)
         let wc = newTerminalWindow()
-        wc.connectLocalShell()
+
+        // Show connection dialog so user can choose where to connect
+        showConnectionDialog(for: wc)
     }
 
     func applicationWillTerminate(_ notification: Notification) {
@@ -220,12 +222,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc func newConnection(_ sender: Any?) {
-        showConnectionDialog()
+        showConnectionDialog(for: activeWindowController)
     }
 
     @objc func newWindow(_ sender: Any?) {
         let wc = newTerminalWindow()
-        wc.connectLocalShell()
+        showConnectionDialog(for: wc)
     }
 
     @objc func duplicateSession(_ sender: Any?) {
@@ -347,12 +349,23 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     // MARK: - Dialogs (port of ttpdlg)
 
-    private func showConnectionDialog() {
+    private func showConnectionDialog(for targetWC: TerminalWindowController? = nil) {
         let alert = NSAlert()
         alert.messageText = L("dialog.connection.title")
         alert.informativeText = L("dialog.connection.message")
 
-        let accessoryView = NSView(frame: NSRect(x: 0, y: 0, width: 300, height: 100))
+        let accessoryView = NSView(frame: NSRect(x: 0, y: 0, width: 300, height: 130))
+
+        // Connection type radio buttons (TCP/IP vs Local Shell)
+        let tcpRadio = NSButton(radioButtonWithTitle: L("dialog.connection.tcpip"), target: nil, action: nil)
+        tcpRadio.frame = NSRect(x: 0, y: 105, width: 120, height: 20)
+        tcpRadio.state = .on
+        accessoryView.addSubview(tcpRadio)
+
+        let shellRadio = NSButton(radioButtonWithTitle: L("dialog.connection.localShell"), target: nil, action: nil)
+        shellRadio.frame = NSRect(x: 130, y: 105, width: 160, height: 20)
+        shellRadio.state = .off
+        accessoryView.addSubview(shellRadio)
 
         let hostLabel = NSTextField(labelWithString: L("dialog.connection.host"))
         hostLabel.frame = NSRect(x: 0, y: 70, width: 60, height: 20)
@@ -372,21 +385,24 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         accessoryView.addSubview(portField)
 
         let telnetCheck = NSButton(checkboxWithTitle: L("dialog.connection.telnet"), target: nil, action: nil)
-        telnetCheck.frame = NSRect(x: 65, y: 10, width: 80, height: 20)
+        telnetCheck.frame = NSRect(x: 155, y: 40, width: 140, height: 20)
         telnetCheck.state = settings.telnet ? .on : .off
         accessoryView.addSubview(telnetCheck)
-
-        let localShellCheck = NSButton(checkboxWithTitle: L("dialog.connection.localShell"), target: nil, action: nil)
-        localShellCheck.frame = NSRect(x: 155, y: 10, width: 120, height: 20)
-        accessoryView.addSubview(localShellCheck)
 
         alert.accessoryView = accessoryView
         alert.addButton(withTitle: L("dialog.connection.connect"))
         alert.addButton(withTitle: L("dialog.connection.cancel"))
 
         if alert.runModal() == .alertFirstButtonReturn {
-            let wc = newTerminalWindow()
-            if localShellCheck.state == .on {
+            // Use existing window if provided, otherwise create new
+            let wc = targetWC ?? newTerminalWindow()
+
+            // Disconnect existing connection if any
+            if wc.connectionManager.state != .disconnected {
+                wc.disconnect()
+            }
+
+            if shellRadio.state == .on {
                 wc.connectLocalShell()
             } else {
                 let host = hostField.stringValue

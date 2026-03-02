@@ -62,6 +62,7 @@
 "dialog.connection.host" = "ホスト:";
 "dialog.connection.hostPlaceholder" = "ホスト名またはIPアドレス";
 "dialog.connection.port" = "ポート:";
+"dialog.connection.tcpip" = "TCP/IP";
 "dialog.connection.telnet" = "Telnet";
 "dialog.connection.localShell" = "ローカルシェル";
 "dialog.connection.connect" = "接続";
