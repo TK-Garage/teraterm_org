@@ -91,7 +91,9 @@ class TerminalView: NSView {
 
     private func commonInit() {
         wantsLayer = true
-        layer?.backgroundColor = NSColor.black.cgColor
+        // Use clear background so NSVisualEffectView glass effect shows through.
+        // The terminal background is drawn in draw() with configurable alpha.
+        layer?.backgroundColor = NSColor.clear.cgColor
 
         // Build 256-color palette
         build256ColorPalette()
@@ -377,11 +379,13 @@ class TerminalView: NSView {
 
     private var backgroundColor: NSColor {
         let c = modes.reverseVideo ? settings.colorTheme.foreground : settings.colorTheme.background
+        // Use reduced alpha so the NSVisualEffectView glass effect bleeds through
+        let glassAlpha = CGFloat(settings.windowAlpha) * 0.85
         return NSColor(
             red: CGFloat(c.r) / 255.0,
             green: CGFloat(c.g) / 255.0,
             blue: CGFloat(c.b) / 255.0,
-            alpha: CGFloat(settings.windowAlpha)
+            alpha: glassAlpha
         )
     }
 

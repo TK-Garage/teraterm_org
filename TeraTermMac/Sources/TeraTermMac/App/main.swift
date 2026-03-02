@@ -16,6 +16,9 @@ import AppKit
 let app = NSApplication.shared
 app.setActivationPolicy(.regular)
 
+// Use dark appearance for terminal aesthetics with glass effects
+app.appearance = NSAppearance(named: .darkAqua)
+
 let delegate = AppDelegate()
 app.delegate = delegate
 

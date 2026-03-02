@@ -47,13 +47,18 @@ class TerminalWindowController: NSWindowController {
         // Create a temporary window; real size set after font metrics are known
         let window = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 640, height: 400),
-            styleMask: [.titled, .closable, .miniaturizable, .resizable],
+            styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
             backing: .buffered,
             defer: false
         )
         window.title = settings.title
         window.minSize = NSSize(width: 200, height: 100)
         window.isReleasedWhenClosed = false
+
+        // Modern macOS appearance: glass titlebar integrated with content
+        window.titlebarAppearsTransparent = true
+        window.titleVisibility = .hidden
+        window.animationBehavior = .documentWindow
 
         super.init(window: window)
 
@@ -92,15 +97,24 @@ class TerminalWindowController: NSWindowController {
     private func setupTerminalView() {
         guard let window = window else { return }
 
-        // Place TerminalView directly as contentView (no NSScrollView wrapper).
+        // NSVisualEffectView provides macOS glass/vibrancy effect as the
+        // window backdrop. TerminalView draws on top with a semi-transparent
+        // background so the effect shows through.
+        let visualEffect = NSVisualEffectView(frame: NSRect(x: 0, y: 0, width: 640, height: 400))
+        visualEffect.autoresizingMask = [.width, .height]
+        visualEffect.material = .hudWindow
+        visualEffect.blendingMode = .behindWindow
+        visualEffect.state = .active
+        window.contentView = visualEffect
+
+        // Place TerminalView inside the visual effect view.
         // Scrollback is handled internally by TerminalBuffer / TerminalView.
-        terminalView = TerminalView(frame: NSRect(x: 0, y: 0, width: 640, height: 400))
+        terminalView = TerminalView(frame: visualEffect.bounds)
         terminalView.autoresizingMask = [.width, .height]
         terminalView.buffer = terminalEmulator.buffer
         terminalView.settings = settings
         terminalView.terminalDelegate = self
-
-        window.contentView = terminalView
+        visualEffect.addSubview(terminalView)
 
         // Now that the view is in a window, compute font metrics and resize
         terminalView.updateFont()
