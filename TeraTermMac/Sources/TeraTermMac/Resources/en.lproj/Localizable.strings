@@ -63,7 +63,9 @@
 "dialog.connection.hostPlaceholder" = "hostname or IP";
 "dialog.connection.port" = "Port:";
 "dialog.connection.tcpip" = "TCP/IP";
+"dialog.connection.tcpPort" = "TCP port#:";
 "dialog.connection.telnet" = "Telnet";
+"dialog.connection.serial" = "Serial";
 "dialog.connection.localShell" = "Local Shell";
 "dialog.connection.connect" = "Connect";
 "dialog.connection.cancel" = "Cancel";

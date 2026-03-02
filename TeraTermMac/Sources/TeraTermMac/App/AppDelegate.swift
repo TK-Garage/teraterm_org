@@ -20,6 +20,19 @@ private func L(_ key: String) -> String {
     #endif
 }
 
+// MARK: - Connection Dialog Helper (radio button group controller)
+
+private class ConnectionDialogHelper: NSObject {
+    var tcpControls: [NSControl] = []
+    var serialControls: [NSControl] = []
+
+    @objc func connectionTypeChanged(_ sender: NSButton) {
+        let isTCP = sender.tag == 0
+        for ctrl in tcpControls { ctrl.isEnabled = isTCP }
+        for ctrl in serialControls { ctrl.isEnabled = !isTCP }
+    }
+}
+
 class AppDelegate: NSObject, NSApplicationDelegate {
     // Window controllers
     private var windowControllers: [TerminalWindowController] = []
@@ -354,46 +367,96 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         alert.messageText = L("dialog.connection.title")
         alert.informativeText = L("dialog.connection.message")
 
-        let accessoryView = NSView(frame: NSRect(x: 0, y: 0, width: 300, height: 130))
+        // Helper retains target/action for radio button group
+        let helper = ConnectionDialogHelper()
+        objc_setAssociatedObject(alert, "helper", helper, .OBJC_ASSOCIATION_RETAIN)
 
-        // Connection type radio buttons (TCP/IP vs Local Shell)
-        let tcpRadio = NSButton(radioButtonWithTitle: L("dialog.connection.tcpip"), target: nil, action: nil)
-        tcpRadio.frame = NSRect(x: 0, y: 105, width: 120, height: 20)
+        let accessoryView = NSView(frame: NSRect(x: 0, y: 0, width: 380, height: 230))
+
+        // ── TCP/IP Section ──
+        let tcpRadio = NSButton(radioButtonWithTitle: L("dialog.connection.tcpip"),
+                                target: helper, action: #selector(ConnectionDialogHelper.connectionTypeChanged(_:)))
+        tcpRadio.frame = NSRect(x: 0, y: 205, width: 150, height: 20)
+        tcpRadio.tag = 0
         tcpRadio.state = .on
         accessoryView.addSubview(tcpRadio)
 
-        let shellRadio = NSButton(radioButtonWithTitle: L("dialog.connection.localShell"), target: nil, action: nil)
-        shellRadio.frame = NSRect(x: 130, y: 105, width: 160, height: 20)
-        shellRadio.state = .off
-        accessoryView.addSubview(shellRadio)
-
         let hostLabel = NSTextField(labelWithString: L("dialog.connection.host"))
-        hostLabel.frame = NSRect(x: 0, y: 70, width: 60, height: 20)
+        hostLabel.frame = NSRect(x: 20, y: 175, width: 80, height: 20)
         accessoryView.addSubview(hostLabel)
 
-        let hostField = NSTextField(frame: NSRect(x: 65, y: 70, width: 230, height: 24))
+        let hostField = NSTextField(frame: NSRect(x: 105, y: 173, width: 265, height: 24))
         hostField.stringValue = settings.hostname
         hostField.placeholderString = L("dialog.connection.hostPlaceholder")
         accessoryView.addSubview(hostField)
 
-        let portLabel = NSTextField(labelWithString: L("dialog.connection.port"))
-        portLabel.frame = NSRect(x: 0, y: 40, width: 60, height: 20)
-        accessoryView.addSubview(portLabel)
+        let tcpPortLabel = NSTextField(labelWithString: L("dialog.connection.tcpPort"))
+        tcpPortLabel.frame = NSRect(x: 20, y: 143, width: 80, height: 20)
+        accessoryView.addSubview(tcpPortLabel)
 
-        let portField = NSTextField(frame: NSRect(x: 65, y: 40, width: 80, height: 24))
-        portField.integerValue = settings.defaultPort
-        accessoryView.addSubview(portField)
+        let tcpPortField = NSTextField(frame: NSRect(x: 105, y: 141, width: 80, height: 24))
+        tcpPortField.integerValue = settings.defaultPort
+        accessoryView.addSubview(tcpPortField)
 
         let telnetCheck = NSButton(checkboxWithTitle: L("dialog.connection.telnet"), target: nil, action: nil)
-        telnetCheck.frame = NSRect(x: 155, y: 40, width: 140, height: 20)
+        telnetCheck.frame = NSRect(x: 195, y: 143, width: 100, height: 20)
         telnetCheck.state = settings.telnet ? .on : .off
         accessoryView.addSubview(telnetCheck)
+
+        helper.tcpControls = [hostLabel, hostField, tcpPortLabel, tcpPortField, telnetCheck]
+
+        // ── Separator ──
+        let separator = NSBox(frame: NSRect(x: 0, y: 118, width: 380, height: 1))
+        separator.boxType = .separator
+        accessoryView.addSubview(separator)
+
+        // ── Serial Section ──
+        let serialRadio = NSButton(radioButtonWithTitle: L("dialog.connection.serial"),
+                                   target: helper, action: #selector(ConnectionDialogHelper.connectionTypeChanged(_:)))
+        serialRadio.frame = NSRect(x: 0, y: 90, width: 150, height: 20)
+        serialRadio.tag = 1
+        serialRadio.state = .off
+        accessoryView.addSubview(serialRadio)
+
+        let serialPortLabel = NSTextField(labelWithString: L("dialog.serialPort.port"))
+        serialPortLabel.frame = NSRect(x: 20, y: 60, width: 80, height: 20)
+        serialPortLabel.isEnabled = false
+        accessoryView.addSubview(serialPortLabel)
+
+        let serialPortPopup = NSPopUpButton(frame: NSRect(x: 105, y: 58, width: 265, height: 24))
+        let serialPorts = findSerialPorts()
+        for port in serialPorts {
+            serialPortPopup.addItem(withTitle: port)
+        }
+        if serialPorts.isEmpty {
+            serialPortPopup.addItem(withTitle: L("dialog.serialPort.noPortsFound"))
+        }
+        serialPortPopup.isEnabled = false
+        accessoryView.addSubview(serialPortPopup)
+
+        let baudLabel = NSTextField(labelWithString: L("dialog.serialPort.baudRate"))
+        baudLabel.frame = NSRect(x: 20, y: 28, width: 80, height: 20)
+        baudLabel.isEnabled = false
+        accessoryView.addSubview(baudLabel)
+
+        let baudPopup = NSPopUpButton(frame: NSRect(x: 105, y: 26, width: 120, height: 24))
+        for rate in [9600, 19200, 38400, 57600, 115200, 230400] {
+            baudPopup.addItem(withTitle: "\(rate)")
+        }
+        baudPopup.selectItem(withTitle: "\(settings.baudRate)")
+        baudPopup.isEnabled = false
+        accessoryView.addSubview(baudPopup)
+
+        helper.serialControls = [serialPortLabel, serialPortPopup, baudLabel, baudPopup]
 
         alert.accessoryView = accessoryView
         alert.addButton(withTitle: L("dialog.connection.connect"))
         alert.addButton(withTitle: L("dialog.connection.cancel"))
+        alert.addButton(withTitle: L("dialog.connection.localShell"))
 
-        if alert.runModal() == .alertFirstButtonReturn {
+        let response = alert.runModal()
+
+        if response == .alertFirstButtonReturn || response == .alertThirdButtonReturn {
             // Use existing window if provided, otherwise create new
             let wc = targetWC ?? newTerminalWindow()
 
@@ -402,16 +465,23 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 wc.disconnect()
             }
 
-            if shellRadio.state == .on {
+            if response == .alertThirdButtonReturn {
+                // Local Shell button
                 wc.connectLocalShell()
+            } else if serialRadio.state == .on {
+                // Serial connection
+                if let port = serialPortPopup.selectedItem?.title, !port.starts(with: "(") {
+                    settings.serialPort = port
+                    settings.baudRate = Int(baudPopup.selectedItem?.title ?? "9600") ?? 9600
+                    wc.connectSerial(device: port)
+                }
             } else {
+                // TCP/IP connection
                 let host = hostField.stringValue
-                let port = portField.integerValue
+                let port = tcpPortField.integerValue
                 let telnet = telnetCheck.state == .on
                 if !host.isEmpty {
                     wc.connectTCP(host: host, port: port, telnet: telnet)
-                } else {
-                    wc.connectLocalShell()
                 }
             }
         }
