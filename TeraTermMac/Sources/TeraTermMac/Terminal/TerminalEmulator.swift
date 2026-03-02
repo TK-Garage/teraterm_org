@@ -52,6 +52,10 @@ class TerminalEmulator {
     // Charset reporting
     var sendCharSet: CharSetState = CharSetState()
 
+    // CR/LF receive state for AUTO mode (port of vtterm.c PrevCharacter/PrevCRorLFGeneratedCRLF)
+    private var prevControlChar: UInt8 = 0
+    private var prevCRorLFGeneratedCRLF: Bool = false
+
     init(settings: TerminalSettings) {
         self.settings = settings
         self.terminalID = settings.terminalID
@@ -501,15 +505,52 @@ extension TerminalEmulator: VTParserDelegate {
         buffer.tab()
     }
 
+    // Port of vtterm.c ProcessLF()
     func parserDidRequestLineFeed() {
-        buffer.lineFeed()
-        if modes.newLineMode {
+        switch settings.crReceive {
+        case .lf:
+            // CRReceive=LF: LF received → treat as CR+LF
             buffer.carriageReturn()
+            buffer.lineFeed()
+        case .auto_:
+            // AUTO mode: CR or LF generates CR+LF; consecutive CR+LF pair is deduplicated
+            if prevControlChar != 0x0D || !prevCRorLFGeneratedCRLF {
+                buffer.carriageReturn()
+                buffer.lineFeed()
+                prevCRorLFGeneratedCRLF = true
+            } else {
+                prevCRorLFGeneratedCRLF = false
+            }
+        default:
+            // CRReceive=CR or CRLF: standard VT100 behavior
+            buffer.lineFeed()
+            if modes.newLineMode {
+                buffer.carriageReturn()
+            }
         }
+        prevControlChar = 0x0A
     }
 
+    // Port of vtterm.c ProcessCR()
     func parserDidRequestCarriageReturn() {
-        buffer.carriageReturn()
+        switch settings.crReceive {
+        case .auto_:
+            // AUTO mode: CR or LF generates CR+LF; consecutive CR+LF pair is deduplicated
+            if prevControlChar != 0x0A || !prevCRorLFGeneratedCRLF {
+                buffer.carriageReturn()
+                buffer.lineFeed()
+                prevCRorLFGeneratedCRLF = true
+            } else {
+                prevCRorLFGeneratedCRLF = false
+            }
+        default:
+            buffer.carriageReturn()
+            if settings.crReceive == .crlf {
+                // CRReceive=CRLF: CR received → add LF
+                buffer.lineFeed()
+            }
+        }
+        prevControlChar = 0x0D
     }
 
     func parserDidRequestShiftOut() {

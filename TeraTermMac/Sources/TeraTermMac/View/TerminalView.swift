@@ -66,6 +66,9 @@ class TerminalView: NSView {
     // 256-color palette cache
     private var colorPalette: [NSColor] = []
 
+    // Content inset to avoid titlebar / window rounded corners
+    var topInset: CGFloat = 0
+
     // Scroll
     private var scrollbackOffset: Int = 0
 
@@ -149,8 +152,9 @@ class TerminalView: NSView {
     // MARK: - Size Calculation
 
     private func recalculateSize() {
+        let availableHeight = bounds.height - topInset
         let newCols = max(1, Int(bounds.width / cellWidth))
-        let newRows = max(1, Int(bounds.height / cellHeight))
+        let newRows = max(1, Int(availableHeight / cellHeight))
 
         if newCols != columns || newRows != rows {
             columns = newCols
@@ -164,7 +168,7 @@ class TerminalView: NSView {
     }
 
     func preferredSize(columns: Int, rows: Int) -> NSSize {
-        return NSSize(width: CGFloat(columns) * cellWidth, height: CGFloat(rows) * cellHeight)
+        return NSSize(width: CGFloat(columns) * cellWidth, height: CGFloat(rows) * cellHeight + topInset)
     }
 
     override func setFrameSize(_ newSize: NSSize) {
@@ -208,7 +212,7 @@ class TerminalView: NSView {
     }
 
     private func drawLine(context: CGContext, line: BufferLine, row: Int, buffer: TerminalBuffer) {
-        let y = CGFloat(row) * cellHeight
+        let y = topInset + CGFloat(row) * cellHeight
 
         for col in 0..<min(columns, line.cells.count) {
             let cell = line.cells[col]
@@ -322,7 +326,7 @@ class TerminalView: NSView {
 
     private func drawCursor(context: CGContext, buffer: TerminalBuffer) {
         let x = CGFloat(buffer.cursorX) * cellWidth
-        let y = CGFloat(buffer.cursorY) * cellHeight
+        let y = topInset + CGFloat(buffer.cursorY) * cellHeight
         let cursorColor = NSColor(
             red: CGFloat(settings.colorTheme.cursorColor.r) / 255.0,
             green: CGFloat(settings.colorTheme.cursorColor.g) / 255.0,
@@ -369,7 +373,7 @@ class TerminalView: NSView {
             let startCol = (row == sel.startY) ? sel.startX : 0
             let endCol = (row == sel.endY) ? sel.endX : columns
             let x = CGFloat(startCol) * cellWidth
-            let y = CGFloat(row) * cellHeight
+            let y = topInset + CGFloat(row) * cellHeight
             let w = CGFloat(endCol - startCol) * cellWidth
             context.fill(CGRect(x: x, y: y, width: w, height: cellHeight))
         }
@@ -529,7 +533,7 @@ class TerminalView: NSView {
     private var cursorRect: NSRect {
         guard let buffer = buffer else { return .zero }
         let x = CGFloat(buffer.cursorX) * cellWidth
-        let y = CGFloat(buffer.cursorY) * cellHeight
+        let y = topInset + CGFloat(buffer.cursorY) * cellHeight
         return NSRect(x: x, y: y, width: cellWidth, height: cellHeight)
     }
 
@@ -686,7 +690,7 @@ class TerminalView: NSView {
     private func cellPosition(for event: NSEvent) -> (x: Int, y: Int) {
         let point = convert(event.locationInWindow, from: nil)
         let x = max(0, min(Int(point.x / cellWidth), columns - 1))
-        let y = max(0, min(Int(point.y / cellHeight), rows - 1))
+        let y = max(0, min(Int((point.y - topInset) / cellHeight), rows - 1))
         return (x, y)
     }
 
@@ -860,7 +864,7 @@ extension TerminalView: NSTextInputClient {
     func firstRect(forCharacterRange range: NSRange, actualRange: NSRangePointer?) -> NSRect {
         guard let buffer = buffer else { return .zero }
         let x = CGFloat(buffer.cursorX) * cellWidth
-        let y = CGFloat(buffer.cursorY) * cellHeight
+        let y = topInset + CGFloat(buffer.cursorY) * cellHeight
         let screenRect = window?.convertToScreen(convert(CGRect(x: x, y: y, width: cellWidth, height: cellHeight), to: nil)) ?? .zero
         return screenRect
     }

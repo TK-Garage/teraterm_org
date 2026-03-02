@@ -116,6 +116,11 @@ class TerminalWindowController: NSWindowController {
         terminalView.terminalDelegate = self
         visualEffect.addSubview(terminalView)
 
+        // Account for titlebar height so the first line is not hidden
+        // behind the transparent titlebar / window rounded corners.
+        let titlebarHeight = window.frame.height - window.contentLayoutRect.height
+        terminalView.topInset = titlebarHeight
+
         // Now that the view is in a window, compute font metrics and resize
         terminalView.updateFont()
         let preferredSize = terminalView.preferredSize(

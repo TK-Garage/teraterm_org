@@ -271,7 +271,7 @@ class TerminalSettings: Codable {
 
     // New line
     var crSend: NewLineMode = .cr
-    var crReceive: NewLineMode = .cr
+    var crReceive: NewLineMode = .auto_
 
     // Cursor
     var cursorShape: CursorShape = .block
