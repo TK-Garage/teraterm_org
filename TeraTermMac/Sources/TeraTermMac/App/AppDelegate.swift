@@ -224,15 +224,20 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         let copyItem = editMenu.addItem(withTitle: L("menu.edit.copy"), action: #selector(NSText.copy(_:)), keyEquivalent: "c")
         setSymbol("doc.on.doc", for: copyItem)
+        let copyTableItem = editMenu.addItem(withTitle: L("menu.edit.copyAsTable"), action: #selector(copyAsTable(_:)), keyEquivalent: "")
+        setSymbol("tablecells", for: copyTableItem)
         let pasteItem = editMenu.addItem(withTitle: L("menu.edit.paste"), action: #selector(NSText.paste(_:)), keyEquivalent: "v")
         setSymbol("doc.on.clipboard", for: pasteItem)
-        let selAllItem = editMenu.addItem(withTitle: L("menu.edit.selectAll"), action: #selector(NSText.selectAll(_:)), keyEquivalent: "a")
-        setSymbol("selection.pin.in.out", for: selAllItem)
+        let pasteSpecialItem = editMenu.addItem(withTitle: L("menu.edit.pasteSpecial"), action: #selector(pasteSpecial(_:)), keyEquivalent: "")
+        setSymbol("doc.on.clipboard.fill", for: pasteSpecialItem)
         editMenu.addItem(NSMenuItem.separator())
         let clsItem = editMenu.addItem(withTitle: L("menu.edit.clearScreen"), action: #selector(clearScreen(_:)), keyEquivalent: "")
         setSymbol("rectangle.slash", for: clsItem)
-        let clbItem = editMenu.addItem(withTitle: L("menu.edit.clearBuffer"), action: #selector(clearBuffer(_:)), keyEquivalent: "k")
+        let clbItem = editMenu.addItem(withTitle: L("menu.edit.clearBuffer"), action: #selector(clearBuffer(_:)), keyEquivalent: "")
         setSymbol("trash", for: clbItem)
+        editMenu.addItem(NSMenuItem.separator())
+        let selAllItem = editMenu.addItem(withTitle: L("menu.edit.selectAll"), action: #selector(NSText.selectAll(_:)), keyEquivalent: "a")
+        setSymbol("selection.pin.in.out", for: selAllItem)
 
         // Setup menu
         let setupMenuItem = NSMenuItem()
@@ -363,6 +368,50 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc func doDisconnect(_ sender: Any?) {
         activeWindowController?.disconnect()
+    }
+
+    @objc func copyAsTable(_ sender: Any?) {
+        activeWindowController?.copyAsTable()
+    }
+
+    @objc func pasteSpecial(_ sender: Any?) {
+        guard let wc = activeWindowController, let win = wc.window else { return }
+
+        let alert = NSAlert()
+        alert.messageText = L("dialog.pasteSpecial.title")
+        alert.informativeText = L("dialog.pasteSpecial.message")
+
+        let accessoryView = NSView(frame: NSRect(x: 0, y: 0, width: 300, height: 80))
+
+        let textView = NSTextView(frame: NSRect(x: 0, y: 0, width: 300, height: 80))
+        textView.isEditable = true
+        textView.isRichText = false
+        textView.font = NSFont.monospacedSystemFont(ofSize: 12, weight: .regular)
+        textView.isVerticallyResizable = false
+        textView.isHorizontallyResizable = false
+        textView.textContainer?.widthTracksTextView = true
+
+        let scrollView = NSScrollView(frame: NSRect(x: 0, y: 0, width: 300, height: 80))
+        scrollView.documentView = textView
+        scrollView.hasVerticalScroller = true
+        scrollView.borderType = .bezelBorder
+        accessoryView.addSubview(scrollView)
+
+        // Pre-fill from clipboard
+        if let clipText = NSPasteboard.general.string(forType: .string) {
+            textView.string = clipText
+        }
+
+        alert.accessoryView = accessoryView
+        alert.addButton(withTitle: L("dialog.pasteSpecial.send"))
+        alert.addButton(withTitle: L("Cancel"))
+
+        alert.beginSheetModal(for: win) { response in
+            guard response == .alertFirstButtonReturn else { return }
+            let text = textView.string
+            guard !text.isEmpty else { return }
+            wc.connectionManager.send(Data(text.utf8))
+        }
     }
 
     @objc func clearScreen(_ sender: Any?) {

@@ -26,10 +26,12 @@
 /* Edit Menu */
 "menu.edit" = "Edit";
 "menu.edit.copy" = "Copy";
+"menu.edit.copyAsTable" = "Copy as Table";
 "menu.edit.paste" = "Paste";
-"menu.edit.selectAll" = "Select All";
+"menu.edit.pasteSpecial" = "Paste Special…";
 "menu.edit.clearScreen" = "Clear Screen";
 "menu.edit.clearBuffer" = "Clear Buffer";
+"menu.edit.selectAll" = "Select All";
 
 /* Setup Menu */
 "menu.setup" = "Setup";
@@ -174,6 +176,11 @@
 "OK" = "OK";
 "Cancel" = "Cancel";
 "Help" = "Help";
+
+/* Paste Special Dialog */
+"dialog.pasteSpecial.title" = "Paste Special";
+"dialog.pasteSpecial.message" = "Edit text before sending to terminal:";
+"dialog.pasteSpecial.send" = "Send";
 
 /* Macro Dialog */
 "dialog.macro.title" = "Run Macro";

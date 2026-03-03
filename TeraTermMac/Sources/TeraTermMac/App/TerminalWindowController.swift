@@ -251,6 +251,22 @@ class TerminalWindowController: NSWindowController {
         terminalView.refresh()
     }
 
+    func copyAsTable() {
+        guard let text = terminalEmulator.buffer.getSelectedText() else { return }
+        // Convert whitespace runs (2+ spaces) into tabs for spreadsheet pasting
+        var result = ""
+        for line in text.components(separatedBy: "\n") {
+            let tabbed = line.replacingOccurrences(
+                of: " {2,}", with: "\t",
+                options: .regularExpression)
+            if !result.isEmpty { result += "\n" }
+            result += tabbed
+        }
+        let pb = NSPasteboard.general
+        pb.clearContents()
+        pb.setString(result, forType: .string)
+    }
+
     func resetPort() {
         connectionManager.resetPort()
         updateWindowTitle()

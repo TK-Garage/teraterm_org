@@ -26,10 +26,12 @@
 /* Edit Menu */
 "menu.edit" = "編集";
 "menu.edit.copy" = "コピー";
+"menu.edit.copyAsTable" = "表としてコピー";
 "menu.edit.paste" = "ペースト";
-"menu.edit.selectAll" = "すべてを選択";
+"menu.edit.pasteSpecial" = "特殊貼り付け…";
 "menu.edit.clearScreen" = "画面クリア";
 "menu.edit.clearBuffer" = "バッファクリア";
+"menu.edit.selectAll" = "すべてを選択";
 
 /* Setup Menu */
 "menu.setup" = "設定";
@@ -174,6 +176,11 @@
 "OK" = "OK";
 "Cancel" = "キャンセル";
 "Help" = "ヘルプ";
+
+/* Paste Special Dialog */
+"dialog.pasteSpecial.title" = "特殊貼り付け";
+"dialog.pasteSpecial.message" = "端末に送信する前にテキストを編集できます:";
+"dialog.pasteSpecial.send" = "送信";
 
 /* Macro Dialog */
 "dialog.macro.title" = "マクロ実行";
