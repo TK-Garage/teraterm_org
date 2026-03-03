@@ -43,6 +43,18 @@
 "menu.setup.saveSetup" = "Save Setup…";
 "menu.setup.restoreSetup" = "Restore Setup…";
 
+/* Code Menu (Encoding) */
+"menu.code" = "Code";
+"menu.code.both" = "Send && Receive";
+"menu.code.receive" = "Receive";
+"menu.code.send" = "Send";
+"menu.code.group.unicode" = "— Unicode —";
+"menu.code.group.japanese" = "— Japanese —";
+"menu.code.group.chinese" = "— Chinese —";
+"menu.code.group.korean" = "— Korean —";
+"menu.code.group.western" = "— Western —";
+"menu.code.group.dosWindows" = "— DOS / Windows —";
+
 /* Control Menu */
 "menu.control" = "Control";
 "menu.control.resetTerminal" = "Reset Terminal";

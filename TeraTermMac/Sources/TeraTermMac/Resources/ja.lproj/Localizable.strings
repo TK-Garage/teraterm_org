@@ -43,6 +43,18 @@
 "menu.setup.saveSetup" = "設定の保存…";
 "menu.setup.restoreSetup" = "設定の復元…";
 
+/* Code Menu (Encoding) */
+"menu.code" = "コード";
+"menu.code.both" = "送受信";
+"menu.code.receive" = "受信";
+"menu.code.send" = "送信";
+"menu.code.group.unicode" = "— Unicode —";
+"menu.code.group.japanese" = "— 日本語 —";
+"menu.code.group.chinese" = "— 中国語 —";
+"menu.code.group.korean" = "— 韓国語 —";
+"menu.code.group.western" = "— 欧文 —";
+"menu.code.group.dosWindows" = "— DOS / Windows —";
+
 /* Control Menu */
 "menu.control" = "制御";
 "menu.control.resetTerminal" = "端末リセット";

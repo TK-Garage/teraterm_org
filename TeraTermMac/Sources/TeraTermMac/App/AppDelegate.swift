@@ -261,6 +261,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let restoreItem = setupMenu.addItem(withTitle: L("menu.setup.restoreSetup"), action: #selector(restoreSetup(_:)), keyEquivalent: "")
         setSymbol("square.and.arrow.up", for: restoreItem)
 
+        // Code menu (encoding selection)
+        let codeMenuItem = NSMenuItem()
+        mainMenu.addItem(codeMenuItem)
+        let codeMenu = NSMenu(title: L("menu.code"))
+        codeMenuItem.submenu = codeMenu
+        buildCodeMenu(codeMenu)
+
         // Control menu
         let controlMenuItem = NSMenuItem()
         mainMenu.addItem(controlMenuItem)
@@ -597,6 +604,88 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
+    // MARK: - Code Menu (Encoding)
+
+    /// Tag encoding: direction in upper bits, CharacterEncoding rawValue in lower bits.
+    /// direction: 0 = both, 1 = receive only, 2 = send only
+    private static let encodingTagShift = 8
+
+    private func buildCodeMenu(_ menu: NSMenu) {
+        // "Send & Receive" submenu (changes both)
+        let bothItem = NSMenuItem(title: L("menu.code.both"), action: nil, keyEquivalent: "")
+        setSymbol("arrow.left.arrow.right", for: bothItem)
+        bothItem.submenu = makeEncodingSubmenu(direction: 0)
+        menu.addItem(bothItem)
+
+        // "Receive" submenu
+        let recvItem = NSMenuItem(title: L("menu.code.receive"), action: nil, keyEquivalent: "")
+        setSymbol("arrow.down.circle", for: recvItem)
+        recvItem.submenu = makeEncodingSubmenu(direction: 1)
+        menu.addItem(recvItem)
+
+        // "Send" submenu
+        let sendItem = NSMenuItem(title: L("menu.code.send"), action: nil, keyEquivalent: "")
+        setSymbol("arrow.up.circle", for: sendItem)
+        sendItem.submenu = makeEncodingSubmenu(direction: 2)
+        menu.addItem(sendItem)
+    }
+
+    private func makeEncodingSubmenu(direction: Int) -> NSMenu {
+        let menu = NSMenu()
+
+        let groupOrder: [CharacterEncoding.Group] = [
+            .unicode, .japanese, .chinese, .korean, .western, .dosWindows
+        ]
+        let groupNames: [CharacterEncoding.Group: String] = [
+            .unicode:    L("menu.code.group.unicode"),
+            .japanese:   L("menu.code.group.japanese"),
+            .chinese:    L("menu.code.group.chinese"),
+            .korean:     L("menu.code.group.korean"),
+            .western:    L("menu.code.group.western"),
+            .dosWindows: L("menu.code.group.dosWindows"),
+        ]
+
+        for (index, group) in groupOrder.enumerated() {
+            if index > 0 { menu.addItem(NSMenuItem.separator()) }
+
+            let headerItem = NSMenuItem(title: groupNames[group] ?? "", action: nil, keyEquivalent: "")
+            headerItem.isEnabled = false
+            menu.addItem(headerItem)
+
+            for enc in CharacterEncoding.encodings(in: group) {
+                let item = NSMenuItem(
+                    title: enc.displayName,
+                    action: #selector(changeEncoding(_:)),
+                    keyEquivalent: "")
+                item.tag = (direction << AppDelegate.encodingTagShift) | enc.rawValue
+                menu.addItem(item)
+            }
+        }
+
+        return menu
+    }
+
+    @objc func changeEncoding(_ sender: NSMenuItem) {
+        let direction = sender.tag >> AppDelegate.encodingTagShift
+        let rawValue = sender.tag & ((1 << AppDelegate.encodingTagShift) - 1)
+        guard let encoding = CharacterEncoding(rawValue: rawValue) else { return }
+
+        switch direction {
+        case 0: // both
+            settings.encoding = encoding
+            settings.sendEncoding = encoding
+        case 1: // receive
+            settings.encoding = encoding
+        case 2: // send
+            settings.sendEncoding = encoding
+        default:
+            break
+        }
+
+        // Apply to active window
+        activeWindowController?.terminalView.settings = settings
+    }
+
     // MARK: - Menu Validation
 
     override func validateMenuItem(_ menuItem: NSMenuItem) -> Bool {
@@ -616,6 +705,22 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         case #selector(toggleBroadcast(_:)):
             // Update checkmark state
             menuItem.state = (broadcastPanel?.isVisible == true) ? .on : .off
+            return true
+        case #selector(changeEncoding(_:)):
+            // Checkmark the currently active encoding
+            let direction = menuItem.tag >> AppDelegate.encodingTagShift
+            let rawValue = menuItem.tag & ((1 << AppDelegate.encodingTagShift) - 1)
+            guard let encoding = CharacterEncoding(rawValue: rawValue) else { return false }
+            switch direction {
+            case 0:
+                menuItem.state = (settings.encoding == encoding && settings.sendEncoding == encoding) ? .on : .off
+            case 1:
+                menuItem.state = (settings.encoding == encoding) ? .on : .off
+            case 2:
+                menuItem.state = (settings.sendEncoding == encoding) ? .on : .off
+            default:
+                break
+            }
             return true
         default:
             return super.validateMenuItem(menuItem)

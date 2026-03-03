@@ -53,59 +53,138 @@ enum TerminalID: Int, Codable, CaseIterable {
 // MARK: - Character Encoding (port of tttypes_charset.h)
 
 enum CharacterEncoding: Int, Codable, CaseIterable {
+    // Unicode
     case utf8 = 1
+    case utf16 = 30
+    case utf16be = 31
+    case utf16le = 32
+    case utf32 = 33
+    case utf32be = 34
+    case utf32le = 35
+
+    // Japanese
     case sjis = 2
     case eucjp = 3
-    case jis = 4
+    case jis = 4       // ISO-2022-JP
+
+    // Chinese
+    case gb2312 = 21
+    case gbk = 36
+    case big5 = 22
+    case big5hkscs = 37
+
+    // Korean
+    case eucKR = 20
+
+    // Western / ISO 8859
     case iso8859_1 = 5
     case iso8859_2 = 6
     case iso8859_3 = 7
     case iso8859_4 = 8
-    case iso8859_5 = 9
-    case iso8859_6 = 10
-    case iso8859_7 = 11
-    case iso8859_8 = 12
+    case iso8859_5 = 9      // Cyrillic
+    case iso8859_6 = 10     // Arabic
+    case iso8859_7 = 11     // Greek
+    case iso8859_8 = 12     // Hebrew
     case iso8859_9 = 13
     case iso8859_10 = 14
-    case iso8859_11 = 15
+    case iso8859_11 = 15    // Thai (TIS-620)
     case iso8859_13 = 16
     case iso8859_14 = 17
     case iso8859_15 = 18
     case iso8859_16 = 19
-    case cp949 = 20     // Korean
-    case gb2312 = 21    // Chinese Simplified
-    case big5 = 22      // Chinese Traditional
-    case cp866 = 23     // Russian DOS
-    case cp1251 = 24    // Russian Windows
-    case koi8r = 25     // Russian KOI8-R
+
+    // DOS / Windows
+    case cp437 = 38         // DOS Latin US
+    case cp932 = 39         // DOS Japanese (≒ Shift_JIS superset)
+    case cp1252 = 40        // Windows Latin 1
+    case cp1251 = 24        // Windows Cyrillic
+    case cp1253 = 41        // Windows Greek
+    case cp1255 = 42        // Windows Hebrew
+    case cp1256 = 43        // Windows Arabic
+    case cp866 = 23         // DOS Russian
+    case koi8r = 25
+
+    // Encoding group for menu display
+    enum Group: CaseIterable {
+        case unicode
+        case japanese
+        case chinese
+        case korean
+        case western
+        case dosWindows
+    }
+
+    var group: Group {
+        switch self {
+        case .utf8, .utf16, .utf16be, .utf16le, .utf32, .utf32be, .utf32le:
+            return .unicode
+        case .sjis, .eucjp, .jis:
+            return .japanese
+        case .gb2312, .gbk, .big5, .big5hkscs:
+            return .chinese
+        case .eucKR:
+            return .korean
+        case .iso8859_1, .iso8859_2, .iso8859_3, .iso8859_4, .iso8859_5,
+             .iso8859_6, .iso8859_7, .iso8859_8, .iso8859_9, .iso8859_10,
+             .iso8859_11, .iso8859_13, .iso8859_14, .iso8859_15, .iso8859_16:
+            return .western
+        case .cp437, .cp932, .cp1252, .cp1251, .cp1253, .cp1255, .cp1256,
+             .cp866, .koi8r:
+            return .dosWindows
+        }
+    }
+
+    static func encodings(in group: Group) -> [CharacterEncoding] {
+        allCases.filter { $0.group == group }
+    }
 
     var displayName: String {
         switch self {
-        case .utf8: return "UTF-8"
-        case .sjis: return "Shift_JIS"
-        case .eucjp: return "EUC-JP"
-        case .jis: return "JIS"
-        case .iso8859_1: return "ISO 8859-1 (Latin-1)"
-        case .iso8859_2: return "ISO 8859-2 (Latin-2)"
-        case .iso8859_3: return "ISO 8859-3 (Latin-3)"
-        case .iso8859_4: return "ISO 8859-4 (Latin-4)"
-        case .iso8859_5: return "ISO 8859-5 (Cyrillic)"
-        case .iso8859_6: return "ISO 8859-6 (Arabic)"
-        case .iso8859_7: return "ISO 8859-7 (Greek)"
-        case .iso8859_8: return "ISO 8859-8 (Hebrew)"
-        case .iso8859_9: return "ISO 8859-9 (Latin-5)"
+        // Unicode
+        case .utf8:       return "Unicode (UTF-8)"
+        case .utf16:      return "Unicode (UTF-16)"
+        case .utf16be:    return "Unicode (UTF-16BE)"
+        case .utf16le:    return "Unicode (UTF-16LE)"
+        case .utf32:      return "Unicode (UTF-32)"
+        case .utf32be:    return "Unicode (UTF-32BE)"
+        case .utf32le:    return "Unicode (UTF-32LE)"
+        // Japanese
+        case .sjis:       return "Japanese (Shift JIS)"
+        case .eucjp:      return "Japanese (EUC-JP)"
+        case .jis:        return "Japanese (ISO-2022-JP)"
+        // Chinese
+        case .gb2312:     return "Chinese Simplified (GB2312)"
+        case .gbk:        return "Chinese Simplified (GBK)"
+        case .big5:       return "Chinese Traditional (Big5)"
+        case .big5hkscs:  return "Chinese Traditional (Big5-HKSCS)"
+        // Korean
+        case .eucKR:      return "Korean (EUC-KR)"
+        // Western
+        case .iso8859_1:  return "Western (ISO Latin 1)"
+        case .iso8859_2:  return "Central European (ISO Latin 2)"
+        case .iso8859_3:  return "ISO 8859-3 (Latin-3)"
+        case .iso8859_4:  return "ISO 8859-4 (Latin-4)"
+        case .iso8859_5:  return "Cyrillic (ISO 8859-5)"
+        case .iso8859_6:  return "Arabic (ISO 8859-6)"
+        case .iso8859_7:  return "Greek (ISO 8859-7)"
+        case .iso8859_8:  return "Hebrew (ISO 8859-8)"
+        case .iso8859_9:  return "ISO 8859-9 (Latin-5)"
         case .iso8859_10: return "ISO 8859-10 (Latin-6)"
-        case .iso8859_11: return "ISO 8859-11 (Thai)"
+        case .iso8859_11: return "Thai (TIS-620)"
         case .iso8859_13: return "ISO 8859-13 (Latin-7)"
         case .iso8859_14: return "ISO 8859-14 (Latin-8)"
         case .iso8859_15: return "ISO 8859-15 (Latin-9)"
         case .iso8859_16: return "ISO 8859-16 (Latin-10)"
-        case .cp949: return "CP949 (Korean)"
-        case .gb2312: return "GB2312 (Chinese Simplified)"
-        case .big5: return "Big5 (Chinese Traditional)"
-        case .cp866: return "CP866 (Russian DOS)"
-        case .cp1251: return "CP1251 (Russian Windows)"
-        case .koi8r: return "KOI8-R (Russian)"
+        // DOS / Windows
+        case .cp437:      return "DOS Latin US"
+        case .cp932:      return "DOS Japanese"
+        case .cp1252:     return "Windows Latin 1"
+        case .cp1251:     return "Windows Cyrillic"
+        case .cp1253:     return "Windows Greek"
+        case .cp1255:     return "Windows Hebrew"
+        case .cp1256:     return "Windows Arabic"
+        case .cp866:      return "DOS Russian"
+        case .koi8r:      return "KOI8-R"
         }
     }
 }
