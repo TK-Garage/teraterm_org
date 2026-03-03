@@ -668,255 +668,38 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func showTerminalSetupDialog() {
-        let alert = NSAlert()
-        alert.messageText = L("dialog.terminalSetup.title")
-        alert.informativeText = L("dialog.terminalSetup.message")
-
-        let accessoryView = NSView(frame: NSRect(x: 0, y: 0, width: 350, height: 180))
-
-        // Terminal ID
-        let idLabel = NSTextField(labelWithString: L("dialog.terminalSetup.terminalId"))
-        idLabel.frame = NSRect(x: 0, y: 150, width: 100, height: 20)
-        accessoryView.addSubview(idLabel)
-
-        let idPopup = NSPopUpButton(frame: NSRect(x: 110, y: 148, width: 150, height: 24))
-        for id in TerminalID.allCases {
-            idPopup.addItem(withTitle: id.displayName)
-        }
-        idPopup.selectItem(withTitle: settings.terminalID.displayName)
-        accessoryView.addSubview(idPopup)
-
-        // Size
-        let sizeLabel = NSTextField(labelWithString: L("dialog.terminalSetup.size"))
-        sizeLabel.frame = NSRect(x: 0, y: 120, width: 100, height: 20)
-        accessoryView.addSubview(sizeLabel)
-
-        let colsField = NSTextField(frame: NSRect(x: 110, y: 118, width: 60, height: 24))
-        colsField.integerValue = settings.terminalWidth
-        accessoryView.addSubview(colsField)
-
-        let xLabel = NSTextField(labelWithString: "x")
-        xLabel.frame = NSRect(x: 175, y: 120, width: 15, height: 20)
-        accessoryView.addSubview(xLabel)
-
-        let rowsField = NSTextField(frame: NSRect(x: 195, y: 118, width: 60, height: 24))
-        rowsField.integerValue = settings.terminalHeight
-        accessoryView.addSubview(rowsField)
-
-        // Encoding
-        let encLabel = NSTextField(labelWithString: L("dialog.terminalSetup.encoding"))
-        encLabel.frame = NSRect(x: 0, y: 88, width: 100, height: 20)
-        accessoryView.addSubview(encLabel)
-
-        let encPopup = NSPopUpButton(frame: NSRect(x: 110, y: 86, width: 200, height: 24))
-        for enc in CharacterEncoding.allCases {
-            encPopup.addItem(withTitle: enc.displayName)
-        }
-        encPopup.selectItem(withTitle: settings.encoding.displayName)
-        accessoryView.addSubview(encPopup)
-
-        // New Line
-        let nlLabel = NSTextField(labelWithString: L("dialog.terminalSetup.newLine"))
-        nlLabel.frame = NSRect(x: 0, y: 56, width: 100, height: 20)
-        accessoryView.addSubview(nlLabel)
-
-        let nlPopup = NSPopUpButton(frame: NSRect(x: 110, y: 54, width: 100, height: 24))
-        nlPopup.addItem(withTitle: "CR")
-        nlPopup.addItem(withTitle: "CR+LF")
-        nlPopup.addItem(withTitle: "LF")
-        accessoryView.addSubview(nlPopup)
-
-        // Local echo
-        let echoCheck = NSButton(checkboxWithTitle: L("dialog.terminalSetup.localEcho"), target: nil, action: nil)
-        echoCheck.frame = NSRect(x: 110, y: 24, width: 140, height: 20)
-        echoCheck.state = settings.localEcho ? .on : .off
-        accessoryView.addSubview(echoCheck)
-
-        // Auto wrap
-        let wrapCheck = NSButton(checkboxWithTitle: L("dialog.terminalSetup.autoWrap"), target: nil, action: nil)
-        wrapCheck.frame = NSRect(x: 250, y: 24, width: 120, height: 20)
-        accessoryView.addSubview(wrapCheck)
-
-        alert.accessoryView = accessoryView
-        alert.addButton(withTitle: L("dialog.terminalSetup.ok"))
-        alert.addButton(withTitle: L("dialog.terminalSetup.cancel"))
-
-        if alert.runModal() == .alertFirstButtonReturn {
-            if let selected = TerminalID.allCases.first(where: { $0.displayName == idPopup.selectedItem?.title }) {
-                settings.terminalID = selected
-            }
-            settings.terminalWidth = colsField.integerValue
-            settings.terminalHeight = rowsField.integerValue
-            settings.localEcho = echoCheck.state == .on
-
-            if let wc = activeWindowController {
-                wc.terminalView.settings = settings
+        let vc = TerminalSetupViewController(settings: settings)
+        vc.okHandler = { [weak self] in
+            guard let self = self else { return }
+            if let wc = self.activeWindowController {
+                wc.terminalView.settings = self.settings
                 wc.terminalView.updateFont()
             }
+        }
+        if let win = activeWindowController?.window {
+            vc.presentAsSheet(on: win)
+        } else {
+            _ = vc.presentModal()
         }
     }
 
     // MARK: Window Setup Dialog (port of ttpdlg Window dialog)
 
     private func showWindowSetupDialog() {
-        let alert = NSAlert()
-        alert.messageText = L("dialog.windowSetup.title")
-        alert.informativeText = ""
-
-        let accessoryView = NSView(frame: NSRect(x: 0, y: 0, width: 380, height: 260))
-
-        // ── Window Title ──
-        let titleLabel = NSTextField(labelWithString: L("dialog.windowSetup.title_label"))
-        titleLabel.frame = NSRect(x: 0, y: 230, width: 100, height: 20)
-        accessoryView.addSubview(titleLabel)
-
-        let titleField = NSTextField(frame: NSRect(x: 110, y: 228, width: 260, height: 24))
-        titleField.stringValue = settings.title
-        accessoryView.addSubview(titleField)
-
-        // ── Window Alpha (Transparency) ──
-        let alphaLabel = NSTextField(labelWithString: L("dialog.windowSetup.alpha"))
-        alphaLabel.frame = NSRect(x: 0, y: 196, width: 100, height: 20)
-        accessoryView.addSubview(alphaLabel)
-
-        let alphaSlider = NSSlider(frame: NSRect(x: 110, y: 196, width: 200, height: 20))
-        alphaSlider.minValue = 0.2
-        alphaSlider.maxValue = 1.0
-        alphaSlider.doubleValue = settings.windowAlpha
-        alphaSlider.isContinuous = true
-        accessoryView.addSubview(alphaSlider)
-
-        let alphaValueLabel = NSTextField(labelWithString: String(format: "%d%%", Int(settings.windowAlpha * 100)))
-        alphaValueLabel.frame = NSRect(x: 320, y: 196, width: 50, height: 20)
-        accessoryView.addSubview(alphaValueLabel)
-
-        // ── Cursor Shape ──
-        let cursorLabel = NSTextField(labelWithString: L("dialog.windowSetup.cursorShape"))
-        cursorLabel.frame = NSRect(x: 0, y: 162, width: 100, height: 20)
-        accessoryView.addSubview(cursorLabel)
-
-        let cursorPopup = NSPopUpButton(frame: NSRect(x: 110, y: 160, width: 140, height: 24))
-        cursorPopup.addItem(withTitle: L("dialog.windowSetup.cursorBlock"))
-        cursorPopup.addItem(withTitle: L("dialog.windowSetup.cursorVertical"))
-        cursorPopup.addItem(withTitle: L("dialog.windowSetup.cursorHorizontal"))
-        cursorPopup.selectItem(at: settings.cursorShape.rawValue)
-        accessoryView.addSubview(cursorPopup)
-
-        let blinkCheck = NSButton(checkboxWithTitle: L("dialog.windowSetup.cursorBlink"), target: nil, action: nil)
-        blinkCheck.frame = NSRect(x: 260, y: 162, width: 110, height: 20)
-        blinkCheck.state = settings.cursorBlink ? .on : .off
-        accessoryView.addSubview(blinkCheck)
-
-        // ── Colors ──
-        let colorGroupLabel = NSTextField(labelWithString: L("dialog.windowSetup.colors"))
-        colorGroupLabel.frame = NSRect(x: 0, y: 128, width: 100, height: 20)
-        colorGroupLabel.font = NSFont.boldSystemFont(ofSize: 12)
-        accessoryView.addSubview(colorGroupLabel)
-
-        // Foreground
-        let fgLabel = NSTextField(labelWithString: L("dialog.windowSetup.foreground"))
-        fgLabel.frame = NSRect(x: 20, y: 100, width: 85, height: 20)
-        accessoryView.addSubview(fgLabel)
-
-        let fgColor = settings.colorTheme.foreground
-        let fgWell = NSColorWell(frame: NSRect(x: 110, y: 98, width: 40, height: 24))
-        fgWell.color = NSColor(red: CGFloat(fgColor.r)/255, green: CGFloat(fgColor.g)/255, blue: CGFloat(fgColor.b)/255, alpha: 1)
-        accessoryView.addSubview(fgWell)
-
-        // Background
-        let bgLabel = NSTextField(labelWithString: L("dialog.windowSetup.background"))
-        bgLabel.frame = NSRect(x: 170, y: 100, width: 85, height: 20)
-        accessoryView.addSubview(bgLabel)
-
-        let bgColor = settings.colorTheme.background
-        let bgWell = NSColorWell(frame: NSRect(x: 260, y: 98, width: 40, height: 24))
-        bgWell.color = NSColor(red: CGFloat(bgColor.r)/255, green: CGFloat(bgColor.g)/255, blue: CGFloat(bgColor.b)/255, alpha: 1)
-        accessoryView.addSubview(bgWell)
-
-        // Cursor color
-        let ccLabel = NSTextField(labelWithString: L("dialog.windowSetup.cursorColor"))
-        ccLabel.frame = NSRect(x: 20, y: 68, width: 85, height: 20)
-        accessoryView.addSubview(ccLabel)
-
-        let ccColor = settings.colorTheme.cursorColor
-        let ccWell = NSColorWell(frame: NSRect(x: 110, y: 66, width: 40, height: 24))
-        ccWell.color = NSColor(red: CGFloat(ccColor.r)/255, green: CGFloat(ccColor.g)/255, blue: CGFloat(ccColor.b)/255, alpha: 1)
-        accessoryView.addSubview(ccWell)
-
-        // Selection
-        let selLabel = NSTextField(labelWithString: L("dialog.windowSetup.selection"))
-        selLabel.frame = NSRect(x: 170, y: 68, width: 85, height: 20)
-        accessoryView.addSubview(selLabel)
-
-        let selColor = settings.colorTheme.selectionBackground
-        let selWell = NSColorWell(frame: NSRect(x: 260, y: 66, width: 40, height: 24))
-        selWell.color = NSColor(red: CGFloat(selColor.r)/255, green: CGFloat(selColor.g)/255, blue: CGFloat(selColor.b)/255, alpha: 1)
-        accessoryView.addSubview(selWell)
-
-        // ── Scroll Buffer ──
-        let scrollLabel = NSTextField(labelWithString: L("dialog.windowSetup.scrollBuffer"))
-        scrollLabel.frame = NSRect(x: 0, y: 34, width: 100, height: 20)
-        accessoryView.addSubview(scrollLabel)
-
-        let scrollCheck = NSButton(checkboxWithTitle: L("dialog.windowSetup.enableScroll"), target: nil, action: nil)
-        scrollCheck.frame = NSRect(x: 110, y: 34, width: 80, height: 20)
-        scrollCheck.state = settings.enableScrollBuffer ? .on : .off
-        accessoryView.addSubview(scrollCheck)
-
-        let scrollSizeField = NSTextField(frame: NSRect(x: 195, y: 32, width: 80, height: 24))
-        scrollSizeField.integerValue = settings.scrollBufferSize
-        accessoryView.addSubview(scrollSizeField)
-
-        let scrollLinesLabel = NSTextField(labelWithString: L("dialog.windowSetup.lines"))
-        scrollLinesLabel.frame = NSRect(x: 280, y: 34, width: 60, height: 20)
-        accessoryView.addSubview(scrollLinesLabel)
-
-        // ── Beep ──
-        let beepLabel = NSTextField(labelWithString: L("dialog.windowSetup.beep"))
-        beepLabel.frame = NSRect(x: 0, y: 2, width: 100, height: 20)
-        accessoryView.addSubview(beepLabel)
-
-        let beepPopup = NSPopUpButton(frame: NSRect(x: 110, y: 0, width: 140, height: 24))
-        beepPopup.addItem(withTitle: L("dialog.windowSetup.beepNone"))
-        beepPopup.addItem(withTitle: L("dialog.windowSetup.beepSystem"))
-        beepPopup.addItem(withTitle: L("dialog.windowSetup.beepVisual"))
-        beepPopup.selectItem(at: settings.beepType.rawValue)
-        accessoryView.addSubview(beepPopup)
-
-        alert.accessoryView = accessoryView
-        alert.addButton(withTitle: L("dialog.windowSetup.ok"))
-        alert.addButton(withTitle: L("dialog.windowSetup.cancel"))
-
-        if alert.runModal() == .alertFirstButtonReturn {
-            settings.title = titleField.stringValue
-            settings.windowAlpha = alphaSlider.doubleValue
-            settings.cursorShape = CursorShape(rawValue: cursorPopup.indexOfSelectedItem) ?? .block
-            settings.cursorBlink = blinkCheck.state == .on
-            settings.enableScrollBuffer = scrollCheck.state == .on
-            settings.scrollBufferSize = scrollSizeField.integerValue
-            settings.beepType = BeepType(rawValue: beepPopup.indexOfSelectedItem) ?? .system
-
-            // Colors
-            let fg = fgWell.color.usingColorSpace(.sRGB) ?? fgWell.color
-            settings.colorTheme.foreground = TerminalColor(
-                r: UInt8(fg.redComponent * 255), g: UInt8(fg.greenComponent * 255), b: UInt8(fg.blueComponent * 255))
-            let bg = bgWell.color.usingColorSpace(.sRGB) ?? bgWell.color
-            settings.colorTheme.background = TerminalColor(
-                r: UInt8(bg.redComponent * 255), g: UInt8(bg.greenComponent * 255), b: UInt8(bg.blueComponent * 255))
-            let cc = ccWell.color.usingColorSpace(.sRGB) ?? ccWell.color
-            settings.colorTheme.cursorColor = TerminalColor(
-                r: UInt8(cc.redComponent * 255), g: UInt8(cc.greenComponent * 255), b: UInt8(cc.blueComponent * 255))
-            let sel = selWell.color.usingColorSpace(.sRGB) ?? selWell.color
-            settings.colorTheme.selectionBackground = TerminalColor(
-                r: UInt8(sel.redComponent * 255), g: UInt8(sel.greenComponent * 255), b: UInt8(sel.blueComponent * 255))
-
-            // Apply to active window
-            if let wc = activeWindowController {
-                wc.terminalView.settings = settings
+        let vc = WindowSetupViewController(settings: settings)
+        vc.okHandler = { [weak self] in
+            guard let self = self else { return }
+            if let wc = self.activeWindowController {
+                wc.terminalView.settings = self.settings
                 wc.terminalView.needsDisplay = true
-                wc.window?.title = settings.title
-                wc.window?.alphaValue = CGFloat(settings.windowAlpha)
+                wc.window?.title = self.settings.title
+                wc.window?.alphaValue = CGFloat(self.settings.windowAlpha)
             }
+        }
+        if let win = activeWindowController?.window {
+            vc.presentAsSheet(on: win)
+        } else {
+            _ = vc.presentModal()
         }
     }
 
@@ -994,98 +777,22 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func showSerialPortDialog() {
-        let alert = NSAlert()
-        alert.messageText = L("dialog.serialPort.title")
-
-        let accessoryView = NSView(frame: NSRect(x: 0, y: 0, width: 300, height: 140))
-
-        // Port
-        let portLabel = NSTextField(labelWithString: L("dialog.serialPort.port"))
-        portLabel.frame = NSRect(x: 0, y: 110, width: 80, height: 20)
-        accessoryView.addSubview(portLabel)
-
-        let portPopup = NSPopUpButton(frame: NSRect(x: 85, y: 108, width: 200, height: 24))
-        // Enumerate serial ports
-        let serialPorts = findSerialPorts()
-        for port in serialPorts {
-            portPopup.addItem(withTitle: port)
-        }
-        if serialPorts.isEmpty {
-            portPopup.addItem(withTitle: L("dialog.serialPort.noPortsFound"))
-        }
-        accessoryView.addSubview(portPopup)
-
-        // Baud rate
-        let baudLabel = NSTextField(labelWithString: L("dialog.serialPort.baudRate"))
-        baudLabel.frame = NSRect(x: 0, y: 78, width: 80, height: 20)
-        accessoryView.addSubview(baudLabel)
-
-        let baudPopup = NSPopUpButton(frame: NSRect(x: 85, y: 76, width: 120, height: 24))
-        for rate in [300, 1200, 2400, 4800, 9600, 19200, 38400, 57600, 115200, 230400] {
-            baudPopup.addItem(withTitle: "\(rate)")
-        }
-        baudPopup.selectItem(withTitle: "\(settings.baudRate)")
-        accessoryView.addSubview(baudPopup)
-
-        // Data bits
-        let dataLabel = NSTextField(labelWithString: L("dialog.serialPort.dataBits"))
-        dataLabel.frame = NSRect(x: 0, y: 46, width: 80, height: 20)
-        accessoryView.addSubview(dataLabel)
-
-        let dataPopup = NSPopUpButton(frame: NSRect(x: 85, y: 44, width: 60, height: 24))
-        for bits in [5, 6, 7, 8] {
-            dataPopup.addItem(withTitle: "\(bits)")
-        }
-        dataPopup.selectItem(withTitle: "\(settings.dataBits)")
-        accessoryView.addSubview(dataPopup)
-
-        // Parity
-        let parityLabel = NSTextField(labelWithString: L("dialog.serialPort.parity"))
-        parityLabel.frame = NSRect(x: 160, y: 46, width: 50, height: 20)
-        accessoryView.addSubview(parityLabel)
-
-        let parityPopup = NSPopUpButton(frame: NSRect(x: 215, y: 44, width: 80, height: 24))
-        parityPopup.addItem(withTitle: L("dialog.serialPort.parityNone"))
-        parityPopup.addItem(withTitle: L("dialog.serialPort.parityOdd"))
-        parityPopup.addItem(withTitle: L("dialog.serialPort.parityEven"))
-        accessoryView.addSubview(parityPopup)
-
-        // Flow control
-        let flowLabel = NSTextField(labelWithString: L("dialog.serialPort.flow"))
-        flowLabel.frame = NSRect(x: 0, y: 14, width: 80, height: 20)
-        accessoryView.addSubview(flowLabel)
-
-        let flowPopup = NSPopUpButton(frame: NSRect(x: 85, y: 12, width: 120, height: 24))
-        flowPopup.addItem(withTitle: L("dialog.serialPort.flowNone"))
-        flowPopup.addItem(withTitle: L("dialog.serialPort.flowXonXoff"))
-        flowPopup.addItem(withTitle: L("dialog.serialPort.flowHardware"))
-        accessoryView.addSubview(flowPopup)
-
-        alert.accessoryView = accessoryView
-        alert.addButton(withTitle: L("dialog.serialPort.connect"))
-        alert.addButton(withTitle: L("dialog.serialPort.cancel"))
-
-        if alert.runModal() == .alertFirstButtonReturn {
-            if let port = portPopup.selectedItem?.title, !port.starts(with: "(") {
-                settings.serialPort = port
-                settings.baudRate = Int(baudPopup.selectedItem?.title ?? "9600") ?? 9600
-                settings.dataBits = Int(dataPopup.selectedItem?.title ?? "8") ?? 8
-                activeWindowController?.connectSerial(device: port)
+        let vc = SerialPortSetupViewController(settings: settings)
+        vc.okHandler = { [weak self] in
+            guard let self = self else { return }
+            if let port = self.settings.serialPort.isEmpty ? nil : self.settings.serialPort {
+                self.activeWindowController?.connectSerial(device: port)
             }
+        }
+        if let win = activeWindowController?.window {
+            vc.presentAsSheet(on: win)
+        } else {
+            _ = vc.presentModal()
         }
     }
 
     private func findSerialPorts() -> [String] {
-        var ports: [String] = []
-        let devDir = "/dev"
-        if let items = try? FileManager.default.contentsOfDirectory(atPath: devDir) {
-            for item in items.sorted() {
-                if item.hasPrefix("tty.") || item.hasPrefix("cu.") {
-                    ports.append("\(devDir)/\(item)")
-                }
-            }
-        }
-        return ports
+        return SerialPortSetupViewController.findSerialPorts()
     }
 }
 #endif

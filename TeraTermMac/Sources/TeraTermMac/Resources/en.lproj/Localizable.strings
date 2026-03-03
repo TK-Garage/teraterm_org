@@ -138,6 +138,39 @@
 "dialog.serialPort.connect" = "Connect";
 "dialog.serialPort.cancel" = "Cancel";
 
+/* Terminal Setup Dialog (new ViewController keys - matching IDD_TERMDLG) */
+"dialog.termSetup.terminalSize" = "Terminal size";
+"dialog.termSetup.termSizeIsWin" = "Term size = win size";
+"dialog.termSetup.autoResize" = "Auto window resize";
+"dialog.termSetup.newline" = "New-line";
+"dialog.termSetup.receive" = "Receive:";
+"dialog.termSetup.transmit" = "Transmit:";
+"dialog.termSetup.terminalId" = "Terminal ID:";
+"dialog.termSetup.answerback" = "Answerback:";
+"dialog.termSetup.autoSwitch" = "Auto switch (VT<->TEK)";
+
+/* Serial Port Setup Dialog (new ViewController keys - matching IDD_SERIALDLG) */
+"dialog.serialSetup.speed" = "Speed:";
+"dialog.serialSetup.stopBits" = "Stop bits:";
+"dialog.serialSetup.flowControl" = "Flow control:";
+"dialog.serialSetup.transmitDelay" = "Transmit delay";
+"dialog.serialSetup.msecChar" = "msec/char";
+"dialog.serialSetup.msecLine" = "msec/line";
+
+/* Window Setup Dialog (new ViewController keys - matching IDD_WINDLG) */
+"dialog.winSetup.cursorShape" = "Cursor shape";
+"dialog.winSetup.hideTitleBar" = "Hide title bar";
+"dialog.winSetup.hideMenuBar" = "Hide menu bar";
+"dialog.winSetup.pc16Colors" = "16 Colors (PC style)";
+"dialog.winSetup.text" = "Text";
+"dialog.winSetup.background" = "Background";
+"dialog.winSetup.swapColors" = "Swap colors";
+
+/* Common Dialog Buttons */
+"OK" = "OK";
+"Cancel" = "Cancel";
+"Help" = "Help";
+
 /* About Dialog */
 "dialog.about.title" = "Tera Term Mac";
 "dialog.about.message" = "macOS port of Tera Term\nTerminal Emulator\n\nOriginal: (C) 1994-1998 T. Teranishi\n(C) 2004- TeraTerm Project\n\nmacOS Port: Swift/AppKit";

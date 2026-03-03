@@ -138,6 +138,39 @@
 "dialog.serialPort.connect" = "接続";
 "dialog.serialPort.cancel" = "キャンセル";
 
+/* Terminal Setup Dialog (new ViewController keys - matching IDD_TERMDLG) */
+"dialog.termSetup.terminalSize" = "端末サイズ";
+"dialog.termSetup.termSizeIsWin" = "端末サイズ = ウインドウサイズ";
+"dialog.termSetup.autoResize" = "自動ウインドウリサイズ";
+"dialog.termSetup.newline" = "改行コード";
+"dialog.termSetup.receive" = "受信:";
+"dialog.termSetup.transmit" = "送信:";
+"dialog.termSetup.terminalId" = "端末ID:";
+"dialog.termSetup.answerback" = "応答文字列:";
+"dialog.termSetup.autoSwitch" = "自動切替 (VT<->TEK)";
+
+/* Serial Port Setup Dialog (new ViewController keys - matching IDD_SERIALDLG) */
+"dialog.serialSetup.speed" = "速度:";
+"dialog.serialSetup.stopBits" = "ストップビット:";
+"dialog.serialSetup.flowControl" = "フロー制御:";
+"dialog.serialSetup.transmitDelay" = "送信遅延";
+"dialog.serialSetup.msecChar" = "ミリ秒/文字";
+"dialog.serialSetup.msecLine" = "ミリ秒/行";
+
+/* Window Setup Dialog (new ViewController keys - matching IDD_WINDLG) */
+"dialog.winSetup.cursorShape" = "カーソル形状";
+"dialog.winSetup.hideTitleBar" = "タイトルバーを隠す";
+"dialog.winSetup.hideMenuBar" = "メニューバーを隠す";
+"dialog.winSetup.pc16Colors" = "16色 (PC スタイル)";
+"dialog.winSetup.text" = "テキスト";
+"dialog.winSetup.background" = "背景";
+"dialog.winSetup.swapColors" = "色を入替";
+
+/* Common Dialog Buttons */
+"OK" = "OK";
+"Cancel" = "キャンセル";
+"Help" = "ヘルプ";
+
 /* About Dialog */
 "dialog.about.title" = "Tera Term Mac";
 "dialog.about.message" = "Tera Term の macOS 移植版\nターミナルエミュレータ\n\nオリジナル: (C) 1994-1998 T. Teranishi\n(C) 2004- TeraTerm Project\n\nmacOS 移植: Swift/AppKit";
