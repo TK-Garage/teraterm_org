@@ -251,6 +251,70 @@ class TerminalWindowController: NSWindowController {
         terminalView.refresh()
     }
 
+    func resetPort() {
+        connectionManager.resetPort()
+        updateWindowTitle()
+    }
+
+    // MARK: - Macro Actions
+
+    func runMacro(at url: URL) {
+        guard let script = try? String(contentsOf: url, encoding: .utf8) else { return }
+        let lines = script.components(separatedBy: .newlines)
+        let queue = DispatchQueue(label: "com.teraterm.macro")
+
+        queue.async { [weak self] in
+            for line in lines {
+                let trimmed = line.trimmingCharacters(in: .whitespaces)
+                guard !trimmed.isEmpty, !trimmed.hasPrefix("#") else { continue }
+
+                // Simple macro language:
+                //   send <text>       — send literal text
+                //   sendln <text>     — send text + newline
+                //   wait <ms>         — wait N milliseconds
+                //   pause <ms>        — alias for wait
+                if trimmed.lowercased().hasPrefix("sendln ") {
+                    let text = String(trimmed.dropFirst("sendln ".count)) + "\r"
+                    DispatchQueue.main.async { self?.connectionManager.send(Data(text.utf8)) }
+                } else if trimmed.lowercased().hasPrefix("send ") {
+                    let text = String(trimmed.dropFirst("send ".count))
+                    DispatchQueue.main.async { self?.connectionManager.send(Data(text.utf8)) }
+                } else if trimmed.lowercased().hasPrefix("wait ") || trimmed.lowercased().hasPrefix("pause ") {
+                    let prefix = trimmed.lowercased().hasPrefix("wait ") ? "wait " : "pause "
+                    if let ms = Int(trimmed.dropFirst(prefix.count).trimmingCharacters(in: .whitespaces)) {
+                        Thread.sleep(forTimeInterval: Double(ms) / 1000.0)
+                    }
+                } else {
+                    // Default: send the whole line as text + CR
+                    DispatchQueue.main.async { self?.connectionManager.send(Data((trimmed + "\r").utf8)) }
+                }
+            }
+        }
+    }
+
+    // MARK: - Log Replay
+
+    func replayLog(at url: URL) {
+        guard let data = try? Data(contentsOf: url) else { return }
+        // Replay log data through the terminal emulator to reproduce the session
+        let chunkSize = 4096
+        let queue = DispatchQueue(label: "com.teraterm.replay")
+
+        queue.async { [weak self] in
+            var offset = 0
+            while offset < data.count {
+                let end = min(offset + chunkSize, data.count)
+                let chunk = data[offset..<end]
+                DispatchQueue.main.async {
+                    self?.terminalEmulator.processData(Data(chunk))
+                }
+                offset = end
+                // Small delay for visual playback (≈ 115200 baud)
+                Thread.sleep(forTimeInterval: 0.035)
+            }
+        }
+    }
+
     // MARK: - Resize handling
 
     private func handleResize() {

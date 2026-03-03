@@ -9,6 +9,7 @@
 
 #if canImport(AppKit)
 import AppKit
+import UniformTypeIdentifiers
 
 // MARK: - Localization Helper
 
@@ -267,6 +268,21 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         setSymbol("questionmark.circle", for: aytItem)
         let breakItem = controlMenu.addItem(withTitle: L("menu.control.sendBreak"), action: #selector(sendBreak(_:)), keyEquivalent: "")
         setSymbol("exclamationmark.triangle", for: breakItem)
+        let portResetItem = controlMenu.addItem(withTitle: L("menu.control.resetPort"), action: #selector(resetPort(_:)), keyEquivalent: "")
+        setSymbol("arrow.triangle.2.circlepath", for: portResetItem)
+
+        controlMenu.addItem(NSMenuItem.separator())
+
+        let macroItem = controlMenu.addItem(withTitle: L("menu.control.macro"), action: #selector(runMacro(_:)), keyEquivalent: "m")
+        macroItem.keyEquivalentModifierMask = [.command, .shift]
+        setSymbol("applescript", for: macroItem)
+        let replayItem = controlMenu.addItem(withTitle: L("menu.control.replayLog"), action: #selector(replayLog(_:)), keyEquivalent: "")
+        setSymbol("play.rectangle", for: replayItem)
+
+        controlMenu.addItem(NSMenuItem.separator())
+
+        let broadcastItem = controlMenu.addItem(withTitle: L("menu.control.broadcast"), action: #selector(toggleBroadcast(_:)), keyEquivalent: "")
+        setSymbol("antenna.radiowaves.left.and.right", for: broadcastItem)
 
         // Window menu
         let windowMenuItem = NSMenuItem()
@@ -428,9 +444,132 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         activeWindowController?.connectionManager.sendBreak()
     }
 
+    @objc func resetPort(_ sender: Any?) {
+        activeWindowController?.resetPort()
+    }
+
+    @objc func runMacro(_ sender: Any?) {
+        guard let wc = activeWindowController else { return }
+        let panel = NSOpenPanel()
+        panel.allowedContentTypes = [.plainText]
+        panel.title = L("dialog.macro.title")
+        panel.message = L("dialog.macro.message")
+        panel.beginSheetModal(for: wc.window!) { response in
+            guard response == .OK, let url = panel.url else { return }
+            wc.runMacro(at: url)
+        }
+    }
+
+    @objc func replayLog(_ sender: Any?) {
+        guard let wc = activeWindowController else { return }
+        let panel = NSOpenPanel()
+        panel.allowedContentTypes = [.plainText, .log]
+        panel.title = L("dialog.replayLog.title")
+        panel.beginSheetModal(for: wc.window!) { response in
+            guard response == .OK, let url = panel.url else { return }
+            wc.replayLog(at: url)
+        }
+    }
+
+    // MARK: - Command Broadcast
+
+    private var broadcastPanel: NSPanel?
+    private var broadcastTextField: NSTextField?
+
+    @objc func toggleBroadcast(_ sender: Any?) {
+        if let panel = broadcastPanel, panel.isVisible {
+            panel.close()
+            broadcastPanel = nil
+            return
+        }
+        showBroadcastPanel()
+    }
+
+    private func showBroadcastPanel() {
+        let panel = NSPanel(
+            contentRect: NSRect(x: 0, y: 0, width: 420, height: 90),
+            styleMask: [.titled, .closable, .utilityWindow, .nonactivatingPanel],
+            backing: .buffered,
+            defer: false)
+        panel.title = L("menu.control.broadcast")
+        panel.isFloatingPanel = true
+        panel.becomesKeyOnlyIfNeeded = true
+        panel.isReleasedWhenClosed = false
+
+        let contentView = NSView(frame: NSRect(x: 0, y: 0, width: 420, height: 90))
+
+        let label = NSTextField(labelWithString: L("dialog.broadcast.label"))
+        label.frame = NSRect(x: 16, y: 58, width: 390, height: 17)
+        label.font = NSFont.systemFont(ofSize: NSFont.smallSystemFontSize)
+        contentView.addSubview(label)
+
+        let textField = NSTextField(frame: NSRect(x: 16, y: 10, width: 310, height: 24))
+        textField.placeholderString = L("dialog.broadcast.placeholder")
+        textField.font = NSFont.monospacedSystemFont(ofSize: 13, weight: .regular)
+        textField.target = self
+        textField.action = #selector(broadcastFieldAction(_:))
+        contentView.addSubview(textField)
+        broadcastTextField = textField
+
+        let sendButton = NSButton(title: L("dialog.broadcast.send"), target: self, action: #selector(broadcastSendAction(_:)))
+        sendButton.frame = NSRect(x: 334, y: 8, width: 72, height: 28)
+        sendButton.bezelStyle = .rounded
+        sendButton.keyEquivalent = "\r"
+        contentView.addSubview(sendButton)
+
+        panel.contentView = contentView
+        panel.center()
+        panel.makeKeyAndOrderFront(nil)
+        broadcastPanel = panel
+    }
+
+    @objc private func broadcastFieldAction(_ sender: NSTextField) {
+        broadcastCommand(sender.stringValue)
+        sender.stringValue = ""
+    }
+
+    @objc private func broadcastSendAction(_ sender: Any?) {
+        guard let text = broadcastTextField?.stringValue else { return }
+        broadcastCommand(text)
+        broadcastTextField?.stringValue = ""
+    }
+
+    private func broadcastCommand(_ command: String) {
+        guard !command.isEmpty else { return }
+        let data = Data((command + "\r").utf8)
+        for wc in windowControllers where wc.connectionManager.state == .connected {
+            wc.connectionManager.send(data)
+        }
+    }
+
     @objc func showHelp(_ sender: Any?) {
         if let url = URL(string: "https://teratermproject.github.io/") {
             NSWorkspace.shared.open(url)
+        }
+    }
+
+    // MARK: - Menu Validation
+
+    override func validateMenuItem(_ menuItem: NSMenuItem) -> Bool {
+        let connected = activeWindowController?.connectionManager.state == .connected
+        let hasWindow = activeWindowController != nil
+
+        switch menuItem.action {
+        case #selector(areYouThere(_:)),
+             #selector(sendBreak(_:)),
+             #selector(resetPort(_:)):
+            return connected
+        case #selector(resetTerminal(_:)):
+            return hasWindow
+        case #selector(runMacro(_:)),
+             #selector(replayLog(_:)):
+            return hasWindow
+        case #selector(toggleBroadcast(_:)):
+            // Update checkmark state
+            menuItem.state = (broadcastPanel?.isVisible == true) ? .on : .off
+            return true
+        default:
+            return super.validateMenuItem(menuItem)
         }
     }
 

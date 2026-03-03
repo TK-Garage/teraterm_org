@@ -46,6 +46,10 @@
 "menu.control.resetTerminal" = "Reset Terminal";
 "menu.control.areYouThere" = "Are You There";
 "menu.control.sendBreak" = "Send Break";
+"menu.control.resetPort" = "Reset Port";
+"menu.control.macro" = "Macro…";
+"menu.control.replayLog" = "Replay Log…";
+"menu.control.broadcast" = "Command Broadcast";
 
 /* Window Menu */
 "menu.window" = "Window";
@@ -170,6 +174,18 @@
 "OK" = "OK";
 "Cancel" = "Cancel";
 "Help" = "Help";
+
+/* Macro Dialog */
+"dialog.macro.title" = "Run Macro";
+"dialog.macro.message" = "Select a macro script file (.txt)";
+
+/* Replay Log Dialog */
+"dialog.replayLog.title" = "Replay Log";
+
+/* Broadcast Panel */
+"dialog.broadcast.label" = "Type a command to send to all connected sessions:";
+"dialog.broadcast.placeholder" = "command";
+"dialog.broadcast.send" = "Send";
 
 /* About Dialog */
 "dialog.about.title" = "Tera Term Mac";

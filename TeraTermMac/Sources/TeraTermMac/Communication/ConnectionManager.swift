@@ -133,6 +133,46 @@ class ConnectionManager {
         if let tcp = currentConnection as? TCPConnection {
             // Send Telnet Break
             tcp.send(Data([0xFF, 0xF3])) // IAC BREAK
+        } else if let serial = currentConnection as? SerialConnection {
+            serial.sendBreak()
+        }
+    }
+
+    /// Reset (close and immediately re-open) the current port/connection.
+    func resetPort() {
+        guard let conn = currentConnection else { return }
+
+        if let serial = conn as? SerialConnection {
+            let device = serial.device
+            let baud = serial.baudRate
+            let data = serial.dataBits
+            let par = serial.parity
+            let stop = serial.stopBits
+            let flow = serial.flowControl
+            serial.disconnect()
+            let newConn = SerialConnection(
+                device: device, baudRate: baud, dataBits: data,
+                parity: par, stopBits: stop, flowControl: flow)
+            newConn.delegate = self
+            currentConnection = newConn
+            newConn.connect()
+        } else if let tcp = conn as? TCPConnection {
+            let host = tcp.host
+            let port = tcp.port
+            tcp.disconnect()
+            let newConn = TCPConnection(host: host, port: port)
+            newConn.delegate = self
+            currentConnection = newConn
+            newConn.connect()
+        } else if let pty = conn as? LocalShellConnection {
+            let cmd = pty.command
+            let args = pty.arguments
+            let env = pty.environment
+            pty.disconnect()
+            let newConn = LocalShellConnection(command: cmd, arguments: args, environment: env)
+            newConn.delegate = self
+            currentConnection = newConn
+            newConn.connect()
         }
     }
 }
@@ -529,6 +569,17 @@ class SerialConnection: Connection {
 
     func send(_ string: String) {
         send(Data(string.utf8))
+    }
+
+    func sendBreak() {
+        stateLock.lock()
+        let running = _isRunning
+        let fd = fileDescriptor
+        stateLock.unlock()
+
+        guard running, fd >= 0 else { return }
+        // tcsendbreak(fd, 0) sends a break for 0.25–0.5 seconds
+        tcsendbreak(fd, 0)
     }
 
     private func startReading() {

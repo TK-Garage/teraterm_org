@@ -46,6 +46,10 @@
 "menu.control.resetTerminal" = "端末リセット";
 "menu.control.areYouThere" = "Are You There";
 "menu.control.sendBreak" = "ブレーク送信";
+"menu.control.resetPort" = "ポートリセット";
+"menu.control.macro" = "マクロ…";
+"menu.control.replayLog" = "ログ再生…";
+"menu.control.broadcast" = "コマンドブロードキャスト";
 
 /* Window Menu */
 "menu.window" = "ウインドウ";
@@ -170,6 +174,18 @@
 "OK" = "OK";
 "Cancel" = "キャンセル";
 "Help" = "ヘルプ";
+
+/* Macro Dialog */
+"dialog.macro.title" = "マクロ実行";
+"dialog.macro.message" = "マクロスクリプトファイル (.txt) を選択してください";
+
+/* Replay Log Dialog */
+"dialog.replayLog.title" = "ログ再生";
+
+/* Broadcast Panel */
+"dialog.broadcast.label" = "接続中のすべてのセッションに送信するコマンドを入力:";
+"dialog.broadcast.placeholder" = "コマンド";
+"dialog.broadcast.send" = "送信";
 
 /* About Dialog */
 "dialog.about.title" = "Tera Term Mac";
