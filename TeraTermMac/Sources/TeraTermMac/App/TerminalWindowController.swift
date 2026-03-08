@@ -184,7 +184,7 @@ class TerminalWindowController: NSWindowController {
                 } else if let tcp = conn as? TCPConnection {
                     title += " - \(tcp.host):\(tcp.port)"
                 } else if let serial = conn as? SerialConnection {
-                    title += " - \(serial.device)"
+                    title += " - \(serial.device) \(serial.baudRate)bps"
                 }
             }
         } else {

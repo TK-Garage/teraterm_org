@@ -251,7 +251,9 @@ class BaseSetupDialogController: NSViewController {
     }
 
     /// Present this dialog as a modal sheet on the given window.
-    func presentAsSheet(on parentWindow: NSWindow) {
+    /// Returns the dialog window for tracking purposes.
+    @discardableResult
+    func presentAsSheet(on parentWindow: NSWindow) -> NSWindow {
         let dialogWindow = NSWindow(contentViewController: self)
         dialogWindow.styleMask = [.titled, .closable]
         dialogWindow.title = self.title ?? ""
@@ -266,6 +268,7 @@ class BaseSetupDialogController: NSViewController {
                 self?.cancelHandler?()
             }
         }
+        return dialogWindow
     }
 
     /// Present as application-modal dialog (when no parent window).

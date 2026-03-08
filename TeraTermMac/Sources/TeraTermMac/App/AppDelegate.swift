@@ -60,6 +60,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
     private var windowControllers: [TerminalWindowController] = []
     private var settings: TerminalSettings = TerminalSettings()
 
+    /// 現在開いている設定シート（排他制御用）
+    private weak var currentSetupSheet: NSWindow?
+
     // MARK: - Application Lifecycle
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -960,17 +963,34 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         }
     }
 
+    /// 現在開いている設定シートをOK（値保存）で閉じる
+    private func dismissCurrentSetupSheet() {
+        guard let sheet = currentSetupSheet, let parent = sheet.sheetParent else { return }
+        // OKとして閉じることで applySettings + okHandler が呼ばれる
+        parent.endSheet(sheet, returnCode: .OK)
+        currentSetupSheet = nil
+    }
+
     private func showTerminalSetupDialog() {
+        dismissCurrentSetupSheet()
         let vc = TerminalSetupViewController(settings: settings)
         vc.okHandler = { [weak self] in
             guard let self = self else { return }
             if let wc = self.activeWindowController {
                 wc.terminalView.settings = self.settings
                 wc.terminalView.updateFont()
+                // termIsWin が有効なら端末サイズに合わせてウィンドウをリサイズ
+                if self.settings.termIsWin {
+                    let size = wc.terminalView.preferredSize(
+                        columns: self.settings.terminalWidth,
+                        rows: self.settings.terminalHeight
+                    )
+                    wc.window?.setContentSize(size)
+                }
             }
         }
         if let win = activeWindowController?.window {
-            vc.presentAsSheet(on: win)
+            currentSetupSheet = vc.presentAsSheet(on: win)
         } else {
             _ = vc.presentModal()
         }
@@ -979,6 +999,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
     // MARK: Window Setup Dialog (port of ttpdlg Window dialog)
 
     private func showWindowSetupDialog() {
+        dismissCurrentSetupSheet()
         let vc = WindowSetupViewController(settings: settings)
         vc.okHandler = { [weak self] in
             guard let self = self else { return }
@@ -990,7 +1011,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
             }
         }
         if let win = activeWindowController?.window {
-            vc.presentAsSheet(on: win)
+            currentSetupSheet = vc.presentAsSheet(on: win)
         } else {
             _ = vc.presentModal()
         }
@@ -999,6 +1020,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
     // MARK: Keyboard Setup Dialog (port of ttpdlg Keyboard dialog)
 
     private func showKeyboardSetupDialog() {
+        dismissCurrentSetupSheet()
         let alert = NSAlert()
         alert.messageText = L("dialog.keyboardSetup.title")
         alert.informativeText = ""
@@ -1070,6 +1092,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
     }
 
     private func showSerialPortDialog() {
+        dismissCurrentSetupSheet()
         let vc = SerialPortSetupViewController(settings: settings)
         vc.okHandler = { [weak self] in
             guard let self = self else { return }
@@ -1078,7 +1101,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
             }
         }
         if let win = activeWindowController?.window {
-            vc.presentAsSheet(on: win)
+            currentSetupSheet = vc.presentAsSheet(on: win)
         } else {
             _ = vc.presentModal()
         }
