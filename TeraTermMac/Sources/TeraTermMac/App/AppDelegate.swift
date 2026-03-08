@@ -558,26 +558,54 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         panel.becomesKeyOnlyIfNeeded = true
         panel.isReleasedWhenClosed = false
 
-        let contentView = NSView(frame: NSRect(x: 0, y: 0, width: 420, height: 90))
+        let contentView = NSView()
+        contentView.translatesAutoresizingMaskIntoConstraints = false
 
         let label = NSTextField(labelWithString: L("dialog.broadcast.label"))
-        label.frame = NSRect(x: 16, y: 58, width: 390, height: 17)
+        label.translatesAutoresizingMaskIntoConstraints = false
         label.font = NSFont.systemFont(ofSize: NSFont.smallSystemFontSize)
-        contentView.addSubview(label)
+        label.setContentHuggingPriority(.defaultHigh, for: .vertical)
 
-        let textField = NSTextField(frame: NSRect(x: 16, y: 10, width: 310, height: 24))
+        let textField = NSTextField()
+        textField.translatesAutoresizingMaskIntoConstraints = false
         textField.placeholderString = L("dialog.broadcast.placeholder")
         textField.font = NSFont.monospacedSystemFont(ofSize: 13, weight: .regular)
         textField.target = self
         textField.action = #selector(broadcastFieldAction(_:))
-        contentView.addSubview(textField)
+        textField.setContentHuggingPriority(.defaultLow, for: .horizontal)
         broadcastTextField = textField
 
         let sendButton = NSButton(title: L("dialog.broadcast.send"), target: self, action: #selector(broadcastSendAction(_:)))
-        sendButton.frame = NSRect(x: 334, y: 8, width: 72, height: 28)
+        sendButton.translatesAutoresizingMaskIntoConstraints = false
         sendButton.bezelStyle = .rounded
         sendButton.keyEquivalent = "\r"
-        contentView.addSubview(sendButton)
+        sendButton.setContentHuggingPriority(.defaultHigh, for: .horizontal)
+        sendButton.setContentCompressionResistancePriority(.required, for: .horizontal)
+
+        // Horizontal row: [textField] - 8 - [sendButton]
+        let inputRow = NSStackView(views: [textField, sendButton])
+        inputRow.translatesAutoresizingMaskIntoConstraints = false
+        inputRow.orientation = .horizontal
+        inputRow.spacing = DialogLayout.buttonSpacing
+        inputRow.alignment = .firstBaseline
+
+        // Vertical stack: [label] - 8 - [inputRow]
+        let vStack = NSStackView(views: [label, inputRow])
+        vStack.translatesAutoresizingMaskIntoConstraints = false
+        vStack.orientation = .vertical
+        vStack.alignment = .leading
+        vStack.spacing = DialogLayout.rowSpacing
+
+        contentView.addSubview(vStack)
+
+        let m = DialogLayout.margin
+        NSLayoutConstraint.activate([
+            vStack.topAnchor.constraint(equalTo: contentView.topAnchor, constant: m),
+            vStack.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: m),
+            vStack.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -m),
+            vStack.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -m),
+            inputRow.widthAnchor.constraint(equalTo: vStack.widthAnchor),
+        ])
 
         panel.contentView = contentView
         panel.center()
@@ -744,109 +772,173 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         let helper = ConnectionDialogHelper()
         objc_setAssociatedObject(alert, "helper", helper, .OBJC_ASSOCIATION_RETAIN)
 
-        // Layout matches original TTSSH IDD_HOSTDLG exactly:
-        //   y=8:  TCP/IP radio  | Host: [combobox]
-        //   y=34: Service: (*) Telnet          TCP port#: [  ]
-        //   y=46:          ( ) SSH             SSH ver: [v]
-        //   y=58:          ( ) Other           IP ver:  [v]
-        //   y=87: Serial radio  | Port: [combobox]
-        let accessoryView = NSView(frame: NSRect(x: 0, y: 0, width: 420, height: 195))
+        let accessoryView = NSView()
+        accessoryView.translatesAutoresizingMaskIntoConstraints = false
 
-        // ── TCP/IP Group Box (original: GroupBox 4,0,228,78) ──
-        let tcpBox = NSBox(frame: NSRect(x: 0, y: 55, width: 420, height: 140))
-        tcpBox.title = ""
+        // ── TCP/IP Group Box ──
+        let tcpBox = NSBox()
+        tcpBox.translatesAutoresizingMaskIntoConstraints = false
         tcpBox.titlePosition = .noTitle
         accessoryView.addSubview(tcpBox)
 
-        // Row 1: TCP/IP radio + Host (original y=8-10)
-        let tcpRadio = NSButton(radioButtonWithTitle: L("dialog.connection.tcpip"),
-                                target: helper, action: #selector(ConnectionDialogHelper.connectionTypeChanged(_:)))
-        tcpRadio.frame = NSRect(x: 8, y: 172, width: 75, height: 18)
-        tcpRadio.tag = 0
+        let tcpContent = NSView()
+        tcpContent.translatesAutoresizingMaskIntoConstraints = false
+
+        // Row 1: [TCP/IP radio] [Host:] [combobox]
+        let tcpRadio = NSView.makeRadioButton(L("dialog.connection.tcpip"), tag: 0)
+        tcpRadio.target = helper
+        tcpRadio.action = #selector(ConnectionDialogHelper.connectionTypeChanged(_:))
         tcpRadio.state = (settings.portType != .serial) ? .on : .off
-        accessoryView.addSubview(tcpRadio)
 
-        let hostLabel = NSTextField(labelWithString: L("dialog.connection.host"))
-        hostLabel.frame = NSRect(x: 68, y: 172, width: 45, height: 17)
-        hostLabel.alignment = .right
-        accessoryView.addSubview(hostLabel)
+        let hostLabel = NSView.makeLabel(L("dialog.connection.host"))
 
-        let hostCombo = NSComboBox(frame: NSRect(x: 118, y: 169, width: 290, height: 24))
+        let hostCombo = NSComboBox()
+        hostCombo.translatesAutoresizingMaskIntoConstraints = false
         hostCombo.isEditable = true
         hostCombo.completes = true
         hostCombo.stringValue = settings.hostname
         hostCombo.placeholderString = L("dialog.connection.hostPlaceholder")
+        hostCombo.setContentHuggingPriority(.defaultLow, for: .horizontal)
         for h in settings.hostHistory {
             hostCombo.addItem(withObjectValue: h)
         }
-        accessoryView.addSubview(hostCombo)
 
-        // Row 2: Service: Telnet | TCP port# (original y=28-34)
-        let serviceLabel = NSTextField(labelWithString: L("dialog.connection.service"))
-        serviceLabel.frame = NSRect(x: 20, y: 140, width: 90, height: 17)
-        serviceLabel.alignment = .right
-        accessoryView.addSubview(serviceLabel)
+        let hostRow = NSStackView(views: [tcpRadio, hostLabel, hostCombo])
+        hostRow.translatesAutoresizingMaskIntoConstraints = false
+        hostRow.orientation = .horizontal
+        hostRow.spacing = DialogLayout.labelTrailing
+        hostRow.alignment = .firstBaseline
 
-        let telnetRadio = NSButton(radioButtonWithTitle: L("dialog.connection.telnet"),
-                                   target: helper, action: #selector(ConnectionDialogHelper.serviceChanged(_:)))
-        telnetRadio.frame = NSRect(x: 118, y: 140, width: 70, height: 18)
-        telnetRadio.tag = 0
+        // Row 2: [Service:] [Telnet radio]  [TCP port#:] [port field]
+        let serviceLabel = NSView.makeLabel(L("dialog.connection.service"))
+
+        let telnetRadio = NSView.makeRadioButton(L("dialog.connection.telnet"), tag: 0)
+        telnetRadio.target = helper
+        telnetRadio.action = #selector(ConnectionDialogHelper.serviceChanged(_:))
         telnetRadio.state = (settings.serviceType == .telnet) ? .on : .off
-        accessoryView.addSubview(telnetRadio)
 
-        let tcpPortLabel = NSTextField(labelWithString: L("dialog.connection.tcpPort"))
-        tcpPortLabel.frame = NSRect(x: 240, y: 140, width: 90, height: 17)
-        tcpPortLabel.alignment = .right
-        accessoryView.addSubview(tcpPortLabel)
+        let tcpPortLabel = NSView.makeLabel(L("dialog.connection.tcpPort"))
 
-        let tcpPortField = NSTextField(frame: NSRect(x: 335, y: 137, width: 55, height: 24))
-        tcpPortField.integerValue = settings.defaultPort
-        accessoryView.addSubview(tcpPortField)
+        let tcpPortField = NSView.makeNumberField(value: settings.defaultPort, width: DialogLayout.narrowFieldWidth)
         helper.tcpPortField = tcpPortField
 
-        // Row 3: SSH | SSH version (original y=45-46)
-        let sshRadio = NSButton(radioButtonWithTitle: "SSH",
-                                target: helper, action: #selector(ConnectionDialogHelper.serviceChanged(_:)))
-        sshRadio.frame = NSRect(x: 118, y: 116, width: 50, height: 18)
-        sshRadio.tag = 1
-        sshRadio.state = (settings.serviceType == .ssh) ? .on : .off
-        accessoryView.addSubview(sshRadio)
+        let serviceRow = NSStackView(views: [serviceLabel, telnetRadio])
+        serviceRow.translatesAutoresizingMaskIntoConstraints = false
+        serviceRow.orientation = .horizontal
+        serviceRow.spacing = DialogLayout.labelTrailing
+        serviceRow.alignment = .firstBaseline
 
-        let sshVerLabel = NSTextField(labelWithString: L("dialog.connection.sshVersion"))
-        sshVerLabel.frame = NSRect(x: 210, y: 116, width: 120, height: 17)
-        sshVerLabel.alignment = .right
+        let portRow = NSStackView(views: [tcpPortLabel, tcpPortField])
+        portRow.translatesAutoresizingMaskIntoConstraints = false
+        portRow.orientation = .horizontal
+        portRow.spacing = DialogLayout.labelTrailing
+        portRow.alignment = .firstBaseline
+
+        let row2 = NSStackView(views: [serviceRow, portRow])
+        row2.translatesAutoresizingMaskIntoConstraints = false
+        row2.orientation = .horizontal
+        row2.spacing = DialogLayout.sectionSpacing
+        row2.alignment = .firstBaseline
+
+        // Row 3: [spacer] [SSH radio]  [SSH version:] [popup]
+        let sshRadio = NSView.makeRadioButton("SSH", tag: 1)
+        sshRadio.target = helper
+        sshRadio.action = #selector(ConnectionDialogHelper.serviceChanged(_:))
+        sshRadio.state = (settings.serviceType == .ssh) ? .on : .off
+
+        let sshVerLabel = NSView.makeLabel(L("dialog.connection.sshVersion"))
         sshVerLabel.isEnabled = (settings.serviceType == .ssh)
-        accessoryView.addSubview(sshVerLabel)
         helper.sshVersionLabel = sshVerLabel
 
-        let sshVerPopup = NSPopUpButton(frame: NSRect(x: 335, y: 113, width: 75, height: 24))
-        for v in SSHVersion.allCases {
-            sshVerPopup.addItem(withTitle: v.displayName)
-        }
-        sshVerPopup.selectItem(withTitle: settings.sshVersion.displayName)
+        let sshVerPopup = NSView.makePopUpButton(
+            items: SSHVersion.allCases.map { $0.displayName },
+            selected: settings.sshVersion.displayName)
         sshVerPopup.isEnabled = (settings.serviceType == .ssh)
-        accessoryView.addSubview(sshVerPopup)
         helper.sshVersionPopup = sshVerPopup
 
-        // Row 4: Other | IP version (original y=58-63)
-        let otherRadio = NSButton(radioButtonWithTitle: L("dialog.connection.other"),
-                                  target: helper, action: #selector(ConnectionDialogHelper.serviceChanged(_:)))
-        otherRadio.frame = NSRect(x: 118, y: 92, width: 70, height: 18)
-        otherRadio.tag = 2
+        let sshRow = NSStackView(views: [sshRadio])
+        sshRow.translatesAutoresizingMaskIntoConstraints = false
+        sshRow.orientation = .horizontal
+        sshRow.spacing = DialogLayout.labelTrailing
+        sshRow.alignment = .firstBaseline
+
+        let sshVerRow = NSStackView(views: [sshVerLabel, sshVerPopup])
+        sshVerRow.translatesAutoresizingMaskIntoConstraints = false
+        sshVerRow.orientation = .horizontal
+        sshVerRow.spacing = DialogLayout.labelTrailing
+        sshVerRow.alignment = .firstBaseline
+
+        let row3 = NSStackView(views: [sshRow, sshVerRow])
+        row3.translatesAutoresizingMaskIntoConstraints = false
+        row3.orientation = .horizontal
+        row3.spacing = DialogLayout.sectionSpacing
+        row3.alignment = .firstBaseline
+
+        // Row 4: [spacer] [Other radio]  [IP version:] [popup]
+        let otherRadio = NSView.makeRadioButton(L("dialog.connection.other"), tag: 2)
+        otherRadio.target = helper
+        otherRadio.action = #selector(ConnectionDialogHelper.serviceChanged(_:))
         otherRadio.state = (settings.serviceType == .other) ? .on : .off
-        accessoryView.addSubview(otherRadio)
 
-        let ipVerLabel = NSTextField(labelWithString: L("dialog.connection.ipVersion"))
-        ipVerLabel.frame = NSRect(x: 210, y: 92, width: 120, height: 17)
-        ipVerLabel.alignment = .right
-        accessoryView.addSubview(ipVerLabel)
+        let ipVerLabel = NSView.makeLabel(L("dialog.connection.ipVersion"))
 
-        let ipVerPopup = NSPopUpButton(frame: NSRect(x: 335, y: 89, width: 75, height: 24))
-        for pf in ProtocolFamily.allCases {
-            ipVerPopup.addItem(withTitle: pf.displayName)
-        }
-        ipVerPopup.selectItem(withTitle: settings.protocolFamily.displayName)
-        accessoryView.addSubview(ipVerPopup)
+        let ipVerPopup = NSView.makePopUpButton(
+            items: ProtocolFamily.allCases.map { $0.displayName },
+            selected: settings.protocolFamily.displayName)
+
+        let otherRow = NSStackView(views: [otherRadio])
+        otherRow.translatesAutoresizingMaskIntoConstraints = false
+        otherRow.orientation = .horizontal
+        otherRow.spacing = DialogLayout.labelTrailing
+        otherRow.alignment = .firstBaseline
+
+        let ipVerRow = NSStackView(views: [ipVerLabel, ipVerPopup])
+        ipVerRow.translatesAutoresizingMaskIntoConstraints = false
+        ipVerRow.orientation = .horizontal
+        ipVerRow.spacing = DialogLayout.labelTrailing
+        ipVerRow.alignment = .firstBaseline
+
+        let row4 = NSStackView(views: [otherRow, ipVerRow])
+        row4.translatesAutoresizingMaskIntoConstraints = false
+        row4.orientation = .horizontal
+        row4.spacing = DialogLayout.sectionSpacing
+        row4.alignment = .firstBaseline
+
+        // Service rows: align radio buttons with leading indent
+        let serviceStack = NSStackView(views: [row2, row3, row4])
+        serviceStack.translatesAutoresizingMaskIntoConstraints = false
+        serviceStack.orientation = .vertical
+        serviceStack.alignment = .leading
+        serviceStack.spacing = DialogLayout.rowSpacing
+
+        // TCP content: hostRow + serviceStack
+        let tcpStack = NSStackView(views: [hostRow, serviceStack])
+        tcpStack.translatesAutoresizingMaskIntoConstraints = false
+        tcpStack.orientation = .vertical
+        tcpStack.alignment = .leading
+        tcpStack.spacing = DialogLayout.rowSpacing
+
+        tcpContent.addSubview(tcpStack)
+
+        let innerM = DialogLayout.innerMargin
+        NSLayoutConstraint.activate([
+            tcpStack.topAnchor.constraint(equalTo: tcpContent.topAnchor, constant: innerM),
+            tcpStack.leadingAnchor.constraint(equalTo: tcpContent.leadingAnchor, constant: innerM),
+            tcpStack.trailingAnchor.constraint(lessThanOrEqualTo: tcpContent.trailingAnchor, constant: -innerM),
+            tcpStack.bottomAnchor.constraint(equalTo: tcpContent.bottomAnchor, constant: -innerM),
+        ])
+
+        tcpBox.contentView = tcpContent
+
+        // Align service radio rows under the host combobox column
+        NSLayoutConstraint.activate([
+            serviceLabel.trailingAnchor.constraint(equalTo: tcpRadio.trailingAnchor),
+            sshRow.leadingAnchor.constraint(equalTo: serviceRow.leadingAnchor),
+            sshRow.widthAnchor.constraint(equalTo: serviceRow.widthAnchor),
+            otherRow.leadingAnchor.constraint(equalTo: serviceRow.leadingAnchor),
+            otherRow.widthAnchor.constraint(equalTo: serviceRow.widthAnchor),
+            hostCombo.widthAnchor.constraint(greaterThanOrEqualToConstant: 200),
+        ])
 
         helper.tcpControls = [hostLabel, hostCombo, serviceLabel,
                               telnetRadio, sshRadio, otherRadio,
@@ -854,26 +946,25 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
                               sshVerLabel, sshVerPopup,
                               ipVerLabel, ipVerPopup]
 
-        // ── Serial Group Box (original: GroupBox 4,79,228,24) ──
-        let serialBox = NSBox(frame: NSRect(x: 0, y: 0, width: 420, height: 50))
-        serialBox.title = ""
+        // ── Serial Group Box ──
+        let serialBox = NSBox()
+        serialBox.translatesAutoresizingMaskIntoConstraints = false
         serialBox.titlePosition = .noTitle
         accessoryView.addSubview(serialBox)
 
-        // Row 5: Serial radio + Port (original y=87-89)
-        let serialRadio = NSButton(radioButtonWithTitle: L("dialog.connection.serial"),
-                                   target: helper, action: #selector(ConnectionDialogHelper.connectionTypeChanged(_:)))
-        serialRadio.frame = NSRect(x: 8, y: 28, width: 80, height: 18)
-        serialRadio.tag = 1
+        let serialContent = NSView()
+        serialContent.translatesAutoresizingMaskIntoConstraints = false
+
+        let serialRadio = NSView.makeRadioButton(L("dialog.connection.serial"), tag: 1)
+        serialRadio.target = helper
+        serialRadio.action = #selector(ConnectionDialogHelper.connectionTypeChanged(_:))
         serialRadio.state = (settings.portType == .serial) ? .on : .off
-        accessoryView.addSubview(serialRadio)
 
-        let serialPortLabel = NSTextField(labelWithString: L("dialog.connection.serialPort"))
-        serialPortLabel.frame = NSRect(x: 68, y: 28, width: 45, height: 17)
-        serialPortLabel.alignment = .right
-        accessoryView.addSubview(serialPortLabel)
+        let serialPortLabel = NSView.makeLabel(L("dialog.connection.serialPort"))
 
-        let serialPortPopup = NSPopUpButton(frame: NSRect(x: 118, y: 25, width: 290, height: 24))
+        let serialPortPopup = NSPopUpButton()
+        serialPortPopup.translatesAutoresizingMaskIntoConstraints = false
+        serialPortPopup.setContentHuggingPriority(.defaultLow, for: .horizontal)
         let serialPorts = findSerialPorts()
         for port in serialPorts {
             serialPortPopup.addItem(withTitle: port)
@@ -884,9 +975,38 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         if !settings.serialPort.isEmpty {
             serialPortPopup.selectItem(withTitle: settings.serialPort)
         }
-        accessoryView.addSubview(serialPortPopup)
+
+        let serialRow = NSStackView(views: [serialRadio, serialPortLabel, serialPortPopup])
+        serialRow.translatesAutoresizingMaskIntoConstraints = false
+        serialRow.orientation = .horizontal
+        serialRow.spacing = DialogLayout.labelTrailing
+        serialRow.alignment = .firstBaseline
+
+        serialContent.addSubview(serialRow)
+        NSLayoutConstraint.activate([
+            serialRow.topAnchor.constraint(equalTo: serialContent.topAnchor, constant: innerM),
+            serialRow.leadingAnchor.constraint(equalTo: serialContent.leadingAnchor, constant: innerM),
+            serialRow.trailingAnchor.constraint(equalTo: serialContent.trailingAnchor, constant: -innerM),
+            serialRow.bottomAnchor.constraint(equalTo: serialContent.bottomAnchor, constant: -innerM),
+        ])
+
+        serialBox.contentView = serialContent
 
         helper.serialControls = [serialPortLabel, serialPortPopup]
+
+        // ── Main vertical stack: [tcpBox] - 12 - [serialBox] ──
+        NSLayoutConstraint.activate([
+            tcpBox.topAnchor.constraint(equalTo: accessoryView.topAnchor),
+            tcpBox.leadingAnchor.constraint(equalTo: accessoryView.leadingAnchor),
+            tcpBox.trailingAnchor.constraint(equalTo: accessoryView.trailingAnchor),
+
+            serialBox.topAnchor.constraint(equalTo: tcpBox.bottomAnchor, constant: DialogLayout.innerMargin),
+            serialBox.leadingAnchor.constraint(equalTo: accessoryView.leadingAnchor),
+            serialBox.trailingAnchor.constraint(equalTo: accessoryView.trailingAnchor),
+            serialBox.bottomAnchor.constraint(equalTo: accessoryView.bottomAnchor),
+
+            accessoryView.widthAnchor.constraint(greaterThanOrEqualToConstant: 420),
+        ])
 
         // Apply initial enable/disable state
         if settings.portType == .serial {
@@ -1034,53 +1154,51 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         alert.messageText = L("dialog.keyboardSetup.title")
         alert.informativeText = ""
 
-        let accessoryView = NSView(frame: NSRect(x: 0, y: 0, width: 340, height: 130))
+        // ── Labels (right-aligned) ──
+        let bsLabel = NSView.makeLabel(L("dialog.keyboardSetup.bsKey"))
+        let delLabel = NSView.makeLabel(L("dialog.keyboardSetup.deleteKey"))
+        let metaLabel = NSView.makeLabel(L("dialog.keyboardSetup.metaKey"))
+        let ansLabel = NSView.makeLabel(L("dialog.keyboardSetup.answerback"))
 
-        // ── Backspace Key ──
-        let bsLabel = NSTextField(labelWithString: L("dialog.keyboardSetup.bsKey"))
-        bsLabel.frame = NSRect(x: 0, y: 102, width: 120, height: 20)
-        accessoryView.addSubview(bsLabel)
-
-        let bsPopup = NSPopUpButton(frame: NSRect(x: 130, y: 100, width: 140, height: 24))
-        bsPopup.addItem(withTitle: "BS (0x08)")
-        bsPopup.addItem(withTitle: "DEL (0x7F)")
+        // ── Controls ──
+        let bsPopup = NSView.makePopUpButton(
+            items: ["BS (0x08)", "DEL (0x7F)"],
+            width: DialogLayout.popupWidth)
         bsPopup.selectItem(at: settings.bsKey == 8 ? 0 : 1)
-        accessoryView.addSubview(bsPopup)
 
-        // ── Delete Key ──
-        let delLabel = NSTextField(labelWithString: L("dialog.keyboardSetup.deleteKey"))
-        delLabel.frame = NSRect(x: 0, y: 68, width: 120, height: 20)
-        accessoryView.addSubview(delLabel)
-
-        let delPopup = NSPopUpButton(frame: NSRect(x: 130, y: 66, width: 140, height: 24))
-        delPopup.addItem(withTitle: "DEL (0x7F)")
-        delPopup.addItem(withTitle: "BS (0x08)")
-        delPopup.addItem(withTitle: L("dialog.keyboardSetup.deleteEscSeq"))
+        let delPopup = NSView.makePopUpButton(
+            items: ["DEL (0x7F)", "BS (0x08)", L("dialog.keyboardSetup.deleteEscSeq")],
+            width: DialogLayout.popupWidth)
         delPopup.selectItem(at: settings.deleteKey == 127 ? 0 : (settings.deleteKey == 8 ? 1 : 2))
-        accessoryView.addSubview(delPopup)
 
-        // ── Meta Key ──
-        let metaLabel = NSTextField(labelWithString: L("dialog.keyboardSetup.metaKey"))
-        metaLabel.frame = NSRect(x: 0, y: 34, width: 120, height: 20)
-        accessoryView.addSubview(metaLabel)
-
-        let metaPopup = NSPopUpButton(frame: NSRect(x: 130, y: 32, width: 140, height: 24))
-        metaPopup.addItem(withTitle: L("dialog.keyboardSetup.metaOff"))
-        metaPopup.addItem(withTitle: L("dialog.keyboardSetup.metaOn"))
+        let metaPopup = NSView.makePopUpButton(
+            items: [L("dialog.keyboardSetup.metaOff"), L("dialog.keyboardSetup.metaOn")],
+            width: DialogLayout.popupWidth)
         metaPopup.selectItem(at: settings.metaKey)
-        accessoryView.addSubview(metaPopup)
 
-        // ── Answerback ──
-        let ansLabel = NSTextField(labelWithString: L("dialog.keyboardSetup.answerback"))
-        ansLabel.frame = NSRect(x: 0, y: 2, width: 120, height: 20)
-        accessoryView.addSubview(ansLabel)
+        let ansField = NSView.makeTextField(
+            value: settings.answerback,
+            placeholder: L("dialog.keyboardSetup.answerbackPlaceholder"),
+            width: DialogLayout.wideFieldWidth)
 
-        let ansField = NSTextField(frame: NSRect(x: 130, y: 0, width: 200, height: 24))
-        ansField.stringValue = settings.answerback
-        ansField.placeholderString = L("dialog.keyboardSetup.answerbackPlaceholder")
-        accessoryView.addSubview(ansField)
+        // ── NSGridView: 4 rows x 2 columns (label | control) ──
+        let grid = NSGridView(views: [
+            [bsLabel,   bsPopup],
+            [delLabel,  delPopup],
+            [metaLabel, metaPopup],
+            [ansLabel,  ansField],
+        ])
+        grid.translatesAutoresizingMaskIntoConstraints = false
+        grid.rowSpacing = DialogLayout.rowSpacing
+        grid.columnSpacing = DialogLayout.labelTrailing
+        grid.column(at: 0).xPlacement = .trailing   // labels right-aligned
+        grid.column(at: 1).xPlacement = .leading     // controls left-aligned
+        // Baseline alignment per row
+        for i in 0..<grid.numberOfRows {
+            grid.row(at: i).rowAlignment = .firstBaseline
+        }
 
-        alert.accessoryView = accessoryView
+        alert.accessoryView = grid
         alert.addButton(withTitle: L("dialog.keyboardSetup.ok"))
         alert.addButton(withTitle: L("dialog.keyboardSetup.cancel"))
 
