@@ -320,17 +320,25 @@ class TTLInterpreter {
                 case .if_:
                     if try checkThen() { ifNest += 1 }
                 case .endIf:
-                    if ifNest < 1 { throw TTLError.invalidCtl }
-                    ifNest -= 1
+                    // break/continueの呼び出し元ifのendifは無視（ifNest==0の場合）
+                    if ifNest > 0 { ifNest -= 1 }
                 case .for_, .while_, .until, .do_:
                     breakFlag += 1
                 case .next, .endWhile, .endUntil, .loop:
                     breakFlag -= 1
+                    // breakの場合はループフレームを除去
+                    if breakFlag == 0 && !continueFlag {
+                        if !parser.loopStack.isEmpty {
+                            parser.loopStack.removeLast()
+                        }
+                    }
                 default: break
                 }
             }
             if breakFlag > 0 || !continueFlag { return }
             continueFlag = false
+            // continueの場合はlinePtr をリセットしてループ終端コマンド（next/endwhile/loop）を再実行
+            parser.linePtr = 0
         }
 
         // Handle endif skipping
@@ -972,8 +980,9 @@ class TTLInterpreter {
         guard !parser.loopStack.isEmpty else { throw TTLError.invalidCtl }
 
         // whileの先頭にジャンプバックし、条件再評価はttlWhileで行う
+        // lineIndex はwhile行自体を指すので、そこに戻す（getNewLineがcurrentLine行を読んで+1する）
         let loop = parser.loopStack.last!
-        parser.currentLine = loop.lineIndex + 1
+        parser.currentLine = loop.lineIndex
     }
 
     private func ttlDo() throws {

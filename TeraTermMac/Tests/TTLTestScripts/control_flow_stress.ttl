@@ -49,7 +49,7 @@ filewriteln fh msg
 counter = 0
 do
   counter = counter + 1
-loop counter >= 10
+loop until counter >= 10
 
 if counter = 10 then
   sprintf2 msg 'PASS: do-until loop counted to %d' counter
