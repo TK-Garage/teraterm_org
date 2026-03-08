@@ -511,7 +511,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
     @objc func runMacro(_ sender: Any?) {
         guard let wc = activeWindowController else { return }
         let panel = NSOpenPanel()
-        panel.allowedContentTypes = [.plainText]
+        // .ttl ファイルを選択可能にするためカスタムUTTypeを追加
+        let ttlType = UTType(filenameExtension: "ttl") ?? .plainText
+        panel.allowedContentTypes = [ttlType, .plainText]
         panel.title = L("dialog.macro.title")
         panel.message = L("dialog.macro.message")
         panel.beginSheetModal(for: wc.window!) { response in
