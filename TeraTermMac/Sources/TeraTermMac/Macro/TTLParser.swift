@@ -525,7 +525,7 @@ class TTLParser {
 
     /// Read a label name (same as identifier but allows any starting char)
     func getLabelName() -> String? {
-        let saved = linePtr
+        _ = linePtr
         guard let first = getFirstChar() else { return nil }
 
         var name = String(first)
@@ -795,7 +795,7 @@ class TTLParser {
         let result = try getExpression()
         switch result {
         case .string(let id): return getStrVal(id: id)
-        case .integer(let v): throw TTLError.typeMismatch
+        case .integer(_): throw TTLError.typeMismatch
         default: throw TTLError.typeMismatch
         }
     }
@@ -965,7 +965,7 @@ class TTLParser {
 
     // Precedence 2: *, /, %
     private func evalMultiplication() throws -> ExprResult {
-        var result = try getFactor()
+        let result = try getFactor()
         guard case .integer(var val1) = result else { return result }
 
         while true {
@@ -994,7 +994,7 @@ class TTLParser {
 
     // Precedence 3: +, -
     private func evalAddition() throws -> ExprResult {
-        var result = try evalMultiplication()
+        let result = try evalMultiplication()
         guard case .integer(var val1) = result else { return result }
 
         while true {
@@ -1018,7 +1018,7 @@ class TTLParser {
 
     // Precedence 4: <<, >>, >>>
     private func evalBitShift() throws -> ExprResult {
-        var result = try evalAddition()
+        let result = try evalAddition()
         guard case .integer(var val1) = result else { return result }
 
         while true {
@@ -1043,7 +1043,7 @@ class TTLParser {
 
     // Precedence 5: &
     private func evalBitAnd() throws -> ExprResult {
-        var result = try evalBitShift()
+        let result = try evalBitShift()
         guard case .integer(var val1) = result else { return result }
 
         while true {
@@ -1059,7 +1059,7 @@ class TTLParser {
 
     // Precedence 6: ^
     private func evalBitXor() throws -> ExprResult {
-        var result = try evalBitAnd()
+        let result = try evalBitAnd()
         guard case .integer(var val1) = result else { return result }
 
         while true {
@@ -1075,7 +1075,7 @@ class TTLParser {
 
     // Precedence 7: |
     private func evalBitOr() throws -> ExprResult {
-        var result = try evalBitXor()
+        let result = try evalBitXor()
         guard case .integer(var val1) = result else { return result }
 
         while true {
@@ -1091,7 +1091,7 @@ class TTLParser {
 
     // Precedence 8: <, >, <=, >=
     private func evalComparison() throws -> ExprResult {
-        var result = try evalBitOr()
+        let result = try evalBitOr()
         guard case .integer(var val1) = result else { return result }
 
         while true {
@@ -1116,7 +1116,7 @@ class TTLParser {
 
     // Precedence 9: ==, !=
     private func evalEquality() throws -> ExprResult {
-        var result = try evalComparison()
+        let result = try evalComparison()
         guard case .integer(var val1) = result else { return result }
 
         while true {
@@ -1139,7 +1139,7 @@ class TTLParser {
 
     // Precedence 10: &&
     private func evalLogicalAnd() throws -> ExprResult {
-        var result = try evalEquality()
+        let result = try evalEquality()
         guard case .integer(var val1) = result else { return result }
 
         while true {
@@ -1155,7 +1155,7 @@ class TTLParser {
 
     // Precedence 11: ||, xor
     private func evalLogicalOr() throws -> ExprResult {
-        var result = try evalLogicalAnd()
+        let result = try evalLogicalAnd()
         guard case .integer(var val1) = result else { return result }
 
         while true {
