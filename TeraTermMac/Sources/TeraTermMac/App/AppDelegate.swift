@@ -1108,14 +1108,12 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
             if let wc = self.activeWindowController {
                 wc.terminalView.settings = self.settings
                 wc.terminalView.updateFont()
-                // termIsWin が有効なら端末サイズに合わせてウィンドウをリサイズ
-                if self.settings.termIsWin {
-                    let size = wc.terminalView.preferredSize(
-                        columns: self.settings.terminalWidth,
-                        rows: self.settings.terminalHeight
-                    )
-                    wc.window?.setContentSize(size)
-                }
+                // 端末サイズ設定に合わせてウィンドウをリサイズ
+                let size = wc.terminalView.preferredSize(
+                    columns: self.settings.terminalWidth,
+                    rows: self.settings.terminalHeight
+                )
+                wc.window?.setContentSize(size)
             }
         }
         if let win = activeWindowController?.window {
