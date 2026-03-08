@@ -250,7 +250,10 @@ class TTLParser {
     // MARK: - Initialization
 
     func loadScript(_ source: String) {
-        lines = source.components(separatedBy: .newlines)
+        // Normalize CRLF (Windows) and CR (old Mac) to LF before splitting
+        let normalized = source.replacingOccurrences(of: "\r\n", with: "\n")
+                               .replacingOccurrences(of: "\r", with: "\n")
+        lines = normalized.components(separatedBy: "\n")
         currentLine = 0
         linePtr = 0
         commenting = false

@@ -131,11 +131,15 @@ final class TTLMacSpecificTests: XCTestCase {
     }
 
     func testCRLF_MixedNewlines() {
-        // Mix of CRLF, LF, and CR
+        // Mix of CRLF, LF, and CR - all normalized by loadScript
+        let parser = TTLParser()
         let mixed = "line1\r\nline2\nline3\rline4"
-        let lines = mixed.components(separatedBy: .newlines)
-        XCTAssertGreaterThanOrEqual(lines.count, 4)
-        XCTAssertEqual(lines[0], "line1")
+        parser.loadScript(mixed)
+        XCTAssertEqual(parser.lines.count, 4)
+        XCTAssertEqual(parser.lines[0], "line1")
+        XCTAssertEqual(parser.lines[1], "line2")
+        XCTAssertEqual(parser.lines[2], "line3")
+        XCTAssertEqual(parser.lines[3], "line4")
     }
 
     func testCRLF_NoTrailingNewline() {
@@ -157,15 +161,11 @@ final class TTLMacSpecificTests: XCTestCase {
         let parser = TTLParser()
         let crlfScript = "x = 1\r\nif x = 1 then\r\n  messagebox 'yes'\r\nendif\r\nend"
         parser.loadScript(crlfScript)
-
-        // NOTE: Swift's components(separatedBy: .newlines) splits on BOTH \r and \n
-        // individually, so "a\r\nb" becomes ["a", "", "b"] (with empty line between).
-        // This means CRLF files produce extra empty lines.
-        // A proper fix would be to pre-process: source.replacingOccurrences(of: "\r\n", with: "\n")
-        // For now, verify that the parser at least loads without crashing
-        // and that non-empty lines have no trailing \r.
-        XCTAssertGreaterThanOrEqual(parser.lines.count, 5)
-        for line in parser.lines where !line.isEmpty {
+        // CRLF is normalized to LF before splitting, so exactly 5 lines
+        XCTAssertEqual(parser.lines.count, 5)
+        XCTAssertEqual(parser.lines[0], "x = 1")
+        XCTAssertEqual(parser.lines[4], "end")
+        for line in parser.lines {
             XCTAssertFalse(line.hasSuffix("\r"), "Line should not end with CR: '\(line)'")
         }
     }
