@@ -59,6 +59,11 @@ func TTL(_ key: String) -> String {
     #endif
 }
 
+func TTL(_ key: String, _ args: CVarArg...) -> String {
+    let fmt = TTL(key)
+    return String(format: fmt, arguments: args)
+}
+
 // MARK: - NSView Auto Layout Helpers
 
 extension NSView {

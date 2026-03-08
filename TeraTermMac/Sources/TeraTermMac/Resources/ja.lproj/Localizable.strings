@@ -249,6 +249,9 @@
 "dialog.sshAuth.selectKeyFile" = "秘密鍵ファイルの選択";
 "dialog.sshAuth.rememberPassword" = "パスワードをメモリに記憶する";
 "dialog.sshAuth.forwardAgent" = "エージェント転送する";
+"dialog.sshAuth.invalidKey.title" = "無効な秘密鍵ファイル";
+"dialog.sshAuth.invalidKey.message" = "選択されたファイルは有効な秘密鍵ではありません:\n%@\n\n対応形式: OpenSSH, PEM (RSA/DSA/EC), PuTTY (PPK), SSH.COM\n正しい形式のファイルを選択してください。";
+"dialog.sshAuth.invalidKey.retry" = "再選択";
 
 /* File Transfer */
 "transfer.complete.title" = "転送完了";

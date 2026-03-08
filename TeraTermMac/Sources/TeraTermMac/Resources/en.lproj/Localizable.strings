@@ -249,6 +249,9 @@
 "dialog.sshAuth.selectKeyFile" = "Select Private Key File";
 "dialog.sshAuth.rememberPassword" = "Remember password in memory";
 "dialog.sshAuth.forwardAgent" = "Forward agent";
+"dialog.sshAuth.invalidKey.title" = "Invalid Private Key";
+"dialog.sshAuth.invalidKey.message" = "The selected file is not a valid private key:\n%@\n\nSupported formats: OpenSSH, PEM (RSA/DSA/EC), PuTTY (PPK), SSH.COM.\nPlease select a valid private key file.";
+"dialog.sshAuth.invalidKey.retry" = "Select Again";
 
 /* File Transfer */
 "transfer.complete.title" = "Transfer Complete";

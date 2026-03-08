@@ -214,13 +214,25 @@ class SSHAuthViewController: BaseSetupDialogController {
     }
 
     @objc private func browseKeyFile(_ sender: Any?) {
+        guard let win = view.window else { return }
+        presentKeyFilePanel(on: win)
+    }
+
+    /// Show NSOpenPanel for key file selection. If the selected file is invalid,
+    /// show an error alert and re-open the panel. Repeats until user picks a
+    /// valid key or cancels. Uses DispatchQueue.main.async to avoid deep recursion.
+    private func presentKeyFilePanel(on win: NSWindow) {
         let panel = NSOpenPanel()
         panel.title = TTL("dialog.sshAuth.selectKeyFile")
         panel.canChooseFiles = true
         panel.canChooseDirectories = false
         panel.allowsMultipleSelection = false
+        // No file type filter — users may have extensionless key files
+        panel.allowedContentTypes = []
+        panel.allowsOtherFileTypes = true
+        panel.treatsFilePackagesAsDirectories = true
 
-        // Start from ~/.ssh if no key file is set
+        // Start from previous directory or ~/.ssh
         if privateKeyField.stringValue.isEmpty {
             let sshDir = FileManager.default.homeDirectoryForCurrentUser
                 .appendingPathComponent(".ssh")
@@ -232,13 +244,84 @@ class SSHAuthViewController: BaseSetupDialogController {
             panel.directoryURL = url.deletingLastPathComponent()
         }
 
-        if let win = view.window {
-            panel.beginSheetModal(for: win) { [weak self] response in
-                if response == .OK, let url = panel.url {
-                    self?.privateKeyField.stringValue = url.path
+        panel.beginSheetModal(for: win) { [weak self] response in
+            guard let self = self else { return }
+            guard response == .OK, let url = panel.url else { return }
+
+            if SSHAuthViewController.isValidPrivateKey(at: url) {
+                self.privateKeyField.stringValue = url.path
+            } else {
+                // Show error, then re-open file panel via async to avoid stack growth
+                self.showInvalidKeyAlert(on: win, selectedPath: url.path)
+            }
+        }
+    }
+
+    /// Show "invalid key file" alert, then re-open file selection on dismiss.
+    private func showInvalidKeyAlert(on win: NSWindow, selectedPath: String) {
+        let alert = NSAlert()
+        alert.alertStyle = .warning
+        alert.messageText = TTL("dialog.sshAuth.invalidKey.title")
+        alert.informativeText = TTL("dialog.sshAuth.invalidKey.message", selectedPath)
+        alert.addButton(withTitle: TTL("dialog.sshAuth.invalidKey.retry"))
+        alert.addButton(withTitle: TTL("Cancel"))
+
+        alert.beginSheetModal(for: win) { [weak self] response in
+            guard let self = self else { return }
+            if response == .alertFirstButtonReturn {
+                // Re-open file panel asynchronously to avoid recursion stack growth
+                DispatchQueue.main.async { [weak self] in
+                    guard let self = self, let win = self.view.window else { return }
+                    self.presentKeyFilePanel(on: win)
                 }
             }
         }
+    }
+
+    // MARK: - Private Key Validation
+
+    /// Check whether the file at the given URL looks like a valid SSH private key.
+    /// Inspects the first few bytes for known header patterns:
+    ///  - OpenSSH: "-----BEGIN OPENSSH PRIVATE KEY-----"
+    ///  - PEM (RSA/DSA/EC): "-----BEGIN ... PRIVATE KEY-----"
+    ///  - PuTTY PPK: "PuTTY-User-Key-File-"
+    ///  - SSH.COM: "---- BEGIN SSH2 ENCRYPTED PRIVATE KEY ----"
+    static func isValidPrivateKey(at url: URL) -> Bool {
+        guard let data = try? Data(contentsOf: url, options: .mappedIfSafe) else {
+            return false
+        }
+
+        // Read first 512 bytes — all key headers appear within this range
+        let headerSize = min(data.count, 512)
+        guard let header = String(data: data[0..<headerSize], encoding: .utf8) ??
+                           String(data: data[0..<headerSize], encoding: .ascii) else {
+            // Binary key formats are not common for SSH — likely not a key
+            return false
+        }
+
+        let knownHeaders: [String] = [
+            // OpenSSH new format (ssh-keygen default since OpenSSH 6.5)
+            "-----BEGIN OPENSSH PRIVATE KEY-----",
+            // PEM / PKCS#1 / PKCS#8 traditional formats
+            "-----BEGIN RSA PRIVATE KEY-----",
+            "-----BEGIN DSA PRIVATE KEY-----",
+            "-----BEGIN EC PRIVATE KEY-----",
+            "-----BEGIN PRIVATE KEY-----",              // PKCS#8 unencrypted
+            "-----BEGIN ENCRYPTED PRIVATE KEY-----",    // PKCS#8 encrypted
+            // PuTTY PPK format (v2 and v3)
+            "PuTTY-User-Key-File-2:",
+            "PuTTY-User-Key-File-3:",
+            // SSH.COM (Tectia) format
+            "---- BEGIN SSH2 ENCRYPTED PRIVATE KEY ----",
+        ]
+
+        for pattern in knownHeaders {
+            if header.contains(pattern) {
+                return true
+            }
+        }
+
+        return false
     }
 
     /// Enable/disable controls based on the selected auth method.
