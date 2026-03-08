@@ -54,7 +54,7 @@ class EncodingConverter {
         // DOS / Windows
         case .cp437:      return CFStringEncoding(CFStringEncodings.dosLatin1.rawValue)
         case .cp932:      return CFStringEncoding(CFStringEncodings.dosJapanese.rawValue)
-        case .cp1252:     return CFStringEncoding(CFStringEncodings.windowsLatin1.rawValue)
+        case .cp1252:     return CFStringBuiltInEncodings.windowsLatin1.rawValue
         case .cp1251:     return CFStringEncoding(CFStringEncodings.windowsCyrillic.rawValue)
         case .cp1253:     return CFStringEncoding(CFStringEncodings.windowsGreek.rawValue)
         case .cp1255:     return CFStringEncoding(CFStringEncodings.windowsHebrew.rawValue)
