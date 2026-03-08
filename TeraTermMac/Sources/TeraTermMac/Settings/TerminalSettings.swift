@@ -228,6 +228,16 @@ enum SSHVersion: Int, Codable, CaseIterable {
     }
 }
 
+// MARK: - SSH Authentication Method (port of IDD_SSHAUTH)
+
+enum SSHAuthMethod: Int, Codable {
+    case password = 0
+    case publicKey = 1
+    case rhosts = 2
+    case challengeResponse = 3
+    case pageant = 4
+}
+
 // MARK: - Cursor Shape
 
 enum CursorShape: Int, Codable {
@@ -384,6 +394,11 @@ class TerminalSettings: Codable {
     var protocolFamily: ProtocolFamily = .auto_
     var hostHistory: [String] = []
     var sshVersion: SSHVersion = .ssh2
+    var sshAuthMethod: SSHAuthMethod = .password
+    var sshUsername: String = ""
+    var sshKeyFile: String = ""
+    var sshRememberPassword: Bool = false
+    var sshForwardAgent: Bool = false
     var termType: String = "xterm"
 
     // Serial Port

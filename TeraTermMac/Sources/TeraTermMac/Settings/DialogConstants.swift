@@ -86,6 +86,19 @@ extension NSView {
         return field
     }
 
+    /// Create a secure (password) text field.
+    static func makeSecureTextField(placeholder: String = "", width: CGFloat? = nil) -> NSSecureTextField {
+        let field = NSSecureTextField()
+        field.translatesAutoresizingMaskIntoConstraints = false
+        field.placeholderString = placeholder
+        field.font = NSFont.systemFont(ofSize: NSFont.systemFontSize)
+        field.bezelStyle = .roundedBezel
+        if let w = width {
+            field.widthAnchor.constraint(equalToConstant: w).isActive = true
+        }
+        return field
+    }
+
     /// Create a number-only text field.
     static func makeNumberField(value: Int, width: CGFloat = DialogLayout.narrowFieldWidth) -> NSTextField {
         let field = makeTextField(value: "\(value)", width: width)

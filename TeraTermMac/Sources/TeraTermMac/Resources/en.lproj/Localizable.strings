@@ -235,6 +235,21 @@
 "error.connection.ptyFailed" = "Failed to create pseudo-terminal.";
 "error.connection.sendFailed" = "Failed to send data.";
 
+/* SSH Authentication Dialog */
+"dialog.sshAuth.title" = "SSH Authentication";
+"dialog.sshAuth.disconnect" = "Disconnect";
+"dialog.sshAuth.username" = "User name:";
+"dialog.sshAuth.passphrase" = "Passphrase:";
+"dialog.sshAuth.usePassword" = "Use plain password to log in";
+"dialog.sshAuth.usePublicKey" = "Use RSA/DSA/ECDSA/ED25519 key to log in";
+"dialog.sshAuth.useRhosts" = "Use rhosts to log in (SSH1)";
+"dialog.sshAuth.useChallenge" = "Use challenge/response to log in (keyboard-interactive)";
+"dialog.sshAuth.usePageant" = "Use Pageant";
+"dialog.sshAuth.privateKey" = "Private key file:";
+"dialog.sshAuth.selectKeyFile" = "Select Private Key File";
+"dialog.sshAuth.rememberPassword" = "Remember password in memory";
+"dialog.sshAuth.forwardAgent" = "Forward agent";
+
 /* File Transfer */
 "transfer.complete.title" = "Transfer Complete";
 "transfer.complete.message" = "%@: %lld bytes";

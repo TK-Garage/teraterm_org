@@ -235,6 +235,21 @@
 "error.connection.ptyFailed" = "擬似端末の作成に失敗しました。";
 "error.connection.sendFailed" = "データの送信に失敗しました。";
 
+/* SSH Authentication Dialog */
+"dialog.sshAuth.title" = "SSH認証";
+"dialog.sshAuth.disconnect" = "切断";
+"dialog.sshAuth.username" = "ユーザ名:";
+"dialog.sshAuth.passphrase" = "パスフレーズ:";
+"dialog.sshAuth.usePassword" = "プレインテキストでパスワードを使う";
+"dialog.sshAuth.usePublicKey" = "RSA/DSA/ECDSA/ED25519鍵を使う";
+"dialog.sshAuth.useRhosts" = "rhostsを使う (SSH1)";
+"dialog.sshAuth.useChallenge" = "チャレンジ/レスポンスを使う (keyboard-interactive)";
+"dialog.sshAuth.usePageant" = "Pageantを使う";
+"dialog.sshAuth.privateKey" = "秘密鍵ファイル:";
+"dialog.sshAuth.selectKeyFile" = "秘密鍵ファイルの選択";
+"dialog.sshAuth.rememberPassword" = "パスワードをメモリに記憶する";
+"dialog.sshAuth.forwardAgent" = "エージェント転送する";
+
 /* File Transfer */
 "transfer.complete.title" = "転送完了";
 "transfer.complete.message" = "%@: %lld バイト";

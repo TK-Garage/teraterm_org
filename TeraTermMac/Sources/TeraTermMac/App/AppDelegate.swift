@@ -1072,9 +1072,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
                     addToHostHistory(host)
 
                     if service == .ssh {
-                        // SSH is not yet implemented — show error with details
-                        let error = ConnectionError.sshNotSupported(host: host, port: port)
-                        wc.connectionDidFail(error: error)
+                        self.showSSHAuthDialog(wc: wc, host: host, port: port)
                     } else {
                         wc.connectTCP(host: host, port: port, telnet: service == .telnet)
                     }
@@ -1090,6 +1088,28 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         let maxHistory = 20
         if settings.hostHistory.count > maxHistory {
             settings.hostHistory = Array(settings.hostHistory.prefix(maxHistory))
+        }
+    }
+
+    /// Show SSH authentication dialog, then connect on OK.
+    private func showSSHAuthDialog(wc: TerminalWindowController, host: String, port: Int) {
+        let vc = SSHAuthViewController(settings: settings)
+        vc.onAuthenticate = { [weak self, weak wc] username, passphrase, authMethod, keyFile in
+            guard let self = self, let wc = wc else { return }
+            // Store auth settings
+            self.settings.sshUsername = username
+            self.settings.sshAuthMethod = authMethod
+            self.settings.sshKeyFile = keyFile
+            // Proceed with TCP connection (SSH protocol layer will use these settings)
+            wc.connectTCP(host: host, port: port, telnet: false)
+        }
+        vc.cancelHandler = {
+            // User chose "Disconnect" — do nothing
+        }
+        if let win = wc.window {
+            currentSetupSheet = vc.presentAsSheet(on: win)
+        } else {
+            _ = vc.presentModal()
         }
     }
 
