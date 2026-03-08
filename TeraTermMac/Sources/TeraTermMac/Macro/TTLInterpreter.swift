@@ -943,7 +943,7 @@ class TTLInterpreter {
         }
 
         let conditionMet = (val != 0) == mode
-        let loopType: TTLLoopFrame.LoopType = mode ? .while_ : .until
+        let loopType: TTLLoopType = mode ? .while_ : .until
 
         // endwhileからループバックした場合は既にフレームがあるので追加しない
         if let lastLoop = parser.loopStack.last,
