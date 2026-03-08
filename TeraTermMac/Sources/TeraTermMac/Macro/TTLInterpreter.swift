@@ -943,34 +943,37 @@ class TTLInterpreter {
         }
 
         let conditionMet = (val != 0) == mode
+        let loopType: TTLLoopFrame.LoopType = mode ? .while_ : .until
 
-        if conditionMet {
-            let frame = TTLLoopFrame(
-                type: mode ? .while_ : .until,
-                lineIndex: parser.currentLine - 1,
-                varId: 0, limit: 0, step: 0
-            )
-            parser.loopStack.append(frame)
+        // endwhileからループバックした場合は既にフレームがあるので追加しない
+        if let lastLoop = parser.loopStack.last,
+           lastLoop.type == loopType && lastLoop.lineIndex == parser.currentLine - 1 {
+            // ループバック: 条件を再評価し、偽ならフレームを除去してスキップ
+            if !conditionMet {
+                parser.loopStack.removeLast()
+                endWhileFlag = 1
+            }
         } else {
-            endWhileFlag = 1
+            // 初回: 条件が真ならフレームをプッシュ、偽ならスキップ
+            if conditionMet {
+                let frame = TTLLoopFrame(
+                    type: loopType,
+                    lineIndex: parser.currentLine - 1,
+                    varId: 0, limit: 0, step: 0
+                )
+                parser.loopStack.append(frame)
+            } else {
+                endWhileFlag = 1
+            }
         }
     }
 
     private func ttlEndWhile(mode: Bool) throws {
         guard !parser.loopStack.isEmpty else { throw TTLError.invalidCtl }
 
-        var val = 1
-        if parser.checkParameterGiven() {
-            val = try parser.getIntExpression()
-        }
-
-        let shouldLoop = (val != 0) == mode
-        if shouldLoop {
-            let loop = parser.loopStack.last!
-            parser.currentLine = loop.lineIndex + 1
-        } else {
-            parser.loopStack.removeLast()
-        }
+        // whileの先頭にジャンプバックし、条件再評価はttlWhileで行う
+        let loop = parser.loopStack.last!
+        parser.currentLine = loop.lineIndex + 1
     }
 
     private func ttlDo() throws {
