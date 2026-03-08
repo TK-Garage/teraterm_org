@@ -47,7 +47,7 @@ class TerminalWindowController: NSWindowController {
         // Create a temporary window; real size set after font metrics are known
         let window = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 640, height: 400),
-            styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
+            styleMask: [.titled, .closable, .miniaturizable, .resizable],
             backing: .buffered,
             defer: false
         )
@@ -55,9 +55,10 @@ class TerminalWindowController: NSWindowController {
         window.minSize = NSSize(width: 200, height: 100)
         window.isReleasedWhenClosed = false
 
-        // Modern macOS appearance: glass titlebar integrated with content
-        window.titlebarAppearsTransparent = true
-        window.titleVisibility = .hidden
+        // macOS HIG: visible title bar with standard dark appearance
+        window.titlebarAppearsTransparent = false
+        window.titleVisibility = .visible
+        window.appearance = NSAppearance(named: .darkAqua)
         window.animationBehavior = .documentWindow
 
         super.init(window: window)
@@ -116,10 +117,9 @@ class TerminalWindowController: NSWindowController {
         terminalView.terminalDelegate = self
         visualEffect.addSubview(terminalView)
 
-        // Account for titlebar height so the first line is not hidden
-        // behind the transparent titlebar / window rounded corners.
-        let titlebarHeight = window.frame.height - window.contentLayoutRect.height
-        terminalView.topInset = titlebarHeight
+        // With a standard (non-transparent) title bar, the content area
+        // starts below the title bar, so no topInset is needed.
+        terminalView.topInset = 0
 
         // Now that the view is in a window, compute font metrics and resize
         terminalView.updateFont()

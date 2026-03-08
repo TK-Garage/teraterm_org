@@ -69,6 +69,9 @@ class TerminalView: NSView {
     // Content inset to avoid titlebar / window rounded corners
     var topInset: CGFloat = 0
 
+    // Left margin following macOS HIG (content should not touch window edge)
+    var leftInset: CGFloat = 4
+
     // Scroll
     private var scrollbackOffset: Int = 0
 
@@ -153,7 +156,8 @@ class TerminalView: NSView {
 
     private func recalculateSize() {
         let availableHeight = bounds.height - topInset
-        let newCols = max(1, Int(bounds.width / cellWidth))
+        let availableWidth = bounds.width - leftInset
+        let newCols = max(1, Int(availableWidth / cellWidth))
         let newRows = max(1, Int(availableHeight / cellHeight))
 
         if newCols != columns || newRows != rows {
@@ -168,7 +172,7 @@ class TerminalView: NSView {
     }
 
     func preferredSize(columns: Int, rows: Int) -> NSSize {
-        return NSSize(width: CGFloat(columns) * cellWidth, height: CGFloat(rows) * cellHeight + topInset)
+        return NSSize(width: CGFloat(columns) * cellWidth + leftInset, height: CGFloat(rows) * cellHeight + topInset)
     }
 
     override func setFrameSize(_ newSize: NSSize) {
@@ -209,6 +213,53 @@ class TerminalView: NSView {
 
         // Draw selection overlay
         drawSelection(context: context, buffer: buffer)
+
+        // Draw IME marked (composing) text
+        if let markedText = markedText, markedText.length > 0 {
+            drawMarkedText(context: context, buffer: buffer, markedText: markedText)
+        }
+    }
+
+    private func drawMarkedText(context: CGContext, buffer: TerminalBuffer, markedText: NSAttributedString) {
+        guard let font = ctFont else { return }
+
+        let cursorX = leftInset + CGFloat(buffer.cursorX) * cellWidth
+        let cursorY = topInset + CGFloat(buffer.cursorY) * cellHeight
+        let text = markedText.string
+
+        // Calculate total width of marked text
+        let attrs: [NSAttributedString.Key: Any] = [.font: font as Any]
+        let attrStr = NSAttributedString(string: text, attributes: attrs)
+        let line = CTLineCreateWithAttributedString(attrStr)
+        let textWidth = CGFloat(CTLineGetTypographicBounds(line, nil, nil, nil))
+
+        // Draw background highlight for composing text
+        let bgRect = CGRect(x: cursorX, y: cursorY, width: textWidth, height: cellHeight)
+        context.setFillColor(NSColor(white: 0.3, alpha: 0.8).cgColor)
+        context.fill(bgRect)
+
+        // Draw the composing text
+        let fgColor: NSColor = .white
+        let drawAttrs: [NSAttributedString.Key: Any] = [
+            .font: font as Any,
+            .foregroundColor: fgColor,
+        ]
+        let drawStr = NSAttributedString(string: text, attributes: drawAttrs)
+        let drawLine = CTLineCreateWithAttributedString(drawStr)
+
+        context.saveGState()
+        context.textMatrix = CGAffineTransform(scaleX: 1.0, y: -1.0)
+        context.textPosition = CGPoint(x: cursorX, y: cursorY + fontAscent)
+        CTLineDraw(drawLine, context)
+        context.restoreGState()
+
+        // Draw underline to indicate composing state
+        context.setStrokeColor(fgColor.cgColor)
+        context.setLineWidth(1.0)
+        let underlineY = cursorY + fontAscent + 1
+        context.move(to: CGPoint(x: cursorX, y: underlineY))
+        context.addLine(to: CGPoint(x: cursorX + textWidth, y: underlineY))
+        context.strokePath()
     }
 
     private func drawLine(context: CGContext, line: BufferLine, row: Int, buffer: TerminalBuffer) {
@@ -218,7 +269,7 @@ class TerminalView: NSView {
             let cell = line.cells[col]
             if cell.isWideTrail { continue }
 
-            let x = CGFloat(col) * cellWidth
+            let x = leftInset + CGFloat(col) * cellWidth
             let charWidth = cell.isWide ? cellWidth * 2 : cellWidth
 
             // Draw cell background
@@ -325,7 +376,7 @@ class TerminalView: NSView {
     // MARK: - Cursor Drawing
 
     private func drawCursor(context: CGContext, buffer: TerminalBuffer) {
-        let x = CGFloat(buffer.cursorX) * cellWidth
+        let x = leftInset + CGFloat(buffer.cursorX) * cellWidth
         let y = topInset + CGFloat(buffer.cursorY) * cellHeight
         let cursorColor = NSColor(
             red: CGFloat(settings.colorTheme.cursorColor.r) / 255.0,
@@ -372,7 +423,7 @@ class TerminalView: NSView {
         for row in max(0, sel.startY)...min(rows - 1, sel.endY) {
             let startCol = (row == sel.startY) ? sel.startX : 0
             let endCol = (row == sel.endY) ? sel.endX : columns
-            let x = CGFloat(startCol) * cellWidth
+            let x = leftInset + CGFloat(startCol) * cellWidth
             let y = topInset + CGFloat(row) * cellHeight
             let w = CGFloat(endCol - startCol) * cellWidth
             context.fill(CGRect(x: x, y: y, width: w, height: cellHeight))
@@ -532,7 +583,7 @@ class TerminalView: NSView {
 
     private var cursorRect: NSRect {
         guard let buffer = buffer else { return .zero }
-        let x = CGFloat(buffer.cursorX) * cellWidth
+        let x = leftInset + CGFloat(buffer.cursorX) * cellWidth
         let y = topInset + CGFloat(buffer.cursorY) * cellHeight
         return NSRect(x: x, y: y, width: cellWidth, height: cellHeight)
     }
@@ -718,7 +769,7 @@ class TerminalView: NSView {
 
     private func cellPosition(for event: NSEvent) -> (x: Int, y: Int) {
         let point = convert(event.locationInWindow, from: nil)
-        let x = max(0, min(Int(point.x / cellWidth), columns - 1))
+        let x = max(0, min(Int((point.x - leftInset) / cellWidth), columns - 1))
         let y = max(0, min(Int((point.y - topInset) / cellHeight), rows - 1))
         return (x, y)
     }
@@ -892,7 +943,7 @@ extension TerminalView: NSTextInputClient {
 
     func firstRect(forCharacterRange range: NSRange, actualRange: NSRangePointer?) -> NSRect {
         guard let buffer = buffer else { return .zero }
-        let x = CGFloat(buffer.cursorX) * cellWidth
+        let x = leftInset + CGFloat(buffer.cursorX) * cellWidth
         let y = topInset + CGFloat(buffer.cursorY) * cellHeight
         let screenRect = window?.convertToScreen(convert(CGRect(x: x, y: y, width: cellWidth, height: cellHeight), to: nil)) ?? .zero
         return screenRect
