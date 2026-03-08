@@ -127,7 +127,8 @@ class TerminalSetupViewController: BaseSetupDialogController {
         layoutControls(
             sizeBox: sizeBox, newlineBox: newlineBox,
             idLabel: idLabel, ansLabel: ansLabel,
-            receiveLabel: receiveLabel, transmitLabel: transmitLabel)
+            receiveLabel: receiveLabel, transmitLabel: transmitLabel,
+            xLabel: xLabel)
     }
 
     // MARK: - Auto Layout
@@ -135,7 +136,8 @@ class TerminalSetupViewController: BaseSetupDialogController {
     private func layoutControls(
         sizeBox: NSBox, newlineBox: NSBox,
         idLabel: NSTextField, ansLabel: NSTextField,
-        receiveLabel: NSTextField, transmitLabel: NSTextField
+        receiveLabel: NSTextField, transmitLabel: NSTextField,
+        xLabel: NSTextField
     ) {
         let p = DialogLayout.groupBoxPadding
         let tp = DialogLayout.groupBoxTopPadding
