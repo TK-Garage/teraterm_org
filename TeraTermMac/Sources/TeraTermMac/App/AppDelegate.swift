@@ -55,7 +55,7 @@ private class ConnectionDialogHelper: NSObject {
     }
 }
 
-class AppDelegate: NSObject, NSApplicationDelegate {
+class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
     // Window controllers
     private var windowControllers: [TerminalWindowController] = []
     private var settings: TerminalSettings = TerminalSettings()
@@ -688,7 +688,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     // MARK: - Menu Validation
 
-    override func validateMenuItem(_ menuItem: NSMenuItem) -> Bool {
+    func validateMenuItem(_ menuItem: NSMenuItem) -> Bool {
         let connected = activeWindowController?.connectionManager.state == .connected
         let hasWindow = activeWindowController != nil
 
@@ -723,7 +723,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             }
             return true
         default:
-            return super.validateMenuItem(menuItem)
+            return true
         }
     }
 
