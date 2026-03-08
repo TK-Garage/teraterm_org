@@ -540,14 +540,43 @@ class TerminalView: NSView {
     // MARK: - Key Event Handling
 
     override func keyDown(with event: NSEvent) {
-        // Check for IME input first
-        if event.type == .keyDown {
+        // IME変換中はすべてのキーをIMEに渡す
+        if hasMarkedText() {
             interpretKeyEvents([event])
             return
         }
 
-        let termEvent = convertKeyEvent(event)
-        terminalDelegate?.terminalViewDidReceiveKeyEvent(termEvent)
+        // 特殊キー（Return、Backspace、矢印、Fnキーなど）はkeyCodeを保持して
+        // 直接デリゲートに渡す。interpretKeyEvents経由だとkeyCodeが失われ、
+        // CR/LF設定などの特殊処理が効かなくなるため。
+        let keyCode = event.keyCode
+        let isSpecialKey: Bool
+        switch keyCode {
+        case 0x24, 0x4C:  // Return, Enter (numpad)
+            isSpecialKey = true
+        case 0x33, 0x75:  // Backspace, Forward Delete
+            isSpecialKey = true
+        case 0x7E, 0x7D, 0x7B, 0x7C:  // Arrow keys
+            isSpecialKey = true
+        case 0x30, 0x35:  // Tab, Escape
+            isSpecialKey = true
+        case 0x73, 0x77, 0x74, 0x79, 0x72:  // Home, End, PageUp, PageDown, Insert
+            isSpecialKey = true
+        case 0x7A, 0x78, 0x63, 0x76, 0x60, 0x61,
+             0x62, 0x64, 0x65, 0x6D, 0x67, 0x6F:  // F1-F12
+            isSpecialKey = true
+        default:
+            isSpecialKey = event.modifierFlags.contains(.control)
+                || event.modifierFlags.contains(.command)
+        }
+
+        if isSpecialKey {
+            let termEvent = convertKeyEvent(event)
+            terminalDelegate?.terminalViewDidReceiveKeyEvent(termEvent)
+        } else {
+            // 通常の文字入力はIME経由（日本語入力対応）
+            interpretKeyEvents([event])
+        }
     }
 
     override func flagsChanged(with event: NSEvent) {
