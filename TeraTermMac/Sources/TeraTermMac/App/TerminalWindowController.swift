@@ -248,6 +248,8 @@ class TerminalWindowController: NSWindowController {
 
     func clearBuffer() {
         terminalEmulator.buffer.eraseInDisplay(3)
+        terminalEmulator.buffer.eraseInDisplay(2)
+        terminalEmulator.buffer.moveCursorTo(x: 0, y: 0)
         terminalView.refresh()
     }
 

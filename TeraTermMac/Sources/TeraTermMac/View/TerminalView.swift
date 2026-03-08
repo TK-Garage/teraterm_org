@@ -851,6 +851,7 @@ class TerminalView: NSView {
     @objc func clearBuffer(_ sender: Any?) {
         buffer?.eraseInDisplay(3) // Clear scrollback
         buffer?.eraseInDisplay(2) // Clear screen
+        buffer?.moveCursorTo(x: 0, y: 0)
         needsDisplay = true
     }
 
