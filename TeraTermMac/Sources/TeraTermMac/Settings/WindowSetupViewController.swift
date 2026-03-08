@@ -6,7 +6,7 @@
  * Ported to Swift/macOS
  *
  * Window Setup dialog — faithful reproduction of Tera Term 5.6 IDD_WINDLG.
- * Layout uses Auto Layout anchors to replicate the original control positions.
+ * Layout uses NSStackView / NSGridView with proper Auto Layout constraints.
  *
  * Original dialog: 240 x 237 DLU
  *
@@ -96,20 +96,22 @@ class WindowSetupViewController: BaseSetupDialogController {
         let dialogWidth: CGFloat = 460
         contentArea.widthAnchor.constraint(equalToConstant: dialogWidth).isActive = true
 
-        // ── Title row ──
+        // ── Title row: [Title:] [___________] ──
         let titleLabel = NSView.makeLabel(TTL("dialog.windowSetup.title_label"))
+        titleLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
         titleField = NSView.makeTextField(value: settings.title)
-        contentArea.addSubview(titleLabel)
-        contentArea.addSubview(titleField)
+
+        let titleRow = NSStackView(views: [titleLabel, titleField])
+        titleRow.translatesAutoresizingMaskIntoConstraints = false
+        titleRow.orientation = .horizontal
+        titleRow.spacing = DialogLayout.labelTrailing
+        titleRow.alignment = .firstBaseline
+        contentArea.addSubview(titleRow)
 
         NSLayoutConstraint.activate([
-            titleLabel.topAnchor.constraint(equalTo: contentArea.topAnchor),
-            titleLabel.leadingAnchor.constraint(equalTo: contentArea.leadingAnchor),
-            titleLabel.widthAnchor.constraint(equalToConstant: 45),
-
-            titleField.centerYAnchor.constraint(equalTo: titleLabel.centerYAnchor),
-            titleField.leadingAnchor.constraint(equalTo: titleLabel.trailingAnchor, constant: 4),
-            titleField.trailingAnchor.constraint(equalTo: contentArea.trailingAnchor),
+            titleRow.topAnchor.constraint(equalTo: contentArea.topAnchor),
+            titleRow.leadingAnchor.constraint(equalTo: contentArea.leadingAnchor),
+            titleRow.trailingAnchor.constraint(equalTo: contentArea.trailingAnchor),
         ])
 
         // ── Cursor Shape Group Box ──
@@ -120,7 +122,6 @@ class WindowSetupViewController: BaseSetupDialogController {
         cursorVertRadio = NSView.makeRadioButton(TTL("dialog.windowSetup.cursorVertical"), tag: 1)
         cursorHorzRadio = NSView.makeRadioButton(TTL("dialog.windowSetup.cursorHorizontal"), tag: 2)
 
-        // Set current selection
         switch settings.cursorShape {
         case .block: cursorBlockRadio.state = .on
         case .vertical: cursorVertRadio.state = .on
@@ -130,27 +131,28 @@ class WindowSetupViewController: BaseSetupDialogController {
         for radio in [cursorBlockRadio!, cursorVertRadio!, cursorHorzRadio!] {
             radio.target = self
             radio.action = #selector(cursorRadioChanged(_:))
-            cursorBox.contentView!.addSubview(radio)
         }
 
+        let cursorStack = NSStackView(views: [cursorBlockRadio, cursorVertRadio, cursorHorzRadio])
+        cursorStack.translatesAutoresizingMaskIntoConstraints = false
+        cursorStack.orientation = .vertical
+        cursorStack.alignment = .leading
+        cursorStack.spacing = 4
+
         let cc = cursorBox.contentView!
-        let tp = DialogLayout.groupBoxTopPadding
-        let p = DialogLayout.groupBoxPadding
+        cc.addSubview(cursorStack)
+        let boxPad = DialogLayout.groupBoxPadding
 
         NSLayoutConstraint.activate([
-            cursorBox.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 14),
+            cursorStack.topAnchor.constraint(equalTo: cc.topAnchor, constant: boxPad),
+            cursorStack.leadingAnchor.constraint(equalTo: cc.leadingAnchor, constant: boxPad),
+            cursorStack.trailingAnchor.constraint(lessThanOrEqualTo: cc.trailingAnchor, constant: -boxPad),
+            cursorStack.bottomAnchor.constraint(equalTo: cc.bottomAnchor, constant: -boxPad),
+        ])
+
+        NSLayoutConstraint.activate([
+            cursorBox.topAnchor.constraint(equalTo: titleRow.bottomAnchor, constant: DialogLayout.sectionSpacing),
             cursorBox.leadingAnchor.constraint(equalTo: contentArea.leadingAnchor),
-            cursorBox.widthAnchor.constraint(equalToConstant: 170),
-
-            cursorBlockRadio.topAnchor.constraint(equalTo: cc.topAnchor, constant: tp - 6),
-            cursorBlockRadio.leadingAnchor.constraint(equalTo: cc.leadingAnchor, constant: p),
-
-            cursorVertRadio.topAnchor.constraint(equalTo: cursorBlockRadio.bottomAnchor, constant: 4),
-            cursorVertRadio.leadingAnchor.constraint(equalTo: cc.leadingAnchor, constant: p),
-
-            cursorHorzRadio.topAnchor.constraint(equalTo: cursorVertRadio.bottomAnchor, constant: 4),
-            cursorHorzRadio.leadingAnchor.constraint(equalTo: cc.leadingAnchor, constant: p),
-            cursorHorzRadio.bottomAnchor.constraint(equalTo: cc.bottomAnchor, constant: -p + 4),
         ])
 
         // ── Right-side checkboxes (aligned next to cursor box) ──
@@ -158,19 +160,17 @@ class WindowSetupViewController: BaseSetupDialogController {
         hideMenuCheck = NSView.makeCheckbox(TTL("dialog.winSetup.hideMenuBar"))
         pc16ColorCheck = NSView.makeCheckbox(TTL("dialog.winSetup.pc16Colors"))
 
-        contentArea.addSubview(hideTitleCheck)
-        contentArea.addSubview(hideMenuCheck)
-        contentArea.addSubview(pc16ColorCheck)
+        let checkStack = NSStackView(views: [hideTitleCheck, hideMenuCheck, pc16ColorCheck])
+        checkStack.translatesAutoresizingMaskIntoConstraints = false
+        checkStack.orientation = .vertical
+        checkStack.alignment = .leading
+        checkStack.spacing = 6
+        contentArea.addSubview(checkStack)
 
         NSLayoutConstraint.activate([
-            hideTitleCheck.topAnchor.constraint(equalTo: cursorBox.topAnchor, constant: 20),
-            hideTitleCheck.leadingAnchor.constraint(equalTo: cursorBox.trailingAnchor, constant: 16),
-
-            hideMenuCheck.topAnchor.constraint(equalTo: hideTitleCheck.bottomAnchor, constant: 6),
-            hideMenuCheck.leadingAnchor.constraint(equalTo: hideTitleCheck.leadingAnchor),
-
-            pc16ColorCheck.topAnchor.constraint(equalTo: hideMenuCheck.bottomAnchor, constant: 6),
-            pc16ColorCheck.leadingAnchor.constraint(equalTo: hideTitleCheck.leadingAnchor),
+            checkStack.topAnchor.constraint(equalTo: cursorBox.topAnchor, constant: 20),
+            checkStack.leadingAnchor.constraint(equalTo: cursorBox.trailingAnchor, constant: DialogLayout.sectionSpacing),
+            checkStack.trailingAnchor.constraint(lessThanOrEqualTo: contentArea.trailingAnchor),
         ])
 
         // ── Color Group Box ──
@@ -184,32 +184,48 @@ class WindowSetupViewController: BaseSetupDialogController {
         for radio in [colorTextRadio!, colorBackRadio!] {
             radio.target = self
             radio.action = #selector(colorTargetChanged(_:))
-            colorBox.contentView!.addSubview(radio)
         }
 
         swapColorsButton = NSView.makePushButton(TTL("dialog.winSetup.swapColors"))
         swapColorsButton.target = self
         swapColorsButton.action = #selector(swapColors(_:))
         swapColorsButton.keyEquivalent = ""
-        colorBox.contentView!.addSubview(swapColorsButton)
+
+        // Top row: [Text] [Background] [Swap Colors]
+        let colorRadioRow = NSStackView(views: [colorTextRadio, colorBackRadio, swapColorsButton])
+        colorRadioRow.translatesAutoresizingMaskIntoConstraints = false
+        colorRadioRow.orientation = .horizontal
+        colorRadioRow.spacing = 12
+        colorRadioRow.alignment = .firstBaseline
 
         // RGB sliders
         let currentColor = textColor
-        let rLabel = NSView.makeLabel("R:", alignment: .left)
-        let gLabel = NSView.makeLabel("G:", alignment: .left)
-        let bLabel = NSView.makeLabel("B:", alignment: .left)
+
+        let rLabel = NSView.makeLabel("R:", alignment: .right)
+        let gLabel = NSView.makeLabel("G:", alignment: .right)
+        let bLabel = NSView.makeLabel("B:", alignment: .right)
+        rLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
+        gLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
+        bLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
 
         redSlider = NSView.makeSlider(min: 0, max: 255, value: Double(currentColor.r))
         greenSlider = NSView.makeSlider(min: 0, max: 255, value: Double(currentColor.g))
         blueSlider = NSView.makeSlider(min: 0, max: 255, value: Double(currentColor.b))
 
-        redValueLabel = NSView.makeLabel("\(currentColor.r)", alignment: .left)
-        greenValueLabel = NSView.makeLabel("\(currentColor.g)", alignment: .left)
-        blueValueLabel = NSView.makeLabel("\(currentColor.b)", alignment: .left)
+        redValueLabel = NSView.makeLabel("\(currentColor.r)", alignment: .right)
+        greenValueLabel = NSView.makeLabel("\(currentColor.g)", alignment: .right)
+        blueValueLabel = NSView.makeLabel("\(currentColor.b)", alignment: .right)
+
+        // Fixed width for value labels so they don't jump around
+        for lbl in [redValueLabel!, greenValueLabel!, blueValueLabel!] {
+            lbl.widthAnchor.constraint(equalToConstant: 36).isActive = true
+            lbl.setContentCompressionResistancePriority(.required, for: .horizontal)
+        }
 
         for slider in [redSlider!, greenSlider!, blueSlider!] {
             slider.target = self
             slider.action = #selector(colorSliderChanged(_:))
+            slider.setContentHuggingPriority(.defaultLow, for: .horizontal)
         }
 
         // Sample area
@@ -220,129 +236,100 @@ class WindowSetupViewController: BaseSetupDialogController {
         sampleView.layer?.borderWidth = 1
         updateSampleView()
 
-        let colContent = colorBox.contentView!
-        for v: NSView in [rLabel, gLabel, bLabel,
-                          redSlider, greenSlider, blueSlider,
-                          redValueLabel, greenValueLabel, blueValueLabel,
-                          sampleView] {
-            colContent.addSubview(v)
-        }
-
-        // Color box layout
-        let colP: CGFloat = 12
-        let colTP: CGFloat = 18
-
         NSLayoutConstraint.activate([
-            colorBox.topAnchor.constraint(equalTo: cursorBox.bottomAnchor, constant: 12),
-            colorBox.leadingAnchor.constraint(equalTo: contentArea.leadingAnchor),
-            colorBox.trailingAnchor.constraint(equalTo: contentArea.trailingAnchor),
-
-            // Text / Background radios
-            colorTextRadio.topAnchor.constraint(equalTo: colContent.topAnchor, constant: colTP - 4),
-            colorTextRadio.leadingAnchor.constraint(equalTo: colContent.leadingAnchor, constant: colP),
-
-            colorBackRadio.centerYAnchor.constraint(equalTo: colorTextRadio.centerYAnchor),
-            colorBackRadio.leadingAnchor.constraint(equalTo: colorTextRadio.trailingAnchor, constant: 12),
-
-            swapColorsButton.centerYAnchor.constraint(equalTo: colorTextRadio.centerYAnchor),
-            swapColorsButton.leadingAnchor.constraint(equalTo: colorBackRadio.trailingAnchor, constant: 12),
-
-            // Sample view
-            sampleView.topAnchor.constraint(equalTo: colorTextRadio.bottomAnchor, constant: 8),
-            sampleView.trailingAnchor.constraint(equalTo: colContent.trailingAnchor, constant: -colP),
             sampleView.widthAnchor.constraint(equalToConstant: 80),
             sampleView.heightAnchor.constraint(equalToConstant: 60),
-
-            // R row
-            rLabel.topAnchor.constraint(equalTo: colorTextRadio.bottomAnchor, constant: 10),
-            rLabel.leadingAnchor.constraint(equalTo: colContent.leadingAnchor, constant: colP),
-            rLabel.widthAnchor.constraint(equalToConstant: 20),
-
-            redValueLabel.centerYAnchor.constraint(equalTo: rLabel.centerYAnchor),
-            redValueLabel.leadingAnchor.constraint(equalTo: rLabel.trailingAnchor),
-            redValueLabel.widthAnchor.constraint(equalToConstant: 30),
-
-            redSlider.centerYAnchor.constraint(equalTo: rLabel.centerYAnchor),
-            redSlider.leadingAnchor.constraint(equalTo: redValueLabel.trailingAnchor, constant: 4),
-            redSlider.trailingAnchor.constraint(equalTo: sampleView.leadingAnchor, constant: -12),
-
-            // G row
-            gLabel.topAnchor.constraint(equalTo: rLabel.bottomAnchor, constant: 6),
-            gLabel.leadingAnchor.constraint(equalTo: colContent.leadingAnchor, constant: colP),
-            gLabel.widthAnchor.constraint(equalToConstant: 20),
-
-            greenValueLabel.centerYAnchor.constraint(equalTo: gLabel.centerYAnchor),
-            greenValueLabel.leadingAnchor.constraint(equalTo: gLabel.trailingAnchor),
-            greenValueLabel.widthAnchor.constraint(equalToConstant: 30),
-
-            greenSlider.centerYAnchor.constraint(equalTo: gLabel.centerYAnchor),
-            greenSlider.leadingAnchor.constraint(equalTo: greenValueLabel.trailingAnchor, constant: 4),
-            greenSlider.trailingAnchor.constraint(equalTo: sampleView.leadingAnchor, constant: -12),
-
-            // B row
-            bLabel.topAnchor.constraint(equalTo: gLabel.bottomAnchor, constant: 6),
-            bLabel.leadingAnchor.constraint(equalTo: colContent.leadingAnchor, constant: colP),
-            bLabel.widthAnchor.constraint(equalToConstant: 20),
-
-            blueValueLabel.centerYAnchor.constraint(equalTo: bLabel.centerYAnchor),
-            blueValueLabel.leadingAnchor.constraint(equalTo: bLabel.trailingAnchor),
-            blueValueLabel.widthAnchor.constraint(equalToConstant: 30),
-
-            blueSlider.centerYAnchor.constraint(equalTo: bLabel.centerYAnchor),
-            blueSlider.leadingAnchor.constraint(equalTo: blueValueLabel.trailingAnchor, constant: 4),
-            blueSlider.trailingAnchor.constraint(equalTo: sampleView.leadingAnchor, constant: -12),
-
-            bLabel.bottomAnchor.constraint(equalTo: colContent.bottomAnchor, constant: -colP),
         ])
 
-        // ── Scroll Buffer row ──
+        // Build RGB grid: [label] [value] [slider]
+        let rgbGrid = NSGridView(views: [
+            [rLabel, redValueLabel,   redSlider],
+            [gLabel, greenValueLabel, greenSlider],
+            [bLabel, blueValueLabel,  blueSlider],
+        ])
+        rgbGrid.translatesAutoresizingMaskIntoConstraints = false
+        rgbGrid.rowSpacing = 6
+        rgbGrid.columnSpacing = 4
+        rgbGrid.column(at: 0).xPlacement = .trailing
+        rgbGrid.column(at: 1).xPlacement = .trailing
+        rgbGrid.column(at: 2).xPlacement = .fill
+        for i in 0..<rgbGrid.numberOfRows {
+            rgbGrid.row(at: i).rowAlignment = .firstBaseline
+        }
+
+        // Slider area: [rgbGrid] [sampleView] side by side
+        let sliderRow = NSStackView(views: [rgbGrid, sampleView])
+        sliderRow.translatesAutoresizingMaskIntoConstraints = false
+        sliderRow.orientation = .horizontal
+        sliderRow.spacing = 12
+        sliderRow.alignment = .centerY
+
+        // Color box content: vertical [radioRow, sliderRow]
+        let colorStack = NSStackView(views: [colorRadioRow, sliderRow])
+        colorStack.translatesAutoresizingMaskIntoConstraints = false
+        colorStack.orientation = .vertical
+        colorStack.alignment = .leading
+        colorStack.spacing = DialogLayout.rowSpacing
+
+        let colContent = colorBox.contentView!
+        colContent.addSubview(colorStack)
+
+        let colP: CGFloat = 12
+        NSLayoutConstraint.activate([
+            colorStack.topAnchor.constraint(equalTo: colContent.topAnchor, constant: colP),
+            colorStack.leadingAnchor.constraint(equalTo: colContent.leadingAnchor, constant: colP),
+            colorStack.trailingAnchor.constraint(equalTo: colContent.trailingAnchor, constant: -colP),
+            colorStack.bottomAnchor.constraint(equalTo: colContent.bottomAnchor, constant: -colP),
+        ])
+
+        NSLayoutConstraint.activate([
+            colorBox.topAnchor.constraint(equalTo: cursorBox.bottomAnchor, constant: DialogLayout.innerMargin),
+            colorBox.leadingAnchor.constraint(equalTo: contentArea.leadingAnchor),
+            colorBox.trailingAnchor.constraint(equalTo: contentArea.trailingAnchor),
+        ])
+
+        // ── Scroll Buffer row: [☑ Scroll buffer:] [10000] [lines] ──
         scrollCheck = NSView.makeCheckbox(
             TTL("dialog.windowSetup.scrollBuffer"), checked: settings.enableScrollBuffer)
         scrollSizeField = NSView.makeNumberField(
             value: settings.scrollBufferSize, width: 70)
         let linesLabel = NSView.makeLabel(TTL("dialog.windowSetup.lines"), alignment: .left)
+        linesLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
 
-        contentArea.addSubview(scrollCheck)
-        contentArea.addSubview(scrollSizeField)
-        contentArea.addSubview(linesLabel)
+        let scrollRow = NSStackView(views: [scrollCheck, scrollSizeField, linesLabel])
+        scrollRow.translatesAutoresizingMaskIntoConstraints = false
+        scrollRow.orientation = .horizontal
+        scrollRow.spacing = 4
+        scrollRow.alignment = .firstBaseline
+        contentArea.addSubview(scrollRow)
 
         NSLayoutConstraint.activate([
-            scrollCheck.topAnchor.constraint(equalTo: colorBox.bottomAnchor, constant: 12),
-            scrollCheck.leadingAnchor.constraint(equalTo: contentArea.leadingAnchor),
-
-            scrollSizeField.centerYAnchor.constraint(equalTo: scrollCheck.centerYAnchor),
-            scrollSizeField.leadingAnchor.constraint(equalTo: scrollCheck.trailingAnchor, constant: 4),
-
-            linesLabel.centerYAnchor.constraint(equalTo: scrollCheck.centerYAnchor),
-            linesLabel.leadingAnchor.constraint(equalTo: scrollSizeField.trailingAnchor, constant: 4),
+            scrollRow.topAnchor.constraint(equalTo: colorBox.bottomAnchor, constant: DialogLayout.innerMargin),
+            scrollRow.leadingAnchor.constraint(equalTo: contentArea.leadingAnchor),
         ])
 
-        // ── Alpha Blending row ──
+        // ── Alpha Blending row: [Alpha:] [═══slider═══] [100%] ──
         let alphaLabel = NSView.makeLabel(TTL("dialog.windowSetup.alpha"))
+        alphaLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
         alphaSlider = NSView.makeSlider(min: 20, max: 100, value: settings.windowAlpha * 100)
         alphaSlider.target = self
         alphaSlider.action = #selector(alphaSliderChanged(_:))
         alphaValueLabel = NSView.makeLabel(
             String(format: "%d%%", Int(settings.windowAlpha * 100)), alignment: .left)
+        alphaValueLabel.widthAnchor.constraint(equalToConstant: 50).isActive = true
+        alphaSlider.widthAnchor.constraint(equalToConstant: 200).isActive = true
 
-        contentArea.addSubview(alphaLabel)
-        contentArea.addSubview(alphaSlider)
-        contentArea.addSubview(alphaValueLabel)
+        let alphaRow = NSStackView(views: [alphaLabel, alphaSlider, alphaValueLabel])
+        alphaRow.translatesAutoresizingMaskIntoConstraints = false
+        alphaRow.orientation = .horizontal
+        alphaRow.spacing = DialogLayout.rowSpacing
+        alphaRow.alignment = .firstBaseline
+        contentArea.addSubview(alphaRow)
 
         NSLayoutConstraint.activate([
-            alphaLabel.topAnchor.constraint(equalTo: scrollCheck.bottomAnchor, constant: 12),
-            alphaLabel.leadingAnchor.constraint(equalTo: contentArea.leadingAnchor),
-            alphaLabel.widthAnchor.constraint(equalToConstant: 60),
-
-            alphaSlider.centerYAnchor.constraint(equalTo: alphaLabel.centerYAnchor),
-            alphaSlider.leadingAnchor.constraint(equalTo: alphaLabel.trailingAnchor, constant: 4),
-            alphaSlider.widthAnchor.constraint(equalToConstant: 200),
-
-            alphaValueLabel.centerYAnchor.constraint(equalTo: alphaLabel.centerYAnchor),
-            alphaValueLabel.leadingAnchor.constraint(equalTo: alphaSlider.trailingAnchor, constant: 8),
-            alphaValueLabel.widthAnchor.constraint(equalToConstant: 50),
-
-            alphaLabel.bottomAnchor.constraint(equalTo: contentArea.bottomAnchor),
+            alphaRow.topAnchor.constraint(equalTo: scrollRow.bottomAnchor, constant: DialogLayout.innerMargin),
+            alphaRow.leadingAnchor.constraint(equalTo: contentArea.leadingAnchor),
+            alphaRow.bottomAnchor.constraint(equalTo: contentArea.bottomAnchor),
         ])
     }
 
