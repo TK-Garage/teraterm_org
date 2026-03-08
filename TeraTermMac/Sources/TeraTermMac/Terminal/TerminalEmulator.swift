@@ -56,6 +56,9 @@ class TerminalEmulator {
     private var prevControlChar: UInt8 = 0
     private var prevCRorLFGeneratedCRLF: Bool = false
 
+    // Macro receive buffer: accumulates received text for TTL wait commands
+    var macroReceiveBuffer: String = ""
+
     init(settings: TerminalSettings) {
         self.settings = settings
         self.terminalID = settings.terminalID
@@ -72,6 +75,10 @@ class TerminalEmulator {
 
     func processData(_ data: Data) {
         parser.parse(data)
+        // Feed macro receive buffer for TTL wait commands
+        if let text = String(data: data, encoding: .utf8) {
+            macroReceiveBuffer += text
+        }
         delegate?.terminalDidUpdateDisplay()
     }
 

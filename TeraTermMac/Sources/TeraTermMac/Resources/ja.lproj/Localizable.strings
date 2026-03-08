@@ -236,3 +236,7 @@
 "contextMenu.paste" = "ペースト";
 "contextMenu.selectAll" = "すべてを選択";
 "contextMenu.clearBuffer" = "バッファクリア";
+
+/* Macro */
+"macro.error.title" = "マクロエラー";
+"menu.control.stopMacro" = "マクロ停止";

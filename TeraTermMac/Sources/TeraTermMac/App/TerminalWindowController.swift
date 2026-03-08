@@ -274,38 +274,50 @@ class TerminalWindowController: NSWindowController {
 
     // MARK: - Macro Actions
 
+    private(set) var macroInterpreter: TTLInterpreter?
+
     func runMacro(at url: URL) {
-        guard let script = try? String(contentsOf: url, encoding: .utf8) else { return }
-        let lines = script.components(separatedBy: .newlines)
-        let queue = DispatchQueue(label: "com.teraterm.macro")
+        // Stop any running macro
+        macroInterpreter?.stop()
 
-        queue.async { [weak self] in
-            for line in lines {
-                let trimmed = line.trimmingCharacters(in: .whitespaces)
-                guard !trimmed.isEmpty, !trimmed.hasPrefix("#") else { continue }
-
-                // Simple macro language:
-                //   send <text>       — send literal text
-                //   sendln <text>     — send text + newline
-                //   wait <ms>         — wait N milliseconds
-                //   pause <ms>        — alias for wait
-                if trimmed.lowercased().hasPrefix("sendln ") {
-                    let text = String(trimmed.dropFirst("sendln ".count)) + "\r"
-                    DispatchQueue.main.async { self?.connectionManager.send(Data(text.utf8)) }
-                } else if trimmed.lowercased().hasPrefix("send ") {
-                    let text = String(trimmed.dropFirst("send ".count))
-                    DispatchQueue.main.async { self?.connectionManager.send(Data(text.utf8)) }
-                } else if trimmed.lowercased().hasPrefix("wait ") || trimmed.lowercased().hasPrefix("pause ") {
-                    let prefix = trimmed.lowercased().hasPrefix("wait ") ? "wait " : "pause "
-                    if let ms = Int(trimmed.dropFirst(prefix.count).trimmingCharacters(in: .whitespaces)) {
-                        Thread.sleep(forTimeInterval: Double(ms) / 1000.0)
-                    }
-                } else {
-                    // Default: send the whole line as text + CR
-                    DispatchQueue.main.async { self?.connectionManager.send(Data((trimmed + "\r").utf8)) }
-                }
-            }
+        let interpreter = TTLInterpreter()
+        interpreter.delegate = self
+        do {
+            try interpreter.loadScript(from: url)
+        } catch {
+            let alert = NSAlert()
+            alert.messageText = L("macro.error.title")
+            alert.informativeText = error.localizedDescription
+            alert.alertStyle = .warning
+            alert.addButton(withTitle: "OK")
+            if let win = window { alert.beginSheetModal(for: win) }
+            return
         }
+
+        interpreter.prescanLabels()
+
+        interpreter.onComplete = { [weak self] in
+            self?.macroInterpreter = nil
+        }
+        interpreter.onError = { [weak self] msg, line in
+            DispatchQueue.main.async {
+                let alert = NSAlert()
+                alert.messageText = L("macro.error.title")
+                alert.informativeText = msg
+                alert.alertStyle = .warning
+                alert.addButton(withTitle: "OK")
+                if let win = self?.window { alert.beginSheetModal(for: win) }
+            }
+            self?.macroInterpreter = nil
+        }
+
+        macroInterpreter = interpreter
+        interpreter.run()
+    }
+
+    func stopMacro() {
+        macroInterpreter?.stop()
+        macroInterpreter = nil
     }
 
     // MARK: - Log Replay
@@ -635,6 +647,144 @@ extension TerminalWindowController: FileTransferDelegate {
 
     func transferDidFail(error: String) {
         updateWindowTitle()
+    }
+}
+
+// MARK: - TTLInterpreterDelegate
+
+extension TerminalWindowController: TTLInterpreterDelegate {
+    func ttlSendData(_ data: Data) {
+        connectionManager.send(data)
+    }
+
+    func ttlSendString(_ text: String) {
+        connectionManager.send(Data(text.utf8))
+    }
+
+    func ttlSendLine(_ text: String) {
+        connectionManager.send(Data((text + "\r").utf8))
+    }
+
+    func ttlIsConnected() -> Bool {
+        return isConnected
+    }
+
+    func ttlGetReceivedData(clear: Bool) -> String {
+        // Return buffered received data for macro wait commands
+        let data = terminalEmulator.macroReceiveBuffer
+        if clear { terminalEmulator.macroReceiveBuffer = "" }
+        return data
+    }
+
+    func ttlFlushReceiveBuffer() {
+        terminalEmulator.macroReceiveBuffer = ""
+    }
+
+    func ttlDisconnect() {
+        disconnect()
+    }
+
+    func ttlConnect(_ param: String) {
+        // Parse connection string: "host:port" or "/dev/ttyXXX"
+        if param.hasPrefix("/dev/") {
+            connectSerial(device: param)
+        } else {
+            let parts = param.components(separatedBy: ":")
+            let host = parts.first ?? "localhost"
+            let port = parts.count > 1 ? (Int(parts[1]) ?? 23) : 23
+            connectTCP(host: host, port: port)
+        }
+    }
+
+    func ttlSetTitle(_ title: String) {
+        window?.title = title
+    }
+
+    func ttlGetTitle() -> String {
+        return window?.title ?? ""
+    }
+
+    func ttlShowWindow(_ show: Bool) {
+        if show {
+            window?.makeKeyAndOrderFront(nil)
+        } else {
+            window?.orderOut(nil)
+        }
+    }
+
+    func ttlClearScreen() {
+        clearScreen()
+    }
+
+    func ttlSendBreak() {
+        connectionManager.sendBreak()
+    }
+
+    func ttlLogOpen(_ path: String, append: Bool) {
+        _ = logger.startLogging(to: path)
+    }
+
+    func ttlLogClose() {
+        logger.stopLogging()
+    }
+
+    func ttlLogPause() {
+        // Pause logging
+    }
+
+    func ttlLogStart() {
+        // Resume logging
+    }
+
+    func ttlLogWrite(_ text: String) {
+        logger.logData(Data(text.utf8))
+    }
+
+    func ttlShowError(_ message: String, line: Int) {
+        DispatchQueue.main.async { [weak self] in
+            let alert = NSAlert()
+            alert.messageText = L("macro.error.title")
+            alert.informativeText = message
+            alert.alertStyle = .warning
+            alert.addButton(withTitle: "OK")
+            if let win = self?.window {
+                alert.beginSheetModal(for: win)
+            }
+        }
+    }
+
+    func ttlShowStatusBox(_ message: String, title: String) {
+        // Status box shown as floating panel
+    }
+
+    func ttlCloseStatusBox() {
+        // Close status box
+    }
+
+    func ttlGetClipboard() -> String {
+        return NSPasteboard.general.string(forType: .string) ?? ""
+    }
+
+    func ttlSetClipboard(_ text: String) {
+        let pb = NSPasteboard.general
+        pb.clearContents()
+        pb.setString(text, forType: .string)
+    }
+
+    func ttlSetBaud(_ baud: Int) {
+        settings.baudRate = baud
+    }
+
+    func ttlSetFlowCtrl(_ mode: Int) {
+        // Flow control setting
+    }
+
+    func ttlSetDtr(_ on: Int) {
+        // DTR signal
+    }
+
+    func ttlSetRts(_ on: Int) {
+        // RTS signal
     }
 }
 #endif
