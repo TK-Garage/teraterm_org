@@ -219,7 +219,21 @@
 
 /* Connection Errors */
 "error.connection.title" = "Connection Error";
+"error.connection.title.dns" = "Host Not Found";
+"error.connection.title.refused" = "Connection Refused";
+"error.connection.title.timeout" = "Connection Timeout";
+"error.connection.title.ssh" = "SSH Not Supported";
+"error.connection.title.serial" = "Serial Port Error";
 "error.connection.ok" = "OK";
+"error.connection.streamFailed" = "Failed to create network streams to %@:%d.";
+"error.connection.failed" = "Could not connect to %@:%d.";
+"error.connection.refused" = "Connection to %@:%d was refused.\nThe host may not be listening on this port.";
+"error.connection.timeout" = "Connection to %@:%d timed out.\nThe host may be unreachable or a firewall is blocking access.";
+"error.connection.hostNotFound" = "Host \"%@\" could not be found.\nPlease check the hostname and your network connection.";
+"error.connection.sshNotSupported" = "SSH connection to %@:%d is not yet supported.\nPlease use an external SSH client or connect via Telnet.";
+"error.connection.serialFailed" = "Failed to open serial port %@.";
+"error.connection.ptyFailed" = "Failed to create pseudo-terminal.";
+"error.connection.sendFailed" = "Failed to send data.";
 
 /* File Transfer */
 "transfer.complete.title" = "Transfer Complete";

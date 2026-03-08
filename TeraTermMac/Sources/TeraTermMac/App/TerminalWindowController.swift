@@ -509,10 +509,18 @@ extension TerminalWindowController: ConnectionDelegate {
         updateWindowTitle()
 
         let alert = NSAlert()
-        alert.messageText = L("error.connection.title")
-        alert.informativeText = error.localizedDescription
         alert.alertStyle = .warning
         alert.addButton(withTitle: L("error.connection.ok"))
+
+        if let connError = error as? ConnectionError {
+            // Use structured error — title from error type, detail as informative text
+            alert.messageText = connError.alertTitle
+            alert.informativeText = connError.localizedDescription
+        } else {
+            alert.messageText = L("error.connection.title")
+            alert.informativeText = error.localizedDescription
+        }
+
         if let win = window {
             alert.beginSheetModal(for: win)
         }

@@ -1070,7 +1070,14 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
                     settings.defaultPort = port
                     settings.portType = .tcpip
                     addToHostHistory(host)
-                    wc.connectTCP(host: host, port: port, telnet: service == .telnet)
+
+                    if service == .ssh {
+                        // SSH is not yet implemented — show error with details
+                        let error = ConnectionError.sshNotSupported(host: host, port: port)
+                        wc.connectionDidFail(error: error)
+                    } else {
+                        wc.connectTCP(host: host, port: port, telnet: service == .telnet)
+                    }
                 }
             }
         }

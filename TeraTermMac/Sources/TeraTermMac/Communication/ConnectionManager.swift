@@ -9,6 +9,21 @@
 
 import Foundation
 
+// MARK: - Localization Helper
+
+private func L(_ key: String) -> String {
+    #if SWIFT_PACKAGE
+    return NSLocalizedString(key, bundle: Bundle.module, comment: "")
+    #else
+    return NSLocalizedString(key, bundle: Bundle.main, comment: "")
+    #endif
+}
+
+private func L(_ key: String, _ args: CVarArg...) -> String {
+    let fmt = L(key)
+    return String(format: fmt, arguments: args)
+}
+
 // MARK: - Connection State
 
 enum ConnectionState: Equatable {
@@ -254,9 +269,11 @@ class TCPConnection: Connection {
 
             guard let input = readStream?.takeRetainedValue() as InputStream?,
                   let output = writeStream?.takeRetainedValue() as OutputStream? else {
+                let error = ConnectionError.streamCreationFailed(host: self.host, port: self.port)
                 DispatchQueue.main.async { [weak self] in
-                    self?.state = .error("Failed to create streams")
-                    self?.delegate?.connectionDidFail(error: ConnectionError.streamCreationFailed)
+                    guard let self = self else { return }
+                    self.state = .error(error.localizedDescription)
+                    self.delegate?.connectionDidFail(error: error)
                 }
                 return
             }
@@ -288,9 +305,12 @@ class TCPConnection: Connection {
                 }
                 self.startReading()
             } else {
+                let error = self.classifyStreamError(
+                    streamError: input.streamError, host: self.host, port: self.port)
                 DispatchQueue.main.async { [weak self] in
-                    self?.state = .error("Connection failed")
-                    self?.delegate?.connectionDidFail(error: input.streamError ?? ConnectionError.connectionFailed)
+                    guard let self = self else { return }
+                    self.state = .error(error.localizedDescription)
+                    self.delegate?.connectionDidFail(error: error)
                 }
             }
         }
@@ -343,6 +363,37 @@ class TCPConnection: Connection {
 
     func send(_ string: String) {
         send(Data(string.utf8))
+    }
+
+    /// Classify a stream error into a specific ConnectionError with host/port context.
+    private func classifyStreamError(streamError: Error?, host: String, port: Int) -> ConnectionError {
+        if let nsError = streamError as NSError? {
+            let desc = nsError.localizedDescription.lowercased()
+            // POSIX error domain
+            if nsError.domain == NSPOSIXErrorDomain {
+                switch nsError.code {
+                case Int(ECONNREFUSED):
+                    return .connectionRefused(host: host, port: port)
+                case Int(ETIMEDOUT):
+                    return .connectionTimeout(host: host, port: port)
+                default:
+                    break
+                }
+            }
+            // Check for DNS / host-not-found patterns in any domain
+            if desc.contains("nodename nor servname") || desc.contains("host not found")
+                || desc.contains("no address associated") || desc.contains("name or service not known") {
+                return .hostNotFound(host: host)
+            }
+            if desc.contains("connection refused") || desc.contains("actively refused") {
+                return .connectionRefused(host: host, port: port)
+            }
+            if desc.contains("timed out") || desc.contains("timeout") {
+                return .connectionTimeout(host: host, port: port)
+            }
+            return .connectionFailed(host: host, port: port, detail: nsError.localizedDescription)
+        }
+        return .connectionFailed(host: host, port: port, detail: nil)
     }
 
     private func startReading() {
@@ -433,9 +484,13 @@ class SerialConnection: Connection {
             // Open serial port
             let fd = open(self.device, O_RDWR | O_NOCTTY | O_NONBLOCK)
             guard fd >= 0 else {
+                let posixError = String(cString: strerror(errno))
+                let error = ConnectionError.serialPortOpenFailed(
+                    device: self.device, detail: posixError)
                 DispatchQueue.main.async { [weak self] in
-                    self?.state = .error("Failed to open \(self?.device ?? "")")
-                    self?.delegate?.connectionDidFail(error: ConnectionError.serialPortOpenFailed)
+                    guard let self = self else { return }
+                    self.state = .error(error.localizedDescription)
+                    self.delegate?.connectionDidFail(error: error)
                 }
                 return
             }
@@ -867,19 +922,58 @@ class LocalShellConnection: Connection {
 // MARK: - Connection Errors
 
 enum ConnectionError: LocalizedError {
-    case streamCreationFailed
-    case connectionFailed
-    case serialPortOpenFailed
+    case streamCreationFailed(host: String, port: Int)
+    case connectionFailed(host: String, port: Int, detail: String?)
+    case connectionRefused(host: String, port: Int)
+    case connectionTimeout(host: String, port: Int)
+    case hostNotFound(host: String)
+    case sshNotSupported(host: String, port: Int)
+    case serialPortOpenFailed(device: String, detail: String?)
     case ptyCreationFailed
     case sendFailed
 
     var errorDescription: String? {
         switch self {
-        case .streamCreationFailed: return "Failed to create network streams"
-        case .connectionFailed: return "Connection failed"
-        case .serialPortOpenFailed: return "Failed to open serial port"
-        case .ptyCreationFailed: return "Failed to create pseudo-terminal"
-        case .sendFailed: return "Failed to send data"
+        case .streamCreationFailed(let host, let port):
+            return L("error.connection.streamFailed", host, port)
+        case .connectionFailed(let host, let port, let detail):
+            let base = L("error.connection.failed", host, port)
+            if let detail = detail { return "\(base)\n\(detail)" }
+            return base
+        case .connectionRefused(let host, let port):
+            return L("error.connection.refused", host, port)
+        case .connectionTimeout(let host, let port):
+            return L("error.connection.timeout", host, port)
+        case .hostNotFound(let host):
+            return L("error.connection.hostNotFound", host)
+        case .sshNotSupported(let host, let port):
+            return L("error.connection.sshNotSupported", host, port)
+        case .serialPortOpenFailed(let device, let detail):
+            let base = L("error.connection.serialFailed", device)
+            if let detail = detail { return "\(base)\n\(detail)" }
+            return base
+        case .ptyCreationFailed:
+            return L("error.connection.ptyFailed")
+        case .sendFailed:
+            return L("error.connection.sendFailed")
+        }
+    }
+
+    /// Title string for the error alert dialog.
+    var alertTitle: String {
+        switch self {
+        case .hostNotFound:
+            return L("error.connection.title.dns")
+        case .connectionRefused:
+            return L("error.connection.title.refused")
+        case .connectionTimeout:
+            return L("error.connection.title.timeout")
+        case .sshNotSupported:
+            return L("error.connection.title.ssh")
+        case .serialPortOpenFailed:
+            return L("error.connection.title.serial")
+        default:
+            return L("error.connection.title")
         }
     }
 }
