@@ -336,7 +336,7 @@ class TTLInterpreter {
         // Handle endif skipping
         if endIfFlag > 0 {
             if let cmd = parser.getReservedWord() {
-                if cmd == .if_ && (try checkThen()) {
+                if try cmd == .if_ && checkThen() {
                     endIfFlag += 1
                 } else if cmd == .endIf {
                     endIfFlag -= 1
@@ -684,8 +684,7 @@ class TTLInterpreter {
         // Others
         case .then:         break  // handled by if
         case .loadKeyMap, .restoreSetup, .cygConnect,
-             .callMenu, .sendSerialDelayChar, .sendSerialDelayLine,
-             .setSerialDelayChar, .setSerialDelayLine:
+             .callMenu, .setSerialDelayChar, .setSerialDelayLine:
             throw TTLError.notSupported
 
         default:
@@ -1216,7 +1215,7 @@ class TTLInterpreter {
     private func ttlWaitRecv() throws {
         guard delegate?.ttlIsConnected() == true else { throw TTLError.linkFirst }
         let pattern = try parser.getStrExpression()
-        let maxLen = try parser.getIntExpression()
+        _ = try parser.getIntExpression()
         let timeout = try parser.getIntExpression()
 
         waitStrings = [pattern]
@@ -1712,7 +1711,7 @@ class TTLInterpreter {
     private func formatString(_ fmt: String, args: [Any]) -> String {
         var result = ""
         var argIdx = 0
-        var chars = Array(fmt)
+        let chars = Array(fmt)
         var i = 0
 
         while i < chars.count {

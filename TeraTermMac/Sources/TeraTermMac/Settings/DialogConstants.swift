@@ -149,7 +149,7 @@ extension NSView {
         box.boxType = .primary
         box.titlePosition = .atTop
         box.title = title
-        box.font = NSFont.systemFont(ofSize: NSFont.systemFontSize)
+        box.titleFont = NSFont.systemFont(ofSize: NSFont.systemFontSize)
         return box
     }
 
