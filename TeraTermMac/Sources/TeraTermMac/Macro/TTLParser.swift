@@ -757,9 +757,19 @@ class TTLParser {
 
     enum ExprResult {
         case integer(Int)
-        case string(Int)    // Variable ID for string
-        case intArray(Int)  // Variable ID for int array
-        case strArray(Int)  // Variable ID for str array
+        case string(Int)       // Variable ID for string
+        case stringLiteral(String) // Inline string literal (for comparisons)
+        case intArray(Int)     // Variable ID for int array
+        case strArray(Int)     // Variable ID for str array
+    }
+
+    /// Resolve a string ExprResult to an actual String value
+    func resolveString(_ result: ExprResult) -> String? {
+        switch result {
+        case .string(let id): return getStrVal(id: id)
+        case .stringLiteral(let s): return s
+        default: return nil
+        }
     }
 
     /// Parse a full expression (top-level: ||, ^^)
@@ -795,6 +805,7 @@ class TTLParser {
         let result = try getExpression()
         switch result {
         case .string(let id): return getStrVal(id: id)
+        case .stringLiteral(let s): return s
         case .integer(_): throw TTLError.typeMismatch
         default: throw TTLError.typeMismatch
         }
@@ -816,6 +827,7 @@ class TTLParser {
         let result = try getExpression()
         switch result {
         case .string(let id): return getStrVal(id: id)
+        case .stringLiteral(let s): return s
         case .integer(let v):
             if autoConvert { return String(v) }
             throw TTLError.typeMismatch
@@ -949,6 +961,14 @@ class TTLParser {
             default:
                 linePtr = saved
                 throw TTLError.syntax
+            }
+        }
+
+        // Try string literal
+        if let strResult = getString() {
+            switch strResult {
+            case .success(let s): return .stringLiteral(s)
+            case .failure(let e): throw e
             }
         }
 
@@ -1092,6 +1112,26 @@ class TTLParser {
     // Precedence 8: <, >, <=, >=
     private func evalComparison() throws -> ExprResult {
         let result = try evalBitOr()
+
+        // 文字列の比較にも対応
+        if let str1 = resolveString(result) {
+            let saved = linePtr
+            guard let op = getOperator() else { return result }
+            guard op == .lt || op == .gt || op == .le || op == .ge else {
+                linePtr = saved; return result
+            }
+            let rhs = try evalBitOr()
+            guard let str2 = resolveString(rhs) else { throw TTLError.typeMismatch }
+            let cmp = str1.compare(str2)
+            switch op {
+            case .lt: return .integer(cmp == .orderedAscending ? 1 : 0)
+            case .gt: return .integer(cmp == .orderedDescending ? 1 : 0)
+            case .le: return .integer(cmp != .orderedDescending ? 1 : 0)
+            case .ge: return .integer(cmp != .orderedAscending ? 1 : 0)
+            default: return .integer(0)
+            }
+        }
+
         guard case .integer(var val1) = result else { return result }
 
         while true {
@@ -1117,6 +1157,23 @@ class TTLParser {
     // Precedence 9: ==, !=
     private func evalEquality() throws -> ExprResult {
         let result = try evalComparison()
+
+        // 文字列の等値比較にも対応
+        if let str1 = resolveString(result) {
+            let saved = linePtr
+            guard let op = getOperator() else { return result }
+            guard op == .eq || op == .ne else {
+                linePtr = saved; return result
+            }
+            let rhs = try evalComparison()
+            guard let str2 = resolveString(rhs) else { throw TTLError.typeMismatch }
+            switch op {
+            case .eq: return .integer(str1 == str2 ? 1 : 0)
+            case .ne: return .integer(str1 != str2 ? 1 : 0)
+            default: return .integer(0)
+            }
+        }
+
         guard case .integer(var val1) = result else { return result }
 
         while true {
