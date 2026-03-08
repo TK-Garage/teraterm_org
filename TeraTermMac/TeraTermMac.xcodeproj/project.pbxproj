@@ -23,6 +23,8 @@
 		BB000100000000000000000E /* TerminalSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000100000000000000000E /* TerminalSettings.swift */; };
 		BB000100000000000000000F /* VTParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0001000000000000000010 /* VTParserTests.swift */; };
 		BB0001000000000000000010 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = AA0001000000000000000011 /* Localizable.strings */; };
+		BB0001000000000000000011 /* TTLParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0001000000000000000014 /* TTLParser.swift */; };
+		BB0001000000000000000012 /* TTLInterpreter.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0001000000000000000015 /* TTLInterpreter.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -54,6 +56,8 @@
 		AA0001000000000000000010 /* VTParserTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VTParserTests.swift; sourceTree = "<group>"; };
 		AA0001000000000000000012 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
 		AA0001000000000000000013 /* ja */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ja; path = ja.lproj/Localizable.strings; sourceTree = "<group>"; };
+		AA0001000000000000000014 /* TTLParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TTLParser.swift; sourceTree = "<group>"; };
+		AA0001000000000000000015 /* TTLInterpreter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TTLInterpreter.swift; sourceTree = "<group>"; };
 		DD0001000000000000000004 /* TeraTermMac.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TeraTermMac.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		DD0001000000000000000005 /* TeraTermMacTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TeraTermMacTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -97,6 +101,7 @@
 				CC0001000000000000000009 /* Encoding */,
 				CC000100000000000000000A /* FileTransfer */,
 				CC000100000000000000000B /* Settings */,
+				CC0001000000000000000010 /* Macro */,
 				CC000100000000000000000C /* Resources */,
 			);
 			path = "Sources/TeraTermMac";
@@ -177,6 +182,15 @@
 				AA000100000000000000000E /* TerminalSettings.swift */,
 			);
 			path = Settings;
+			sourceTree = "<group>";
+		};
+		CC0001000000000000000010 /* Macro */ = {
+			isa = PBXGroup;
+			children = (
+				AA0001000000000000000014 /* TTLParser.swift */,
+				AA0001000000000000000015 /* TTLInterpreter.swift */,
+			);
+			path = Macro;
 			sourceTree = "<group>";
 		};
 		CC000100000000000000000C /* Resources */ = {
@@ -331,6 +345,8 @@
 				BB000100000000000000000C /* EncodingConverter.swift in Sources */,
 				BB000100000000000000000D /* FileTransferProtocol.swift in Sources */,
 				BB000100000000000000000E /* TerminalSettings.swift in Sources */,
+				BB0001000000000000000011 /* TTLParser.swift in Sources */,
+				BB0001000000000000000012 /* TTLInterpreter.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
