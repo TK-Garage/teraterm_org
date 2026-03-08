@@ -442,6 +442,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
 
     @objc func setupFont(_ sender: Any?) {
         guard activeWindowController != nil else { return }
+        dismissCurrentSetupSheet()
         let fontManager = NSFontManager.shared
         fontManager.target = self
         fontManager.action = #selector(changeFont(_:))
@@ -963,11 +964,17 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         }
     }
 
-    /// 現在開いている設定シートをOK（値保存）で閉じる
+    /// 現在開いている設定シートやフォントパネルをOK（値保存）で閉じる
     private func dismissCurrentSetupSheet() {
-        guard let sheet = currentSetupSheet, let parent = sheet.sheetParent else { return }
-        // OKとして閉じることで applySettings + okHandler が呼ばれる
-        parent.endSheet(sheet, returnCode: .OK)
+        // フォントパネルが開いていれば閉じる
+        let fontPanel = NSFontPanel.shared
+        if fontPanel.isVisible {
+            fontPanel.orderOut(nil)
+        }
+        // 設定シートが開いていればOKとして閉じる（applySettings + okHandler が呼ばれる）
+        if let sheet = currentSetupSheet, let parent = sheet.sheetParent {
+            parent.endSheet(sheet, returnCode: .OK)
+        }
         currentSetupSheet = nil
     }
 
