@@ -220,7 +220,10 @@ class SerialPortSetupViewController: BaseSetupDialogController {
         let devDir = "/dev"
         if let items = try? FileManager.default.contentsOfDirectory(atPath: devDir) {
             for item in items.sorted() {
-                if item.hasPrefix("tty.") || item.hasPrefix("cu.") {
+                // macOSでは各ポートが tty.* と cu.* の2つで現れる。
+                // cu.* (call-up) は発信用でDCDを待たないため、
+                // ターミナルエミュレータでは cu.* のみ使用する。
+                if item.hasPrefix("cu.") {
                     ports.append("\(devDir)/\(item)")
                 }
             }
