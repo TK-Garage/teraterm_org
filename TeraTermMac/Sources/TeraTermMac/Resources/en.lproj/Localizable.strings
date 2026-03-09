@@ -280,3 +280,9 @@
 "dialog.macro.no" = "No";
 "dialog.macro.selectFile" = "Select File";
 "dialog.macro.selectFolder" = "Select Folder";
+
+/* Macro Status Panel */
+"macroStatus.title" = "Macro";
+"macroStatus.pause" = "Pause";
+"macroStatus.resume" = "Resume";
+"macroStatus.stop" = "Stop";

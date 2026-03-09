@@ -280,3 +280,9 @@
 "dialog.macro.no" = "いいえ";
 "dialog.macro.selectFile" = "ファイルを選択";
 "dialog.macro.selectFolder" = "フォルダを選択";
+
+/* Macro Status Panel */
+"macroStatus.title" = "マクロ";
+"macroStatus.pause" = "一時停止";
+"macroStatus.resume" = "再開";
+"macroStatus.stop" = "中断";

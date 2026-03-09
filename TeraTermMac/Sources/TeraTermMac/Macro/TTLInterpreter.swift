@@ -115,6 +115,18 @@ class TTLInterpreter {
     // Dialog command provider (positioning, display mode, statusbox management)
     let dialogProvider = DialogCommandProvider()
 
+    // Macro status panel
+    let statusPanel = MacroStatusPanelController()
+
+    /// Name of the currently loaded macro file (displayed in the status panel).
+    private(set) var macroFileName: String = ""
+
+    /// When `true`, execution is user-paused via the status panel.
+    private(set) var isPausedByUser: Bool = false
+
+    /// When `true`, the user requested stop from the status panel.
+    private(set) var isStopRequested: Bool = false
+
     // MARK: - Initialization
 
     init() {
@@ -124,6 +136,7 @@ class TTLInterpreter {
         filePaths = [String](repeating: "", count: maxFileHandles)
         dirEnumerators = [FileManager.DirectoryEnumerator?](repeating: nil, count: maxDirHandles)
         dirPatterns = [String](repeating: "", count: maxDirHandles)
+        statusPanel.delegate = self
     }
 
     // MARK: - Script Loading
@@ -135,6 +148,7 @@ class TTLInterpreter {
 
     func loadScript(from url: URL) throws {
         try parser.loadScript(from: url)
+        macroFileName = url.lastPathComponent
         resetState()
     }
 
@@ -147,6 +161,8 @@ class TTLInterpreter {
         breakFlag = 0
         continueFlag = false
         exitCode = 0
+        isPausedByUser = false
+        isStopRequested = false
         receiveBuffer = ""
         waitStrings.removeAll()
 
@@ -166,6 +182,9 @@ class TTLInterpreter {
     /// Start executing the loaded script
     func run() {
         parser.status = .run
+        isPausedByUser = false
+        isStopRequested = false
+        statusPanel.show(macroName: macroFileName.isEmpty ? "Macro" : macroFileName)
         scheduleExec()
     }
 
@@ -176,8 +195,11 @@ class TTLInterpreter {
         pauseTimer?.invalidate()
         pauseTimer = nil
         parser.status = .end
+        isPausedByUser = false
+        isStopRequested = false
         closeAllFiles()
         dialogProvider.cleanup()
+        statusPanel.close()
     }
 
     private func scheduleExec() {
@@ -188,6 +210,23 @@ class TTLInterpreter {
     }
 
     private func execStep() {
+        // Check stop request from status panel
+        if isStopRequested {
+            isStopRequested = false
+            stop()
+            return
+        }
+
+        // Check user-initiated pause
+        if isPausedByUser {
+            // Re-check after a short delay
+            execTimer?.invalidate()
+            execTimer = Timer.scheduledTimer(withTimeInterval: 0.05, repeats: false) { [weak self] _ in
+                self?.execStep()
+            }
+            return
+        }
+
         guard parser.status == .run else {
             handleNonRunState()
             return
@@ -202,6 +241,9 @@ class TTLInterpreter {
             }
         }
         parseAgain = false
+
+        // Notify status panel of current line
+        statusPanel.updateLineNumber(parser.currentLine)
 
         // Scan for labels on first pass
         scanLabel()
@@ -241,6 +283,7 @@ class TTLInterpreter {
 
     private func finish() {
         closeAllFiles()
+        statusPanel.close()
         onComplete?()
     }
 
@@ -3001,6 +3044,26 @@ class TTLInterpreter {
             return (path as NSString).expandingTildeInPath
         }
         return FileManager.default.currentDirectoryPath + "/" + path
+    }
+}
+
+// MARK: - MacroStatusPanelDelegate
+
+extension TTLInterpreter: MacroStatusPanelDelegate {
+    func macroStatusPanelDidTogglePause(_ controller: MacroStatusPanelController) {
+        isPausedByUser = controller.isPaused
+        if !isPausedByUser && parser.status == .run {
+            // Resume execution immediately
+            scheduleExec()
+        }
+    }
+
+    func macroStatusPanelDidRequestStop(_ controller: MacroStatusPanelController) {
+        isStopRequested = true
+        // If paused, un-pause so the stop check runs
+        if isPausedByUser {
+            isPausedByUser = false
+        }
     }
 }
 #endif
