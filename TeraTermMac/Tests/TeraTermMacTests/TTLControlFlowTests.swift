@@ -448,6 +448,184 @@ final class TTLControlFlowTests: XCTestCase {
         XCTAssertFalse(continueFlag)
     }
 
+    // MARK: - Synchronous Execution Helper
+
+    /// Synchronously execute a TTL script step by step.
+    /// Only works for non-async commands (no wait/pause/dialog).
+    @discardableResult
+    private func execSync(_ script: String, maxSteps: Int = 50000) -> Bool {
+        interpreter.loadScript(script)
+        interpreter.prescanLabels()
+
+        var steps = 0
+        while interpreter.parser.status == .run && steps < maxSteps {
+            guard interpreter.parser.getNewLine() else {
+                interpreter.parser.status = .end
+                break
+            }
+            interpreter.scanLabel()
+            do {
+                try interpreter.execCmnd()
+            } catch {
+                return false
+            }
+            steps += 1
+        }
+        return interpreter.parser.status == .end
+    }
+
+    // MARK: - Integration: control_flow_stress.ttl
+
+    func testControlFlowStressScript() {
+        // Use a temp file to avoid sandbox issues
+        let logFile = NSTemporaryDirectory() + "ttl_control_flow_test_\(UUID().uuidString).log"
+        defer { try? FileManager.default.removeItem(atPath: logFile) }
+
+        // Load the script with the temp log path substituted
+        let script = """
+        logfile = '\(logFile)'
+        fileopen fh logfile 0
+        pass = 0
+        fail = 0
+
+        ; TEST: Deeply nested if-for-while-goto
+        total = 0
+        for i 1 5
+          if i > 0 then
+            for j 1 5
+              k = 0
+              while k < 3
+                k = k + 1
+                if k = 2 then
+                  total = total + i * j
+                  goto continue_while
+                endif
+                :continue_while
+              endwhile
+            next
+          endif
+        next
+        if total = 225 then
+          sprintf2 msg 'PASS: nested total=%d' total
+          pass = pass + 1
+        else
+          sprintf2 msg 'FAIL: expected 225, got %d' total
+          fail = fail + 1
+        endif
+        filewriteln fh msg
+
+        ; TEST: Do-Until Loop
+        counter = 0
+        do
+          counter = counter + 1
+        loop until counter >= 10
+        if counter = 10 then
+          sprintf2 msg 'PASS: do-until counted to %d' counter
+          pass = pass + 1
+        else
+          sprintf2 msg 'FAIL: do-until expected 10, got %d' counter
+          fail = fail + 1
+        endif
+        filewriteln fh msg
+
+        ; TEST: Break from nested loop
+        outer_done = 0
+        found_i = 0
+        found_j = 0
+        for i 1 10
+          for j 1 10
+            if (i * j) = 42 then
+              found_i = i
+              found_j = j
+              outer_done = 1
+              break
+            endif
+          next
+          if outer_done = 1 then
+            break
+          endif
+        next
+        if (found_i * found_j) = 42 then
+          sprintf2 msg 'PASS: break from nested: %d * %d = 42' found_i found_j
+          pass = pass + 1
+        else
+          sprintf2 msg 'FAIL: break from nested: %d * %d <> 42' found_i found_j
+          fail = fail + 1
+        endif
+        filewriteln fh msg
+
+        ; TEST: Continue in for loop
+        sum_odd = 0
+        for i 1 10
+          if (i % 2) = 0 then
+            continue
+          endif
+          sum_odd = sum_odd + i
+        next
+        if sum_odd = 25 then
+          sprintf2 msg 'PASS: continue sum_odd=%d' sum_odd
+          pass = pass + 1
+        else
+          sprintf2 msg 'FAIL: continue expected 25, got %d' sum_odd
+          fail = fail + 1
+        endif
+        filewriteln fh msg
+
+        ; TEST: ElseIf chain
+        grade = 85
+        if grade >= 90 then
+          category = 'A'
+        elseif grade >= 80 then
+          category = 'B'
+        elseif grade >= 70 then
+          category = 'C'
+        else
+          category = 'F'
+        endif
+        if category = 'B' then
+          sprintf2 msg 'PASS: elseif grade=%d -> %s' grade category
+          pass = pass + 1
+        else
+          sprintf2 msg 'FAIL: elseif expected B, got %s' category
+          fail = fail + 1
+        endif
+        filewriteln fh msg
+
+        ; SUMMARY
+        filewriteln fh ''
+        total_tests = pass + fail
+        sprintf2 summary 'Control Flow: %d passed, %d failed (of %d)' pass fail total_tests
+        filewriteln fh summary
+        fileclose fh
+        end
+        """
+
+        let completed = execSync(script)
+        XCTAssertTrue(completed, "Script should run to completion")
+
+        // Verify log file was created and has content
+        XCTAssertTrue(FileManager.default.fileExists(atPath: logFile),
+                      "Log file should exist at \(logFile)")
+
+        guard let data = FileManager.default.contents(atPath: logFile),
+              let content = String(data: data, encoding: .utf8) else {
+            XCTFail("Failed to read log file")
+            return
+        }
+
+        XCTAssertFalse(content.isEmpty, "Log file should not be empty")
+
+        // Verify all tests passed
+        let lines = content.components(separatedBy: .newlines).filter { !$0.isEmpty }
+        for line in lines where line.hasPrefix("FAIL") {
+            XCTFail("Test failure in script: \(line)")
+        }
+
+        // Check summary
+        XCTAssertTrue(content.contains("0 failed"),
+                      "All control flow tests should pass. Log content:\n\(content)")
+    }
+
     // MARK: - EndIf/EndWhile Flag Tracking
 
     func testEndIfFlagSkipping() {

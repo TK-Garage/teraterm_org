@@ -253,7 +253,7 @@ class TTLInterpreter {
 
     // MARK: - Label Scanning
 
-    private func scanLabel() {
+    func scanLabel() {
         let line = parser.lineBuffer.trimmingCharacters(in: .whitespaces)
         if line.hasPrefix(":") {
             let labelName = String(line.dropFirst()).trimmingCharacters(in: .whitespaces)
@@ -286,7 +286,7 @@ class TTLInterpreter {
 
     // MARK: - Command Dispatch (port of ExecCmnd)
 
-    private func execCmnd() throws {
+    func execCmnd() throws {
         let line = parser.lineBuffer
 
         // Skip empty lines and comments
@@ -1841,7 +1841,16 @@ class TTLInterpreter {
                 parser.setResult(-1)
                 return
             }
-            fm.createFile(atPath: path, contents: nil)
+            // Create parent directories if needed
+            let dir = (path as NSString).deletingLastPathComponent
+            if !dir.isEmpty && !fm.fileExists(atPath: dir) {
+                try? fm.createDirectory(atPath: dir, withIntermediateDirectories: true)
+            }
+            if !fm.createFile(atPath: path, contents: nil) {
+                parser.setIntVal(id: varId, value: -1)
+                parser.setResult(-1)
+                return
+            }
         }
 
         let fh: FileHandle?
@@ -1857,8 +1866,13 @@ class TTLInterpreter {
             return
         }
 
-        if appendMode != 0 && !readOnly {
-            fileHandle.seekToEndOfFile()
+        if !readOnly {
+            if appendMode != 0 {
+                fileHandle.seekToEndOfFile()
+            } else {
+                // Truncate file for write mode (non-append)
+                fileHandle.truncateFile(atOffset: 0)
+            }
         }
 
         let idx = handlePut(fileHandle)
@@ -1869,6 +1883,7 @@ class TTLInterpreter {
         }
         filePaths[idx] = path
         parser.setIntVal(id: varId, value: idx)
+        parser.setResult(0)
     }
 
     private func ttlFileClose() throws {

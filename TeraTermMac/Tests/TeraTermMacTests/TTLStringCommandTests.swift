@@ -76,8 +76,10 @@ final class TTLStringCommandTests: XCTestCase {
     // MARK: - Helper: Execute a script synchronously for testing
 
     /// Load and pre-scan labels, then step through synchronously.
+    /// Synchronously execute a TTL script step by step.
     /// Only works for non-async commands (no wait/pause/dialog).
-    private func execSync(_ script: String, maxSteps: Int = 1000) {
+    @discardableResult
+    private func execSync(_ script: String, maxSteps: Int = 10000) -> Bool {
         interpreter.loadScript(script)
         interpreter.prescanLabels()
 
@@ -87,11 +89,15 @@ final class TTLStringCommandTests: XCTestCase {
                 interpreter.parser.status = .end
                 break
             }
-            // We need to access execCmnd - it's private, so we test via parser state
-            // Instead, step through the public interface by using run() with RunLoop
+            interpreter.scanLabel()
+            do {
+                try interpreter.execCmnd()
+            } catch {
+                return false
+            }
             steps += 1
-            break // Fall through - we'll use a different approach
         }
+        return interpreter.parser.status == .end
     }
 
     /// Direct parser-level test helper: set up parser with variables,
