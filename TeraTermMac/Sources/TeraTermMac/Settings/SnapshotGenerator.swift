@@ -31,7 +31,9 @@ final class SnapshotGenerator {
     // MARK: - Public API
 
     /// Generate PNG snapshots for all three dialog views.
-    static func generateAll() {
+    /// - Parameter outputDir: Optional output directory.  Defaults to
+    ///   the project `img/` directory or `~/Desktop/TT_UI_Preview/`.
+    static func generateAll(outputDir: URL? = nil) {
         let specs: [Spec] = [
             Spec(name: "01_NewConnection",
                  width: 520, height: 260,
@@ -63,7 +65,7 @@ final class SnapshotGenerator {
             view.layoutSubtreeIfNeeded()
 
             // Snapshot
-            view.saveToDebugPNG(name: spec.name)
+            view.saveToDebugPNG(name: spec.name, outputDir: outputDir)
 
             // Also verify intrinsic fitting vs spec size
             let fitting = view.fittingSize

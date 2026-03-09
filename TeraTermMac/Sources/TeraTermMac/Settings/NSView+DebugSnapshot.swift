@@ -15,16 +15,20 @@ import AppKit
 
 extension NSView {
 
-    /// Render this view to a PNG file on the Desktop under `TT_UI_Preview/`.
+    /// Render this view to a PNG file.
     ///
-    /// - Parameter name: A short identifier used in the filename,
-    ///   e.g. `"01_NewConnection"`.  The resulting file will be named
-    ///   `<name>_<yyyyMMdd>.png`.
+    /// - Parameters:
+    ///   - name: A short identifier used in the filename,
+    ///     e.g. `"01_NewConnection"`.  The resulting file will be named
+    ///     `<name>_<yyyyMMdd>.png`.
+    ///   - outputDir: Optional output directory URL.  When `nil` (default),
+    ///     falls back to the project `img/` directory (detected via Bundle)
+    ///     or `~/Desktop/TT_UI_Preview/`.
     ///
     /// The method forces a full Auto Layout pass, draws a 2pt red border
     /// around the view bounds, then uses `cacheDisplay(in:to:)` for
     /// offscreen rendering — no window needs to be on-screen.
-    func saveToDebugPNG(name: String) {
+    func saveToDebugPNG(name: String, outputDir: URL? = nil) {
         // 1. Force layout to settle
         layoutSubtreeIfNeeded()
 
@@ -64,16 +68,33 @@ extension NSView {
         }
         NSGraphicsContext.restoreGraphicsState()
 
-        // 4. Build output path: ~/Desktop/TT_UI_Preview/<name>_<date>.png
+        // 4. Build output path
         let dateStr = {
             let df = DateFormatter()
             df.dateFormat = "yyyyMMdd"
             return df.string(from: Date())
         }()
 
-        let desktopURL = FileManager.default.homeDirectoryForCurrentUser
-            .appendingPathComponent("Desktop")
-            .appendingPathComponent("TT_UI_Preview")
+        let desktopURL: URL
+        if let dir = outputDir {
+            desktopURL = dir
+        } else {
+            // Try project-relative img/ directory first
+            let bundlePath = Bundle.main.bundlePath
+            let projectImg = URL(fileURLWithPath: bundlePath)
+                .deletingLastPathComponent()  // .build/debug
+                .deletingLastPathComponent()  // .build
+                .deletingLastPathComponent()  // TeraTermMac
+                .deletingLastPathComponent()  // project root
+                .appendingPathComponent("img")
+            if FileManager.default.isWritableFile(atPath: projectImg.deletingLastPathComponent().path) {
+                desktopURL = projectImg
+            } else {
+                desktopURL = FileManager.default.homeDirectoryForCurrentUser
+                    .appendingPathComponent("Desktop")
+                    .appendingPathComponent("TT_UI_Preview")
+            }
+        }
 
         do {
             try FileManager.default.createDirectory(
