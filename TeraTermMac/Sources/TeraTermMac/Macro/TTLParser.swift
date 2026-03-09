@@ -781,6 +781,16 @@ class TTLParser {
         return result
     }
 
+    /// Get a single integer value (variable, number, or unary op) without binary operators.
+    /// Equivalent to original TTL's GetIntVal - used for multi-argument commands.
+    func getIntValue() throws -> Int {
+        let result = try getFactor()
+        switch result {
+        case .integer(let v): return v
+        default: throw TTLError.typeMismatch
+        }
+    }
+
     /// Get an integer value from expression
     func getIntExpression() throws -> Int {
         let result = try getExpression()

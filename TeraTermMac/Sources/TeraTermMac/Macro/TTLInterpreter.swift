@@ -2949,8 +2949,8 @@ class TTLInterpreter {
     }
 
     private func ttlSetDlgPos() throws {
-        dialogProvider.posX = try parser.getIntExpression()
-        dialogProvider.posY = try parser.getIntExpression()
+        dialogProvider.posX = try parser.getIntValue()
+        dialogProvider.posY = try parser.getIntValue()
     }
 
     private func ttlSetDebug() throws {
