@@ -13,7 +13,7 @@ NSView エクステンション。`saveToDebugPNG(name:)` メソッドを提供�
 - `layoutSubtreeIfNeeded()` でレイアウト確定
 - `cacheDisplay(in:to:)` でオフスクリーン描画（ウィンドウ表示不要）
 - **2pt 赤枠**で境界を視覚化し、はみ出しを確認可能
-- 保存先: `~/Desktop/TT_UI_Preview/<name>_<yyyyMMdd>.png`
+- 保存先: `TeraTermMac/img/<name>_<yyyyMMdd>.png`（フォールバック: `~/Desktop/TT_UI_Preview/`）
 
 ### 2. `SnapshotGenerator.swift`
 
@@ -71,7 +71,7 @@ swift build
 ## 出力例
 
 ```
-~/Desktop/TT_UI_Preview/
+TeraTermMac/img/
 ├── 01_NewConnection_20260309.png
 ├── 02_TerminalSetup_20260309.png
 └── 03_KeyboardSetup_20260309.png
