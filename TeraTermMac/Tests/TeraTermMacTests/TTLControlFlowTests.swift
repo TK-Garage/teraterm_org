@@ -707,6 +707,105 @@ final class TTLControlFlowTests: XCTestCase {
         }
     }
 
+    // MARK: - ElseIf Chain Tests
+
+    func testElseIfChain_MatchSecondBranch() {
+        // Focused test: grade=85, first elseif (>=80) should match
+        let completed = execSync("""
+        grade = 85
+        if grade >= 90 then
+          category = 'A'
+        elseif grade >= 80 then
+          category = 'B'
+        elseif grade >= 70 then
+          category = 'C'
+        else
+          category = 'F'
+        endif
+        end
+        """)
+        XCTAssertTrue(completed, "ElseIf chain should complete")
+        let p = interpreter.parser
+        if let (type, id) = p.checkVar("category") {
+            XCTAssertEqual(type, .string, "category should be a string variable")
+            XCTAssertEqual(p.getStrVal(id: id), "B",
+                           "grade=85 should match elseif grade >= 80, got \(p.getStrVal(id: id))")
+        } else {
+            XCTFail("category variable not found")
+        }
+    }
+
+    func testElseIfChain_MatchFirstBranch() {
+        let completed = execSync("""
+        grade = 95
+        if grade >= 90 then
+          category = 'A'
+        elseif grade >= 80 then
+          category = 'B'
+        else
+          category = 'F'
+        endif
+        end
+        """)
+        XCTAssertTrue(completed)
+        let p = interpreter.parser
+        if let (_, id) = p.checkVar("category") {
+            XCTAssertEqual(p.getStrVal(id: id), "A")
+        } else {
+            XCTFail("category variable not found")
+        }
+    }
+
+    func testElseIfChain_FallToElse() {
+        let completed = execSync("""
+        grade = 50
+        if grade >= 90 then
+          category = 'A'
+        elseif grade >= 80 then
+          category = 'B'
+        elseif grade >= 70 then
+          category = 'C'
+        else
+          category = 'F'
+        endif
+        end
+        """)
+        XCTAssertTrue(completed)
+        let p = interpreter.parser
+        if let (_, id) = p.checkVar("category") {
+            XCTAssertEqual(p.getStrVal(id: id), "F")
+        } else {
+            XCTFail("category variable not found")
+        }
+    }
+
+    func testElseIfChain_NestedIfInsideSkippedBlock() {
+        // Test that nested if...then inside a false-if block is handled correctly
+        let completed = execSync("""
+        x = 0
+        result = 'none'
+        if x = 1 then
+          if x = 1 then
+            result = 'wrong1'
+          endif
+          result = 'wrong2'
+        elseif x = 0 then
+          result = 'correct'
+        else
+          result = 'wrong3'
+        endif
+        end
+        """)
+        XCTAssertTrue(completed, "Nested if inside skipped block should complete")
+        let p = interpreter.parser
+        if let (_, id) = p.checkVar("result") {
+            XCTAssertEqual(p.getStrVal(id: id), "correct",
+                           "Should match elseif x=0 branch, got \(p.getStrVal(id: id))")
+        } else {
+            XCTFail("result variable not found")
+        }
+    }
+
     func testEndWhileFlagSkipping() {
         var endWhileFlag = 0
 

@@ -388,7 +388,7 @@ class TTLInterpreter {
         // Handle endif skipping
         if endIfFlag > 0 {
             if let cmd = parser.getReservedWord() {
-                if try cmd == .if_ && checkThen() {
+                if cmd == .if_ && checkIfThenForSkip() {
                     endIfFlag += 1
                 } else if cmd == .endIf {
                     endIfFlag -= 1
@@ -402,7 +402,7 @@ class TTLInterpreter {
             if let cmd = parser.getReservedWord() {
                 switch cmd {
                 case .if_:
-                    if try checkThen() { endIfFlag += 1 }
+                    if checkIfThenForSkip() { endIfFlag += 1 }
                 case .else_:
                     elseFlag -= 1
                 case .elseIf:
@@ -748,6 +748,24 @@ class TTLInterpreter {
 
     private func checkThen() throws -> Bool {
         let saved = parser.linePtr
+        if let cmd = parser.getReservedWord(), cmd == .then {
+            return true
+        }
+        parser.linePtr = saved
+        return false
+    }
+
+    /// Check if a skipped `if` line is block form (`if cond then`).
+    /// Unlike checkThen(), this first consumes the condition expression
+    /// so that `then` can be found after it.
+    private func checkIfThenForSkip() -> Bool {
+        let saved = parser.linePtr
+        // Try to evaluate and skip past the condition expression
+        guard let _ = try? parser.getIntExpression() else {
+            parser.linePtr = saved
+            return false
+        }
+        // Now check for "then"
         if let cmd = parser.getReservedWord(), cmd == .then {
             return true
         }
