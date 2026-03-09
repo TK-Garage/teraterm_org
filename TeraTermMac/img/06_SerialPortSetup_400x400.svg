@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400">
+  <defs>
+    <style>
+      .bg { fill: #ECECEC; }
+      .border { fill: none; stroke: red; stroke-width: 2; }
+      .box { fill: #F6F6F6; stroke: #C0C0C0; stroke-width: 1; rx: 4; }
+      .label { font-family: -apple-system, 'Helvetica Neue', sans-serif; font-size: 13px; fill: #333; }
+      .label-r { font-family: -apple-system, 'Helvetica Neue', sans-serif; font-size: 13px; fill: #333; text-anchor: end; }
+      .title { font-family: -apple-system, 'Helvetica Neue', sans-serif; font-size: 13px; fill: #333; font-weight: 600; }
+      .boxtitle { font-family: -apple-system, 'Helvetica Neue', sans-serif; font-size: 12px; fill: #555; font-weight: 600; }
+      .field { fill: #FFF; stroke: #B0B0B0; stroke-width: 1; rx: 3; }
+      .popup { fill: #FFF; stroke: #B0B0B0; stroke-width: 1; rx: 3; }
+      .btn { fill: #F0F0F0; stroke: #B0B0B0; stroke-width: 1; rx: 5; }
+      .btn-primary { fill: #007AFF; stroke: #006AE0; stroke-width: 1; rx: 5; }
+      .btn-label { font-family: -apple-system, sans-serif; font-size: 13px; fill: #333; text-anchor: middle; }
+      .btn-label-w { font-family: -apple-system, sans-serif; font-size: 13px; fill: #FFF; text-anchor: middle; }
+      .sep { stroke: #C0C0C0; stroke-width: 1; }
+      .size-label { font-family: monospace; font-size: 10px; fill: red; }
+    </style>
+  </defs>
+
+  <rect width="400" height="400" class="bg"/>
+  <rect x="1" y="1" width="398" height="398" class="border"/>
+
+  <!-- Title bar -->
+  <rect x="0" y="0" width="400" height="22" fill="#E8E8E8" stroke="#C0C0C0" stroke-width="1"/>
+  <text x="200" y="15" class="title" text-anchor="middle">Tera Term: Serial port setup</text>
+  <circle cx="14" cy="11" r="5" fill="#FF5F57"/>
+  <circle cx="30" cy="11" r="5" fill="#FEBC2E"/>
+  <circle cx="46" cy="11" r="5" fill="#28C840"/>
+
+  <!-- Port row -->
+  <text x="100" y="52" class="label-r">Port:</text>
+  <rect x="110" y="37" width="260" height="22" class="popup"/>
+  <text x="120" y="52" class="label">/dev/cu.usbserial</text>
+  <polygon points="358,45 364,45 361,51" fill="#666"/>
+
+  <!-- Speed row -->
+  <text x="100" y="82" class="label-r">Speed:</text>
+  <rect x="110" y="67" width="180" height="22" class="popup"/>
+  <text x="120" y="82" class="label">9600</text>
+  <polygon points="278,75 284,75 281,81" fill="#666"/>
+
+  <!-- Data row -->
+  <text x="100" y="112" class="label-r">Data:</text>
+  <rect x="110" y="97" width="180" height="22" class="popup"/>
+  <text x="120" y="112" class="label">8</text>
+  <polygon points="278,105 284,105 281,111" fill="#666"/>
+
+  <!-- Parity row -->
+  <text x="100" y="142" class="label-r">Parity:</text>
+  <rect x="110" y="127" width="180" height="22" class="popup"/>
+  <text x="120" y="142" class="label">None</text>
+  <polygon points="278,135 284,135 281,141" fill="#666"/>
+
+  <!-- Stop bits row -->
+  <text x="100" y="172" class="label-r">Stop bits:</text>
+  <rect x="110" y="157" width="180" height="22" class="popup"/>
+  <text x="120" y="172" class="label">1</text>
+  <polygon points="278,165 284,165 281,171" fill="#666"/>
+
+  <!-- Flow control row -->
+  <text x="100" y="202" class="label-r">Flow control:</text>
+  <rect x="110" y="187" width="180" height="22" class="popup"/>
+  <text x="120" y="202" class="label">None</text>
+  <polygon points="278,195 284,195 281,201" fill="#666"/>
+
+  <!-- Transmit delay group box -->
+  <rect x="20" y="225" width="360" height="60" class="box"/>
+  <text x="30" y="240" class="boxtitle">Transmit delay</text>
+  <rect x="35" y="252" width="50" height="22" class="field"/>
+  <text x="43" y="267" class="label">0</text>
+  <text x="92" y="267" class="label">msec/char</text>
+  <rect x="195" y="252" width="50" height="22" class="field"/>
+  <text x="203" y="267" class="label">0</text>
+  <text x="252" y="267" class="label">msec/line</text>
+
+  <!-- Separator -->
+  <line x1="0" y1="315" x2="400" y2="315" class="sep"/>
+
+  <!-- Buttons -->
+  <rect x="20" y="335" width="80" height="24" class="btn"/>
+  <text x="60" y="351" class="btn-label">Help</text>
+  <rect x="210" y="335" width="80" height="24" class="btn"/>
+  <text x="250" y="351" class="btn-label">Cancel</text>
+  <rect x="300" y="335" width="80" height="24" class="btn-primary"/>
+  <text x="340" y="351" class="btn-label-w">OK</text>
+
+  <text x="390" y="395" class="size-label" text-anchor="end">400 x 400</text>
+</svg>
