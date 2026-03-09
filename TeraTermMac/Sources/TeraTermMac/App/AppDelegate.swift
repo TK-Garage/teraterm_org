@@ -905,6 +905,11 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         row4.alignment = .firstBaseline
 
         // Service rows: align radio buttons with leading indent
+        // Ensure radio buttons have enough width for labels
+        for radio in [telnetRadio, sshRadio, otherRadio] {
+            radio.widthAnchor.constraint(greaterThanOrEqualToConstant: 80).isActive = true
+        }
+
         let serviceStack = NSStackView(views: [row2, row3, row4])
         serviceStack.translatesAutoresizingMaskIntoConstraints = false
         serviceStack.orientation = .vertical
@@ -937,7 +942,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
             sshRow.widthAnchor.constraint(equalTo: serviceRow.widthAnchor),
             otherRow.leadingAnchor.constraint(equalTo: serviceRow.leadingAnchor),
             otherRow.widthAnchor.constraint(equalTo: serviceRow.widthAnchor),
-            hostCombo.widthAnchor.constraint(greaterThanOrEqualToConstant: 200),
+            hostCombo.widthAnchor.constraint(greaterThanOrEqualToConstant: 280),
         ])
 
         helper.tcpControls = [hostLabel, hostCombo, serviceLabel,
@@ -1005,7 +1010,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
             serialBox.trailingAnchor.constraint(equalTo: accessoryView.trailingAnchor),
             serialBox.bottomAnchor.constraint(equalTo: accessoryView.bottomAnchor),
 
-            accessoryView.widthAnchor.constraint(greaterThanOrEqualToConstant: 420),
+            accessoryView.widthAnchor.constraint(greaterThanOrEqualToConstant: 520),
         ])
 
         // Apply initial enable/disable state
@@ -1186,19 +1191,20 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         let ansLabel = NSView.makeLabel(L("dialog.keyboardSetup.answerback"))
 
         // ── Controls ──
+        let kbPopupWidth: CGFloat = 180
         let bsPopup = NSView.makePopUpButton(
             items: ["BS (0x08)", "DEL (0x7F)"],
-            width: DialogLayout.popupWidth)
+            width: kbPopupWidth)
         bsPopup.selectItem(at: settings.bsKey == 8 ? 0 : 1)
 
         let delPopup = NSView.makePopUpButton(
             items: ["DEL (0x7F)", "BS (0x08)", L("dialog.keyboardSetup.deleteEscSeq")],
-            width: DialogLayout.popupWidth)
+            width: kbPopupWidth)
         delPopup.selectItem(at: settings.deleteKey == 127 ? 0 : (settings.deleteKey == 8 ? 1 : 2))
 
         let metaPopup = NSView.makePopUpButton(
             items: [L("dialog.keyboardSetup.metaOff"), L("dialog.keyboardSetup.metaOn")],
-            width: DialogLayout.popupWidth)
+            width: kbPopupWidth)
         metaPopup.selectItem(at: settings.metaKey)
 
         let ansField = NSView.makeTextField(
@@ -1214,16 +1220,31 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
             [ansLabel,  ansField],
         ])
         grid.translatesAutoresizingMaskIntoConstraints = false
-        grid.rowSpacing = DialogLayout.rowSpacing
-        grid.columnSpacing = DialogLayout.labelTrailing
+        grid.rowSpacing = 12  // 24pt row height with controls
+        grid.columnSpacing = 10  // label-to-control spacing >= 10pt
         grid.column(at: 0).xPlacement = .trailing   // labels right-aligned
         grid.column(at: 1).xPlacement = .leading     // controls left-aligned
+        // Fixed label column width for consistent alignment
+        grid.column(at: 0).width = 140
         // Baseline alignment per row
         for i in 0..<grid.numberOfRows {
             grid.row(at: i).rowAlignment = .firstBaseline
+            grid.row(at: i).height = 24  // 24pt per row for vertical spacing
         }
 
-        alert.accessoryView = grid
+        // Wrap grid in a padded container (20pt EdgeInsets)
+        let paddedContainer = NSView()
+        paddedContainer.translatesAutoresizingMaskIntoConstraints = false
+        paddedContainer.addSubview(grid)
+        NSLayoutConstraint.activate([
+            grid.topAnchor.constraint(equalTo: paddedContainer.topAnchor, constant: 20),
+            grid.leadingAnchor.constraint(equalTo: paddedContainer.leadingAnchor, constant: 20),
+            grid.trailingAnchor.constraint(equalTo: paddedContainer.trailingAnchor, constant: -20),
+            grid.bottomAnchor.constraint(equalTo: paddedContainer.bottomAnchor, constant: -20),
+            paddedContainer.widthAnchor.constraint(greaterThanOrEqualToConstant: 500),
+        ])
+
+        alert.accessoryView = paddedContainer
         alert.addButton(withTitle: L("dialog.keyboardSetup.ok"))
         alert.addButton(withTitle: L("dialog.keyboardSetup.cancel"))
 

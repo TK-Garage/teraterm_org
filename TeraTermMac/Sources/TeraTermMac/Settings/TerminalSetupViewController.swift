@@ -69,9 +69,9 @@ class TerminalSetupViewController: BaseSetupDialogController {
         let sizeBox = NSView.makeGroupBox(title: TTL("dialog.termSetup.terminalSize"))
         contentArea.addSubview(sizeBox)
 
-        widthField = NSView.makeNumberField(value: settings.terminalWidth, width: 50)
+        widthField = NSView.makeNumberField(value: settings.terminalWidth, width: 60)
         let xLabel = NSView.makeLabel("X", alignment: .center)
-        heightField = NSView.makeNumberField(value: settings.terminalHeight, width: 50)
+        heightField = NSView.makeNumberField(value: settings.terminalHeight, width: 60)
         termIsWinCheck = NSView.makeCheckbox(
             TTL("dialog.termSetup.termSizeIsWin"), checked: settings.termIsWin)
         autoResizeCheck = NSView.makeCheckbox(
@@ -86,11 +86,11 @@ class TerminalSetupViewController: BaseSetupDialogController {
         contentArea.addSubview(newlineBox)
 
         let receiveLabel = NSView.makeLabel(TTL("dialog.termSetup.receive"))
-        receivePopup = NSView.makePopUpButton(items: newlineOptions, width: 80)
+        receivePopup = NSView.makePopUpButton(items: newlineOptions, width: 100)
         receivePopup.selectItem(at: min(settings.crReceive.rawValue, newlineOptions.count - 1))
 
         let transmitLabel = NSView.makeLabel(TTL("dialog.termSetup.transmit"))
-        transmitPopup = NSView.makePopUpButton(items: newlineOptions, width: 80)
+        transmitPopup = NSView.makePopUpButton(items: newlineOptions, width: 100)
         transmitPopup.selectItem(at: min(settings.crSend.rawValue, newlineOptions.count - 1))
 
         for v: NSView in [receiveLabel, receivePopup, transmitLabel, transmitPopup] {
@@ -143,15 +143,15 @@ class TerminalSetupViewController: BaseSetupDialogController {
         let tp = DialogLayout.groupBoxTopPadding
         let rs = DialogLayout.rowSpacing
 
-        // Dialog content width
-        let dialogWidth: CGFloat = 460
+        // Dialog content width (expanded for macOS standard control sizes)
+        let dialogWidth: CGFloat = 500
         contentArea.widthAnchor.constraint(equalToConstant: dialogWidth).isActive = true
 
         // ── Size Box: top-left ──
         NSLayoutConstraint.activate([
             sizeBox.topAnchor.constraint(equalTo: contentArea.topAnchor),
             sizeBox.leadingAnchor.constraint(equalTo: contentArea.leadingAnchor),
-            sizeBox.widthAnchor.constraint(equalToConstant: 200),
+            sizeBox.widthAnchor.constraint(equalToConstant: 220),
         ])
 
         // Size box content
@@ -167,7 +167,7 @@ class TerminalSetupViewController: BaseSetupDialogController {
             heightField.centerYAnchor.constraint(equalTo: widthField.centerYAnchor),
             heightField.leadingAnchor.constraint(equalTo: xLabel.trailingAnchor, constant: 6),
 
-            termIsWinCheck.topAnchor.constraint(equalTo: widthField.bottomAnchor, constant: rs),
+            termIsWinCheck.topAnchor.constraint(equalTo: widthField.bottomAnchor, constant: rs + 10),
             termIsWinCheck.leadingAnchor.constraint(equalTo: sizeContent.leadingAnchor, constant: p),
             termIsWinCheck.trailingAnchor.constraint(lessThanOrEqualTo: sizeContent.trailingAnchor, constant: -p),
 

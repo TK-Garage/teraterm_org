@@ -40,11 +40,11 @@ enum DialogLayout {
     static let rowSpacing: CGFloat = 8
     static let sectionSpacing: CGFloat = 16
 
-    // Label-to-control spacing
-    static let labelTrailing: CGFloat = 8
+    // Label-to-control spacing (>= 10pt for macOS HIG)
+    static let labelTrailing: CGFloat = 10
 
     // Standard input width
-    static let popupWidth: CGFloat = 140
+    static let popupWidth: CGFloat = 160
     static let narrowFieldWidth: CGFloat = 60
     static let wideFieldWidth: CGFloat = 200
 }
@@ -71,7 +71,7 @@ extension NSView {
     static func makeLabel(_ text: String, alignment: NSTextAlignment = .right) -> NSTextField {
         let label = NSTextField(labelWithString: text)
         label.translatesAutoresizingMaskIntoConstraints = false
-        label.font = NSFont.systemFont(ofSize: NSFont.systemFontSize)
+        label.font = NSFont.systemFont(ofSize: 13)
         label.alignment = alignment
         label.setContentHuggingPriority(.defaultHigh, for: .horizontal)
         return label
@@ -83,7 +83,7 @@ extension NSView {
         field.translatesAutoresizingMaskIntoConstraints = false
         field.stringValue = value
         field.placeholderString = placeholder
-        field.font = NSFont.systemFont(ofSize: NSFont.systemFontSize)
+        field.font = NSFont.systemFont(ofSize: 13)
         field.bezelStyle = .roundedBezel
         if let w = width {
             field.widthAnchor.constraint(equalToConstant: w).isActive = true
@@ -96,7 +96,7 @@ extension NSView {
         let field = NSSecureTextField()
         field.translatesAutoresizingMaskIntoConstraints = false
         field.placeholderString = placeholder
-        field.font = NSFont.systemFont(ofSize: NSFont.systemFontSize)
+        field.font = NSFont.systemFont(ofSize: 13)
         field.bezelStyle = .roundedBezel
         if let w = width {
             field.widthAnchor.constraint(equalToConstant: w).isActive = true
@@ -118,7 +118,7 @@ extension NSView {
     static func makePopUpButton(items: [String], selected: String? = nil, width: CGFloat? = nil) -> NSPopUpButton {
         let popup = NSPopUpButton()
         popup.translatesAutoresizingMaskIntoConstraints = false
-        popup.font = NSFont.systemFont(ofSize: NSFont.systemFontSize)
+        popup.font = NSFont.systemFont(ofSize: 13)
         for item in items {
             popup.addItem(withTitle: item)
         }
@@ -135,7 +135,7 @@ extension NSView {
     static func makeCheckbox(_ title: String, checked: Bool = false) -> NSButton {
         let button = NSButton(checkboxWithTitle: title, target: nil, action: nil)
         button.translatesAutoresizingMaskIntoConstraints = false
-        button.font = NSFont.systemFont(ofSize: NSFont.systemFontSize)
+        button.font = NSFont.systemFont(ofSize: 13)
         button.state = checked ? .on : .off
         return button
     }
@@ -144,7 +144,7 @@ extension NSView {
     static func makeRadioButton(_ title: String, tag: Int = 0) -> NSButton {
         let button = NSButton(radioButtonWithTitle: title, target: nil, action: nil)
         button.translatesAutoresizingMaskIntoConstraints = false
-        button.font = NSFont.systemFont(ofSize: NSFont.systemFontSize)
+        button.font = NSFont.systemFont(ofSize: 13)
         button.tag = tag
         return button
     }
@@ -154,7 +154,7 @@ extension NSView {
         let button = NSButton(title: title, target: nil, action: nil)
         button.translatesAutoresizingMaskIntoConstraints = false
         button.bezelStyle = .rounded
-        button.font = NSFont.systemFont(ofSize: NSFont.systemFontSize)
+        button.font = NSFont.systemFont(ofSize: 13)
         button.keyEquivalent = keyEquivalent
         button.widthAnchor.constraint(greaterThanOrEqualToConstant: DialogLayout.buttonWidth).isActive = true
         return button
@@ -167,7 +167,7 @@ extension NSView {
         box.boxType = .primary
         box.titlePosition = .atTop
         box.title = title
-        box.titleFont = NSFont.systemFont(ofSize: NSFont.systemFontSize)
+        box.titleFont = NSFont.systemFont(ofSize: 13)
         return box
     }
 
