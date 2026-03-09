@@ -79,13 +79,12 @@ extension NSView {
         if let dir = outputDir {
             desktopURL = dir
         } else {
-            // Try project-relative img/ directory first
+            // Try TeraTermMac/img/ directory first
             let bundlePath = Bundle.main.bundlePath
             let projectImg = URL(fileURLWithPath: bundlePath)
                 .deletingLastPathComponent()  // .build/debug
                 .deletingLastPathComponent()  // .build
                 .deletingLastPathComponent()  // TeraTermMac
-                .deletingLastPathComponent()  // project root
                 .appendingPathComponent("img")
             if FileManager.default.isWritableFile(atPath: projectImg.deletingLastPathComponent().path) {
                 desktopURL = projectImg
