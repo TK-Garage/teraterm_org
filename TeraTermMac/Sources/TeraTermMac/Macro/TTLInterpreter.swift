@@ -2319,7 +2319,7 @@ class TTLInterpreter {
         }
 
         parser.status = .pause
-        dialogProvider.showInputBox(prompt: prompt, title: title, defaultValue: defaultVal, isPassword: password) { [weak self] result, inputStr in
+        dialogProvider.showInputBox(prompt: prompt, title: title, defaultValue: defaultVal, isPassword: password) { [weak self] (result: Int, inputStr: String) in
             guard let self = self else { return }
             self.parser.setResult(result)
             self.parser.setInputStr(inputStr)
@@ -2336,7 +2336,7 @@ class TTLInterpreter {
         }
 
         parser.status = .pause
-        dialogProvider.showMessageBox(message: msg, title: title) { [weak self] result in
+        dialogProvider.showMessageBox(message: msg, title: title) { [weak self] (result: Int) in
             guard let self = self else { return }
             self.parser.setResult(result)
             self.parser.status = .run
@@ -2352,7 +2352,7 @@ class TTLInterpreter {
         }
 
         parser.status = .pause
-        dialogProvider.showYesNoBox(message: msg, title: title) { [weak self] result in
+        dialogProvider.showYesNoBox(message: msg, title: title) { [weak self] (result: Int) in
             guard let self = self else { return }
             self.parser.setResult(result)
             self.parser.status = .run
@@ -2385,7 +2385,7 @@ class TTLInterpreter {
         let items = msg.components(separatedBy: "\n")
 
         parser.status = .pause
-        dialogProvider.showListBox(items: items, title: title) { [weak self] result, inputStr in
+        dialogProvider.showListBox(items: items, title: title) { [weak self] (result: Int, inputStr: String) in
             guard let self = self else { return }
             self.parser.setResult(result)
             self.parser.setInputStr(inputStr)
@@ -2406,7 +2406,7 @@ class TTLInterpreter {
         }
 
         parser.status = .pause
-        dialogProvider.showFilenameBox(title: title, isSave: save) { [weak self] result, path in
+        dialogProvider.showFilenameBox(title: title, isSave: save) { [weak self] (result: Int, path: String) in
             guard let self = self else { return }
             if result == 1 {
                 self.parser.setStrVal(id: varId, value: path)
@@ -2425,7 +2425,7 @@ class TTLInterpreter {
         }
 
         parser.status = .pause
-        dialogProvider.showDirnameBox(title: title) { [weak self] result, path in
+        dialogProvider.showDirnameBox(title: title) { [weak self] (result: Int, path: String) in
             guard let self = self else { return }
             if result == 1 {
                 self.parser.setStrVal(id: varId, value: path)

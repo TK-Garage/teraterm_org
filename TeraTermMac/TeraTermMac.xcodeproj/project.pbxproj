@@ -29,6 +29,27 @@
 		BB0001000000000000000014 /* TerminalSetupViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0001000000000000000017 /* TerminalSetupViewController.swift */; };
 		BB0001000000000000000015 /* WindowSetupViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0001000000000000000018 /* WindowSetupViewController.swift */; };
 		BB0001000000000000000016 /* SerialPortSetupViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0001000000000000000019 /* SerialPortSetupViewController.swift */; };
+		BB0001000000000000000017 /* DialogCommandProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000100000000000000001A /* DialogCommandProvider.swift */; };
+		BB0001000000000000000018 /* MacroStatusPanelController.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000100000000000000001B /* MacroStatusPanelController.swift */; };
+		BB0001000000000000000019 /* SSHAuthViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000100000000000000001C /* SSHAuthViewController.swift */; };
+		BB000100000000000000001A /* INISerializer.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000100000000000000001D /* INISerializer.swift */; };
+		BB000100000000000000001B /* ConfigPersistenceManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000100000000000000001E /* ConfigPersistenceManager.swift */; };
+		BB000100000000000000001C /* TTLParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000100000000000000001F /* TTLParserTests.swift */; };
+		BB000100000000000000001D /* TTLCalcArrayTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0001000000000000000020 /* TTLCalcArrayTests.swift */; };
+		BB000100000000000000001E /* TTLFileIOTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0001000000000000000021 /* TTLFileIOTests.swift */; };
+		BB000100000000000000001F /* TTLCommunicationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0001000000000000000022 /* TTLCommunicationTests.swift */; };
+		BB0001000000000000000020 /* TTLChecksumTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0001000000000000000023 /* TTLChecksumTests.swift */; };
+		BB0001000000000000000021 /* TTLMacSpecificTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0001000000000000000024 /* TTLMacSpecificTests.swift */; };
+		BB0001000000000000000022 /* TTLStringCommandTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0001000000000000000025 /* TTLStringCommandTests.swift */; };
+		BB0001000000000000000023 /* TTLControlFlowTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0001000000000000000026 /* TTLControlFlowTests.swift */; };
+		BB0001000000000000000024 /* TTLDialogCommandTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0001000000000000000027 /* TTLDialogCommandTests.swift */; };
+		BB0001000000000000000025 /* MacroStatusPanelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0001000000000000000028 /* MacroStatusPanelTests.swift */; };
+		BB0001000000000000000026 /* ConfigPersistenceManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0001000000000000000029 /* ConfigPersistenceManagerTests.swift */; };
+		BB0001000000000000000027 /* SSHAuthLogicTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000100000000000000002A /* SSHAuthLogicTests.swift */; };
+		BB0001000000000000000028 /* SSHMockConnection.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000100000000000000002B /* SSHMockConnection.swift */; };
+		BB0001000000000000000029 /* UITestHarness.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000100000000000000002C /* UITestHarness.swift */; };
+		BB000100000000000000002A /* SettingMenuUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000100000000000000002D /* SettingMenuUITests.swift */; };
+		BB000100000000000000002B /* SnapshotValidator.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000100000000000000002E /* SnapshotValidator.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -66,6 +87,27 @@
 		AA0001000000000000000017 /* TerminalSetupViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerminalSetupViewController.swift; sourceTree = "<group>"; };
 		AA0001000000000000000018 /* WindowSetupViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowSetupViewController.swift; sourceTree = "<group>"; };
 		AA0001000000000000000019 /* SerialPortSetupViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SerialPortSetupViewController.swift; sourceTree = "<group>"; };
+		AA000100000000000000001A /* DialogCommandProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DialogCommandProvider.swift; sourceTree = "<group>"; };
+		AA000100000000000000001B /* MacroStatusPanelController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacroStatusPanelController.swift; sourceTree = "<group>"; };
+		AA000100000000000000001C /* SSHAuthViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SSHAuthViewController.swift; sourceTree = "<group>"; };
+		AA000100000000000000001D /* INISerializer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = INISerializer.swift; sourceTree = "<group>"; };
+		AA000100000000000000001E /* ConfigPersistenceManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfigPersistenceManager.swift; sourceTree = "<group>"; };
+		AA000100000000000000001F /* TTLParserTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TTLParserTests.swift; sourceTree = "<group>"; };
+		AA0001000000000000000020 /* TTLCalcArrayTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TTLCalcArrayTests.swift; sourceTree = "<group>"; };
+		AA0001000000000000000021 /* TTLFileIOTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TTLFileIOTests.swift; sourceTree = "<group>"; };
+		AA0001000000000000000022 /* TTLCommunicationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TTLCommunicationTests.swift; sourceTree = "<group>"; };
+		AA0001000000000000000023 /* TTLChecksumTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TTLChecksumTests.swift; sourceTree = "<group>"; };
+		AA0001000000000000000024 /* TTLMacSpecificTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TTLMacSpecificTests.swift; sourceTree = "<group>"; };
+		AA0001000000000000000025 /* TTLStringCommandTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TTLStringCommandTests.swift; sourceTree = "<group>"; };
+		AA0001000000000000000026 /* TTLControlFlowTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TTLControlFlowTests.swift; sourceTree = "<group>"; };
+		AA0001000000000000000027 /* TTLDialogCommandTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TTLDialogCommandTests.swift; sourceTree = "<group>"; };
+		AA0001000000000000000028 /* MacroStatusPanelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacroStatusPanelTests.swift; sourceTree = "<group>"; };
+		AA0001000000000000000029 /* ConfigPersistenceManagerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfigPersistenceManagerTests.swift; sourceTree = "<group>"; };
+		AA000100000000000000002A /* SSHAuthLogicTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SSHAuthLogicTests.swift; sourceTree = "<group>"; };
+		AA000100000000000000002B /* SSHMockConnection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SSHMockConnection.swift; sourceTree = "<group>"; };
+		AA000100000000000000002C /* UITestHarness.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UITestHarness.swift; sourceTree = "<group>"; };
+		AA000100000000000000002D /* SettingMenuUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingMenuUITests.swift; sourceTree = "<group>"; };
+		AA000100000000000000002E /* SnapshotValidator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnapshotValidator.swift; sourceTree = "<group>"; };
 		DD0001000000000000000004 /* TeraTermMac.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TeraTermMac.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		DD0001000000000000000005 /* TeraTermMacTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TeraTermMacTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -192,6 +234,9 @@
 				AA0001000000000000000017 /* TerminalSetupViewController.swift */,
 				AA0001000000000000000018 /* WindowSetupViewController.swift */,
 				AA0001000000000000000019 /* SerialPortSetupViewController.swift */,
+				AA000100000000000000001C /* SSHAuthViewController.swift */,
+				AA000100000000000000001D /* INISerializer.swift */,
+				AA000100000000000000001E /* ConfigPersistenceManager.swift */,
 			);
 			path = Settings;
 			sourceTree = "<group>";
@@ -201,6 +246,8 @@
 			children = (
 				AA0001000000000000000014 /* TTLParser.swift */,
 				AA0001000000000000000015 /* TTLInterpreter.swift */,
+				AA000100000000000000001A /* DialogCommandProvider.swift */,
+				AA000100000000000000001B /* MacroStatusPanelController.swift */,
 			);
 			path = Macro;
 			sourceTree = "<group>";
@@ -226,6 +273,22 @@
 			isa = PBXGroup;
 			children = (
 				AA0001000000000000000010 /* VTParserTests.swift */,
+				AA000100000000000000001F /* TTLParserTests.swift */,
+				AA0001000000000000000020 /* TTLCalcArrayTests.swift */,
+				AA0001000000000000000021 /* TTLFileIOTests.swift */,
+				AA0001000000000000000022 /* TTLCommunicationTests.swift */,
+				AA0001000000000000000023 /* TTLChecksumTests.swift */,
+				AA0001000000000000000024 /* TTLMacSpecificTests.swift */,
+				AA0001000000000000000025 /* TTLStringCommandTests.swift */,
+				AA0001000000000000000026 /* TTLControlFlowTests.swift */,
+				AA0001000000000000000027 /* TTLDialogCommandTests.swift */,
+				AA0001000000000000000028 /* MacroStatusPanelTests.swift */,
+				AA0001000000000000000029 /* ConfigPersistenceManagerTests.swift */,
+				AA000100000000000000002A /* SSHAuthLogicTests.swift */,
+				AA000100000000000000002B /* SSHMockConnection.swift */,
+				AA000100000000000000002C /* UITestHarness.swift */,
+				AA000100000000000000002D /* SettingMenuUITests.swift */,
+				AA000100000000000000002E /* SnapshotValidator.swift */,
 			);
 			path = TeraTermMacTests;
 			sourceTree = "<group>";
@@ -363,6 +426,11 @@
 				BB0001000000000000000014 /* TerminalSetupViewController.swift in Sources */,
 				BB0001000000000000000015 /* WindowSetupViewController.swift in Sources */,
 				BB0001000000000000000016 /* SerialPortSetupViewController.swift in Sources */,
+				BB0001000000000000000017 /* DialogCommandProvider.swift in Sources */,
+				BB0001000000000000000018 /* MacroStatusPanelController.swift in Sources */,
+				BB0001000000000000000019 /* SSHAuthViewController.swift in Sources */,
+				BB000100000000000000001A /* INISerializer.swift in Sources */,
+				BB000100000000000000001B /* ConfigPersistenceManager.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -371,6 +439,22 @@
 			buildActionMask = 2147483647;
 			files = (
 				BB000100000000000000000F /* VTParserTests.swift in Sources */,
+				BB000100000000000000001C /* TTLParserTests.swift in Sources */,
+				BB000100000000000000001D /* TTLCalcArrayTests.swift in Sources */,
+				BB000100000000000000001E /* TTLFileIOTests.swift in Sources */,
+				BB000100000000000000001F /* TTLCommunicationTests.swift in Sources */,
+				BB0001000000000000000020 /* TTLChecksumTests.swift in Sources */,
+				BB0001000000000000000021 /* TTLMacSpecificTests.swift in Sources */,
+				BB0001000000000000000022 /* TTLStringCommandTests.swift in Sources */,
+				BB0001000000000000000023 /* TTLControlFlowTests.swift in Sources */,
+				BB0001000000000000000024 /* TTLDialogCommandTests.swift in Sources */,
+				BB0001000000000000000025 /* MacroStatusPanelTests.swift in Sources */,
+				BB0001000000000000000026 /* ConfigPersistenceManagerTests.swift in Sources */,
+				BB0001000000000000000027 /* SSHAuthLogicTests.swift in Sources */,
+				BB0001000000000000000028 /* SSHMockConnection.swift in Sources */,
+				BB0001000000000000000029 /* UITestHarness.swift in Sources */,
+				BB000100000000000000002A /* SettingMenuUITests.swift in Sources */,
+				BB000100000000000000002B /* SnapshotValidator.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
