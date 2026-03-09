@@ -204,6 +204,7 @@ struct TTLLoopFrame {
     var varId: Int          // For-loop variable
     var limit: Int          // For-loop limit
     var step: Int           // For-loop step
+    var ifNest: Int = 0     // Saved ifNest for restoring on loop iteration
 }
 
 // MARK: - TTL Parser

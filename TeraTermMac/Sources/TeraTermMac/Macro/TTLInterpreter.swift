@@ -372,6 +372,7 @@ class TTLInterpreter {
                     // breakの場合はループフレームを除去
                     if breakFlag == 0 && !continueFlag {
                         if !parser.loopStack.isEmpty {
+                            ifNest = parser.loopStack.last!.ifNest
                             parser.loopStack.removeLast()
                         }
                     }
@@ -786,14 +787,12 @@ class TTLInterpreter {
 
     private func ttlElseIf() throws {
         guard ifNest >= 1 else { throw TTLError.invalidCtl }
-        let val = try parser.getIntExpression()
+        // ttlElseIf is called during normal execution, meaning a previous
+        // if/elseif branch was already taken. Skip to endif.
+        let _ = try parser.getIntExpression()
         guard try checkThen() else { throw TTLError.syntax }
-        if val != 0 {
-            ifNest -= 1
-            // Continue executing
-        } else {
-            // Keep skipping with elseFlag
-        }
+        ifNest -= 1
+        endIfFlag = 1
     }
 
     private func ttlEndIf() throws {
@@ -947,7 +946,8 @@ class TTLInterpreter {
                 lineIndex: parser.currentLine - 1,
                 varId: varId,
                 limit: end,
-                step: 1
+                step: 1,
+                ifNest: ifNest
             )
             parser.loopStack.append(frame)
 
@@ -972,6 +972,7 @@ class TTLInterpreter {
             atEnd = (val - loop.step) < loop.limit
         }
 
+        ifNest = loop.ifNest  // Restore ifNest to loop entry value
         if atEnd {
             parser.loopStack.removeLast()
         } else {
@@ -999,7 +1000,8 @@ class TTLInterpreter {
         // endwhileからループバックした場合は既にフレームがあるので追加しない
         if let lastLoop = parser.loopStack.last,
            lastLoop.type == loopType && lastLoop.lineIndex == parser.currentLine - 1 {
-            // ループバック: 条件を再評価し、偽ならフレームを除去してスキップ
+            // ループバック: ifNestを復元し、条件を再評価し、偽ならフレームを除去してスキップ
+            ifNest = lastLoop.ifNest  // Restore ifNest to loop entry value
             if !conditionMet {
                 parser.loopStack.removeLast()
                 endWhileFlag = 1
@@ -1010,7 +1012,8 @@ class TTLInterpreter {
                 let frame = TTLLoopFrame(
                     type: loopType,
                     lineIndex: parser.currentLine - 1,
-                    varId: 0, limit: 0, step: 0
+                    varId: 0, limit: 0, step: 0,
+                    ifNest: ifNest
                 )
                 parser.loopStack.append(frame)
             } else {
@@ -1032,7 +1035,8 @@ class TTLInterpreter {
         let frame = TTLLoopFrame(
             type: .do_,
             lineIndex: parser.currentLine - 1,
-            varId: 0, limit: 0, step: 0
+            varId: 0, limit: 0, step: 0,
+            ifNest: ifNest
         )
         parser.loopStack.append(frame)
     }
@@ -1053,8 +1057,9 @@ class TTLInterpreter {
             }
         }
 
+        let loop = parser.loopStack.last!
+        ifNest = loop.ifNest  // Restore ifNest to loop entry value
         if shouldLoop {
-            let loop = parser.loopStack.last!
             parser.currentLine = loop.lineIndex + 1
         } else {
             parser.loopStack.removeLast()

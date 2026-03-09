@@ -647,6 +647,66 @@ final class TTLControlFlowTests: XCTestCase {
         XCTAssertEqual(endIfFlag, 0)
     }
 
+    // MARK: - Do/Loop Tests
+
+    func testDoLoopUntil() {
+        // Minimal do/loop until test
+        let completed = execSync("""
+        counter = 0
+        do
+          counter = counter + 1
+        loop until counter >= 10
+        end
+        """)
+        XCTAssertTrue(completed, "do/loop until should terminate")
+        let p = interpreter.parser
+        if let (type, id) = p.checkVar("counter") {
+            XCTAssertEqual(type, .integer)
+            XCTAssertEqual(p.variables[id].intValue, 10,
+                           "counter should be 10 after do/loop until counter >= 10")
+        } else {
+            XCTFail("counter variable not found")
+        }
+    }
+
+    func testDoLoopWhile() {
+        let completed = execSync("""
+        counter = 0
+        do
+          counter = counter + 1
+        loop while counter < 10
+        end
+        """)
+        XCTAssertTrue(completed, "do/loop while should terminate")
+        let p = interpreter.parser
+        if let (_, id) = p.checkVar("counter") {
+            XCTAssertEqual(p.variables[id].intValue, 10)
+        } else {
+            XCTFail("counter variable not found")
+        }
+    }
+
+    func testDoLoopPlain() {
+        // Plain do/loop with break
+        let completed = execSync("""
+        counter = 0
+        do
+          counter = counter + 1
+          if counter >= 5 then
+            break
+          endif
+        loop
+        end
+        """)
+        XCTAssertTrue(completed, "do/loop with break should terminate")
+        let p = interpreter.parser
+        if let (_, id) = p.checkVar("counter") {
+            XCTAssertEqual(p.variables[id].intValue, 5)
+        } else {
+            XCTFail("counter variable not found")
+        }
+    }
+
     func testEndWhileFlagSkipping() {
         var endWhileFlag = 0
 
