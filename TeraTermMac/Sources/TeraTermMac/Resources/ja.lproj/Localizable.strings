@@ -272,3 +272,11 @@
 /* Macro */
 "macro.error.title" = "マクロエラー";
 "menu.control.stopMacro" = "マクロ停止";
+
+/* Macro Dialog Commands */
+"dialog.macro.ok" = "OK";
+"dialog.macro.cancel" = "キャンセル";
+"dialog.macro.yes" = "はい";
+"dialog.macro.no" = "いいえ";
+"dialog.macro.selectFile" = "ファイルを選択";
+"dialog.macro.selectFolder" = "フォルダを選択";

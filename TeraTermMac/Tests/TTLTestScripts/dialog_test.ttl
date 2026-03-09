@@ -1,0 +1,113 @@
+; ==========================================================
+; dialog_test.ttl - TTL Dialog Commands Self-Diagnostic Script
+; Tests: messagebox, yesnobox, inputbox, passwordbox, listbox,
+;        statusbox, closesbox, filenamebox, dirnamebox, bringupbox,
+;        setdlgpos
+; ==========================================================
+
+; --- Setup ---
+msg = ''
+passed = 0
+failed = 0
+total = 10
+
+; --- Test 1: MessageBox ---
+messagebox 'ダイアログテストを開始します。' 'Test'
+; messagebox always returns result=1
+if result = 1 then
+    passed = passed + 1
+else
+    failed = failed + 1
+endif
+
+; --- Test 2: YesNoBox ---
+yesnobox '続けますか？' 'Confirm'
+if result = 0 then
+    messagebox 'テストを中断します。' 'Cancel'
+    end
+endif
+; User pressed Yes (result=1)
+passed = passed + 1
+
+; --- Test 3: InputBox ---
+inputbox 'ユーザー名を入力してください' 'Login' 'TestUser'
+if result = 1 then
+    strconcat msg 'Hello, '
+    strconcat msg inputstr
+    messagebox msg 'Welcome'
+    passed = passed + 1
+else
+    failed = failed + 1
+endif
+
+; --- Test 4: PasswordBox ---
+passwordbox 'パスワードを入力してください' 'Login'
+if result = 1 then
+    ; Password accepted (we don't show it)
+    messagebox 'パスワードを受理しました。' 'Success'
+    passed = passed + 1
+else
+    failed = failed + 1
+endif
+
+; --- Test 5: ListBox ---
+listbox "Swift\nAppKit\nTTL" 'Language'
+if result = 0 then
+    messagebox 'キャンセルされました。' 'Result'
+    failed = failed + 1
+else
+    sprintf2 msg 'Index %d が選択されました: ' result
+    strconcat msg inputstr
+    messagebox msg 'Result'
+    passed = passed + 1
+endif
+
+; --- Test 6: SetDlgPos + MessageBox ---
+setdlgpos 100 100
+messagebox 'このダイアログは座標(100,100)に表示されるはず。' 'Position Test'
+if result = 1 then
+    passed = passed + 1
+else
+    failed = failed + 1
+endif
+; Reset position
+setdlgpos -1 -1
+
+; --- Test 7: StatusBox (Non-blocking) ---
+statusbox '3秒後に自動で閉じます...' 'Status'
+pause 3
+closesbox
+passed = passed + 1
+
+; --- Test 8: FilenameBox ---
+filenamebox inputstr 'ファイルを選択' 0
+if result = 1 then
+    sprintf2 msg 'ファイル: %s' inputstr
+    messagebox msg 'FilenameBox Result'
+    passed = passed + 1
+else
+    messagebox 'キャンセルされました。' 'FilenameBox Result'
+    ; Cancel is valid behavior, count as pass
+    passed = passed + 1
+endif
+
+; --- Test 9: DirnameBox ---
+dirnamebox inputstr 'フォルダを選択'
+if result = 1 then
+    sprintf2 msg 'フォルダ: %s' inputstr
+    messagebox msg 'DirnameBox Result'
+    passed = passed + 1
+else
+    messagebox 'キャンセルされました。' 'DirnameBox Result'
+    passed = passed + 1
+endif
+
+; --- Test 10: BringupBox ---
+bringupbox
+passed = passed + 1
+
+; --- Summary ---
+sprintf2 msg '%d / %d テスト完了 (%d 失敗)' passed total failed
+messagebox msg 'Dialog Test Results'
+
+end

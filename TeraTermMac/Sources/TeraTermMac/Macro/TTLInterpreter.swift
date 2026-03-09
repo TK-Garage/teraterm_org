@@ -112,9 +112,8 @@ class TTLInterpreter {
     // Regex options
     private var regexOptionCaseInsensitive: Bool = false
 
-    // Dialog position
-    private var dlgPosX: Int = -1
-    private var dlgPosY: Int = -1
+    // Dialog command provider (positioning, display mode, statusbox management)
+    let dialogProvider = DialogCommandProvider()
 
     // MARK: - Initialization
 
@@ -178,6 +177,7 @@ class TTLInterpreter {
         pauseTimer = nil
         parser.status = .end
         closeAllFiles()
+        dialogProvider.cleanup()
     }
 
     private func scheduleExec() {
@@ -2262,7 +2262,7 @@ class TTLInterpreter {
         }
     }
 
-    // MARK: - Dialog Box Commands
+    // MARK: - Dialog Box Commands (delegated to DialogCommandProvider)
 
     private func ttlInputBox(password: Bool) throws {
         let prompt = try parser.getStrExpression()
@@ -2276,27 +2276,10 @@ class TTLInterpreter {
         }
 
         parser.status = .pause
-        DispatchQueue.main.async { [weak self] in
+        dialogProvider.showInputBox(prompt: prompt, title: title, defaultValue: defaultVal, isPassword: password) { [weak self] result, inputStr in
             guard let self = self else { return }
-            let alert = NSAlert()
-            alert.messageText = title
-            alert.informativeText = prompt
-            alert.addButton(withTitle: "OK")
-            alert.addButton(withTitle: "Cancel")
-
-            let input = password ? NSSecureTextField(frame: NSRect(x: 0, y: 0, width: 300, height: 24))
-                                 : NSTextField(frame: NSRect(x: 0, y: 0, width: 300, height: 24))
-            input.stringValue = defaultVal
-            alert.accessoryView = input
-
-            let response = alert.runModal()
-            if response == .alertFirstButtonReturn {
-                self.parser.setInputStr(input.stringValue)
-                self.parser.setResult(1)
-            } else {
-                self.parser.setInputStr("")
-                self.parser.setResult(0)
-            }
+            self.parser.setResult(result)
+            self.parser.setInputStr(inputStr)
             self.parser.status = .run
             self.scheduleExec()
         }
@@ -2310,14 +2293,9 @@ class TTLInterpreter {
         }
 
         parser.status = .pause
-        DispatchQueue.main.async { [weak self] in
+        dialogProvider.showMessageBox(message: msg, title: title) { [weak self] result in
             guard let self = self else { return }
-            let alert = NSAlert()
-            alert.messageText = title
-            alert.informativeText = msg
-            alert.addButton(withTitle: "OK")
-            alert.runModal()
-            self.parser.setResult(1)
+            self.parser.setResult(result)
             self.parser.status = .run
             self.scheduleExec()
         }
@@ -2331,15 +2309,9 @@ class TTLInterpreter {
         }
 
         parser.status = .pause
-        DispatchQueue.main.async { [weak self] in
+        dialogProvider.showYesNoBox(message: msg, title: title) { [weak self] result in
             guard let self = self else { return }
-            let alert = NSAlert()
-            alert.messageText = title
-            alert.informativeText = msg
-            alert.addButton(withTitle: "Yes")
-            alert.addButton(withTitle: "No")
-            let response = alert.runModal()
-            self.parser.setResult(response == .alertFirstButtonReturn ? 1 : 0)
+            self.parser.setResult(result)
             self.parser.status = .run
             self.scheduleExec()
         }
@@ -2351,10 +2323,12 @@ class TTLInterpreter {
         if parser.checkParameterGiven() {
             title = try parser.getStrExpression()
         }
+        dialogProvider.showStatusBox(message: msg, title: title)
         delegate?.ttlShowStatusBox(msg, title: title)
     }
 
     private func ttlCloseSBox() throws {
+        dialogProvider.closeStatusBox()
         delegate?.ttlCloseStatusBox()
     }
 
@@ -2368,38 +2342,10 @@ class TTLInterpreter {
         let items = msg.components(separatedBy: "\n")
 
         parser.status = .pause
-        DispatchQueue.main.async { [weak self] in
+        dialogProvider.showListBox(items: items, title: title) { [weak self] result, inputStr in
             guard let self = self else { return }
-            let alert = NSAlert()
-            alert.messageText = title
-            alert.addButton(withTitle: "OK")
-            alert.addButton(withTitle: "Cancel")
-
-            let scrollView = NSScrollView(frame: NSRect(x: 0, y: 0, width: 300, height: 200))
-            let tableView = NSTableView(frame: scrollView.bounds)
-            let column = NSTableColumn(identifier: NSUserInterfaceItemIdentifier("item"))
-            column.title = ""
-            column.width = 280
-            tableView.addTableColumn(column)
-            tableView.headerView = nil
-            scrollView.documentView = tableView
-            scrollView.hasVerticalScroller = true
-
-            let dataSource = ListBoxDataSource(items: items)
-            tableView.dataSource = dataSource
-            tableView.delegate = dataSource
-            tableView.reloadData()
-
-            alert.accessoryView = scrollView
-
-            let response = alert.runModal()
-            if response == .alertFirstButtonReturn && tableView.selectedRow >= 0 {
-                self.parser.setResult(tableView.selectedRow + 1)
-                self.parser.setInputStr(items[tableView.selectedRow])
-            } else {
-                self.parser.setResult(0)
-                self.parser.setInputStr("")
-            }
+            self.parser.setResult(result)
+            self.parser.setInputStr(inputStr)
             self.parser.status = .run
             self.scheduleExec()
         }
@@ -2417,31 +2363,12 @@ class TTLInterpreter {
         }
 
         parser.status = .pause
-        DispatchQueue.main.async { [weak self] in
+        dialogProvider.showFilenameBox(title: title, isSave: save) { [weak self] result, path in
             guard let self = self else { return }
-            if save {
-                let panel = NSSavePanel()
-                panel.title = title
-                let response = panel.runModal()
-                if response == .OK, let url = panel.url {
-                    self.parser.setStrVal(id: varId, value: url.path)
-                    self.parser.setResult(1)
-                } else {
-                    self.parser.setResult(0)
-                }
-            } else {
-                let panel = NSOpenPanel()
-                panel.title = title
-                panel.canChooseFiles = true
-                panel.canChooseDirectories = false
-                let response = panel.runModal()
-                if response == .OK, let url = panel.url {
-                    self.parser.setStrVal(id: varId, value: url.path)
-                    self.parser.setResult(1)
-                } else {
-                    self.parser.setResult(0)
-                }
+            if result == 1 {
+                self.parser.setStrVal(id: varId, value: path)
             }
+            self.parser.setResult(result)
             self.parser.status = .run
             self.scheduleExec()
         }
@@ -2455,37 +2382,19 @@ class TTLInterpreter {
         }
 
         parser.status = .pause
-        DispatchQueue.main.async { [weak self] in
+        dialogProvider.showDirnameBox(title: title) { [weak self] result, path in
             guard let self = self else { return }
-            let panel = NSOpenPanel()
-            panel.title = title
-            panel.canChooseFiles = false
-            panel.canChooseDirectories = true
-            let response = panel.runModal()
-            if response == .OK, let url = panel.url {
-                self.parser.setStrVal(id: varId, value: url.path)
-                self.parser.setResult(1)
-            } else {
-                self.parser.setResult(0)
+            if result == 1 {
+                self.parser.setStrVal(id: varId, value: path)
             }
+            self.parser.setResult(result)
             self.parser.status = .run
             self.scheduleExec()
         }
     }
 
     private func ttlBringupBox() throws {
-        let msg = try parser.getStrExpression()
-        var title = "Tera Term"
-        if parser.checkParameterGiven() {
-            title = try parser.getStrExpression()
-        }
-        DispatchQueue.main.async {
-            let alert = NSAlert()
-            alert.messageText = title
-            alert.informativeText = msg
-            alert.addButton(withTitle: "OK")
-            alert.runModal()
-        }
+        dialogProvider.bringupBox()
     }
 
     // MARK: - System/Environment Commands
@@ -2992,8 +2901,8 @@ class TTLInterpreter {
     }
 
     private func ttlSetDlgPos() throws {
-        dlgPosX = try parser.getIntExpression()
-        dlgPosY = try parser.getIntExpression()
+        dialogProvider.posX = try parser.getIntExpression()
+        dialogProvider.posY = try parser.getIntExpression()
     }
 
     private func ttlSetDebug() throws {
@@ -3092,24 +3001,6 @@ class TTLInterpreter {
             return (path as NSString).expandingTildeInPath
         }
         return FileManager.default.currentDirectoryPath + "/" + path
-    }
-}
-
-// MARK: - ListBox Data Source
-
-private class ListBoxDataSource: NSObject, NSTableViewDataSource, NSTableViewDelegate {
-    let items: [String]
-
-    init(items: [String]) {
-        self.items = items
-    }
-
-    func numberOfRows(in tableView: NSTableView) -> Int {
-        return items.count
-    }
-
-    func tableView(_ tableView: NSTableView, objectValueFor tableColumn: NSTableColumn?, row: Int) -> Any? {
-        return items[row]
     }
 }
 #endif
