@@ -68,7 +68,7 @@ final class MacroStatusPanelController {
 
     /// Update the displayed line number. Safe to call from any thread.
     func updateLineNumber(_ line: Int) {
-        let update = { [weak self] in
+        let update: () -> Void = { [weak self] in
             self?.lineLabel?.stringValue = "Line: \(line)"
         }
         if Thread.isMainThread {
@@ -80,7 +80,7 @@ final class MacroStatusPanelController {
 
     /// Update the displayed macro name.
     func updateMacroName(_ name: String) {
-        let update = { [weak self] in
+        let update: () -> Void = { [weak self] in
             self?.macroNameLabel?.stringValue = name
         }
         if Thread.isMainThread {
