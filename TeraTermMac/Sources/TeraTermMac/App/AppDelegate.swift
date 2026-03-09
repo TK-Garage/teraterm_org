@@ -66,6 +66,13 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
     // MARK: - Application Lifecycle
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // Snapshot generation mode (invoked by build script)
+        if CommandLine.arguments.contains("--generate-snapshots") {
+            SnapshotGenerator.generateAll()
+            NSApplication.shared.terminate(nil)
+            return
+        }
+
         // Load settings
         settings = TerminalSettings.load()
 
