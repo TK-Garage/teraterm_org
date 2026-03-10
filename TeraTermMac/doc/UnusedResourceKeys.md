@@ -1,6 +1,6 @@
 # Tera Term Mac: 未使用リソースキー・未移植機能の一覧
 
-## 1. 日本語リソース (`ja.lproj/Localizable.strings`) で定義済みだがSwiftコードで未使用のキー (54個)
+## 1. 日本語リソース (`ja.lproj/Localizable.strings`) で定義済みだがSwiftコードで未使用のキー (45個)
 
 ### 端末設定ダイアログ (旧 — `dialog.termSetup.*` に置換済み)
 
@@ -44,30 +44,6 @@
 | `dialog.serialPort.flow` | フロー: |
 | `dialog.serialPort.connect` | 接続 |
 | `dialog.serialPort.cancel` | キャンセル |
-
-### SSH設定ダイアログ
-
-| キー | 日本語テキスト |
-|------|---------------|
-| `dialog.sshSetup.cipherOrder` | 優先する暗号アルゴリズムの順 |
-| `dialog.sshSetup.moveUp` | 上へ |
-| `dialog.sshSetup.moveDown` | 下へ |
-| `dialog.sshSetup.knownHosts` | SSH Known Hosts |
-| `dialog.sshSetup.knownHostsFile` | Known hostsファイル: |
-| `dialog.sshSetup.hostKeyRotation` | ホスト公開鍵の自動更新 |
-
-### SSH認証
-
-| キー | 日本語テキスト |
-|------|---------------|
-| `dialog.sshAuth.invalidKey.message` | 選択されたファイルは有効な秘密鍵ではありません… |
-| `dialog.sshAuthSetup.currentUser` | 現在のユーザ名 "%@" |
-
-### SSH鍵生成
-
-| キー | 日本語テキスト |
-|------|---------------|
-| `dialog.sshKeyGen.error` | 鍵生成に失敗しました: %@ |
 
 ### SCP進捗ダイアログ (UI未実装)
 
@@ -170,13 +146,13 @@
 
 | Windows版の機能 | 備考 |
 |----------------|------|
-| SSH圧縮レベル設定 | 圧縮レベル 0–9 |
-| 圧縮アルゴリズム順設定 | アルゴリズム優先順位 |
-| 鍵交換アルゴリズム順設定 (KEX) | アルゴリズム優先順位 |
-| ホストキーアルゴリズム順設定 | アルゴリズム優先順位 |
-| MACアルゴリズム順設定 | アルゴリズム優先順位 |
-| Known Hosts 読み書き/読み取り専用分離 | ファイル分離設定 |
-| ホスト公開鍵の自動更新 (有効/無効/確認) | ローテーション設定 |
+| ~~SSH圧縮レベル設定~~ | ~~圧縮レベル 0–9~~ → **実装済み** (`SSHSetupDialogController`) |
+| ~~圧縮アルゴリズム順設定~~ | ~~アルゴリズム優先順位~~ → **実装済み** |
+| ~~鍵交換アルゴリズム順設定 (KEX)~~ | ~~アルゴリズム優先順位~~ → **実装済み** |
+| ~~ホストキーアルゴリズム順設定~~ | ~~アルゴリズム優先順位~~ → **実装済み** |
+| ~~MACアルゴリズム順設定~~ | ~~アルゴリズム優先順位~~ → **実装済み** |
+| ~~Known Hosts 読み書き/読み取り専用分離~~ | ~~ファイル分離設定~~ → **実装済み** |
+| ~~ホスト公開鍵の自動更新 (有効/無効/確認)~~ | ~~ローテーション設定~~ → **実装済み** |
 
 ### セキュリティ警告ダイアログ
 

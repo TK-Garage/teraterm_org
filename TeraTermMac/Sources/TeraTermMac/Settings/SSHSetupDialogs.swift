@@ -986,17 +986,57 @@ final class SSHAuthSetupDialogController: BaseSetupDialogController {
 
     @objc private func browseKeyFile(_ sender: Any?) {
         guard let win = view.window else { return }
+        presentKeyFilePanel(on: win)
+    }
+
+    private func presentKeyFilePanel(on win: NSWindow) {
         let panel = NSOpenPanel()
         panel.title = TTL("dialog.sshAuth.selectKeyFile")
         panel.canChooseFiles = true
         panel.canChooseDirectories = false
-        let sshDir = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".ssh")
-        if FileManager.default.fileExists(atPath: sshDir.path) {
-            panel.directoryURL = sshDir
+        panel.allowedContentTypes = []
+        panel.allowsOtherFileTypes = true
+        panel.treatsFilePackagesAsDirectories = true
+
+        // Start from previous directory or ~/.ssh
+        if privateKeyField.stringValue.isEmpty {
+            let sshDir = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".ssh")
+            if FileManager.default.fileExists(atPath: sshDir.path) {
+                panel.directoryURL = sshDir
+            }
+        } else {
+            let url = URL(fileURLWithPath: privateKeyField.stringValue)
+            panel.directoryURL = url.deletingLastPathComponent()
         }
+
         panel.beginSheetModal(for: win) { [weak self] response in
+            guard let self = self else { return }
             guard response == .OK, let url = panel.url else { return }
-            self?.privateKeyField.stringValue = url.path
+
+            if SSHAuthViewController.isValidPrivateKey(at: url) {
+                self.privateKeyField.stringValue = url.path
+            } else {
+                self.showInvalidKeyAlert(on: win, selectedPath: url.path)
+            }
+        }
+    }
+
+    private func showInvalidKeyAlert(on win: NSWindow, selectedPath: String) {
+        let alert = NSAlert()
+        alert.alertStyle = .warning
+        alert.messageText = TTL("dialog.sshAuth.invalidKey.title")
+        alert.informativeText = TTL("dialog.sshAuth.invalidKey.message", selectedPath)
+        alert.addButton(withTitle: TTL("dialog.sshAuth.invalidKey.retry"))
+        alert.addButton(withTitle: TTL("Cancel"))
+
+        alert.beginSheetModal(for: win) { [weak self] response in
+            guard let self = self else { return }
+            if response == .alertFirstButtonReturn {
+                DispatchQueue.main.async { [weak self] in
+                    guard let self = self, let win = self.view.window else { return }
+                    self.presentKeyFilePanel(on: win)
+                }
+            }
         }
     }
 
