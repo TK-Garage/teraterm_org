@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="540" height="240" font-family="Tahoma, MS Shell Dlg, sans-serif" font-size="11">
+  <defs>
+    <style>
+      .dialog-bg { fill: #f0f0f0; stroke: #999; stroke-width: 1; }
+      .label { fill: #000; font-size: 11px; }
+      .list-box { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .button { fill: #e1e1e1; stroke: #adadad; stroke-width: 1; }
+      .button-text { fill: #000; font-size: 11px; text-anchor: middle; }
+      .tab-active { fill: #f0f0f0; stroke: #999; stroke-width: 1; }
+      .tab-text { fill: #000; font-size: 10px; text-anchor: middle; }
+    </style>
+  </defs>
+  <rect class="tab-active" x="0" y="0" width="50" height="24" rx="3"/>
+  <text class="tab-text" x="25" y="16" font-weight="bold">Plugin</text>
+  <rect class="dialog-bg" x="0" y="22" width="540" height="218"/>
+  <text class="label" x="16" y="44">Setup directories:</text>
+  <rect class="list-box" x="16" y="54" width="440" height="140"/>
+  <rect class="button" x="466" y="54" width="60" height="24" rx="3"/>
+  <text class="button-text" x="496" y="70">ADD</text>
+</svg>

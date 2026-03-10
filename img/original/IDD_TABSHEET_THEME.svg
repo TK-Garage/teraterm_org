@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="540" height="280" font-family="Tahoma, MS Shell Dlg, sans-serif" font-size="11">
+  <defs>
+    <style>
+      .dialog-bg { fill: #f0f0f0; stroke: #999; stroke-width: 1; }
+      .label { fill: #000; font-size: 11px; }
+      .edit-box { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .combo-box { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .checkbox { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .button { fill: #e1e1e1; stroke: #adadad; stroke-width: 1; }
+      .button-text { fill: #000; font-size: 11px; text-anchor: middle; }
+      .combo-arrow { fill: #606060; }
+      .tab-active { fill: #f0f0f0; stroke: #999; stroke-width: 1; }
+      .tab-text { fill: #000; font-size: 10px; text-anchor: middle; }
+    </style>
+  </defs>
+  <rect class="tab-active" x="0" y="0" width="55" height="24" rx="3"/>
+  <text class="tab-text" x="27" y="16" font-weight="bold">Theme</text>
+  <rect class="dialog-bg" x="0" y="22" width="540" height="258"/>
+  <rect class="checkbox" x="16" y="36" width="13" height="13"/>
+  <text class="label" x="34" y="47">Enable</text>
+  <rect class="button" x="120" y="34" width="120" height="20" rx="2"/>
+  <text class="button-text" x="180" y="48">Theme Editor</text>
+  <rect class="checkbox" x="16" y="64" width="13" height="13"/>
+  <text class="label" x="34" y="75">Fast size move</text>
+  <text class="label" x="16" y="104">Startup theme:</text>
+  <rect class="combo-box" x="120" y="92" width="300" height="20"/>
+  <rect fill="#e1e1e1" x="400" y="92" width="20" height="20" stroke="#7a7a7a" stroke-width="1"/>
+  <polygon class="combo-arrow" points="405,100 415,100 410,107"/>
+  <text class="label" x="16" y="134">Theme file:</text>
+  <rect class="edit-box" x="120" y="122" width="340" height="20"/>
+  <rect class="button" x="466" y="122" width="34" height="20" rx="2"/>
+  <text class="button-text" x="483" y="136">...</text>
+  <text class="label" x="16" y="166">Susie Plug-in path:</text>
+  <rect class="edit-box" x="140" y="154" width="320" height="20"/>
+  <rect class="button" x="466" y="154" width="34" height="20" rx="2"/>
+  <text class="button-text" x="483" y="168">...</text>
+</svg>

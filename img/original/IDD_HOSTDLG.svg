@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="480" height="220" font-family="MS Shell Dlg, Tahoma, sans-serif" font-size="11">
+  <defs>
+    <style>
+      .title-bar { fill: #0078d4; }
+      .title-text { fill: white; font-size: 11px; font-weight: bold; }
+      .dialog-bg { fill: #f0f0f0; stroke: #999; stroke-width: 1; }
+      .group-box { fill: none; stroke: #999; stroke-width: 1; }
+      .label { fill: #000; font-size: 11px; }
+      .edit-box { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .combo-box { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .button { fill: #e1e1e1; stroke: #adadad; stroke-width: 1; rx: 2; }
+      .button-default { fill: #0078d4; stroke: #005a9e; stroke-width: 1; rx: 2; }
+      .button-text { fill: #000; font-size: 11px; text-anchor: middle; }
+      .button-text-default { fill: #fff; font-size: 11px; text-anchor: middle; }
+      .checkbox { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .radio { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .combo-arrow { fill: #606060; }
+    </style>
+  </defs>
+  <!-- Title bar -->
+  <rect class="title-bar" x="0" y="0" width="480" height="22" rx="4"/>
+  <text class="title-text" x="8" y="15">Tera Term: New connection</text>
+  <!-- Dialog background -->
+  <rect class="dialog-bg" x="0" y="22" width="480" height="198"/>
+  <!-- TCP/IP Group Box -->
+  <rect class="group-box" x="8" y="30" width="456" height="100"/>
+  <!-- TCP/IP Radio -->
+  <circle class="radio" cx="20" cy="48" r="6"/>
+  <circle fill="#000" cx="20" cy="48" r="3"/>
+  <text class="label" x="30" y="52">TCP/IP</text>
+  <!-- Host label and combo -->
+  <text class="label" x="114" y="48" text-anchor="end">Host:</text>
+  <rect class="combo-box" x="190" y="36" width="266" height="20"/>
+  <rect fill="#e1e1e1" x="436" y="36" width="20" height="20" stroke="#7a7a7a" stroke-width="1"/>
+  <polygon class="combo-arrow" points="441,44 451,44 446,52"/>
+  <!-- TCP port# -->
+  <text class="label" x="180" y="70" text-anchor="end">TCP port#:</text>
+  <rect class="edit-box" x="190" y="58" width="60" height="18"/>
+  <text class="label" x="196" y="71">23</text>
+  <!-- IP version -->
+  <text class="label" x="276" y="70" text-anchor="end">IP version:</text>
+  <rect class="combo-box" x="280" y="58" width="88" height="18"/>
+  <rect fill="#e1e1e1" x="348" y="58" width="20" height="18" stroke="#7a7a7a" stroke-width="1"/>
+  <polygon class="combo-arrow" points="353,64 363,64 358,72"/>
+  <text class="label" x="286" y="71">AUTO</text>
+  <!-- Telnet checkbox -->
+  <rect class="checkbox" x="190" y="82" width="13" height="13"/>
+  <text class="label" x="208" y="93">Telnet</text>
+  <!-- Serial Group Box -->
+  <rect class="group-box" x="8" y="134" width="456" height="48"/>
+  <!-- Serial Radio -->
+  <circle class="radio" cx="20" cy="160" r="6"/>
+  <text class="label" x="30" y="164">Serial</text>
+  <!-- Port label and combo -->
+  <text class="label" x="180" y="164" text-anchor="end">Port:</text>
+  <rect class="combo-box" x="190" y="152" width="266" height="20"/>
+  <rect fill="#e1e1e1" x="436" y="152" width="20" height="20" stroke="#7a7a7a" stroke-width="1"/>
+  <polygon class="combo-arrow" points="441,160 451,160 446,168"/>
+  <!-- Buttons -->
+  <rect class="button-default" x="120" y="190" width="64" height="24" rx="3"/>
+  <text class="button-text-default" x="152" y="206">OK</text>
+  <rect class="button" x="200" y="190" width="80" height="24" rx="3"/>
+  <text class="button-text" x="240" y="206">Cancel</text>
+  <rect class="button" x="296" y="190" width="72" height="24" rx="3"/>
+  <text class="button-text" x="332" y="206">Help</text>
+</svg>

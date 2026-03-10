@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="540" height="200" font-family="Tahoma, MS Shell Dlg, sans-serif" font-size="11">
+  <defs>
+    <style>
+      .dialog-bg { fill: #f0f0f0; stroke: #999; stroke-width: 1; }
+      .label { fill: #000; font-size: 11px; }
+      .edit-box { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .checkbox { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .button { fill: #e1e1e1; stroke: #adadad; stroke-width: 1; }
+      .button-text { fill: #000; font-size: 11px; text-anchor: middle; }
+      .tab-active { fill: #f0f0f0; stroke: #999; stroke-width: 1; }
+      .tab-text { fill: #000; font-size: 10px; text-anchor: middle; }
+    </style>
+  </defs>
+  <rect class="tab-active" x="0" y="0" width="65" height="24" rx="3"/>
+  <text class="tab-text" x="32" y="16" font-weight="bold">TEK Font</text>
+  <rect class="dialog-bg" x="0" y="22" width="540" height="178"/>
+  <text class="label" x="16" y="44">TEK Font:</text>
+  <rect class="edit-box" x="120" y="32" width="300" height="20"/>
+  <text class="label" x="126" y="46" fill="#666">Courier 12pt</text>
+  <rect class="button" x="430" y="32" width="80" height="20" rx="2"/>
+  <text class="button-text" x="470" y="46">Select...</text>
+  <rect class="checkbox" x="16" y="62" width="13" height="13"/>
+  <text class="label" x="34" y="73">List proportional fonts</text>
+  <rect class="checkbox" x="200" y="62" width="13" height="13"/>
+  <text class="label" x="218" y="73">List hidden fonts</text>
+  <text class="label" fill="#0066cc" x="16" y="100" text-decoration="underline">Open font folder</text>
+</svg>

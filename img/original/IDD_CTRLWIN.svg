@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="232" height="144" font-family="Tahoma, MS Shell Dlg, sans-serif" font-size="11">
+  <defs>
+    <style>
+      .title-bar { fill: #0078d4; }
+      .title-text { fill: white; font-size: 11px; font-weight: bold; }
+      .dialog-bg { fill: #f0f0f0; stroke: #999; stroke-width: 1; }
+      .label { fill: #000; font-size: 11px; }
+      .button { fill: #e1e1e1; stroke: #adadad; stroke-width: 1; }
+      .button-text { fill: #000; font-size: 11px; text-anchor: middle; }
+    </style>
+  </defs>
+  <rect class="title-bar" x="0" y="0" width="232" height="22" rx="4"/>
+  <text class="title-text" x="8" y="15">MACRO</text>
+  <rect class="dialog-bg" x="0" y="22" width="232" height="122"/>
+  <rect class="button" x="16" y="36" width="90" height="24" rx="3"/>
+  <text class="button-text" x="61" y="52">Pause</text>
+  <rect class="button" x="120" y="36" width="90" height="24" rx="3"/>
+  <text class="button-text" x="165" y="52">End</text>
+  <text class="label" x="16" y="82">LineNo:</text>
+  <text class="label" x="80" y="82" fill="#666">1</text>
+  <text class="label" x="16" y="102">File:</text>
+  <text class="label" x="80" y="102" fill="#666">script.ttl</text>
+</svg>

@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="508" height="320" font-family="MS Shell Dlg, Tahoma, sans-serif" font-size="11">
+  <defs>
+    <style>
+      .title-bar { fill: #0078d4; }
+      .title-text { fill: white; font-size: 11px; font-weight: bold; }
+      .dialog-bg { fill: #f0f0f0; stroke: #999; stroke-width: 1; }
+      .group-box { fill: none; stroke: #999; stroke-width: 1; }
+      .label { fill: #000; font-size: 11px; }
+      .edit-box { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .combo-box { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .button { fill: #e1e1e1; stroke: #adadad; stroke-width: 1; }
+      .button-default { fill: #0078d4; stroke: #005a9e; stroke-width: 1; }
+      .button-text { fill: #000; font-size: 11px; text-anchor: middle; }
+      .button-text-default { fill: #fff; font-size: 11px; text-anchor: middle; }
+      .checkbox { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .radio { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .combo-arrow { fill: #606060; }
+    </style>
+  </defs>
+  <!-- Title bar -->
+  <rect class="title-bar" x="0" y="0" width="508" height="22" rx="4"/>
+  <text class="title-text" x="8" y="15">Tera Term: Terminal setup</text>
+  <!-- Dialog background -->
+  <rect class="dialog-bg" x="0" y="22" width="508" height="298"/>
+  <!-- Terminal size group box -->
+  <rect class="group-box" x="16" y="36" width="194" height="108"/>
+  <text class="label" x="24" y="36" font-weight="bold">Terminal size</text>
+  <!-- Width x Height -->
+  <rect class="edit-box" x="42" y="52" width="44" height="20"/>
+  <text class="label" x="50" y="66">80</text>
+  <text class="label" x="96" y="66">X</text>
+  <rect class="edit-box" x="130" y="52" width="44" height="20"/>
+  <text class="label" x="138" y="66">24</text>
+  <!-- Checkboxes -->
+  <rect class="checkbox" x="26" y="80" width="13" height="13"/>
+  <text class="label" x="44" y="91">Term size = win size</text>
+  <rect class="checkbox" x="26" y="100" width="13" height="13"/>
+  <text class="label" x="44" y="111">Auto window resize</text>
+  <!-- New-line group box -->
+  <rect class="group-box" x="224" y="36" width="158" height="88"/>
+  <text class="label" x="232" y="36" font-weight="bold">New-line</text>
+  <!-- Receive -->
+  <text class="label" x="232" y="60">Receive:</text>
+  <rect class="combo-box" x="300" y="48" width="72" height="20"/>
+  <rect fill="#e1e1e1" x="352" y="48" width="20" height="20" stroke="#7a7a7a" stroke-width="1"/>
+  <polygon class="combo-arrow" points="357,56 367,56 362,63"/>
+  <text class="label" x="306" y="62">CR</text>
+  <!-- Transmit -->
+  <text class="label" x="232" y="84">Transmit:</text>
+  <rect class="combo-box" x="300" y="72" width="72" height="20"/>
+  <rect fill="#e1e1e1" x="352" y="72" width="20" height="20" stroke="#7a7a7a" stroke-width="1"/>
+  <polygon class="combo-arrow" points="357,80 367,80 362,87"/>
+  <text class="label" x="306" y="86">CR</text>
+  <!-- Terminal ID -->
+  <text class="label" x="18" y="150">Terminal ID:</text>
+  <rect class="combo-box" x="110" y="138" width="80" height="20"/>
+  <rect fill="#e1e1e1" x="170" y="138" width="20" height="20" stroke="#7a7a7a" stroke-width="1"/>
+  <polygon class="combo-arrow" points="175,146 185,146 180,153"/>
+  <text class="label" x="116" y="152">VT220</text>
+  <!-- Local echo -->
+  <rect class="checkbox" x="246" y="140" width="13" height="13"/>
+  <text class="label" x="264" y="151">Local echo</text>
+  <!-- Answerback -->
+  <text class="label" x="18" y="174">Answerback:</text>
+  <rect class="edit-box" x="110" y="162" width="122" height="20"/>
+  <!-- Auto switch -->
+  <rect class="checkbox" x="246" y="164" width="13" height="13"/>
+  <text class="label" x="264" y="175">Auto switch (VT&lt;-&gt;TEK)</text>
+  <!-- Standard buttons -->
+  <rect class="button-default" x="130" y="280" width="64" height="24" rx="3"/>
+  <text class="button-text-default" x="162" y="296">OK</text>
+  <rect class="button" x="210" y="280" width="80" height="24" rx="3"/>
+  <text class="button-text" x="250" y="296">Cancel</text>
+  <rect class="button" x="306" y="280" width="72" height="24" rx="3"/>
+  <text class="button-text" x="342" y="296">Help</text>
+</svg>

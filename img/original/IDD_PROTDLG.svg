@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="284" height="216" font-family="Tahoma, MS Shell Dlg, sans-serif" font-size="11">
+  <defs>
+    <style>
+      .title-bar { fill: #0078d4; }
+      .title-text { fill: white; font-size: 11px; font-weight: bold; }
+      .dialog-bg { fill: #f0f0f0; stroke: #999; stroke-width: 1; }
+      .label { fill: #000; font-size: 11px; }
+      .edit-box { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .button { fill: #e1e1e1; stroke: #adadad; stroke-width: 1; }
+      .button-text { fill: #000; font-size: 11px; text-anchor: middle; }
+      .progress-bg { fill: #e0e0e0; stroke: #999; stroke-width: 1; }
+      .progress-fg { fill: #0078d4; }
+    </style>
+  </defs>
+  <rect class="title-bar" x="0" y="0" width="284" height="22" rx="4"/>
+  <text class="title-text" x="8" y="15">Protocol Transfer</text>
+  <rect class="dialog-bg" x="0" y="22" width="284" height="194"/>
+  <text class="label" x="16" y="44">Filename:</text>
+  <rect class="edit-box" x="16" y="50" width="252" height="18"/>
+  <text class="label" x="16" y="82">Protocol:</text>
+  <text class="label" x="250" y="82" text-anchor="end">ZMODEM</text>
+  <text class="label" x="16" y="100">Packet#:</text>
+  <text class="label" x="250" y="100" text-anchor="end">0</text>
+  <text class="label" x="16" y="118">Bytes:</text>
+  <text class="label" x="250" y="118" text-anchor="end">0</text>
+  <text class="label" x="16" y="136">Elapsed:</text>
+  <text class="label" x="250" y="136" text-anchor="end">00:00:00</text>
+  <text class="label" x="16" y="154">Percent:</text>
+  <text class="label" x="250" y="154" text-anchor="end">0%</text>
+  <rect class="progress-bg" x="16" y="162" width="252" height="14" rx="2"/>
+  <rect class="button" x="102" y="184" width="80" height="24" rx="3"/>
+  <text class="button-text" x="142" y="200">Cancel</text>
+</svg>

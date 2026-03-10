@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="540" height="400" font-family="Tahoma, MS Shell Dlg, sans-serif" font-size="11">
+  <defs>
+    <style>
+      .dialog-bg { fill: #f0f0f0; stroke: #999; stroke-width: 1; }
+      .label { fill: #000; font-size: 11px; }
+      .edit-box { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .checkbox { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .button { fill: #e1e1e1; stroke: #adadad; stroke-width: 1; }
+      .button-text { fill: #000; font-size: 11px; text-anchor: middle; }
+      .tab-active { fill: #f0f0f0; stroke: #999; stroke-width: 1; }
+      .tab-inactive { fill: #e0e0e0; stroke: #999; stroke-width: 1; }
+      .tab-text { fill: #000; font-size: 10px; text-anchor: middle; }
+    </style>
+  </defs>
+  <rect class="tab-inactive" x="0" y="0" width="60" height="24" rx="3"/>
+  <text class="tab-text" x="30" y="16">General</text>
+  <rect class="tab-inactive" x="62" y="0" width="70" height="24" rx="3"/>
+  <text class="tab-text" x="97" y="16">Sequence</text>
+  <rect class="tab-active" x="134" y="0" width="80" height="24" rx="3"/>
+  <text class="tab-text" x="174" y="16" font-weight="bold">Copy/Paste</text>
+  <rect class="dialog-bg" x="0" y="22" width="540" height="378"/>
+  <rect class="checkbox" x="16" y="36" width="13" height="13"/>
+  <text class="label" x="34" y="47">Enable continued line copy</text>
+  <rect class="checkbox" x="16" y="56" width="13" height="13"/>
+  <text class="label" x="34" y="67">Disable paste right button</text>
+  <rect class="checkbox" x="16" y="76" width="13" height="13"/>
+  <text class="label" x="34" y="87">Confirm paste right button</text>
+  <rect class="checkbox" x="16" y="96" width="13" height="13"/>
+  <text class="label" x="34" y="107">Disable paste middle button</text>
+  <rect class="checkbox" x="16" y="116" width="13" height="13"/>
+  <text class="label" x="34" y="127">Select on left button</text>
+  <rect class="checkbox" x="16" y="136" width="13" height="13"/>
+  <text class="label" x="34" y="147">Trim trailing newline char</text>
+  <rect class="checkbox" x="16" y="156" width="13" height="13"/>
+  <text class="label" x="34" y="167">Confirm change paste</text>
+  <text class="label" x="16" y="196">Confirm string file:</text>
+  <rect class="edit-box" x="140" y="184" width="320" height="20"/>
+  <rect class="button" x="466" y="184" width="34" height="20" rx="2"/>
+  <text class="button-text" x="483" y="198">...</text>
+  <text class="label" x="16" y="226">Delimiter list:</text>
+  <rect class="edit-box" x="140" y="214" width="380" height="20"/>
+  <text class="label" x="16" y="256">Paste delay per line (msec):</text>
+  <rect class="edit-box" x="200" y="244" width="60" height="20"/>
+  <rect class="checkbox" x="16" y="276" width="13" height="13"/>
+  <text class="label" x="34" y="287">Select on activate</text>
+  <rect class="checkbox" x="16" y="296" width="13" height="13"/>
+  <text class="label" x="34" y="307">Auto text copy</text>
+</svg>

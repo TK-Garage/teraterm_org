@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="540" height="420" font-family="Tahoma, MS Shell Dlg, sans-serif" font-size="11">
+  <defs>
+    <style>
+      .dialog-bg { fill: #f0f0f0; stroke: #999; stroke-width: 1; }
+      .label { fill: #000; font-size: 11px; }
+      .combo-box { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .checkbox { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .radio { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .group-box { fill: none; stroke: #999; stroke-width: 1; }
+      .combo-arrow { fill: #606060; }
+      .tab-active { fill: #f0f0f0; stroke: #999; stroke-width: 1; }
+      .tab-inactive { fill: #e0e0e0; stroke: #999; stroke-width: 1; }
+      .tab-text { fill: #000; font-size: 10px; text-anchor: middle; }
+    </style>
+  </defs>
+  <rect class="tab-inactive" x="273" y="0" width="40" height="24" rx="3"/>
+  <text class="tab-text" x="293" y="16">Log</text>
+  <rect class="tab-active" x="315" y="0" width="55" height="24" rx="3"/>
+  <text class="tab-text" x="342" y="16" font-weight="bold">Coding</text>
+  <rect class="tab-inactive" x="372" y="0" width="40" height="24" rx="3"/>
+  <text class="tab-text" x="392" y="16">Font</text>
+  <rect class="dialog-bg" x="0" y="22" width="540" height="398"/>
+  <!-- Encoding -->
+  <text class="label" x="16" y="44">Receive encoding:</text>
+  <rect class="combo-box" x="160" y="32" width="180" height="20"/>
+  <rect fill="#e1e1e1" x="320" y="32" width="20" height="20" stroke="#7a7a7a" stroke-width="1"/>
+  <polygon class="combo-arrow" points="325,40 335,40 330,47"/>
+  <text class="label" x="166" y="46">UTF-8</text>
+  <text class="label" x="16" y="70">Send encoding:</text>
+  <rect class="combo-box" x="160" y="58" width="180" height="20"/>
+  <rect fill="#e1e1e1" x="320" y="58" width="20" height="20" stroke="#7a7a7a" stroke-width="1"/>
+  <polygon class="combo-arrow" points="325,66 335,66 330,73"/>
+  <text class="label" x="166" y="72">UTF-8</text>
+  <rect class="checkbox" x="16" y="86" width="13" height="13"/>
+  <text class="label" x="34" y="97">Use different code for send</text>
+  <!-- Ambiguous width -->
+  <text class="label" x="16" y="124">Ambiguous width:</text>
+  <rect class="combo-box" x="160" y="112" width="140" height="20"/>
+  <rect fill="#e1e1e1" x="280" y="112" width="20" height="20" stroke="#7a7a7a" stroke-width="1"/>
+  <polygon class="combo-arrow" points="285,120 295,120 290,127"/>
+  <!-- Emoji width -->
+  <rect class="checkbox" x="16" y="142" width="13" height="13"/>
+  <text class="label" x="34" y="153">Emoji width</text>
+  <rect class="combo-box" x="160" y="140" width="140" height="20"/>
+  <rect fill="#e1e1e1" x="280" y="140" width="20" height="20" stroke="#7a7a7a" stroke-width="1"/>
+  <!-- Override char width -->
+  <rect class="checkbox" x="16" y="170" width="13" height="13"/>
+  <text class="label" x="34" y="181">Override char width</text>
+  <rect class="combo-box" x="160" y="168" width="140" height="20"/>
+  <rect fill="#e1e1e1" x="280" y="168" width="20" height="20" stroke="#7a7a7a" stroke-width="1"/>
+  <!-- DEC Special Graphics group -->
+  <rect class="group-box" x="16" y="198" width="508" height="80"/>
+  <text class="label" x="24" y="198" font-weight="bold">DEC Special Graphics</text>
+  <circle class="radio" cx="38" cy="222" r="6"/>
+  <circle fill="#000" cx="38" cy="222" r="3"/>
+  <text class="label" x="50" y="226">Unicode to DEC</text>
+  <circle class="radio" cx="38" cy="244" r="6"/>
+  <text class="label" x="50" y="248">DEC to Unicode</text>
+  <circle class="radio" cx="38" cy="266" r="6"/>
+  <text class="label" x="50" y="270">Do not convert</text>
+  <rect class="checkbox" x="250" y="218" width="13" height="13"/>
+  <text class="label" x="268" y="229">Box drawing</text>
+  <rect class="checkbox" x="250" y="240" width="13" height="13"/>
+  <text class="label" x="268" y="251">Punctuation</text>
+  <rect class="checkbox" x="250" y="262" width="13" height="13"/>
+  <text class="label" x="268" y="273">Middle dot</text>
+  <!-- Japanese JIS -->
+  <rect class="group-box" x="16" y="288" width="508" height="80"/>
+  <text class="label" x="24" y="288" font-weight="bold">Japanese (JIS)</text>
+  <rect class="checkbox" x="30" y="306" width="13" height="13"/>
+  <text class="label" x="48" y="317">Kana receive</text>
+  <rect class="checkbox" x="200" y="306" width="13" height="13"/>
+  <text class="label" x="218" y="317">Kana send</text>
+  <text class="label" x="30" y="345">Kanji-in:</text>
+  <rect class="combo-box" x="100" y="333" width="120" height="20"/>
+  <rect fill="#e1e1e1" x="200" y="333" width="20" height="20" stroke="#7a7a7a" stroke-width="1"/>
+  <text class="label" x="260" y="345">Kanji-out:</text>
+  <rect class="combo-box" x="330" y="333" width="120" height="20"/>
+  <rect fill="#e1e1e1" x="430" y="333" width="20" height="20" stroke="#7a7a7a" stroke-width="1"/>
+</svg>

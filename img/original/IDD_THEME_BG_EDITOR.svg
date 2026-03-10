@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="540" height="360" font-family="Tahoma, MS Shell Dlg, sans-serif" font-size="11">
+  <defs>
+    <style>
+      .dialog-bg { fill: #f0f0f0; stroke: #999; stroke-width: 1; }
+      .label { fill: #000; font-size: 11px; }
+      .edit-box { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .combo-box { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .checkbox { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .button { fill: #e1e1e1; stroke: #adadad; stroke-width: 1; }
+      .button-text { fill: #000; font-size: 11px; text-anchor: middle; }
+      .scrollbar { fill: #c0c0c0; stroke: #999; stroke-width: 1; }
+      .color-sample { stroke: #333; stroke-width: 2; }
+      .combo-arrow { fill: #606060; }
+      .tab-active { fill: #f0f0f0; stroke: #999; stroke-width: 1; }
+      .tab-inactive { fill: #e0e0e0; stroke: #999; stroke-width: 1; }
+      .tab-text { fill: #000; font-size: 10px; text-anchor: middle; }
+    </style>
+  </defs>
+  <rect class="tab-active" x="0" y="0" width="90" height="24" rx="3"/>
+  <text class="tab-text" x="45" y="16" font-weight="bold">Background</text>
+  <rect class="tab-inactive" x="92" y="0" width="55" height="24" rx="3"/>
+  <text class="tab-text" x="119" y="16">Color</text>
+  <rect class="tab-inactive" x="149" y="0" width="40" height="24" rx="3"/>
+  <text class="tab-text" x="169" y="16">File</text>
+  <rect class="tab-inactive" x="191" y="0" width="50" height="24" rx="3"/>
+  <text class="tab-text" x="216" y="16">Alpha</text>
+  <rect class="dialog-bg" x="0" y="22" width="540" height="338"/>
+  <!-- Simple color plane -->
+  <rect class="checkbox" x="16" y="36" width="13" height="13"/>
+  <text class="label" x="34" y="47">Simple color plane</text>
+  <rect class="color-sample" fill="#000080" x="200" y="34" width="40" height="18" rx="2"/>
+  <rect class="button" x="250" y="34" width="60" height="18" rx="2"/>
+  <text class="button-text" x="280" y="47">Select</text>
+  <text class="label" x="340" y="47">Alpha:</text>
+  <rect class="scrollbar" x="380" y="36" width="140" height="14" rx="2"/>
+  <!-- Background image -->
+  <rect class="checkbox" x="16" y="70" width="13" height="13"/>
+  <text class="label" x="34" y="81">Background Image</text>
+  <rect class="edit-box" x="160" y="68" width="300" height="20"/>
+  <rect class="button" x="466" y="68" width="50" height="20" rx="2"/>
+  <text class="button-text" x="491" y="82">Browse</text>
+  <text class="label" x="30" y="106">Pattern:</text>
+  <rect class="combo-box" x="100" y="94" width="140" height="20"/>
+  <rect fill="#e1e1e1" x="220" y="94" width="20" height="20" stroke="#7a7a7a" stroke-width="1"/>
+  <polygon class="combo-arrow" points="225,102 235,102 230,109"/>
+  <rect class="color-sample" fill="#333" x="260" y="94" width="40" height="20" rx="2"/>
+  <rect class="button" x="310" y="94" width="60" height="20" rx="2"/>
+  <text class="button-text" x="340" y="108">Select</text>
+  <text class="label" x="400" y="108">Alpha:</text>
+  <rect class="scrollbar" x="440" y="96" width="80" height="14" rx="2"/>
+  <!-- Desktop wallpaper -->
+  <rect class="checkbox" x="16" y="130" width="13" height="13"/>
+  <text class="label" x="34" y="141">Desktop wallpaper</text>
+</svg>

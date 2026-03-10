@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="502" height="540" font-family="Tahoma, MS Shell Dlg, sans-serif" font-size="11">
+  <defs>
+    <style>
+      .title-bar { fill: #0078d4; }
+      .title-text { fill: white; font-size: 11px; font-weight: bold; }
+      .dialog-bg { fill: #f0f0f0; stroke: #999; stroke-width: 1; }
+      .group-box { fill: none; stroke: #999; stroke-width: 1; }
+      .label { fill: #000; font-size: 11px; }
+      .edit-box { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .button { fill: #e1e1e1; stroke: #adadad; stroke-width: 1; }
+      .button-default { fill: #0078d4; stroke: #005a9e; stroke-width: 1; }
+      .button-text { fill: #000; font-size: 11px; text-anchor: middle; }
+      .button-text-default { fill: #fff; font-size: 11px; text-anchor: middle; }
+      .checkbox { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .radio { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+    </style>
+  </defs>
+  <rect class="title-bar" x="0" y="0" width="502" height="22" rx="4"/>
+  <text class="title-text" x="8" y="15">Tera Term: File Drag and Drop</text>
+  <rect class="dialog-bg" x="0" y="22" width="502" height="518"/>
+  <!-- Filename -->
+  <text class="label" x="16" y="46">File:</text>
+  <rect class="edit-box" x="16" y="54" width="470" height="20"/>
+  <!-- SCP radio -->
+  <circle class="radio" cx="28" cy="96" r="6"/>
+  <text class="label" x="40" y="100">SCP</text>
+  <text class="label" x="80" y="100">Destination:</text>
+  <rect class="edit-box" x="160" y="86" width="320" height="20"/>
+  <!-- Send file radio -->
+  <circle class="radio" cx="28" cy="126" r="6"/>
+  <circle fill="#000" cx="28" cy="126" r="3"/>
+  <text class="label" x="40" y="130">Send file</text>
+  <rect class="checkbox" x="160" y="120" width="13" height="13"/>
+  <text class="label" x="178" y="131">Binary</text>
+  <!-- Paste radio -->
+  <circle class="radio" cx="28" cy="156" r="6"/>
+  <text class="label" x="40" y="160">Paste</text>
+  <rect class="checkbox" x="160" y="150" width="13" height="13"/>
+  <text class="label" x="178" y="161">Escape</text>
+  <!-- Separator -->
+  <circle class="radio" cx="180" cy="180" r="6"/>
+  <text class="label" x="192" y="184">Space</text>
+  <circle class="radio" cx="260" cy="180" r="6"/>
+  <text class="label" x="272" y="184">Newline</text>
+  <!-- Options -->
+  <rect class="checkbox" x="16" y="200" width="13" height="13"/>
+  <text class="label" x="34" y="211">Same process</text>
+  <rect class="checkbox" x="16" y="220" width="13" height="13"/>
+  <text class="label" x="34" y="231">Same process on next drop</text>
+  <rect class="checkbox" x="16" y="240" width="13" height="13"/>
+  <text class="label" x="34" y="251">Don't show this dialog</text>
+  <!-- Buttons -->
+  <rect class="button-default" x="160" y="500" width="64" height="24" rx="3"/>
+  <text class="button-text-default" x="192" y="516">OK</text>
+  <rect class="button" x="240" y="500" width="80" height="24" rx="3"/>
+  <text class="button-text" x="280" y="516">Cancel</text>
+</svg>

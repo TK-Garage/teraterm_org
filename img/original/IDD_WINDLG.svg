@@ -1,0 +1,84 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="480" height="496" font-family="MS Shell Dlg, Tahoma, sans-serif" font-size="11">
+  <defs>
+    <style>
+      .title-bar { fill: #0078d4; }
+      .title-text { fill: white; font-size: 11px; font-weight: bold; }
+      .dialog-bg { fill: #f0f0f0; stroke: #999; stroke-width: 1; }
+      .group-box { fill: none; stroke: #999; stroke-width: 1; }
+      .label { fill: #000; font-size: 11px; }
+      .edit-box { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .button { fill: #e1e1e1; stroke: #adadad; stroke-width: 1; }
+      .button-default { fill: #0078d4; stroke: #005a9e; stroke-width: 1; }
+      .button-text { fill: #000; font-size: 11px; text-anchor: middle; }
+      .button-text-default { fill: #fff; font-size: 11px; text-anchor: middle; }
+      .checkbox { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .radio { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .scrollbar { fill: #c0c0c0; stroke: #999; stroke-width: 1; }
+      .sample-box { fill: #000; stroke: #333; stroke-width: 2; }
+    </style>
+  </defs>
+  <!-- Title bar -->
+  <rect class="title-bar" x="0" y="0" width="480" height="22" rx="4"/>
+  <text class="title-text" x="8" y="15">Tera Term: Window setup</text>
+  <!-- Dialog background -->
+  <rect class="dialog-bg" x="0" y="22" width="480" height="474"/>
+  <!-- Title -->
+  <text class="label" x="56" y="46" text-anchor="end">Title:</text>
+  <rect class="edit-box" x="102" y="34" width="278" height="20"/>
+  <text class="label" x="108" y="48">Tera Term</text>
+  <!-- Cursor shape group -->
+  <rect class="group-box" x="20" y="60" width="152" height="120"/>
+  <text class="label" x="28" y="60" font-weight="bold">Cursor shape</text>
+  <!-- Radio buttons -->
+  <circle class="radio" cx="38" cy="88" r="6"/>
+  <circle fill="#000" cx="38" cy="88" r="3"/>
+  <text class="label" x="50" y="92">Block</text>
+  <circle class="radio" cx="38" cy="108" r="6"/>
+  <text class="label" x="50" y="112">Vertical line</text>
+  <circle class="radio" cx="38" cy="128" r="6"/>
+  <text class="label" x="50" y="132">Horizontal line</text>
+  <!-- Checkboxes right column -->
+  <rect class="checkbox" x="196" y="64" width="13" height="13"/>
+  <text class="label" x="214" y="75">Hide title bar</text>
+  <rect class="checkbox" x="196" y="84" width="13" height="13"/>
+  <text class="label" x="214" y="95">No Frame</text>
+  <rect class="checkbox" x="196" y="104" width="13" height="13"/>
+  <text class="label" x="214" y="115">Hide menu bar</text>
+  <rect class="checkbox" x="196" y="124" width="13" height="13"/>
+  <text class="label" x="214" y="135">16 Colors (PC style)</text>
+  <!-- Color group box -->
+  <rect class="group-box" x="20" y="190" width="440" height="224"/>
+  <text class="label" x="28" y="190" font-weight="bold">Color</text>
+  <!-- Text / Background radios -->
+  <circle class="radio" cx="38" cy="224" r="6"/>
+  <circle fill="#000" cx="38" cy="224" r="3"/>
+  <text class="label" x="50" y="228">Text</text>
+  <circle class="radio" cx="38" cy="246" r="6"/>
+  <text class="label" x="50" y="250">Background</text>
+  <!-- Swap colors button -->
+  <rect class="button" x="158" y="228" width="100" height="24" rx="3"/>
+  <text class="button-text" x="208" y="244">Swap colors</text>
+  <!-- RGB Sliders -->
+  <text class="label" x="36" y="278">R:</text>
+  <text class="label" x="84" y="278">255</text>
+  <rect class="scrollbar" x="118" y="270" width="200" height="16" rx="2"/>
+  <rect fill="#0078d4" x="308" y="270" width="10" height="16" rx="2"/>
+  <text class="label" x="36" y="302">G:</text>
+  <text class="label" x="84" y="302">255</text>
+  <rect class="scrollbar" x="118" y="294" width="200" height="16" rx="2"/>
+  <rect fill="#0078d4" x="308" y="294" width="10" height="16" rx="2"/>
+  <text class="label" x="36" y="326">B:</text>
+  <text class="label" x="84" y="326">255</text>
+  <rect class="scrollbar" x="118" y="318" width="200" height="16" rx="2"/>
+  <rect fill="#0078d4" x="308" y="318" width="10" height="16" rx="2"/>
+  <!-- Sample area -->
+  <rect class="sample-box" x="330" y="212" width="114" height="126"/>
+  <text fill="#fff" x="360" y="280" font-size="12">Sample</text>
+  <!-- Standard buttons -->
+  <rect class="button-default" x="120" y="454" width="64" height="24" rx="3"/>
+  <text class="button-text-default" x="152" y="470">OK</text>
+  <rect class="button" x="200" y="454" width="80" height="24" rx="3"/>
+  <text class="button-text" x="240" y="470">Cancel</text>
+  <rect class="button" x="296" y="454" width="72" height="24" rx="3"/>
+  <text class="button-text" x="332" y="470">Help</text>
+</svg>

@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="432" height="296" font-family="Tahoma, MS Shell Dlg, sans-serif" font-size="11">
+  <defs>
+    <style>
+      .title-bar { fill: #0078d4; }
+      .title-text { fill: white; font-size: 11px; font-weight: bold; }
+      .dialog-bg { fill: #f0f0f0; stroke: #999; stroke-width: 1; }
+      .label { fill: #000; font-size: 11px; }
+      .text-area { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .button { fill: #e1e1e1; stroke: #adadad; stroke-width: 1; }
+      .button-default { fill: #0078d4; stroke: #005a9e; stroke-width: 1; }
+      .button-text { fill: #000; font-size: 11px; text-anchor: middle; }
+      .button-text-default { fill: #fff; font-size: 11px; text-anchor: middle; }
+    </style>
+  </defs>
+  <rect class="title-bar" x="0" y="0" width="432" height="22" rx="4"/>
+  <text class="title-text" x="8" y="15">Tera Term: Clipboard confirmation</text>
+  <rect class="dialog-bg" x="0" y="22" width="432" height="274"/>
+  <rect class="text-area" x="16" y="36" width="400" height="200"/>
+  <text class="label" x="22" y="54" fill="#888">Clipboard content preview...</text>
+  <rect class="button-default" x="126" y="252" width="64" height="24" rx="3"/>
+  <text class="button-text-default" x="158" y="268">OK</text>
+  <rect class="button" x="206" y="252" width="80" height="24" rx="3"/>
+  <text class="button-text" x="246" y="268">Cancel</text>
+</svg>

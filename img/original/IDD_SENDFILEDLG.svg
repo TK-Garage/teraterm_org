@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="542" height="460" font-family="Tahoma, MS Shell Dlg, sans-serif" font-size="11">
+  <defs>
+    <style>
+      .title-bar { fill: #0078d4; }
+      .title-text { fill: white; font-size: 11px; font-weight: bold; }
+      .dialog-bg { fill: #f0f0f0; stroke: #999; stroke-width: 1; }
+      .group-box { fill: none; stroke: #999; stroke-width: 1; }
+      .label { fill: #000; font-size: 11px; }
+      .edit-box { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .combo-box { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .button { fill: #e1e1e1; stroke: #adadad; stroke-width: 1; }
+      .button-default { fill: #0078d4; stroke: #005a9e; stroke-width: 1; }
+      .button-text { fill: #000; font-size: 11px; text-anchor: middle; }
+      .button-text-default { fill: #fff; font-size: 11px; text-anchor: middle; }
+      .checkbox { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .radio { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .combo-arrow { fill: #606060; }
+    </style>
+  </defs>
+  <rect class="title-bar" x="0" y="0" width="542" height="22" rx="4"/>
+  <text class="title-text" x="8" y="15">Send file</text>
+  <rect class="dialog-bg" x="0" y="22" width="542" height="438"/>
+  <!-- Filename -->
+  <text class="label" x="16" y="46">Filename:</text>
+  <rect class="combo-box" x="16" y="54" width="440" height="20"/>
+  <rect fill="#e1e1e1" x="436" y="54" width="20" height="20" stroke="#7a7a7a" stroke-width="1"/>
+  <rect class="button" x="470" y="54" width="56" height="20" rx="2"/>
+  <text class="button-text" x="498" y="68">Browse</text>
+  <!-- Read method group -->
+  <rect class="group-box" x="16" y="84" width="508" height="56"/>
+  <text class="label" x="24" y="84" font-weight="bold">Read method</text>
+  <circle class="radio" cx="38" cy="106" r="6"/>
+  <circle fill="#000" cx="38" cy="106" r="3"/>
+  <text class="label" x="50" y="110">Bulk read</text>
+  <circle class="radio" cx="38" cy="126" r="6"/>
+  <text class="label" x="50" y="130">Sequential read</text>
+  <!-- Binary -->
+  <rect class="checkbox" x="16" y="150" width="13" height="13"/>
+  <text class="label" x="34" y="161">Binary</text>
+  <!-- Delay type -->
+  <text class="label" x="16" y="188">Delay type:</text>
+  <rect class="combo-box" x="100" y="176" width="180" height="20"/>
+  <rect fill="#e1e1e1" x="260" y="176" width="20" height="20" stroke="#7a7a7a" stroke-width="1"/>
+  <polygon class="combo-arrow" points="265,184 275,184 270,191"/>
+  <!-- Send size -->
+  <text class="label" x="16" y="216">Send size:</text>
+  <rect class="combo-box" x="100" y="204" width="180" height="20"/>
+  <rect fill="#e1e1e1" x="260" y="204" width="20" height="20" stroke="#7a7a7a" stroke-width="1"/>
+  <polygon class="combo-arrow" points="265,212 275,212 270,219"/>
+  <!-- Delay time -->
+  <text class="label" x="16" y="244">Delay time (msec):</text>
+  <rect class="edit-box" x="140" y="232" width="80" height="20"/>
+  <!-- Buttons -->
+  <rect class="button-default" x="160" y="420" width="64" height="24" rx="3"/>
+  <text class="button-text-default" x="192" y="436">OK</text>
+  <rect class="button" x="240" y="420" width="80" height="24" rx="3"/>
+  <text class="button-text" x="280" y="436">Cancel</text>
+  <rect class="button" x="336" y="420" width="72" height="24" rx="3"/>
+  <text class="button-text" x="372" y="436">Help</text>
+</svg>

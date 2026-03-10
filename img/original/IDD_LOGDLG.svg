@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="534" height="560" font-family="Tahoma, MS Shell Dlg, sans-serif" font-size="11">
+  <defs>
+    <style>
+      .title-bar { fill: #0078d4; }
+      .title-text { fill: white; font-size: 11px; font-weight: bold; }
+      .dialog-bg { fill: #f0f0f0; stroke: #999; stroke-width: 1; }
+      .group-box { fill: none; stroke: #999; stroke-width: 1; }
+      .label { fill: #000; font-size: 11px; }
+      .edit-box { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .combo-box { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .checkbox { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .radio { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .button { fill: #e1e1e1; stroke: #adadad; stroke-width: 1; }
+      .button-default { fill: #0078d4; stroke: #005a9e; stroke-width: 1; }
+      .button-text { fill: #000; font-size: 11px; text-anchor: middle; }
+      .button-text-default { fill: #fff; font-size: 11px; text-anchor: middle; }
+      .combo-arrow { fill: #606060; }
+    </style>
+  </defs>
+  <rect class="title-bar" x="0" y="0" width="534" height="22" rx="4"/>
+  <text class="title-text" x="8" y="15">Log</text>
+  <rect class="dialog-bg" x="0" y="22" width="534" height="538"/>
+  <text class="label" x="16" y="46">Filename:</text>
+  <rect class="combo-box" x="16" y="54" width="430" height="20"/>
+  <rect fill="#e1e1e1" x="426" y="54" width="20" height="20" stroke="#7a7a7a" stroke-width="1"/>
+  <rect class="button" x="460" y="54" width="56" height="20" rx="2"/>
+  <text class="button-text" x="488" y="68">Browse</text>
+  <!-- Write mode group -->
+  <rect class="group-box" x="16" y="84" width="200" height="50"/>
+  <text class="label" x="24" y="84" font-weight="bold">Write mode</text>
+  <circle class="radio" cx="38" cy="104" r="6"/>
+  <circle fill="#000" cx="38" cy="104" r="3"/>
+  <text class="label" x="50" y="108">New / Overwrite</text>
+  <circle class="radio" cx="38" cy="122" r="6"/>
+  <text class="label" x="50" y="126">Append</text>
+  <!-- Text/Binary group -->
+  <rect class="group-box" x="230" y="84" width="200" height="50"/>
+  <text class="label" x="238" y="84" font-weight="bold">Format</text>
+  <circle class="radio" cx="250" cy="104" r="6"/>
+  <circle fill="#000" cx="250" cy="104" r="3"/>
+  <text class="label" x="262" y="108">Text</text>
+  <circle class="radio" cx="250" cy="122" r="6"/>
+  <text class="label" x="262" y="126">Binary</text>
+  <rect class="checkbox" x="350" y="100" width="13" height="13"/>
+  <text class="label" x="368" y="111">BOM</text>
+  <!-- Text coding -->
+  <text class="label" x="16" y="154">Text coding:</text>
+  <rect class="combo-box" x="100" y="142" width="180" height="20"/>
+  <rect fill="#e1e1e1" x="260" y="142" width="20" height="20" stroke="#7a7a7a" stroke-width="1"/>
+  <polygon class="combo-arrow" points="265,150 275,150 270,157"/>
+  <!-- Options -->
+  <rect class="checkbox" x="16" y="172" width="13" height="13"/>
+  <text class="label" x="34" y="183">Plain text</text>
+  <rect class="checkbox" x="16" y="194" width="13" height="13"/>
+  <text class="label" x="34" y="205">Timestamp</text>
+  <text class="label" x="130" y="205">Type:</text>
+  <rect class="combo-box" x="170" y="193" width="150" height="20"/>
+  <rect fill="#e1e1e1" x="300" y="193" width="20" height="20" stroke="#7a7a7a" stroke-width="1"/>
+  <rect class="checkbox" x="16" y="218" width="13" height="13"/>
+  <text class="label" x="34" y="229">Hide dialog</text>
+  <rect class="checkbox" x="16" y="240" width="13" height="13"/>
+  <text class="label" x="34" y="251">Include screen buffer</text>
+  <!-- Buttons -->
+  <rect class="button-default" x="160" y="510" width="64" height="24" rx="3"/>
+  <text class="button-text-default" x="192" y="526">OK</text>
+  <rect class="button" x="240" y="510" width="80" height="24" rx="3"/>
+  <text class="button-text" x="280" y="526">Cancel</text>
+  <rect class="button" x="336" y="510" width="72" height="24" rx="3"/>
+  <text class="button-text" x="372" y="526">Help</text>
+</svg>

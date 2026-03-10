@@ -1,0 +1,83 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="540" height="440" font-family="Tahoma, MS Shell Dlg, sans-serif" font-size="11">
+  <defs>
+    <style>
+      .dialog-bg { fill: #f0f0f0; stroke: #999; stroke-width: 1; }
+      .label { fill: #000; font-size: 11px; }
+      .edit-box { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .combo-box { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .checkbox { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .group-box { fill: none; stroke: #999; stroke-width: 1; }
+      .scrollbar { fill: #c0c0c0; stroke: #999; stroke-width: 1; }
+      .list-box { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .sample-box { fill: #000; stroke: #333; stroke-width: 2; }
+      .combo-arrow { fill: #606060; }
+      .tab-active { fill: #f0f0f0; stroke: #999; stroke-width: 1; }
+      .tab-inactive { fill: #e0e0e0; stroke: #999; stroke-width: 1; }
+      .tab-text { fill: #000; font-size: 10px; text-anchor: middle; }
+    </style>
+  </defs>
+  <rect class="tab-inactive" x="0" y="0" width="60" height="24" rx="3"/>
+  <text class="tab-text" x="30" y="16">General</text>
+  <rect class="tab-inactive" x="62" y="0" width="70" height="24" rx="3"/>
+  <text class="tab-text" x="97" y="16">Sequence</text>
+  <rect class="tab-inactive" x="134" y="0" width="80" height="24" rx="3"/>
+  <text class="tab-text" x="174" y="16">Copy/Paste</text>
+  <rect class="tab-active" x="216" y="0" width="55" height="24" rx="3"/>
+  <text class="tab-text" x="243" y="16" font-weight="bold">Visual</text>
+  <rect class="dialog-bg" x="0" y="22" width="540" height="418"/>
+  <!-- Window Opacity -->
+  <text class="label" x="16" y="44" font-weight="bold">Window Opacity</text>
+  <text class="label" x="16" y="66">Active:</text>
+  <rect class="edit-box" x="80" y="54" width="40" height="20"/>
+  <text class="label" x="86" y="68">255</text>
+  <rect class="scrollbar" x="130" y="56" width="200" height="14" rx="2"/>
+  <text class="label" x="16" y="90">Inactive:</text>
+  <rect class="edit-box" x="80" y="78" width="40" height="20"/>
+  <text class="label" x="86" y="92">255</text>
+  <rect class="scrollbar" x="130" y="80" width="200" height="14" rx="2"/>
+  <!-- Mouse cursor -->
+  <text class="label" x="16" y="118">Mouse cursor:</text>
+  <rect class="combo-box" x="120" y="106" width="160" height="20"/>
+  <rect fill="#e1e1e1" x="260" y="106" width="20" height="20" stroke="#7a7a7a" stroke-width="1"/>
+  <polygon class="combo-arrow" points="265,114 275,114 270,121"/>
+  <!-- ANSI Color group -->
+  <rect class="group-box" x="16" y="134" width="508" height="140"/>
+  <text class="label" x="24" y="134" font-weight="bold">ANSI Color</text>
+  <rect class="list-box" x="30" y="150" width="200" height="100"/>
+  <text class="label" x="36" y="166" fill="#666">Color 0 - Black</text>
+  <text class="label" x="36" y="180" fill="#c00">Color 1 - Red</text>
+  <text class="label" x="36" y="194" fill="#0a0">Color 2 - Green</text>
+  <text class="label" x="36" y="208" fill="#aa0">Color 3 - Yellow</text>
+  <text class="label" x="250" y="162">R:</text>
+  <rect class="edit-box" x="270" y="150" width="40" height="20"/>
+  <text class="label" x="320" y="162">G:</text>
+  <rect class="edit-box" x="340" y="150" width="40" height="20"/>
+  <text class="label" x="390" y="162">B:</text>
+  <rect class="edit-box" x="410" y="150" width="40" height="20"/>
+  <rect class="sample-box" x="250" y="180" width="80" height="40"/>
+  <!-- Font quality -->
+  <text class="label" x="16" y="296">Font quality:</text>
+  <rect class="combo-box" x="120" y="284" width="160" height="20"/>
+  <rect fill="#e1e1e1" x="260" y="284" width="20" height="20" stroke="#7a7a7a" stroke-width="1"/>
+  <polygon class="combo-arrow" points="265,292 275,292 270,299"/>
+  <!-- Flicker / Corner -->
+  <rect class="checkbox" x="16" y="316" width="13" height="13"/>
+  <text class="label" x="34" y="327">Flicker-less move</text>
+  <rect class="checkbox" x="200" y="316" width="13" height="13"/>
+  <text class="label" x="218" y="327">Corner don't round</text>
+  <!-- Attribute checkboxes -->
+  <rect class="group-box" x="16" y="340" width="508" height="60"/>
+  <text class="label" x="24" y="340" font-weight="bold">Character attributes</text>
+  <rect class="checkbox" x="30" y="356" width="13" height="13"/>
+  <text class="label" x="48" y="367">Bold color</text>
+  <rect class="checkbox" x="130" y="356" width="13" height="13"/>
+  <text class="label" x="148" y="367">Blink color</text>
+  <rect class="checkbox" x="230" y="356" width="13" height="13"/>
+  <text class="label" x="248" y="367">Reverse color</text>
+  <rect class="checkbox" x="340" y="356" width="13" height="13"/>
+  <text class="label" x="358" y="367">URL color</text>
+  <rect class="checkbox" x="430" y="356" width="13" height="13"/>
+  <text class="label" x="448" y="367">Underline</text>
+  <rect class="checkbox" x="30" y="376" width="13" height="13"/>
+  <text class="label" x="48" y="387">ANSI color</text>
+</svg>

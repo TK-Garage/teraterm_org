@@ -1,0 +1,86 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="540" height="420" font-family="Tahoma, MS Shell Dlg, sans-serif" font-size="11">
+  <defs>
+    <style>
+      .tab-bar { fill: #f0f0f0; stroke: #999; }
+      .tab-active { fill: #f0f0f0; stroke: #999; stroke-width: 1; }
+      .tab-inactive { fill: #e0e0e0; stroke: #999; stroke-width: 1; }
+      .tab-text { fill: #000; font-size: 10px; text-anchor: middle; }
+      .dialog-bg { fill: #f0f0f0; stroke: #999; stroke-width: 1; }
+      .label { fill: #000; font-size: 11px; }
+      .edit-box { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .combo-box { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .button { fill: #e1e1e1; stroke: #adadad; stroke-width: 1; }
+      .button-text { fill: #000; font-size: 11px; text-anchor: middle; }
+      .checkbox { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .combo-arrow { fill: #606060; }
+      .group-box { fill: none; stroke: #999; stroke-width: 1; }
+    </style>
+  </defs>
+  <!-- Tab bar -->
+  <rect class="tab-active" x="0" y="0" width="60" height="24" rx="3"/>
+  <text class="tab-text" x="30" y="16" font-weight="bold">General</text>
+  <rect class="tab-inactive" x="62" y="0" width="70" height="24" rx="3"/>
+  <text class="tab-text" x="97" y="16">Sequence</text>
+  <rect class="tab-inactive" x="134" y="0" width="80" height="24" rx="3"/>
+  <text class="tab-text" x="174" y="16">Copy/Paste</text>
+  <rect class="tab-inactive" x="216" y="0" width="55" height="24" rx="3"/>
+  <text class="tab-text" x="243" y="16">Visual</text>
+  <rect class="tab-inactive" x="273" y="0" width="40" height="24" rx="3"/>
+  <text class="tab-text" x="293" y="16">Log</text>
+  <rect class="tab-inactive" x="315" y="0" width="55" height="24" rx="3"/>
+  <text class="tab-text" x="342" y="16">Coding</text>
+  <rect class="tab-inactive" x="372" y="0" width="40" height="24" rx="3"/>
+  <text class="tab-text" x="392" y="16">Font</text>
+  <!-- Content area -->
+  <rect class="dialog-bg" x="0" y="22" width="540" height="398"/>
+  <!-- Controls -->
+  <rect class="checkbox" x="16" y="36" width="13" height="13"/>
+  <text class="label" x="34" y="47">Disable SendBreak</text>
+  <rect class="checkbox" x="16" y="56" width="13" height="13"/>
+  <text class="label" x="34" y="67">Accept broadcast</text>
+  <rect class="checkbox" x="16" y="76" width="13" height="13"/>
+  <text class="label" x="34" y="87">Auto scroll only in bottom line</text>
+  <rect class="checkbox" x="16" y="96" width="13" height="13"/>
+  <text class="label" x="34" y="107">Clear on resize</text>
+  <rect class="checkbox" x="16" y="116" width="13" height="13"/>
+  <text class="label" x="34" y="127">Cursor change IME</text>
+  <!-- Default port -->
+  <text class="label" x="16" y="154">Default port:</text>
+  <rect class="combo-box" x="100" y="142" width="120" height="20"/>
+  <rect fill="#e1e1e1" x="200" y="142" width="20" height="20" stroke="#7a7a7a" stroke-width="1"/>
+  <polygon class="combo-arrow" points="205,150 215,150 210,157"/>
+  <!-- Title format group -->
+  <rect class="group-box" x="16" y="170" width="508" height="80"/>
+  <text class="label" x="24" y="170" font-weight="bold">Title format</text>
+  <rect class="checkbox" x="30" y="186" width="13" height="13"/>
+  <text class="label" x="48" y="197">Title</text>
+  <rect class="checkbox" x="120" y="186" width="13" height="13"/>
+  <text class="label" x="138" y="197">Hostname</text>
+  <rect class="checkbox" x="230" y="186" width="13" height="13"/>
+  <text class="label" x="248" y="197">TCP port</text>
+  <rect class="checkbox" x="330" y="186" width="13" height="13"/>
+  <text class="label" x="348" y="197">Session</text>
+  <rect class="checkbox" x="30" y="210" width="13" height="13"/>
+  <text class="label" x="48" y="221">VT/TEK</text>
+  <rect class="checkbox" x="120" y="210" width="13" height="13"/>
+  <text class="label" x="138" y="221">Serial</text>
+  <!-- Notification -->
+  <rect class="checkbox" x="16" y="264" width="13" height="13"/>
+  <text class="label" x="34" y="275">Notification title</text>
+  <rect class="checkbox" x="200" y="264" width="13" height="13"/>
+  <text class="label" x="218" y="275">Notify sound</text>
+  <rect class="button" x="340" y="260" width="90" height="20" rx="2"/>
+  <text class="button-text" x="385" y="274">Test popup</text>
+  <rect class="button" x="440" y="260" width="80" height="20" rx="2"/>
+  <text class="button-text" x="480" y="274">Test tray</text>
+  <!-- File transfer folder -->
+  <text class="label" x="16" y="306">File transfer folder:</text>
+  <rect class="edit-box" x="140" y="294" width="340" height="20"/>
+  <rect class="button" x="486" y="294" width="34" height="20" rx="2"/>
+  <text class="button-text" x="503" y="308">...</text>
+  <!-- Standard buttons -->
+  <rect class="button" x="180" y="390" width="64" height="24" rx="3"/>
+  <text class="button-text" x="212" y="406">OK</text>
+  <rect class="button" x="256" y="390" width="80" height="24" rx="3"/>
+  <text class="button-text" x="296" y="406">Cancel</text>
+</svg>

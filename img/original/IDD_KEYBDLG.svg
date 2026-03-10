@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="300" height="262" font-family="MS Shell Dlg, Tahoma, sans-serif" font-size="11">
+  <defs>
+    <style>
+      .title-bar { fill: #0078d4; }
+      .title-text { fill: white; font-size: 11px; font-weight: bold; }
+      .dialog-bg { fill: #f0f0f0; stroke: #999; stroke-width: 1; }
+      .group-box { fill: none; stroke: #999; stroke-width: 1; }
+      .label { fill: #000; font-size: 11px; }
+      .combo-box { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .button { fill: #e1e1e1; stroke: #adadad; stroke-width: 1; }
+      .button-default { fill: #0078d4; stroke: #005a9e; stroke-width: 1; }
+      .button-text { fill: #000; font-size: 11px; text-anchor: middle; }
+      .button-text-default { fill: #fff; font-size: 11px; text-anchor: middle; }
+      .checkbox { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .combo-arrow { fill: #606060; }
+    </style>
+  </defs>
+  <rect class="title-bar" x="0" y="0" width="300" height="22" rx="4"/>
+  <text class="title-text" x="8" y="15">Tera Term: Keyboard setup</text>
+  <rect class="dialog-bg" x="0" y="22" width="300" height="240"/>
+  <!-- Transmit DEL by group -->
+  <rect class="group-box" x="20" y="32" width="180" height="78"/>
+  <text class="label" x="28" y="32" font-weight="bold">Transmit DEL by:</text>
+  <rect class="checkbox" x="40" y="48" width="13" height="13"/>
+  <text class="label" x="58" y="59">Backspace key</text>
+  <rect class="checkbox" x="40" y="70" width="13" height="13"/>
+  <text class="label" x="58" y="81">Delete key</text>
+  <!-- Keyboard -->
+  <text class="label" x="24" y="124">Keyboard:</text>
+  <rect class="combo-box" x="114" y="112" width="88" height="20"/>
+  <rect fill="#e1e1e1" x="182" y="112" width="20" height="20" stroke="#7a7a7a" stroke-width="1"/>
+  <polygon class="combo-arrow" points="187,120 197,120 192,127"/>
+  <!-- Meta key -->
+  <text class="label" x="24" y="148">Meta key:</text>
+  <rect class="combo-box" x="114" y="136" width="88" height="20"/>
+  <rect fill="#e1e1e1" x="182" y="136" width="20" height="20" stroke="#7a7a7a" stroke-width="1"/>
+  <polygon class="combo-arrow" points="187,144 197,144 192,151"/>
+  <text class="label" x="120" y="150">off</text>
+  <!-- Disabled mode group -->
+  <rect class="group-box" x="20" y="164" width="260" height="58"/>
+  <text class="label" x="28" y="164" font-weight="bold">Disabled mode:</text>
+  <rect class="checkbox" x="40" y="180" width="13" height="13"/>
+  <text class="label" x="58" y="191">Application Keypad</text>
+  <rect class="checkbox" x="40" y="200" width="13" height="13"/>
+  <text class="label" x="58" y="211">Application Cursor</text>
+  <!-- Buttons -->
+  <rect class="button-default" x="214" y="36" width="72" height="24" rx="3"/>
+  <text class="button-text-default" x="250" y="52">OK</text>
+  <rect class="button" x="214" y="66" width="72" height="24" rx="3"/>
+  <text class="button-text" x="250" y="82">Cancel</text>
+  <rect class="button" x="214" y="96" width="72" height="24" rx="3"/>
+  <text class="button-text" x="250" y="112">Help</text>
+</svg>

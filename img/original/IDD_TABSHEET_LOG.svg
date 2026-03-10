@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="540" height="420" font-family="Tahoma, MS Shell Dlg, sans-serif" font-size="11">
+  <defs>
+    <style>
+      .dialog-bg { fill: #f0f0f0; stroke: #999; stroke-width: 1; }
+      .label { fill: #000; font-size: 11px; }
+      .edit-box { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .combo-box { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .checkbox { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .group-box { fill: none; stroke: #999; stroke-width: 1; }
+      .button { fill: #e1e1e1; stroke: #adadad; stroke-width: 1; }
+      .button-text { fill: #000; font-size: 11px; text-anchor: middle; }
+      .combo-arrow { fill: #606060; }
+      .tab-active { fill: #f0f0f0; stroke: #999; stroke-width: 1; }
+      .tab-inactive { fill: #e0e0e0; stroke: #999; stroke-width: 1; }
+      .tab-text { fill: #000; font-size: 10px; text-anchor: middle; }
+    </style>
+  </defs>
+  <rect class="tab-inactive" x="0" y="0" width="60" height="24" rx="3"/>
+  <text class="tab-text" x="30" y="16">General</text>
+  <rect class="tab-inactive" x="216" y="0" width="55" height="24" rx="3"/>
+  <text class="tab-text" x="243" y="16">Visual</text>
+  <rect class="tab-active" x="273" y="0" width="40" height="24" rx="3"/>
+  <text class="tab-text" x="293" y="16" font-weight="bold">Log</text>
+  <rect class="dialog-bg" x="0" y="22" width="540" height="398"/>
+  <!-- View log editor -->
+  <text class="label" x="16" y="44">View log editor:</text>
+  <rect class="edit-box" x="130" y="32" width="340" height="20"/>
+  <rect class="button" x="476" y="32" width="34" height="20" rx="2"/>
+  <text class="button-text" x="493" y="46">...</text>
+  <text class="label" x="16" y="70">Editor arguments:</text>
+  <rect class="edit-box" x="130" y="58" width="380" height="20"/>
+  <!-- Default log file name -->
+  <text class="label" x="16" y="100">Default name:</text>
+  <rect class="combo-box" x="130" y="88" width="200" height="20"/>
+  <rect fill="#e1e1e1" x="310" y="88" width="20" height="20" stroke="#7a7a7a" stroke-width="1"/>
+  <polygon class="combo-arrow" points="315,96 325,96 320,103"/>
+  <!-- Default path -->
+  <text class="label" x="16" y="126">Default path:</text>
+  <rect class="edit-box" x="130" y="114" width="340" height="20"/>
+  <rect class="button" x="476" y="114" width="34" height="20" rx="2"/>
+  <text class="button-text" x="493" y="128">...</text>
+  <!-- Auto start -->
+  <rect class="checkbox" x="16" y="146" width="13" height="13"/>
+  <text class="label" x="34" y="157">Auto start</text>
+  <!-- Log options group -->
+  <rect class="group-box" x="16" y="168" width="508" height="100"/>
+  <text class="label" x="24" y="168" font-weight="bold">Log options</text>
+  <rect class="checkbox" x="30" y="184" width="13" height="13"/>
+  <text class="label" x="48" y="195">Binary</text>
+  <rect class="checkbox" x="130" y="184" width="13" height="13"/>
+  <text class="label" x="148" y="195">Append</text>
+  <rect class="checkbox" x="230" y="184" width="13" height="13"/>
+  <text class="label" x="248" y="195">Plain text</text>
+  <rect class="checkbox" x="330" y="184" width="13" height="13"/>
+  <text class="label" x="348" y="195">Hide dialog</text>
+  <rect class="checkbox" x="30" y="208" width="13" height="13"/>
+  <text class="label" x="48" y="219">Include screen buffer</text>
+  <rect class="checkbox" x="30" y="232" width="13" height="13"/>
+  <text class="label" x="48" y="243">Timestamp</text>
+  <text class="label" x="150" y="243">Type:</text>
+  <rect class="combo-box" x="190" y="231" width="150" height="20"/>
+  <rect fill="#e1e1e1" x="320" y="231" width="20" height="20" stroke="#7a7a7a" stroke-width="1"/>
+  <polygon class="combo-arrow" points="325,239 335,239 330,246"/>
+  <!-- Log rotate -->
+  <rect class="checkbox" x="16" y="280" width="13" height="13"/>
+  <text class="label" x="34" y="291">Log rotate</text>
+  <text class="label" x="50" y="315">Rotate size:</text>
+  <rect class="edit-box" x="130" y="303" width="60" height="20"/>
+  <rect class="combo-box" x="200" y="303" width="80" height="20"/>
+  <rect fill="#e1e1e1" x="260" y="303" width="20" height="20" stroke="#7a7a7a" stroke-width="1"/>
+  <text class="label" x="50" y="343">Rotate step:</text>
+  <rect class="edit-box" x="130" y="331" width="60" height="20"/>
+</svg>

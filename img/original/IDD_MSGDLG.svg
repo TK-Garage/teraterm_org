@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="160" height="108" font-family="Tahoma, MS Shell Dlg, sans-serif" font-size="11">
+  <defs>
+    <style>
+      .title-bar { fill: #0078d4; }
+      .title-text { fill: white; font-size: 11px; font-weight: bold; }
+      .dialog-bg { fill: #f0f0f0; stroke: #999; stroke-width: 1; }
+      .label { fill: #000; font-size: 11px; }
+      .button-default { fill: #0078d4; stroke: #005a9e; stroke-width: 1; }
+      .button { fill: #e1e1e1; stroke: #adadad; stroke-width: 1; }
+      .button-text-default { fill: #fff; font-size: 11px; text-anchor: middle; }
+      .button-text { fill: #000; font-size: 11px; text-anchor: middle; }
+    </style>
+  </defs>
+  <rect class="title-bar" x="0" y="0" width="160" height="22" rx="4"/>
+  <text class="title-text" x="8" y="15">Message</text>
+  <rect class="dialog-bg" x="0" y="22" width="160" height="86"/>
+  <text class="label" x="16" y="50">Message text</text>
+  <rect class="button-default" x="16" y="68" width="56" height="24" rx="3"/>
+  <text class="button-text-default" x="44" y="84">OK</text>
+  <rect class="button" x="84" y="68" width="56" height="24" rx="3"/>
+  <text class="button-text" x="112" y="84">No</text>
+</svg>
