@@ -216,12 +216,29 @@ final class SCPDialogController: BaseSetupDialogController {
         // SCP dialog doesn't modify settings — it triggers transfers
     }
 
-    /// Execute SCP using system /usr/bin/scp command.
+    /// Execute SCP with progress dialog using system /usr/bin/scp command.
     static func executeSCP(
         send: Bool, localPath: String, remotePath: String,
         host: String, port: Int, username: String,
         completion: @escaping (Bool, String) -> Void
     ) {
+        // Determine filename and file size for progress tracking
+        let filename: String
+        let fileSize: Int64
+        if send {
+            let url = URL(fileURLWithPath: localPath)
+            filename = url.lastPathComponent
+            fileSize = (try? FileManager.default.attributesOfItem(atPath: localPath)[.size] as? Int64) ?? 0
+        } else {
+            filename = (remotePath as NSString).lastPathComponent
+            fileSize = 0  // Unknown for receive until transfer completes
+        }
+
+        // Show progress window
+        let progressWC = SCPProgressWindowController(
+            send: send, filename: filename, fileSize: fileSize)
+        progressWC.showWindow(nil)
+
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/scp")
 
@@ -233,24 +250,289 @@ final class SCPDialogController: BaseSetupDialogController {
         }
         process.arguments = args
 
-        let pipe = Pipe()
-        process.standardError = pipe
+        let errPipe = Pipe()
+        process.standardError = errPipe
+
+        // For receive: track local file size growth for progress
+        let receiveDestPath: String?
+        if !send {
+            // If localPath is a directory, the file will be written as localPath/filename
+            var isDir: ObjCBool = false
+            if FileManager.default.fileExists(atPath: localPath, isDirectory: &isDir), isDir.boolValue {
+                receiveDestPath = (localPath as NSString).appendingPathComponent(filename)
+            } else {
+                receiveDestPath = localPath
+            }
+        } else {
+            receiveDestPath = nil
+        }
+
+        // Cancel handler
+        progressWC.onCancel = {
+            process.terminate()
+        }
+
+        let startTime = Date()
 
         DispatchQueue.global().async {
             do {
                 try process.run()
+
+                // Progress polling timer on main thread
+                let timer = DispatchSource.makeTimerSource(queue: .main)
+                timer.schedule(deadline: .now() + 0.3, repeating: 0.3)
+                timer.setEventHandler { [weak progressWC] in
+                    guard let progressWC = progressWC else {
+                        timer.cancel()
+                        return
+                    }
+                    let elapsed = Date().timeIntervalSince(startTime)
+
+                    if send && fileSize > 0 {
+                        // For send: we don't have direct byte counts from scp,
+                        // but we update the elapsed time. The progress bar stays
+                        // indeterminate unless we can track it.
+                        progressWC.updateProgress(
+                            bytes: -1, totalBytes: fileSize, elapsed: elapsed)
+                    } else if let destPath = receiveDestPath {
+                        // For receive: track destination file size
+                        let currentSize = (try? FileManager.default.attributesOfItem(
+                            atPath: destPath)[.size] as? Int64) ?? 0
+                        progressWC.updateProgress(
+                            bytes: currentSize, totalBytes: 0, elapsed: elapsed)
+                    } else {
+                        progressWC.updateProgress(
+                            bytes: -1, totalBytes: 0, elapsed: elapsed)
+                    }
+                }
+                timer.resume()
+
                 process.waitUntilExit()
-                let errData = pipe.fileHandleForReading.readDataToEndOfFile()
+                timer.cancel()
+
+                let errData = errPipe.fileHandleForReading.readDataToEndOfFile()
                 let errStr = String(data: errData, encoding: .utf8) ?? ""
                 let success = process.terminationStatus == 0
+                let wasCanceled = process.terminationStatus == 15  // SIGTERM
+
                 DispatchQueue.main.async {
-                    completion(success, errStr)
+                    // Final progress update
+                    let elapsed = Date().timeIntervalSince(startTime)
+                    if success && send {
+                        progressWC.updateProgress(
+                            bytes: fileSize, totalBytes: fileSize, elapsed: elapsed)
+                    }
+                    // Close progress window after brief delay so user sees completion
+                    DispatchQueue.main.asyncAfter(deadline: .now() + (success ? 0.5 : 0)) {
+                        progressWC.close()
+                        if wasCanceled {
+                            // User canceled — no error callback
+                        } else {
+                            completion(success, errStr)
+                        }
+                    }
                 }
             } catch {
                 DispatchQueue.main.async {
+                    progressWC.close()
                     completion(false, error.localizedDescription)
                 }
             }
+        }
+    }
+}
+
+// MARK: - SCP Progress Window (IDD_SSHSCP_PROGRESS)
+
+/// SCP transfer progress window — standalone window matching original Tera Term IDD_SSHSCP_PROGRESS.
+/// Shows filename, bytes transferred (with percentage), elapsed time, and progress bar.
+final class SCPProgressWindowController: NSWindowController {
+
+    private var filenameField: NSTextField!
+    private var bytesField: NSTextField!
+    private var timeField: NSTextField!
+    private var progressBar: NSProgressIndicator!
+
+    private let isSend: Bool
+    private let totalBytes: Int64
+
+    var onCancel: (() -> Void)?
+
+    init(send: Bool, filename: String, fileSize: Int64) {
+        self.isSend = send
+        self.totalBytes = fileSize
+
+        // Create window (200x130 to match original proportions)
+        let contentRect = NSRect(x: 0, y: 0, width: 380, height: 160)
+        let style: NSWindow.StyleMask = [.titled, .closable, .miniaturizable]
+        let window = NSWindow(contentRect: contentRect, styleMask: style,
+                              backing: .buffered, defer: false)
+        window.title = send
+            ? TTL("dialog.scp.progress.title.send")
+            : TTL("dialog.scp.progress.title.receive")
+        window.isReleasedWhenClosed = false
+
+        super.init(window: window)
+
+        setupUI(filename: filename)
+        window.center()
+    }
+
+    required init?(coder: NSCoder) { fatalError() }
+
+    private func setupUI(filename: String) {
+        guard let contentView = window?.contentView else { return }
+
+        let margin: CGFloat = 16
+        let labelWidth: CGFloat = 100
+
+        // Filename row
+        let fnLabel = NSTextField(labelWithString: TTL("dialog.scp.progress.filename"))
+        fnLabel.translatesAutoresizingMaskIntoConstraints = false
+        fnLabel.font = NSFont.systemFont(ofSize: 13)
+        fnLabel.setContentHuggingPriority(.required, for: .horizontal)
+        contentView.addSubview(fnLabel)
+
+        filenameField = NSTextField(labelWithString: filename)
+        filenameField.translatesAutoresizingMaskIntoConstraints = false
+        filenameField.font = NSFont.systemFont(ofSize: 13)
+        filenameField.lineBreakMode = .byTruncatingMiddle
+        filenameField.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        contentView.addSubview(filenameField)
+
+        // Bytes row
+        let bytesLabel = NSTextField(labelWithString: TTL("dialog.scp.progress.bytes"))
+        bytesLabel.translatesAutoresizingMaskIntoConstraints = false
+        bytesLabel.font = NSFont.systemFont(ofSize: 13)
+        bytesLabel.setContentHuggingPriority(.required, for: .horizontal)
+        contentView.addSubview(bytesLabel)
+
+        bytesField = NSTextField(labelWithString: "0")
+        bytesField.translatesAutoresizingMaskIntoConstraints = false
+        bytesField.font = NSFont.monospacedDigitSystemFont(ofSize: 13, weight: .regular)
+        contentView.addSubview(bytesField)
+
+        // Time row
+        let timeLabel = NSTextField(labelWithString: TTL("dialog.scp.progress.time"))
+        timeLabel.translatesAutoresizingMaskIntoConstraints = false
+        timeLabel.font = NSFont.systemFont(ofSize: 13)
+        timeLabel.setContentHuggingPriority(.required, for: .horizontal)
+        contentView.addSubview(timeLabel)
+
+        timeField = NSTextField(labelWithString: "0:00")
+        timeField.translatesAutoresizingMaskIntoConstraints = false
+        timeField.font = NSFont.monospacedDigitSystemFont(ofSize: 13, weight: .regular)
+        contentView.addSubview(timeField)
+
+        // Progress bar
+        progressBar = NSProgressIndicator()
+        progressBar.translatesAutoresizingMaskIntoConstraints = false
+        progressBar.style = .bar
+        progressBar.controlSize = .regular
+        if totalBytes > 0 {
+            progressBar.isIndeterminate = false
+            progressBar.minValue = 0
+            progressBar.maxValue = 100
+            progressBar.doubleValue = 0
+        } else {
+            progressBar.isIndeterminate = true
+            progressBar.startAnimation(nil)
+        }
+        contentView.addSubview(progressBar)
+
+        // Cancel button
+        let cancelButton = NSButton(title: TTL("Cancel"), target: self,
+                                    action: #selector(cancelTransfer(_:)))
+        cancelButton.translatesAutoresizingMaskIntoConstraints = false
+        cancelButton.bezelStyle = .rounded
+        cancelButton.keyEquivalent = "\u{1b}"  // Escape
+        contentView.addSubview(cancelButton)
+
+        let rowSpacing: CGFloat = 6
+
+        NSLayoutConstraint.activate([
+            // Filename row
+            fnLabel.topAnchor.constraint(equalTo: contentView.topAnchor, constant: margin),
+            fnLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: margin),
+            fnLabel.widthAnchor.constraint(equalToConstant: labelWidth),
+            filenameField.centerYAnchor.constraint(equalTo: fnLabel.centerYAnchor),
+            filenameField.leadingAnchor.constraint(equalTo: fnLabel.trailingAnchor, constant: 4),
+            filenameField.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -margin),
+
+            // Bytes row
+            bytesLabel.topAnchor.constraint(equalTo: fnLabel.bottomAnchor, constant: rowSpacing),
+            bytesLabel.leadingAnchor.constraint(equalTo: fnLabel.leadingAnchor),
+            bytesLabel.widthAnchor.constraint(equalToConstant: labelWidth),
+            bytesField.centerYAnchor.constraint(equalTo: bytesLabel.centerYAnchor),
+            bytesField.leadingAnchor.constraint(equalTo: bytesLabel.trailingAnchor, constant: 4),
+            bytesField.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -margin),
+
+            // Time row
+            timeLabel.topAnchor.constraint(equalTo: bytesLabel.bottomAnchor, constant: rowSpacing),
+            timeLabel.leadingAnchor.constraint(equalTo: fnLabel.leadingAnchor),
+            timeLabel.widthAnchor.constraint(equalToConstant: labelWidth),
+            timeField.centerYAnchor.constraint(equalTo: timeLabel.centerYAnchor),
+            timeField.leadingAnchor.constraint(equalTo: timeLabel.trailingAnchor, constant: 4),
+            timeField.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -margin),
+
+            // Progress bar
+            progressBar.topAnchor.constraint(equalTo: timeLabel.bottomAnchor, constant: rowSpacing + 4),
+            progressBar.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: margin),
+            progressBar.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -margin),
+
+            // Cancel button
+            cancelButton.topAnchor.constraint(equalTo: progressBar.bottomAnchor, constant: 12),
+            cancelButton.centerXAnchor.constraint(equalTo: contentView.centerXAnchor),
+            cancelButton.widthAnchor.constraint(greaterThanOrEqualToConstant: 80),
+            cancelButton.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -margin),
+        ])
+    }
+
+    @objc private func cancelTransfer(_ sender: Any?) {
+        onCancel?()
+    }
+
+    /// Update progress display.
+    /// - Parameters:
+    ///   - bytes: Bytes transferred so far (-1 if unknown)
+    ///   - totalBytes: Total file size (0 if unknown)
+    ///   - elapsed: Elapsed time in seconds
+    func updateProgress(bytes: Int64, totalBytes: Int64, elapsed: TimeInterval) {
+        // Update elapsed time
+        let secs = Int(elapsed)
+        if secs >= 3600 {
+            timeField.stringValue = String(format: "%d:%02d:%02d", secs / 3600, (secs % 3600) / 60, secs % 60)
+        } else {
+            timeField.stringValue = String(format: "%d:%02d", secs / 60, secs % 60)
+        }
+
+        // Update bytes display
+        if bytes >= 0 {
+            if totalBytes > 0 {
+                let pct = Int(100 * bytes / totalBytes)
+                bytesField.stringValue = "\(formatBytes(bytes)) / \(formatBytes(totalBytes)) (\(pct)%)"
+                if progressBar.isIndeterminate {
+                    progressBar.isIndeterminate = false
+                    progressBar.stopAnimation(nil)
+                    progressBar.minValue = 0
+                    progressBar.maxValue = 100
+                }
+                progressBar.doubleValue = Double(pct)
+            } else {
+                bytesField.stringValue = formatBytes(bytes)
+            }
+        }
+    }
+
+    private func formatBytes(_ bytes: Int64) -> String {
+        if bytes < 1024 {
+            return "\(bytes) B"
+        } else if bytes < 1024 * 1024 {
+            return String(format: "%.1f KB", Double(bytes) / 1024)
+        } else if bytes < 1024 * 1024 * 1024 {
+            return String(format: "%.1f MB", Double(bytes) / (1024 * 1024))
+        } else {
+            return String(format: "%.2f GB", Double(bytes) / (1024 * 1024 * 1024))
         }
     }
 }

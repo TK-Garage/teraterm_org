@@ -1552,39 +1552,36 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
 
         let ssh = wc.connectionManager.currentConnection as! SSHConnection
         let vc = SCPDialogController(settings: settings)
-        vc.onSend = { localPath, remotePath in
+        vc.onSend = { [weak self] localPath, remotePath in
             SCPDialogController.executeSCP(
                 send: true, localPath: localPath, remotePath: remotePath,
                 host: ssh.host, port: ssh.port, username: ssh.username
             ) { success, error in
-                if !success {
-                    let alert = NSAlert()
-                    alert.messageText = "SCP Error"
-                    alert.informativeText = error
-                    alert.alertStyle = .warning
-                    alert.addButton(withTitle: "OK")
-                    alert.runModal()
-                }
+                guard !success else { return }
+                self?.showSCPErrorAlert(error)
             }
         }
-        vc.onReceive = { remotePath, localDir in
+        vc.onReceive = { [weak self] remotePath, localDir in
             SCPDialogController.executeSCP(
                 send: false, localPath: localDir, remotePath: remotePath,
                 host: ssh.host, port: ssh.port, username: ssh.username
             ) { success, error in
-                if !success {
-                    let alert = NSAlert()
-                    alert.messageText = "SCP Error"
-                    alert.informativeText = error
-                    alert.alertStyle = .warning
-                    alert.addButton(withTitle: "OK")
-                    alert.runModal()
-                }
+                guard !success else { return }
+                self?.showSCPErrorAlert(error)
             }
         }
         if let win = wc.window {
             currentSetupSheet = vc.presentAsSheet(on: win)
         }
+    }
+
+    private func showSCPErrorAlert(_ detail: String) {
+        let alert = NSAlert()
+        alert.messageText = "SCP"
+        alert.informativeText = detail
+        alert.alertStyle = .warning
+        alert.addButton(withTitle: L("OK"))
+        alert.runModal()
     }
 
     private func findSerialPorts() -> [String] {

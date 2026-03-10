@@ -1,6 +1,6 @@
 # Tera Term Mac: 未使用リソースキー・未移植機能の一覧
 
-## 1. 日本語リソース (`ja.lproj/Localizable.strings`) で定義済みだがSwiftコードで未使用のキー (45個)
+## 1. 日本語リソース (`ja.lproj/Localizable.strings`) で定義済みだがSwiftコードで未使用のキー (40個)
 
 ### 端末設定ダイアログ (旧 — `dialog.termSetup.*` に置換済み)
 
@@ -44,16 +44,6 @@
 | `dialog.serialPort.flow` | フロー: |
 | `dialog.serialPort.connect` | 接続 |
 | `dialog.serialPort.cancel` | キャンセル |
-
-### SCP進捗ダイアログ (UI未実装)
-
-| キー | 日本語テキスト |
-|------|---------------|
-| `dialog.scp.progress.title.send` | SCP: ファイル送信中 |
-| `dialog.scp.progress.title.receive` | SCP: ファイル受信中 |
-| `dialog.scp.progress.filename` | ファイル名: |
-| `dialog.scp.progress.bytes` | 転送済み: |
-| `dialog.scp.progress.time` | 経過時間: |
 
 ### マクロ関連
 
@@ -280,5 +270,5 @@
 
 - **旧ダイアログキー**: `dialog.terminalSetup.*`、`dialog.windowSetup.*`、`dialog.serialPort.*` の多くは新しいViewController用キー (`dialog.termSetup.*`、`dialog.winSetup.*`、`dialog.serialSetup.*`) に置き換えられており、旧キーが残存している状態です。削除しても問題ありません。
 - **接続エラーメッセージ**: `error.connection.failed` 等は定義済みですが、コード側で直接英語文字列を使用している可能性があります。ローカライゼーション対応の際に参照キーへの置き換えが必要です。
-- **SCP進捗ダイアログ**: `dialog.scp.progress.*` のキーは定義済みですが、SCP進捗表示UIが未実装と思われます。
+- **SCP進捗ダイアログ**: `dialog.scp.progress.*` のキーは `SCPProgressWindowController` で使用されています。
 - **macOS不要の機能**: Cygwin接続、TTMenu等はWindows固有のため移植不要です。
