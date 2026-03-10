@@ -1141,6 +1141,15 @@ connect 'myhost.example.com:23'
 disconnect
 ```
 
+### `unlink`
+
+マクロとターミナルのリンクを切断。接続中の場合のみ切断し、未接続時はエラーにならない。
+`disconnect` と同等だが、未接続時にエラーを出さない点が異なる。
+
+```ttl
+unlink
+```
+
 ### `testlink`
 
 接続状態をテスト。
@@ -1577,4 +1586,3 @@ s = "double quotes"
 | `restoresetup` | セットアップ復元 |
 | `callmenu` | メニュー呼び出し |
 | `setserialdelaychar` / `setserialdelayline` | シリアル遅延設定 |
-| `setdate` / `settime` | システム日時設定 |

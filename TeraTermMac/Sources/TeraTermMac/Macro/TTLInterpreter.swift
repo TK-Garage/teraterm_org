@@ -644,6 +644,7 @@ class TTLInterpreter {
         // Terminal operations
         case .connect:      try ttlConnect()
         case .disconnect:   try ttlDisconnect()
+        case .unlink:       try ttlUnlink()
         case .testLink:     try ttlTestLink()
         case .clearScreen:  try ttlClearScreen()
         case .dispStr:      try ttlDispStr()
@@ -2679,6 +2680,13 @@ class TTLInterpreter {
 
     private func ttlDisconnect() throws {
         delegate?.ttlDisconnect()
+    }
+
+    private func ttlUnlink() throws {
+        // Original TTL: ends DDE link if connected, no error if not connected
+        if delegate?.ttlIsConnected() == true {
+            delegate?.ttlDisconnect()
+        }
     }
 
     private func ttlTestLink() throws {
