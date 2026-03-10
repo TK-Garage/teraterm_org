@@ -14,6 +14,15 @@
 
 import Foundation
 
+// POSIX wait status macros (C macros not imported into Swift)
+private func WIFEXITED(_ status: Int32) -> Bool {
+    return (status & 0x7F) == 0
+}
+
+private func WEXITSTATUS(_ status: Int32) -> Int32 {
+    return (status >> 8) & 0xFF
+}
+
 // MARK: - SSH Connection (system ssh via PTY)
 
 class SSHConnection: Connection {
