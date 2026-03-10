@@ -56,6 +56,7 @@ class TerminalWindowController: NSWindowController {
         window.title = settings.title
         window.minSize = NSSize(width: 200, height: 100)
         window.isReleasedWhenClosed = false
+        window.isRestorable = false
 
         // macOS HIG: visible title bar with standard dark appearance
         window.titlebarAppearsTransparent = false
