@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="380" height="230" viewBox="0 0 380 230">
+  <defs>
+    <style>
+      .bg { fill: #ECECEC; }
+      .border { fill: none; stroke: red; stroke-width: 2; }
+      .label { font-family: -apple-system, sans-serif; font-size: 13px; fill: #333; }
+      .label-r { font-family: -apple-system, sans-serif; font-size: 13px; fill: #333; text-anchor: end; }
+      .title { font-family: -apple-system, sans-serif; font-size: 13px; fill: #333; font-weight: 600; }
+      .value { font-family: -apple-system, sans-serif; font-size: 13px; fill: #333; text-anchor: end; }
+      .sep { stroke: #C0C0C0; stroke-width: 1; }
+      .progress-bg { fill: #E0E0E0; rx: 3; }
+      .progress-fill { fill: #007AFF; rx: 3; }
+      .btn { fill: #F0F0F0; stroke: #B0B0B0; stroke-width: 1; rx: 5; }
+      .btn-label { font-family: -apple-system, sans-serif; font-size: 13px; fill: #333; text-anchor: middle; }
+      .size-label { font-family: monospace; font-size: 10px; fill: red; }
+      .pct { font-family: 'SF Mono', monospace; font-size: 11px; fill: #333; text-anchor: end; }
+    </style>
+  </defs>
+  <rect width="380" height="230" class="bg"/>
+  <rect x="1" y="1" width="378" height="228" class="border"/>
+
+  <!-- Title bar -->
+  <rect x="0" y="0" width="380" height="22" fill="#E8E8E8" stroke="#C0C0C0" stroke-width="1"/>
+  <text x="190" y="15" class="title" text-anchor="middle">Tera Term: File Transfer</text>
+  <circle cx="14" cy="11" r="5" fill="#FF5F57"/>
+  <circle cx="30" cy="11" r="5" fill="#FEBC2E"/>
+  <circle cx="46" cy="11" r="5" fill="#28C840"/>
+
+  <!-- Grid rows -->
+  <text x="135" y="48" class="label-r">Filename:</text>
+  <text x="145" y="48" class="label">test_data.bin</text>
+
+  <text x="135" y="68" class="label-r">Protocol:</text>
+  <text x="350" y="68" class="value">XMODEM-CRC</text>
+
+  <text x="135" y="88" class="label-r">Packet#:</text>
+  <text x="350" y="88" class="value">42</text>
+
+  <text x="135" y="108" class="label-r">Bytes transferred:</text>
+  <text x="350" y="108" class="value">5376</text>
+
+  <text x="135" y="128" class="label-r">Elapsed time:</text>
+  <text x="350" y="128" class="value">0:12 (448.0KB/s)</text>
+
+  <!-- Progress bar -->
+  <rect x="16" y="145" width="300" height="16" class="progress-bg"/>
+  <rect x="16" y="145" width="225" height="16" class="progress-fill"/>
+  <text x="355" y="157" class="pct">75%</text>
+
+  <!-- Cancel button -->
+  <rect x="150" y="178" width="80" height="24" class="btn"/>
+  <text x="190" y="194" class="btn-label">Cancel</text>
+
+  <text x="370" y="226" class="size-label" text-anchor="end">380 x 230</text>
+</svg>

@@ -286,3 +286,31 @@
 "macroStatus.pause" = "一時停止";
 "macroStatus.resume" = "再開";
 "macroStatus.stop" = "中断";
+
+/* File Transfer Dialogs */
+"dialog.xopt.checksum" = "チェックサム";
+"dialog.xopt.crc" = "CRC";
+"dialog.xopt.1k" = "1K";
+"dialog.xopt.binary" = "バイナリ";
+"dialog.xopt.option" = "オプション";
+"dialog.fopt.binary" = "バイナリ";
+"dialog.fopt.option" = "オプション";
+"dialog.xmodem.sendTitle" = "Tera Term: XMODEM 送信";
+"dialog.xmodem.receiveTitle" = "Tera Term: XMODEM 受信";
+"dialog.multi.sendTitle" = "Tera Term: %@ 送信";
+"dialog.multi.receiveTitle" = "Tera Term: %@ 受信";
+"dialog.kermitGet.filename" = "ファイル名:";
+"dialog.prot.filename" = "ファイル名:";
+"dialog.prot.protocol" = "プロトコル:";
+"dialog.prot.packet" = "パケット番号:";
+"dialog.prot.bytesTransferred" = "転送バイト数:";
+"dialog.prot.elapsed" = "経過時間:";
+"dialog.prot.cancel" = "キャンセル";
+"dialog.ftrans.filename" = "ファイル名:";
+"dialog.ftrans.fullpath" = "フルパス:";
+"dialog.ftrans.bytesTransferred" = "転送バイト数:";
+"dialog.ftrans.elapsed" = "経過時間:";
+"dialog.ftrans.close" = "閉じる";
+"dialog.ftrans.pause" = "一時停止";
+"dialog.ftrans.resume" = "再開";
+"dialog.ftrans.help" = "ヘルプ";

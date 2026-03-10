@@ -286,3 +286,31 @@
 "macroStatus.pause" = "Pause";
 "macroStatus.resume" = "Resume";
 "macroStatus.stop" = "Stop";
+
+/* File Transfer Dialogs */
+"dialog.xopt.checksum" = "Checksum";
+"dialog.xopt.crc" = "CRC";
+"dialog.xopt.1k" = "1K";
+"dialog.xopt.binary" = "Binary";
+"dialog.xopt.option" = "Option";
+"dialog.fopt.binary" = "Binary";
+"dialog.fopt.option" = "Option";
+"dialog.xmodem.sendTitle" = "Tera Term: XMODEM Send";
+"dialog.xmodem.receiveTitle" = "Tera Term: XMODEM Receive";
+"dialog.multi.sendTitle" = "Tera Term: %@ Send";
+"dialog.multi.receiveTitle" = "Tera Term: %@ Receive";
+"dialog.kermitGet.filename" = "Filename:";
+"dialog.prot.filename" = "Filename:";
+"dialog.prot.protocol" = "Protocol:";
+"dialog.prot.packet" = "Packet#:";
+"dialog.prot.bytesTransferred" = "Bytes transferred:";
+"dialog.prot.elapsed" = "Elapsed time:";
+"dialog.prot.cancel" = "Cancel";
+"dialog.ftrans.filename" = "Filename:";
+"dialog.ftrans.fullpath" = "Fullpath:";
+"dialog.ftrans.bytesTransferred" = "Bytes transferred:";
+"dialog.ftrans.elapsed" = "Elapsed time:";
+"dialog.ftrans.close" = "Close";
+"dialog.ftrans.pause" = "Pause";
+"dialog.ftrans.resume" = "Resume";
+"dialog.ftrans.help" = "Help";

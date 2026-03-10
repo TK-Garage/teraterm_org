@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="420" height="240" viewBox="0 0 420 240">
+  <defs>
+    <style>
+      .bg { fill: #ECECEC; }
+      .border { fill: none; stroke: red; stroke-width: 2; }
+      .label { font-family: -apple-system, sans-serif; font-size: 13px; fill: #333; }
+      .label-r { font-family: -apple-system, sans-serif; font-size: 13px; fill: #333; text-anchor: end; }
+      .title { font-family: -apple-system, sans-serif; font-size: 13px; fill: #333; font-weight: 600; }
+      .value { font-family: -apple-system, sans-serif; font-size: 13px; fill: #333; text-anchor: end; }
+      .progress-bg { fill: #E0E0E0; rx: 3; }
+      .progress-fill { fill: #007AFF; rx: 3; }
+      .btn { fill: #F0F0F0; stroke: #B0B0B0; stroke-width: 1; rx: 5; }
+      .btn-label { font-family: -apple-system, sans-serif; font-size: 13px; fill: #333; text-anchor: middle; }
+      .sep { stroke: #C0C0C0; stroke-width: 1; }
+      .size-label { font-family: monospace; font-size: 10px; fill: red; }
+    </style>
+  </defs>
+  <rect width="420" height="240" class="bg"/>
+  <rect x="1" y="1" width="418" height="238" class="border"/>
+
+  <!-- Title bar -->
+  <rect x="0" y="0" width="420" height="22" fill="#E8E8E8" stroke="#C0C0C0" stroke-width="1"/>
+  <text x="210" y="15" class="title" text-anchor="middle">Tera Term: File Transfer</text>
+  <circle cx="14" cy="11" r="5" fill="#FF5F57"/>
+  <circle cx="30" cy="11" r="5" fill="#FEBC2E"/>
+  <circle cx="46" cy="11" r="5" fill="#28C840"/>
+
+  <!-- Grid rows -->
+  <text x="140" y="50" class="label-r">Filename:</text>
+  <text x="150" y="50" class="label">test_data.bin</text>
+
+  <text x="140" y="72" class="label-r">Fullpath:</text>
+  <text x="150" y="72" class="label">/Users/user/test_data.bin</text>
+
+  <text x="140" y="94" class="label-r">Bytes transferred:</text>
+  <text x="390" y="94" class="value">12345 (50.0%)</text>
+
+  <text x="140" y="116" class="label-r">Elapsed time:</text>
+  <text x="390" y="116" class="value">0:05 (2.41KB/s)</text>
+
+  <!-- Progress bar -->
+  <rect x="16" y="132" width="388" height="16" class="progress-bg"/>
+  <rect x="16" y="132" width="194" height="16" class="progress-fill"/>
+
+  <!-- Separator -->
+  <line x1="0" y1="166" x2="420" y2="166" class="sep"/>
+
+  <!-- Buttons: [Close] [Pause] [Help] -->
+  <rect x="16" y="180" width="110" height="26" class="btn"/>
+  <text x="71" y="197" class="btn-label">Close</text>
+
+  <rect x="146" y="180" width="110" height="26" class="btn"/>
+  <text x="201" y="197" class="btn-label">Pause</text>
+
+  <rect x="276" y="180" width="110" height="26" class="btn"/>
+  <text x="331" y="197" class="btn-label">Help</text>
+
+  <text x="410" y="236" class="size-label" text-anchor="end">420 x 240</text>
+</svg>

@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="380" height="130" viewBox="0 0 380 130">
+  <defs>
+    <style>
+      .bg { fill: #ECECEC; }
+      .border { fill: none; stroke: red; stroke-width: 2; }
+      .label { font-family: -apple-system, sans-serif; font-size: 13px; fill: #333; }
+      .label-r { font-family: -apple-system, sans-serif; font-size: 13px; fill: #333; text-anchor: end; }
+      .title { font-family: -apple-system, sans-serif; font-size: 13px; fill: #333; font-weight: 600; }
+      .field { fill: #FFF; stroke: #B0B0B0; stroke-width: 1; rx: 3; }
+      .btn { fill: #F0F0F0; stroke: #B0B0B0; stroke-width: 1; rx: 5; }
+      .btn-primary { fill: #007AFF; stroke: #006AE0; stroke-width: 1; rx: 5; }
+      .btn-label { font-family: -apple-system, sans-serif; font-size: 13px; fill: #333; text-anchor: middle; }
+      .btn-label-w { font-family: -apple-system, sans-serif; font-size: 13px; fill: #FFF; text-anchor: middle; }
+      .sep { stroke: #C0C0C0; stroke-width: 1; }
+      .size-label { font-family: monospace; font-size: 10px; fill: red; }
+    </style>
+  </defs>
+  <rect width="380" height="130" class="bg"/>
+  <rect x="1" y="1" width="378" height="128" class="border"/>
+
+  <!-- Title bar -->
+  <rect x="0" y="0" width="380" height="22" fill="#E8E8E8" stroke="#C0C0C0" stroke-width="1"/>
+  <text x="190" y="15" class="title" text-anchor="middle">Tera Term: Kermit Get</text>
+  <circle cx="14" cy="11" r="5" fill="#FF5F57"/>
+  <circle cx="30" cy="11" r="5" fill="#FEBC2E"/>
+  <circle cx="46" cy="11" r="5" fill="#28C840"/>
+
+  <!-- Filename row -->
+  <text x="85" y="55" class="label-r">Filename:</text>
+  <rect x="95" y="40" width="260" height="22" class="field"/>
+  <text x="103" y="55" class="label" fill="#999">remote_file.txt</text>
+
+  <!-- Separator -->
+  <line x1="0" y1="78" x2="380" y2="78" class="sep"/>
+
+  <!-- Buttons -->
+  <rect x="20" y="92" width="80" height="24" class="btn-primary"/>
+  <text x="60" y="108" class="btn-label-w">OK</text>
+
+  <rect x="110" y="92" width="80" height="24" class="btn"/>
+  <text x="150" y="108" class="btn-label">Cancel</text>
+
+  <rect x="270" y="92" width="80" height="24" class="btn"/>
+  <text x="310" y="108" class="btn-label">Help</text>
+
+  <text x="370" y="126" class="size-label" text-anchor="end">380 x 130</text>
+</svg>

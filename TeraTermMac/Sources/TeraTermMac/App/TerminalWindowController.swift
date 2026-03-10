@@ -31,6 +31,8 @@ class TerminalWindowController: NSWindowController {
     private(set) var telnetProtocol: TelnetProtocol!
     private(set) var fileTransferManager: FileTransferManager!
     private(set) var logger: TerminalLogger!
+    private(set) var protocolTransferPanel = ProtocolTransferPanel()
+    private var packetCount: Int = 0
 
     // Settings
     var settings: TerminalSettings
@@ -213,24 +215,64 @@ class TerminalWindowController: NSWindowController {
     // MARK: - File Transfer Actions
 
     func sendFile(protocol type: TransferProtocolType) {
-        let panel = NSOpenPanel()
-        panel.canChooseFiles = true
-        panel.canChooseDirectories = false
-
-        panel.beginSheetModal(for: window!) { [weak self] response in
-            guard response == .OK, let url = panel.url else { return }
-            self?.fileTransferManager.delegate = self
-            self?.fileTransferManager.startTransfer(protocol: type, direction: .send, filePath: url.path)
+        guard let win = window else { return }
+        switch type {
+        case .xmodem, .xmodemCRC, .xmodem1K:
+            FileTransferDialogHelper.presentXMODEMSendPanel(on: win) { [weak self] url, proto in
+                self?.startTransfer(proto, direction: .send, url: url)
+            }
+        case .zmodem:
+            FileTransferDialogHelper.presentMultiSendPanel(on: win, protocolType: .zmodem) { [weak self] url, proto in
+                self?.startTransfer(proto, direction: .send, url: url)
+            }
+        case .kermit:
+            FileTransferDialogHelper.presentMultiSendPanel(on: win, protocolType: .kermit) { [weak self] url, proto in
+                self?.startTransfer(proto, direction: .send, url: url)
+            }
+        default:
+            break
         }
     }
 
     func receiveFile(protocol type: TransferProtocolType) {
-        let panel = NSSavePanel()
-        panel.beginSheetModal(for: window!) { [weak self] response in
-            guard response == .OK, let url = panel.url else { return }
-            self?.fileTransferManager.delegate = self
-            self?.fileTransferManager.startTransfer(protocol: type, direction: .receive, filePath: url.path)
+        guard let win = window else { return }
+        switch type {
+        case .xmodem, .xmodemCRC, .xmodem1K:
+            FileTransferDialogHelper.presentXMODEMReceivePanel(on: win) { [weak self] url, proto in
+                self?.startTransfer(proto, direction: .receive, url: url)
+            }
+        case .zmodem:
+            FileTransferDialogHelper.presentMultiReceivePanel(on: win, protocolType: .zmodem) { [weak self] url, proto in
+                self?.startTransfer(proto, direction: .receive, url: url)
+            }
+        case .kermit:
+            FileTransferDialogHelper.presentMultiReceivePanel(on: win, protocolType: .kermit) { [weak self] url, proto in
+                self?.startTransfer(proto, direction: .receive, url: url)
+            }
+        default:
+            break
         }
+    }
+
+    private func startTransfer(_ type: TransferProtocolType, direction: TransferDirection, url: URL) {
+        fileTransferManager.delegate = self
+        fileTransferManager.startTransfer(protocol: type, direction: direction, filePath: url.path)
+
+        // Show protocol progress panel
+        let protoName: String
+        switch type {
+        case .xmodem:    protoName = "XMODEM"
+        case .xmodemCRC: protoName = "XMODEM-CRC"
+        case .xmodem1K:  protoName = "XMODEM-1K"
+        case .zmodem:    protoName = "ZMODEM"
+        case .kermit:    protoName = "Kermit"
+        default:         protoName = "Transfer"
+        }
+        let fileName = url.lastPathComponent
+        protocolTransferPanel.onCancel = { [weak self] in
+            self?.fileTransferManager.cancelTransfer()
+        }
+        protocolTransferPanel.show(fileName: fileName, protocolName: protoName)
     }
 
     // MARK: - Terminal Actions
@@ -617,30 +659,43 @@ extension TerminalWindowController: TelnetProtocolDelegate {
 extension TerminalWindowController: FileTransferDelegate {
     func transferDidUpdateState(_ state: TransferState) {
         DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
             switch state {
+            case .starting:
+                self.packetCount = 0
             case .inProgress(let bytes, let total, let name):
+                self.packetCount += 1
+                self.protocolTransferPanel.update(
+                    packetNum: self.packetCount,
+                    bytesTransferred: bytes,
+                    totalBytes: total)
                 let progress = total.map { "\(bytes)/\($0)" } ?? "\(bytes) bytes"
-                self?.window?.title = "Transfer: \(name) - \(progress)"
+                self.window?.title = "Transfer: \(name) - \(progress)"
             case .completed(let name, let bytes):
-                self?.updateWindowTitle()
+                self.protocolTransferPanel.close()
+                self.updateWindowTitle()
                 let alert = NSAlert()
                 alert.messageText = L("transfer.complete.title")
                 alert.informativeText = String(format: L("transfer.complete.message"), name, bytes)
                 alert.alertStyle = .informational
                 alert.addButton(withTitle: L("transfer.ok"))
-                if let win = self?.window {
+                if let win = self.window {
                     alert.beginSheetModal(for: win)
                 }
             case .failed(let error):
-                self?.updateWindowTitle()
+                self.protocolTransferPanel.close()
+                self.updateWindowTitle()
                 let alert = NSAlert()
                 alert.messageText = L("transfer.failed.title")
                 alert.informativeText = error
                 alert.alertStyle = .warning
                 alert.addButton(withTitle: L("transfer.ok"))
-                if let win = self?.window {
+                if let win = self.window {
                     alert.beginSheetModal(for: win)
                 }
+            case .cancelled:
+                self.protocolTransferPanel.close()
+                self.updateWindowTitle()
             default:
                 break
             }
