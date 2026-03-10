@@ -82,7 +82,7 @@ final class SnapshotGenerator {
     // MARK: - Connection Dialog Accessory View
 
     private static func buildConnectionAccessoryView() -> NSView {
-        let settings = TerminalSettings()
+        let _ = TerminalSettings()
 
         let accessoryView = NSView()
         accessoryView.translatesAutoresizingMaskIntoConstraints = false
@@ -277,7 +277,7 @@ final class SnapshotGenerator {
     private static func buildTerminalSetupView() -> NSView {
         let settings = TerminalSettings()
         let vc = TerminalSetupViewController(settings: settings)
-        vc.loadViewIfNeeded()
+        _ = vc.view // force view load
         return vc.view
     }
 
