@@ -466,3 +466,59 @@
 
 /* Additional Settings - Debug */
 "dialog.debug.charInfoPopup" = "Show character info popup";
+
+/* Clipboard Confirmation Dialog (IDD_CLIPBOARD_DIALOG) */
+"dialog.clipboard.title" = "Clipboard";
+
+/* File Drag and Drop Dialog (IDD_DAD_DIALOG) */
+"dialog.dragDrop.title" = "Drag and Drop";
+"dialog.dragDrop.filePath" = "File path:";
+"dialog.dragDrop.scp" = "SCP";
+"dialog.dragDrop.sendFile" = "Send file";
+"dialog.dragDrop.pastePath" = "Paste path";
+"dialog.dragDrop.binary" = "Binary";
+"dialog.dragDrop.escape" = "Escape spaces";
+
+/* Change Directory Dialog (IDD_DIRDLG) */
+"dialog.changeDir.title" = "Tera Term: Change directory";
+"dialog.changeDir.current" = "Current dir: %@";
+"dialog.changeDir.placeholder" = "New dir";
+
+/* Edit History Dialog (IDD_EDITHISTORYDLG) */
+"dialog.editHistory.title" = "Edit History";
+"dialog.editHistory.host" = "Host:";
+"dialog.editHistory.add" = "Add";
+"dialog.editHistory.remove" = "Remove";
+"dialog.editHistory.up" = "Up";
+"dialog.editHistory.down" = "Down";
+
+/* Macro Error Dialog (IDD_ERRDLG) */
+"dialog.macroError.title" = "Macro Error";
+"dialog.macroError.lineNumber" = "Line: %d";
+"dialog.macroError.stop" = "Stop";
+"dialog.macroError.continue" = "Continue";
+
+/* Log Dialog (IDD_LOGDLG) */
+"dialog.log.title" = "Log";
+"dialog.log.filename" = "Filename (drop file in this dialog):";
+"dialog.log.writeMode" = "Write mode";
+"dialog.log.new" = "New / Overwrite";
+"dialog.log.appendMode" = "Append";
+"dialog.log.format" = "Text or Binary mode";
+"dialog.log.formatText" = "Text";
+"dialog.log.formatBinary" = "Binary";
+"dialog.log.timestampOption" = "Timestamp";
+"dialog.log.plainTextOption" = "Plain text";
+
+/* TCP/IP Setup Dialog (IDD_TCPIPDLG) */
+"dialog.tcpip.title" = "TCP/IP setup";
+"dialog.tcpip.host" = "Host:";
+"dialog.tcpip.port" = "TCP Port#:";
+"dialog.tcpip.keepAlive" = "Telnet Keep alive";
+"dialog.tcpip.keepAliveInterval" = "Keep alive interval:";
+"dialog.tcpip.autoClose" = "Auto window close";
+
+/* Window List Dialog (IDD_WINLISTDLG) */
+"dialog.windowList.title" = "Tera Term: Window list";
+"dialog.windowList.open" = "Open";
+"dialog.windowList.closeWindow" = "Close window";

@@ -466,3 +466,59 @@
 
 /* Additional Settings - Debug */
 "dialog.debug.charInfoPopup" = "文字情報ポップアップを表示する";
+
+/* Clipboard Confirmation Dialog (IDD_CLIPBOARD_DIALOG) */
+"dialog.clipboard.title" = "クリップボード";
+
+/* File Drag and Drop Dialog (IDD_DAD_DIALOG) */
+"dialog.dragDrop.title" = "ドラッグ＆ドロップ";
+"dialog.dragDrop.filePath" = "ファイルパス:";
+"dialog.dragDrop.scp" = "SCP";
+"dialog.dragDrop.sendFile" = "ファイル送信";
+"dialog.dragDrop.pastePath" = "パスを貼り付け";
+"dialog.dragDrop.binary" = "バイナリ";
+"dialog.dragDrop.escape" = "スペースをエスケープ";
+
+/* Change Directory Dialog (IDD_DIRDLG) */
+"dialog.changeDir.title" = "Tera Term: ディレクトリ変更";
+"dialog.changeDir.current" = "現在のディレクトリ: %@";
+"dialog.changeDir.placeholder" = "新しいディレクトリ";
+
+/* Edit History Dialog (IDD_EDITHISTORYDLG) */
+"dialog.editHistory.title" = "履歴の編集";
+"dialog.editHistory.host" = "ホスト:";
+"dialog.editHistory.add" = "追加";
+"dialog.editHistory.remove" = "削除";
+"dialog.editHistory.up" = "上へ";
+"dialog.editHistory.down" = "下へ";
+
+/* Macro Error Dialog (IDD_ERRDLG) */
+"dialog.macroError.title" = "マクロエラー";
+"dialog.macroError.lineNumber" = "行: %d";
+"dialog.macroError.stop" = "中断";
+"dialog.macroError.continue" = "続行";
+
+/* Log Dialog (IDD_LOGDLG) */
+"dialog.log.title" = "ログ";
+"dialog.log.filename" = "ログファイル名 (このダイアログにファイルをドロップ):";
+"dialog.log.writeMode" = "書き込みモード";
+"dialog.log.new" = "新規/上書き";
+"dialog.log.appendMode" = "追記";
+"dialog.log.format" = "テキスト/バイナリモード";
+"dialog.log.formatText" = "テキスト";
+"dialog.log.formatBinary" = "バイナリ";
+"dialog.log.timestampOption" = "タイムスタンプ";
+"dialog.log.plainTextOption" = "プレーンテキスト";
+
+/* TCP/IP Setup Dialog (IDD_TCPIPDLG) */
+"dialog.tcpip.title" = "TCP/IP";
+"dialog.tcpip.host" = "ホスト:";
+"dialog.tcpip.port" = "ポート#:";
+"dialog.tcpip.keepAlive" = "Telnet Keep-alive";
+"dialog.tcpip.keepAliveInterval" = "Keep-alive間隔:";
+"dialog.tcpip.autoClose" = "自動的にウィンドウを閉じる";
+
+/* Window List Dialog (IDD_WINLISTDLG) */
+"dialog.windowList.title" = "Tera Term: ウィンドウのリスト";
+"dialog.windowList.open" = "開く";
+"dialog.windowList.closeWindow" = "閉じる";
