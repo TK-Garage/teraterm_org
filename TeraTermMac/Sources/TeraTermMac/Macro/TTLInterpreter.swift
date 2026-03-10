@@ -79,6 +79,11 @@ class TTLInterpreter {
     private var breakFlag: Int = 0
     private var continueFlag: Bool = false
 
+    // Stack limits (matching C version: MAXSP=10, MAXNESTLEVEL=10)
+    private let maxCallStackDepth = 10
+    private let maxLoopStackDepth = 10
+    private let maxFileNestLevel = 10
+
     // File handles (up to 16 simultaneous files)
     private let maxFileHandles = 16
     private var fileHandles: [FileHandle?]
@@ -875,6 +880,7 @@ class TTLInterpreter {
         }
 
         guard labelId >= 0 else { throw TTLError.labelReq }
+        guard parser.callStack.count < maxCallStackDepth else { throw TTLError.stackOver }
 
         // Push return address
         let frame = TTLCallFrame(
@@ -913,6 +919,7 @@ class TTLInterpreter {
         }
 
         // Push current file state
+        guard parser.fileStack.count < maxFileNestLevel else { throw TTLError.stackOver }
         parser.fileStack.append((lines: parser.lines, lineIndex: parser.currentLine))
         parser.lines = source.components(separatedBy: .newlines)
         parser.currentLine = 0
@@ -959,6 +966,7 @@ class TTLInterpreter {
             }
         } else {
             // First entry
+            guard parser.loopStack.count < maxLoopStackDepth else { throw TTLError.stackOver }
             parser.setIntVal(id: varId, value: start)
             let frame = TTLLoopFrame(
                 type: .for_,
@@ -1028,6 +1036,7 @@ class TTLInterpreter {
         } else {
             // 初回: 条件が真ならフレームをプッシュ、偽ならスキップ
             if conditionMet {
+                guard parser.loopStack.count < maxLoopStackDepth else { throw TTLError.stackOver }
                 let frame = TTLLoopFrame(
                     type: loopType,
                     lineIndex: parser.currentLine - 1,
@@ -1051,6 +1060,7 @@ class TTLInterpreter {
     }
 
     private func ttlDo() throws {
+        guard parser.loopStack.count < maxLoopStackDepth else { throw TTLError.stackOver }
         let frame = TTLLoopFrame(
             type: .do_,
             lineIndex: parser.currentLine - 1,
