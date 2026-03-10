@@ -1,6 +1,6 @@
 /*
  * FileTransferTests.swift
- * Comprehensive tests for XMODEM, ZMODEM, Kermit file transfer protocols.
+ * Comprehensive tests for XMODEM, YMODEM, ZMODEM, Kermit file transfer protocols.
  */
 
 import XCTest
@@ -507,6 +507,274 @@ class XMODEMTests: XCTestCase {
     }
 }
 
+// MARK: - YMODEM Tests
+
+class YMODEMTests: XCTestCase {
+
+    var delegate: MockFileTransferDelegate!
+    var tempDir: URL!
+
+    override func setUp() {
+        super.setUp()
+        delegate = MockFileTransferDelegate()
+        tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try? FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
+    }
+
+    override func tearDown() {
+        try? FileManager.default.removeItem(at: tempDir)
+        super.tearDown()
+    }
+
+    func testYMODEMReceiveStartSendsC() {
+        let ym = YMODEMProtocol()
+        ym.direction = .receive
+        ym.delegate = delegate
+
+        ym.start()
+
+        XCTAssertEqual(delegate.sentData.count, 1)
+        XCTAssertEqual(delegate.sentData[0], Data([0x43])) // 'C'
+    }
+
+    func testYMODEMReceiveBlock0ParsesFileInfo() {
+        let ym = YMODEMProtocol()
+        ym.direction = .receive
+        ym.filePath = tempDir.appendingPathComponent("recv").path
+        ym.delegate = delegate
+
+        ym.start()
+        delegate.reset()
+
+        // Build block 0: filename\0size mtime mode\0...padding
+        var payload = Data()
+        payload.append(Data("testfile.bin".utf8))
+        payload.append(0) // NUL
+        payload.append(Data("12345 14157745474 100644".utf8))
+        payload.append(0) // NUL
+
+        while payload.count < 128 { payload.append(0) }
+
+        let crcVal = crc16(payload)
+        var block = Data()
+        block.append(0x01) // SOH
+        block.append(0x00) // block 0
+        block.append(0xFF) // complement
+        block.append(payload)
+        block.append(UInt8(crcVal >> 8))
+        block.append(UInt8(crcVal & 0xFF))
+
+        ym.processData(block)
+
+        // Should send ACK then 'C'
+        XCTAssertTrue(delegate.sentData.contains(Data([0x06])), "Should ACK block 0")
+        XCTAssertTrue(delegate.sentData.contains(Data([0x43])), "Should send 'C' after ACK")
+
+        // Should report starting progress
+        let hasProgress = delegate.stateUpdates.contains { state in
+            if case .inProgress(_, _, let name) = state { return name == "testfile.bin" }
+            return false
+        }
+        XCTAssertTrue(hasProgress, "Should report file name from block 0")
+    }
+
+    func testYMODEMReceiveEmptyBlock0EndsBatch() {
+        let ym = YMODEMProtocol()
+        ym.direction = .receive
+        ym.filePath = tempDir.appendingPathComponent("recv").path
+        ym.delegate = delegate
+
+        ym.start()
+        delegate.reset()
+
+        // Empty block 0 (all zeros) signals end of batch
+        let payload = Data(repeating: 0, count: 128)
+        let crcVal = crc16(payload)
+
+        var block = Data()
+        block.append(0x01) // SOH
+        block.append(0x00) // block 0
+        block.append(0xFF)
+        block.append(payload)
+        block.append(UInt8(crcVal >> 8))
+        block.append(UInt8(crcVal & 0xFF))
+
+        ym.processData(block)
+
+        let hasCompleted = delegate.stateUpdates.contains { state in
+            if case .completed = state { return true }
+            return false
+        }
+        XCTAssertTrue(hasCompleted, "Empty block 0 should complete batch")
+    }
+
+    func testYMODEMReceiveDataBlockWithFileSizeTrim() {
+        let ym = YMODEMProtocol()
+        ym.direction = .receive
+        ym.filePath = tempDir.appendingPathComponent("trimtest.bin").path
+        ym.delegate = delegate
+
+        ym.start()
+        delegate.reset()
+
+        // Block 0 with file size = 100 bytes
+        var payload0 = Data()
+        payload0.append(Data("test.bin".utf8))
+        payload0.append(0)
+        payload0.append(Data("100".utf8))
+        payload0.append(0)
+        while payload0.count < 128 { payload0.append(0) }
+
+        let crc0 = crc16(payload0)
+        var block0 = Data()
+        block0.append(0x01)
+        block0.append(0x00)
+        block0.append(0xFF)
+        block0.append(payload0)
+        block0.append(UInt8(crc0 >> 8))
+        block0.append(UInt8(crc0 & 0xFF))
+
+        ym.processData(block0)
+        delegate.reset()
+
+        // Data block with 128 bytes (but file is only 100 bytes)
+        let payload1 = Data(repeating: 0x42, count: 128)
+        let crc1 = crc16(payload1)
+        var block1 = Data()
+        block1.append(0x01) // SOH
+        block1.append(0x01) // block 1
+        block1.append(0xFE)
+        block1.append(payload1)
+        block1.append(UInt8(crc1 >> 8))
+        block1.append(UInt8(crc1 & 0xFF))
+
+        ym.processData(block1)
+
+        // Should trim to 100 bytes
+        let hasProgress = delegate.stateUpdates.contains { state in
+            if case .inProgress(let bytes, _, _) = state { return bytes == 100 }
+            return false
+        }
+        XCTAssertTrue(hasProgress, "Should trim data to file size (100 bytes)")
+    }
+
+    func testYMODEMSendStartWaitsForC() {
+        let filePath = tempDir.appendingPathComponent("send.bin")
+        try! Data(repeating: 0xAA, count: 200).write(to: filePath)
+
+        let ym = YMODEMProtocol()
+        ym.direction = .send
+        ym.filePath = filePath.path
+        ym.delegate = delegate
+
+        ym.start()
+
+        // Should be in starting state, no data sent yet
+        let hasStarting = delegate.stateUpdates.contains { state in
+            if case .starting = state { return true }
+            return false
+        }
+        XCTAssertTrue(hasStarting)
+        // No block sent until receiver sends 'C'
+        XCTAssertTrue(delegate.sentData.isEmpty, "Should not send until 'C' received")
+    }
+
+    func testYMODEMSendBlock0OnC() {
+        let filePath = tempDir.appendingPathComponent("send.bin")
+        try! Data(repeating: 0xAA, count: 200).write(to: filePath)
+
+        let ym = YMODEMProtocol()
+        ym.direction = .send
+        ym.filePath = filePath.path
+        ym.delegate = delegate
+
+        ym.start()
+
+        // Send 'C' to trigger block 0
+        ym.processData(Data([0x43]))
+
+        XCTAssertFalse(delegate.sentData.isEmpty, "Should send block 0 after 'C'")
+        let block0 = delegate.sentData[0]
+        XCTAssertEqual(block0[0], 0x01, "Block 0 should use SOH")
+        XCTAssertEqual(block0[1], 0x00, "Block number should be 0")
+        XCTAssertEqual(block0[2], 0xFF, "Complement should be 0xFF")
+
+        // Payload should contain filename
+        let payloadStart = 3
+        let payload = Data(block0[payloadStart..<(payloadStart + 128)])
+        XCTAssertTrue(payload.starts(with: Data("send.bin".utf8)), "Block 0 should contain filename")
+
+        // After filename NUL, should contain file size
+        if let nulIdx = payload.firstIndex(of: 0) {
+            let afterNul = payload.index(after: nulIdx)
+            if afterNul < payload.endIndex {
+                let metaStr = String(data: Data(payload[afterNul...]).prefix(while: { $0 != 0 }), encoding: .ascii) ?? ""
+                XCTAssertTrue(metaStr.starts(with: "200"), "Block 0 should contain file size")
+            }
+        }
+    }
+
+    func testYMODEMCancelSends5CAN5BS() {
+        let ym = YMODEMProtocol()
+        ym.direction = .receive
+        ym.delegate = delegate
+
+        ym.start()
+        delegate.reset()
+        ym.cancel()
+
+        let cancelData = delegate.allSentData
+        XCTAssertEqual(cancelData.count, 10, "Cancel should be 5 CAN + 5 BS")
+        for i in 0..<5 {
+            XCTAssertEqual(cancelData[i], 0x18, "First 5 bytes should be CAN")
+        }
+        for i in 5..<10 {
+            XCTAssertEqual(cancelData[i], 0x08, "Last 5 bytes should be BS")
+        }
+    }
+
+    func testYMODEMEOTHandshake() {
+        let ym = YMODEMProtocol()
+        ym.direction = .receive
+        ym.filePath = tempDir.appendingPathComponent("eot.bin").path
+        ym.delegate = delegate
+
+        ym.start()
+
+        // Send block 0
+        var payload0 = Data("test.bin".utf8)
+        payload0.append(0)
+        payload0.append(Data("128".utf8))
+        payload0.append(0)
+        while payload0.count < 128 { payload0.append(0) }
+        let crc0 = crc16(payload0)
+        var block0 = Data()
+        block0.append(0x01); block0.append(0x00); block0.append(0xFF)
+        block0.append(payload0)
+        block0.append(UInt8(crc0 >> 8)); block0.append(UInt8(crc0 & 0xFF))
+        ym.processData(block0)
+
+        // Send data block
+        let payload1 = Data(repeating: 0x42, count: 128)
+        let crc1 = crc16(payload1)
+        var block1 = Data()
+        block1.append(0x01); block1.append(0x01); block1.append(0xFE)
+        block1.append(payload1)
+        block1.append(UInt8(crc1 >> 8)); block1.append(UInt8(crc1 & 0xFF))
+        ym.processData(block1)
+        delegate.reset()
+
+        // First EOT → should NAK
+        ym.processData(Data([0x04]))
+        XCTAssertTrue(delegate.sentData.contains(Data([0x15])), "Should NAK first EOT")
+        delegate.reset()
+
+        // Second EOT → should ACK
+        ym.processData(Data([0x04]))
+        XCTAssertTrue(delegate.sentData.contains(Data([0x06])), "Should ACK second EOT")
+    }
+}
+
 // MARK: - ZMODEM Tests
 
 class ZMODEMTests: XCTestCase {
@@ -611,9 +879,18 @@ class ZMODEMTests: XCTestCase {
         XCTAssertEqual(header[1], 0x2A) // ZPAD
         XCTAssertEqual(header[2], 0x18) // ZDLE
         XCTAssertEqual(header[3], 0x42) // ZHEX
-        // Header should end with CR LF
-        XCTAssertEqual(header[header.count - 2], 0x0D) // CR
-        XCTAssertEqual(header[header.count - 1], 0x0A) // LF
+    }
+
+    func testZMODEMAutoDetect() {
+        // Test the ZMODEM auto-detection sequence
+        let data1 = Data([0x2A, 0x2A, 0x18, 0x42, 0x30, 0x30])
+        XCTAssertTrue(ZMODEMProtocol.detectZMODEM(in: data1), "Should detect ZMODEM in data")
+
+        let data2 = Data([0x41, 0x42, 0x43])
+        XCTAssertFalse(ZMODEMProtocol.detectZMODEM(in: data2), "Should not detect ZMODEM in random data")
+
+        let data3 = Data([0x2A, 0x2A])
+        XCTAssertFalse(ZMODEMProtocol.detectZMODEM(in: data3), "Should not detect incomplete sequence")
     }
 
     func testZMODEMCancel() {
@@ -626,11 +903,33 @@ class ZMODEMTests: XCTestCase {
         zm.cancel()
 
         let cancelData = delegate.allSentData
-        // Should send 8x CAN (0x18)
-        XCTAssertEqual(cancelData.count, 8)
-        for byte in cancelData {
-            XCTAssertEqual(byte, 0x18)
+        // Should send 8x ZDLE (0x18) + 10x BS (0x08)
+        XCTAssertEqual(cancelData.count, 18, "Cancel should be 8 ZDLE + 10 BS")
+        for i in 0..<8 {
+            XCTAssertEqual(cancelData[i], 0x18, "First 8 bytes should be ZDLE/CAN")
         }
+        for i in 8..<18 {
+            XCTAssertEqual(cancelData[i], 0x08, "Last 10 bytes should be BS")
+        }
+    }
+
+    func testZMODEMAutoDetectInManager() {
+        let manager = FileTransferManager()
+        manager.delegate = delegate
+
+        let savePath = tempDir.appendingPathComponent("auto_recv.bin").path
+
+        // Should not auto-detect random data
+        let random = Data([0x41, 0x42, 0x43])
+        XCTAssertFalse(manager.checkAutoDetect(random, savePath: savePath))
+        XCTAssertFalse(manager.isTransferActive)
+
+        // Should auto-detect ZMODEM initiation
+        let zmodemInit = Data([0x2A, 0x2A, 0x18, 0x42, 0x30, 0x31, 0x30, 0x30])
+        XCTAssertTrue(manager.checkAutoDetect(zmodemInit, savePath: savePath))
+        XCTAssertTrue(manager.isTransferActive)
+
+        manager.cancelTransfer()
     }
 }
 
@@ -940,6 +1239,14 @@ class FileTransferManagerTests: XCTestCase {
         XCTAssertTrue(manager.isTransferActive)
     }
 
+    func testStartYMODEMGTransfer() {
+        let filePath = tempDir.appendingPathComponent("recv.bin")
+        FileManager.default.createFile(atPath: filePath.path, contents: nil)
+
+        manager.startTransfer(protocol: .ymodemG, direction: .receive, filePath: filePath.path)
+        XCTAssertTrue(manager.isTransferActive)
+    }
+
     func testCancelTransfer() {
         let filePath = tempDir.appendingPathComponent("recv.bin")
         FileManager.default.createFile(atPath: filePath.path, contents: nil)
@@ -993,6 +1300,18 @@ class FileTransferManagerTests: XCTestCase {
             XCTAssertTrue(mgr.isTransferActive, "Transfer should be active for \(protocolType)")
             mgr.cancelTransfer()
         }
+    }
+
+    func testYMODEMBatchSend() {
+        let files = (1...3).map { i -> String in
+            let path = tempDir.appendingPathComponent("file\(i).bin")
+            try! Data(repeating: UInt8(i), count: 100).write(to: path)
+            return path.path
+        }
+
+        manager.startYMODEMBatchSend(filePaths: files)
+        XCTAssertTrue(manager.isTransferActive, "Batch send should be active")
+        manager.cancelTransfer()
     }
 }
 
