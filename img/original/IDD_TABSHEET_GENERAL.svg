@@ -1,86 +1,79 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="540" height="420" font-family="Tahoma, MS Shell Dlg, sans-serif" font-size="11">
+<svg xmlns="http://www.w3.org/2000/svg" width="500" height="440" font-family="MS UI Gothic, Meiryo, sans-serif" font-size="11">
   <defs>
     <style>
-      .tab-bar { fill: #f0f0f0; stroke: #999; }
-      .tab-active { fill: #f0f0f0; stroke: #999; stroke-width: 1; }
-      .tab-inactive { fill: #e0e0e0; stroke: #999; stroke-width: 1; }
-      .tab-text { fill: #000; font-size: 10px; text-anchor: middle; }
+      .title-bar { fill: #0078d4; }
+      .title-text { fill: white; font-size: 11px; font-weight: bold; }
       .dialog-bg { fill: #f0f0f0; stroke: #999; stroke-width: 1; }
+      .group-box { fill: none; stroke: #999; stroke-width: 1; }
       .label { fill: #000; font-size: 11px; }
       .edit-box { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
       .combo-box { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
       .button { fill: #e1e1e1; stroke: #adadad; stroke-width: 1; }
+      .button-default { fill: #0078d4; stroke: #005a9e; stroke-width: 1; }
       .button-text { fill: #000; font-size: 11px; text-anchor: middle; }
+      .button-text-default { fill: #fff; font-size: 11px; text-anchor: middle; }
       .checkbox { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .radio { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
       .combo-arrow { fill: #606060; }
-      .group-box { fill: none; stroke: #999; stroke-width: 1; }
+      .text-area { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .scrollbar { fill: #c0c0c0; stroke: #999; stroke-width: 1; }
+      .sample-box { fill: #000; stroke: #333; stroke-width: 2; }
+      .link { fill: #0066cc; font-size: 11px; text-decoration: underline; }
+      .tab-active { fill: #f0f0f0; stroke: #999; stroke-width: 1; }
+      .tab-inactive { fill: #d0d0d0; stroke: #999; stroke-width: 1; }
+      .tab-text { fill: #000; font-size: 10px; text-anchor: middle; }
+      .listbox { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .progress-bar { fill: #0078d4; }
+      .progress-bg { fill: #e0e0e0; stroke: #999; stroke-width: 1; }
     </style>
   </defs>
-  <!-- Tab bar -->
-  <rect class="tab-active" x="0" y="0" width="60" height="24" rx="3"/>
-  <text class="tab-text" x="30" y="16" font-weight="bold">General</text>
-  <rect class="tab-inactive" x="62" y="0" width="70" height="24" rx="3"/>
-  <text class="tab-text" x="97" y="16">Sequence</text>
-  <rect class="tab-inactive" x="134" y="0" width="80" height="24" rx="3"/>
-  <text class="tab-text" x="174" y="16">Copy/Paste</text>
-  <rect class="tab-inactive" x="216" y="0" width="55" height="24" rx="3"/>
-  <text class="tab-text" x="243" y="16">Visual</text>
-  <rect class="tab-inactive" x="273" y="0" width="40" height="24" rx="3"/>
-  <text class="tab-text" x="293" y="16">Log</text>
-  <rect class="tab-inactive" x="315" y="0" width="55" height="24" rx="3"/>
-  <text class="tab-text" x="342" y="16">Coding</text>
-  <rect class="tab-inactive" x="372" y="0" width="40" height="24" rx="3"/>
-  <text class="tab-text" x="392" y="16">Font</text>
-  <!-- Content area -->
-  <rect class="dialog-bg" x="0" y="22" width="540" height="398"/>
-  <!-- Controls -->
+  <!-- Title bar -->
+  <rect class="title-bar" x="0" y="0" width="500" height="22" rx="4"/>
+  <text class="title-text" x="8" y="15">Tera Term: その他の設定 - 全般</text>
+  <rect class="dialog-bg" x="0" y="22" width="500" height="418"/>
   <rect class="checkbox" x="16" y="36" width="13" height="13"/>
-  <text class="label" x="34" y="47">Disable SendBreak</text>
+  <text class="label" x="34" y="47">クリッカブルURLを有効にする</text>
   <rect class="checkbox" x="16" y="56" width="13" height="13"/>
-  <text class="label" x="34" y="67">Accept broadcast</text>
+  <text class="label" x="34" y="67">ブレーク送信のアクセラレータキーを無効にする</text>
   <rect class="checkbox" x="16" y="76" width="13" height="13"/>
-  <text class="label" x="34" y="87">Auto scroll only in bottom line</text>
-  <rect class="checkbox" x="16" y="96" width="13" height="13"/>
-  <text class="label" x="34" y="107">Clear on resize</text>
+  <text class="label" x="34" y="87">ブロードキャストを受け入れる</text>
+  <text class="label" x="16" y="100">ホイールのスクロール行数:</text>
+  <rect class="edit-box" x="200" y="88" width="40" height="20"/>
+  <text class="label" x="206" y="102">3</text>
   <rect class="checkbox" x="16" y="116" width="13" height="13"/>
-  <text class="label" x="34" y="127">Cursor change IME</text>
-  <!-- Default port -->
-  <text class="label" x="16" y="154">Default port:</text>
-  <rect class="combo-box" x="100" y="142" width="120" height="20"/>
-  <rect fill="#e1e1e1" x="200" y="142" width="20" height="20" stroke="#7a7a7a" stroke-width="1"/>
-  <polygon class="combo-arrow" points="205,150 215,150 210,157"/>
-  <!-- Title format group -->
-  <rect class="group-box" x="16" y="170" width="508" height="80"/>
-  <text class="label" x="24" y="170" font-weight="bold">Title format</text>
-  <rect class="checkbox" x="30" y="186" width="13" height="13"/>
-  <text class="label" x="48" y="197">Title</text>
-  <rect class="checkbox" x="120" y="186" width="13" height="13"/>
-  <text class="label" x="138" y="197">Hostname</text>
-  <rect class="checkbox" x="230" y="186" width="13" height="13"/>
-  <text class="label" x="248" y="197">TCP port</text>
-  <rect class="checkbox" x="330" y="186" width="13" height="13"/>
-  <text class="label" x="348" y="197">Session</text>
-  <rect class="checkbox" x="30" y="210" width="13" height="13"/>
-  <text class="label" x="48" y="221">VT/TEK</text>
-  <rect class="checkbox" x="120" y="210" width="13" height="13"/>
-  <text class="label" x="138" y="221">Serial</text>
-  <!-- Notification -->
-  <rect class="checkbox" x="16" y="264" width="13" height="13"/>
-  <text class="label" x="34" y="275">Notification title</text>
-  <rect class="checkbox" x="200" y="264" width="13" height="13"/>
-  <text class="label" x="218" y="275">Notify sound</text>
-  <rect class="button" x="340" y="260" width="90" height="20" rx="2"/>
-  <text class="button-text" x="385" y="274">Test popup</text>
-  <rect class="button" x="440" y="260" width="80" height="20" rx="2"/>
-  <text class="button-text" x="480" y="274">Test tray</text>
-  <!-- File transfer folder -->
-  <text class="label" x="16" y="306">File transfer folder:</text>
-  <rect class="edit-box" x="140" y="294" width="340" height="20"/>
-  <rect class="button" x="486" y="294" width="34" height="20" rx="2"/>
-  <text class="button-text" x="503" y="308">...</text>
-  <!-- Standard buttons -->
-  <rect class="button" x="180" y="390" width="64" height="24" rx="3"/>
-  <text class="button-text" x="212" y="406">OK</text>
-  <rect class="button" x="256" y="390" width="80" height="24" rx="3"/>
-  <text class="button-text" x="296" y="406">Cancel</text>
+  <text class="label" x="34" y="127">最下行でだけ自動スクロールする</text>
+  <rect class="checkbox" x="16" y="136" width="13" height="13"/>
+  <text class="label" x="34" y="147">ウィンドウサイズ変更時に表示内容をクリアする</text>
+  <rect class="checkbox" x="16" y="156" width="13" height="13"/>
+  <text class="label" x="34" y="167">IMEの状態によってカーソル形状を変更する</text>
+  <rect class="checkbox" x="16" y="176" width="13" height="13"/>
+  <text class="label" x="34" y="187">OSで非表示のフォントもフォントダイアログの一覧に表示する</text>
+  <rect class="group-box" x="16" y="196" width="466" height="110"/>
+  <text class="label" x="24" y="196" font-weight="bold">タイトル形式</text>
+  <rect class="checkbox" x="30" y="214" width="13" height="13"/>
+  <text class="label" x="48" y="225">ホスト/ポート名を表示する</text>
+  <rect class="checkbox" x="30" y="234" width="13" height="13"/>
+  <text class="label" x="48" y="245">セッション番号を表示する</text>
+  <rect class="checkbox" x="30" y="254" width="13" height="13"/>
+  <text class="label" x="48" y="265">VT/TEK を表示する</text>
+  <rect class="checkbox" x="250" y="214" width="13" height="13"/>
+  <text class="label" x="268" y="225">タイトルとホスト名の場所を入れ換える</text>
+  <rect class="checkbox" x="250" y="234" width="13" height="13"/>
+  <text class="label" x="268" y="245">TCP ポート番号を表示する</text>
+  <rect class="checkbox" x="250" y="254" width="13" height="13"/>
+  <text class="label" x="268" y="265">シリアルポートのスピードを表示する</text>
+  <rect class="group-box" x="16" y="316" width="466" height="70"/>
+  <text class="label" x="24" y="316" font-weight="bold">通知</text>
+  <text class="label" x="30" y="336">通知音:</text>
+  <rect class="combo-box" x="100" y="324" width="120" height="20"/>
+  <rect fill="#e1e1e1" x="200" y="324" width="20" height="20" stroke="#7a7a7a" stroke-width="1"/>
+  <polygon class="combo-arrow" points="205,332 215,332 210,339"/>
+  <rect class="button" x="240" y="324" width="100" height="24" rx="3"/>
+  <text class="button-text" x="290" y="340">Notify テスト</text>
+  <rect class="button" x="350" y="324" width="100" height="24" rx="3"/>
+  <text class="button-text" x="400" y="340">Tray テスト</text>
+  <rect class="button-default" x="130" y="402" width="64" height="24" rx="3"/>
+  <text class="button-text-default" x="162" y="418">OK</text>
+  <rect class="button" x="206" y="402" width="80" height="24" rx="3"/>
+  <text class="button-text" x="246" y="418">キャンセル</text>
 </svg>

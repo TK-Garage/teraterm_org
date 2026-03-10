@@ -1,22 +1,38 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="160" height="108" font-family="Tahoma, MS Shell Dlg, sans-serif" font-size="11">
+<svg xmlns="http://www.w3.org/2000/svg" width="340" height="120" font-family="MS UI Gothic, Meiryo, sans-serif" font-size="11">
   <defs>
     <style>
       .title-bar { fill: #0078d4; }
       .title-text { fill: white; font-size: 11px; font-weight: bold; }
       .dialog-bg { fill: #f0f0f0; stroke: #999; stroke-width: 1; }
+      .group-box { fill: none; stroke: #999; stroke-width: 1; }
       .label { fill: #000; font-size: 11px; }
-      .button-default { fill: #0078d4; stroke: #005a9e; stroke-width: 1; }
+      .edit-box { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .combo-box { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
       .button { fill: #e1e1e1; stroke: #adadad; stroke-width: 1; }
-      .button-text-default { fill: #fff; font-size: 11px; text-anchor: middle; }
+      .button-default { fill: #0078d4; stroke: #005a9e; stroke-width: 1; }
       .button-text { fill: #000; font-size: 11px; text-anchor: middle; }
+      .button-text-default { fill: #fff; font-size: 11px; text-anchor: middle; }
+      .checkbox { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .radio { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .combo-arrow { fill: #606060; }
+      .text-area { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .scrollbar { fill: #c0c0c0; stroke: #999; stroke-width: 1; }
+      .sample-box { fill: #000; stroke: #333; stroke-width: 2; }
+      .link { fill: #0066cc; font-size: 11px; text-decoration: underline; }
+      .tab-active { fill: #f0f0f0; stroke: #999; stroke-width: 1; }
+      .tab-inactive { fill: #d0d0d0; stroke: #999; stroke-width: 1; }
+      .tab-text { fill: #000; font-size: 10px; text-anchor: middle; }
+      .listbox { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .progress-bar { fill: #0078d4; }
+      .progress-bg { fill: #e0e0e0; stroke: #999; stroke-width: 1; }
     </style>
   </defs>
-  <rect class="title-bar" x="0" y="0" width="160" height="22" rx="4"/>
-  <text class="title-text" x="8" y="15">Message</text>
-  <rect class="dialog-bg" x="0" y="22" width="160" height="86"/>
-  <text class="label" x="16" y="50">Message text</text>
-  <rect class="button-default" x="16" y="68" width="56" height="24" rx="3"/>
-  <text class="button-text-default" x="44" y="84">OK</text>
-  <rect class="button" x="84" y="68" width="56" height="24" rx="3"/>
-  <text class="button-text" x="112" y="84">No</text>
+  <!-- Title bar -->
+  <rect class="title-bar" x="0" y="0" width="340" height="22" rx="4"/>
+  <text class="title-text" x="8" y="15">MACRO: メッセージ</text>
+  <rect class="dialog-bg" x="0" y="22" width="340" height="98"/>
+  <rect class="edit-box" x="16" y="32" width="306" height="46"/>
+  <text class="label" x="24" y="50">メッセージ内容</text>
+  <rect class="button-default" x="130" y="90" width="80" height="24" rx="3"/>
+  <text class="button-text-default" x="170" y="106">OK</text>
 </svg>

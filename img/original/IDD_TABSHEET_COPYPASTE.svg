@@ -1,48 +1,66 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="540" height="400" font-family="Tahoma, MS Shell Dlg, sans-serif" font-size="11">
+<svg xmlns="http://www.w3.org/2000/svg" width="500" height="380" font-family="MS UI Gothic, Meiryo, sans-serif" font-size="11">
   <defs>
     <style>
+      .title-bar { fill: #0078d4; }
+      .title-text { fill: white; font-size: 11px; font-weight: bold; }
       .dialog-bg { fill: #f0f0f0; stroke: #999; stroke-width: 1; }
+      .group-box { fill: none; stroke: #999; stroke-width: 1; }
       .label { fill: #000; font-size: 11px; }
       .edit-box { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
-      .checkbox { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .combo-box { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
       .button { fill: #e1e1e1; stroke: #adadad; stroke-width: 1; }
+      .button-default { fill: #0078d4; stroke: #005a9e; stroke-width: 1; }
       .button-text { fill: #000; font-size: 11px; text-anchor: middle; }
+      .button-text-default { fill: #fff; font-size: 11px; text-anchor: middle; }
+      .checkbox { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .radio { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .combo-arrow { fill: #606060; }
+      .text-area { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .scrollbar { fill: #c0c0c0; stroke: #999; stroke-width: 1; }
+      .sample-box { fill: #000; stroke: #333; stroke-width: 2; }
+      .link { fill: #0066cc; font-size: 11px; text-decoration: underline; }
       .tab-active { fill: #f0f0f0; stroke: #999; stroke-width: 1; }
-      .tab-inactive { fill: #e0e0e0; stroke: #999; stroke-width: 1; }
+      .tab-inactive { fill: #d0d0d0; stroke: #999; stroke-width: 1; }
       .tab-text { fill: #000; font-size: 10px; text-anchor: middle; }
+      .listbox { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .progress-bar { fill: #0078d4; }
+      .progress-bg { fill: #e0e0e0; stroke: #999; stroke-width: 1; }
     </style>
   </defs>
-  <rect class="tab-inactive" x="0" y="0" width="60" height="24" rx="3"/>
-  <text class="tab-text" x="30" y="16">General</text>
-  <rect class="tab-inactive" x="62" y="0" width="70" height="24" rx="3"/>
-  <text class="tab-text" x="97" y="16">Sequence</text>
-  <rect class="tab-active" x="134" y="0" width="80" height="24" rx="3"/>
-  <text class="tab-text" x="174" y="16" font-weight="bold">Copy/Paste</text>
-  <rect class="dialog-bg" x="0" y="22" width="540" height="378"/>
+  <!-- Title bar -->
+  <rect class="title-bar" x="0" y="0" width="500" height="22" rx="4"/>
+  <text class="title-text" x="8" y="15">Tera Term: その他の設定 - コピーと貼り付け</text>
+  <rect class="dialog-bg" x="0" y="22" width="500" height="358"/>
   <rect class="checkbox" x="16" y="36" width="13" height="13"/>
-  <text class="label" x="34" y="47">Enable continued line copy</text>
+  <text class="label" x="34" y="47">継続行コピーを有効にする</text>
   <rect class="checkbox" x="16" y="56" width="13" height="13"/>
-  <text class="label" x="34" y="67">Disable paste right button</text>
+  <text class="label" x="34" y="67">右クリックでの貼り付けを無効にする</text>
   <rect class="checkbox" x="16" y="76" width="13" height="13"/>
-  <text class="label" x="34" y="87">Confirm paste right button</text>
+  <text class="label" x="34" y="87">右クリックでの貼り付けを確認する</text>
   <rect class="checkbox" x="16" y="96" width="13" height="13"/>
-  <text class="label" x="34" y="107">Disable paste middle button</text>
+  <text class="label" x="34" y="107">中クリックでの貼り付けを無効にする</text>
   <rect class="checkbox" x="16" y="116" width="13" height="13"/>
-  <text class="label" x="34" y="127">Select on left button</text>
+  <text class="label" x="34" y="127">左クリックでのみ選択を開始する</text>
   <rect class="checkbox" x="16" y="136" width="13" height="13"/>
-  <text class="label" x="34" y="147">Trim trailing newline char</text>
+  <text class="label" x="34" y="147">貼り付け時に末尾の改行を削除する</text>
   <rect class="checkbox" x="16" y="156" width="13" height="13"/>
-  <text class="label" x="34" y="167">Confirm change paste</text>
-  <text class="label" x="16" y="196">Confirm string file:</text>
-  <rect class="edit-box" x="140" y="184" width="320" height="20"/>
-  <rect class="button" x="466" y="184" width="34" height="20" rx="2"/>
-  <text class="button-text" x="483" y="198">...</text>
-  <text class="label" x="16" y="226">Delimiter list:</text>
-  <rect class="edit-box" x="140" y="214" width="380" height="20"/>
-  <text class="label" x="16" y="256">Paste delay per line (msec):</text>
-  <rect class="edit-box" x="200" y="244" width="60" height="20"/>
-  <rect class="checkbox" x="16" y="276" width="13" height="13"/>
-  <text class="label" x="34" y="287">Select on activate</text>
-  <rect class="checkbox" x="16" y="296" width="13" height="13"/>
-  <text class="label" x="34" y="307">Auto text copy</text>
+  <text class="label" x="34" y="167">危険なクリップボードの貼り付けを確認する</text>
+  <text class="label" x="16" y="182">キーワードファイル:</text>
+  <rect class="edit-box" x="140" y="170" width="260" height="20"/>
+  <rect class="button" x="408" y="168" width="72" height="24" rx="3"/>
+  <text class="button-text" x="444" y="184">参照...</text>
+  <text class="label" x="16" y="206">区切り文字:</text>
+  <rect class="edit-box" x="100" y="194" width="380" height="20"/>
+  <text class="label" x="16" y="230">貼り付けの行間遅延:</text>
+  <rect class="edit-box" x="160" y="218" width="50" height="20"/>
+  <text class="label" x="166" y="232">0</text>
+  <text class="label" x="216" y="230">ミリ秒</text>
+  <rect class="checkbox" x="16" y="250" width="13" height="13"/>
+  <text class="label" x="34" y="261">マウスでウィンドウ選択時の文字選択を有効にする</text>
+  <rect class="checkbox" x="16" y="270" width="13" height="13"/>
+  <text class="label" x="34" y="281">マウスで文字選択時、自動でクリップボードへのコピーを行う</text>
+  <rect class="button-default" x="130" y="340" width="64" height="24" rx="3"/>
+  <text class="button-text-default" x="162" y="356">OK</text>
+  <rect class="button" x="206" y="340" width="80" height="24" rx="3"/>
+  <text class="button-text" x="246" y="356">キャンセル</text>
 </svg>

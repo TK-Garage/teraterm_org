@@ -1,57 +1,40 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="540" height="340" font-family="Tahoma, MS Shell Dlg, sans-serif" font-size="11">
+<svg xmlns="http://www.w3.org/2000/svg" width="500" height="300" font-family="MS UI Gothic, Meiryo, sans-serif" font-size="11">
   <defs>
     <style>
+      .title-bar { fill: #0078d4; }
+      .title-text { fill: white; font-size: 11px; font-weight: bold; }
       .dialog-bg { fill: #f0f0f0; stroke: #999; stroke-width: 1; }
+      .group-box { fill: none; stroke: #999; stroke-width: 1; }
       .label { fill: #000; font-size: 11px; }
-      .list-box { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .edit-box { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .combo-box { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
       .button { fill: #e1e1e1; stroke: #adadad; stroke-width: 1; }
+      .button-default { fill: #0078d4; stroke: #005a9e; stroke-width: 1; }
       .button-text { fill: #000; font-size: 11px; text-anchor: middle; }
-      .tab-inactive { fill: #e0e0e0; stroke: #999; stroke-width: 1; }
+      .button-text-default { fill: #fff; font-size: 11px; text-anchor: middle; }
+      .checkbox { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .radio { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .combo-arrow { fill: #606060; }
+      .text-area { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .scrollbar { fill: #c0c0c0; stroke: #999; stroke-width: 1; }
+      .sample-box { fill: #000; stroke: #333; stroke-width: 2; }
+      .link { fill: #0066cc; font-size: 11px; text-decoration: underline; }
       .tab-active { fill: #f0f0f0; stroke: #999; stroke-width: 1; }
+      .tab-inactive { fill: #d0d0d0; stroke: #999; stroke-width: 1; }
       .tab-text { fill: #000; font-size: 10px; text-anchor: middle; }
+      .listbox { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .progress-bar { fill: #0078d4; }
+      .progress-bg { fill: #e0e0e0; stroke: #999; stroke-width: 1; }
     </style>
   </defs>
-  <rect class="tab-inactive" x="0" y="0" width="90" height="24" rx="3"/>
-  <text class="tab-text" x="45" y="16">Background</text>
-  <rect class="tab-active" x="92" y="0" width="55" height="24" rx="3"/>
-  <text class="tab-text" x="119" y="16" font-weight="bold">Color</text>
-  <rect class="dialog-bg" x="0" y="22" width="540" height="318"/>
-  <text class="label" x="16" y="44" font-weight="bold">ANSI 16 Color Palette</text>
-  <rect class="list-box" x="16" y="52" width="508" height="220"/>
-  <!-- Color swatches -->
-  <rect fill="#000" x="24" y="62" width="40" height="20" rx="2"/>
-  <text class="label" x="70" y="77" fill="#666">0: Black</text>
-  <rect fill="#aa0000" x="24" y="86" width="40" height="20" rx="2"/>
-  <text class="label" x="70" y="101" fill="#aa0000">1: Red</text>
-  <rect fill="#00aa00" x="24" y="110" width="40" height="20" rx="2"/>
-  <text class="label" x="70" y="125" fill="#00aa00">2: Green</text>
-  <rect fill="#aa5500" x="24" y="134" width="40" height="20" rx="2"/>
-  <text class="label" x="70" y="149" fill="#aa5500">3: Yellow</text>
-  <rect fill="#0000aa" x="24" y="158" width="40" height="20" rx="2"/>
-  <text class="label" x="70" y="173" fill="#0000aa">4: Blue</text>
-  <rect fill="#aa00aa" x="24" y="182" width="40" height="20" rx="2"/>
-  <text class="label" x="70" y="197" fill="#aa00aa">5: Magenta</text>
-  <rect fill="#00aaaa" x="24" y="206" width="40" height="20" rx="2"/>
-  <text class="label" x="70" y="221" fill="#00aaaa">6: Cyan</text>
-  <rect fill="#aaaaaa" x="24" y="230" width="40" height="20" rx="2"/>
-  <text class="label" x="70" y="245">7: White</text>
-  <!-- Bright colors column -->
-  <rect fill="#555555" x="260" y="62" width="40" height="20" rx="2"/>
-  <text class="label" x="306" y="77">8: Bright Black</text>
-  <rect fill="#ff5555" x="260" y="86" width="40" height="20" rx="2"/>
-  <text class="label" x="306" y="101" fill="#ff5555">9: Bright Red</text>
-  <rect fill="#55ff55" x="260" y="110" width="40" height="20" rx="2"/>
-  <text class="label" x="306" y="125" fill="#00aa00">10: Bright Green</text>
-  <rect fill="#ffff55" x="260" y="134" width="40" height="20" rx="2"/>
-  <text class="label" x="306" y="149">11: Bright Yellow</text>
-  <rect fill="#5555ff" x="260" y="158" width="40" height="20" rx="2"/>
-  <text class="label" x="306" y="173" fill="#5555ff">12: Bright Blue</text>
-  <rect fill="#ff55ff" x="260" y="182" width="40" height="20" rx="2"/>
-  <text class="label" x="306" y="197" fill="#aa00aa">13: Bright Magenta</text>
-  <rect fill="#55ffff" x="260" y="206" width="40" height="20" rx="2"/>
-  <text class="label" x="306" y="221" fill="#00aaaa">14: Bright Cyan</text>
-  <rect fill="#ffffff" stroke="#ccc" x="260" y="230" width="40" height="20" rx="2"/>
-  <text class="label" x="306" y="245">15: Bright White</text>
-  <rect class="button" x="16" y="284" width="100" height="24" rx="3"/>
-  <text class="button-text" x="66" y="300">Default</text>
+  <!-- Title bar -->
+  <rect class="title-bar" x="0" y="0" width="500" height="22" rx="4"/>
+  <text class="title-text" x="8" y="15">Tera Term: テーマ文字色エディタ</text>
+  <rect class="dialog-bg" x="0" y="22" width="500" height="278"/>
+  <text class="label" x="16" y="42">文字色テーマの設定</text>
+  <rect class="listbox" x="16" y="52" width="466" height="190"/>
+  <rect class="button-default" x="130" y="260" width="64" height="24" rx="3"/>
+  <text class="button-text-default" x="162" y="276">OK</text>
+  <rect class="button" x="206" y="260" width="80" height="24" rx="3"/>
+  <text class="button-text" x="246" y="276">キャンセル</text>
 </svg>

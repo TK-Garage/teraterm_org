@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="534" height="560" font-family="Tahoma, MS Shell Dlg, sans-serif" font-size="11">
+<svg xmlns="http://www.w3.org/2000/svg" width="520" height="340" font-family="MS UI Gothic, Meiryo, sans-serif" font-size="11">
   <defs>
     <style>
       .title-bar { fill: #0078d4; }
@@ -8,63 +8,72 @@
       .label { fill: #000; font-size: 11px; }
       .edit-box { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
       .combo-box { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
-      .checkbox { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
-      .radio { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
       .button { fill: #e1e1e1; stroke: #adadad; stroke-width: 1; }
       .button-default { fill: #0078d4; stroke: #005a9e; stroke-width: 1; }
       .button-text { fill: #000; font-size: 11px; text-anchor: middle; }
       .button-text-default { fill: #fff; font-size: 11px; text-anchor: middle; }
+      .checkbox { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .radio { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
       .combo-arrow { fill: #606060; }
+      .text-area { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .scrollbar { fill: #c0c0c0; stroke: #999; stroke-width: 1; }
+      .sample-box { fill: #000; stroke: #333; stroke-width: 2; }
+      .link { fill: #0066cc; font-size: 11px; text-decoration: underline; }
+      .tab-active { fill: #f0f0f0; stroke: #999; stroke-width: 1; }
+      .tab-inactive { fill: #d0d0d0; stroke: #999; stroke-width: 1; }
+      .tab-text { fill: #000; font-size: 10px; text-anchor: middle; }
+      .listbox { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .progress-bar { fill: #0078d4; }
+      .progress-bg { fill: #e0e0e0; stroke: #999; stroke-width: 1; }
     </style>
   </defs>
-  <rect class="title-bar" x="0" y="0" width="534" height="22" rx="4"/>
-  <text class="title-text" x="8" y="15">Log</text>
-  <rect class="dialog-bg" x="0" y="22" width="534" height="538"/>
-  <text class="label" x="16" y="46">Filename:</text>
-  <rect class="combo-box" x="16" y="54" width="430" height="20"/>
-  <rect fill="#e1e1e1" x="426" y="54" width="20" height="20" stroke="#7a7a7a" stroke-width="1"/>
-  <rect class="button" x="460" y="54" width="56" height="20" rx="2"/>
-  <text class="button-text" x="488" y="68">Browse</text>
-  <!-- Write mode group -->
-  <rect class="group-box" x="16" y="84" width="200" height="50"/>
-  <text class="label" x="24" y="84" font-weight="bold">Write mode</text>
-  <circle class="radio" cx="38" cy="104" r="6"/>
-  <circle fill="#000" cx="38" cy="104" r="3"/>
-  <text class="label" x="50" y="108">New / Overwrite</text>
-  <circle class="radio" cx="38" cy="122" r="6"/>
-  <text class="label" x="50" y="126">Append</text>
-  <!-- Text/Binary group -->
-  <rect class="group-box" x="230" y="84" width="200" height="50"/>
-  <text class="label" x="238" y="84" font-weight="bold">Format</text>
-  <circle class="radio" cx="250" cy="104" r="6"/>
-  <circle fill="#000" cx="250" cy="104" r="3"/>
-  <text class="label" x="262" y="108">Text</text>
-  <circle class="radio" cx="250" cy="122" r="6"/>
-  <text class="label" x="262" y="126">Binary</text>
-  <rect class="checkbox" x="350" y="100" width="13" height="13"/>
-  <text class="label" x="368" y="111">BOM</text>
-  <!-- Text coding -->
-  <text class="label" x="16" y="154">Text coding:</text>
-  <rect class="combo-box" x="100" y="142" width="180" height="20"/>
-  <rect fill="#e1e1e1" x="260" y="142" width="20" height="20" stroke="#7a7a7a" stroke-width="1"/>
-  <polygon class="combo-arrow" points="265,150 275,150 270,157"/>
-  <!-- Options -->
-  <rect class="checkbox" x="16" y="172" width="13" height="13"/>
-  <text class="label" x="34" y="183">Plain text</text>
-  <rect class="checkbox" x="16" y="194" width="13" height="13"/>
-  <text class="label" x="34" y="205">Timestamp</text>
-  <text class="label" x="130" y="205">Type:</text>
-  <rect class="combo-box" x="170" y="193" width="150" height="20"/>
-  <rect fill="#e1e1e1" x="300" y="193" width="20" height="20" stroke="#7a7a7a" stroke-width="1"/>
-  <rect class="checkbox" x="16" y="218" width="13" height="13"/>
-  <text class="label" x="34" y="229">Hide dialog</text>
-  <rect class="checkbox" x="16" y="240" width="13" height="13"/>
-  <text class="label" x="34" y="251">Include screen buffer</text>
-  <!-- Buttons -->
-  <rect class="button-default" x="160" y="510" width="64" height="24" rx="3"/>
-  <text class="button-text-default" x="192" y="526">OK</text>
-  <rect class="button" x="240" y="510" width="80" height="24" rx="3"/>
-  <text class="button-text" x="280" y="526">Cancel</text>
-  <rect class="button" x="336" y="510" width="72" height="24" rx="3"/>
-  <text class="button-text" x="372" y="526">Help</text>
+  <!-- Title bar -->
+  <rect class="title-bar" x="0" y="0" width="520" height="22" rx="4"/>
+  <text class="title-text" x="8" y="15">Tera Term: ログ</text>
+  <rect class="dialog-bg" x="0" y="22" width="520" height="318"/>
+  <text class="label" x="16" y="42">ログファイル名(dialogにファイルをドロップ):</text>
+  <rect class="edit-box" x="16" y="52" width="380" height="20"/>
+  <rect class="button" x="404" y="50" width="72" height="24" rx="3"/>
+  <text class="button-text" x="440" y="66">参照...</text>
+  <rect class="group-box" x="16" y="84" width="200" height="52"/>
+  <text class="label" x="24" y="84" font-weight="bold">書き込みモード</text>
+  <circle class="radio" cx="30" cy="102" r="6"/>
+  <circle fill="#000" cx="30" cy="102" r="3"/>
+  <text class="label" x="42" y="106">新規/上書き</text>
+  <circle class="radio" cx="120" cy="102" r="6"/>
+  <text class="label" x="132" y="106">追記</text>
+  <rect class="group-box" x="230" y="84" width="200" height="52"/>
+  <text class="label" x="238" y="84" font-weight="bold">テキスト/バイナリモード</text>
+  <circle class="radio" cx="244" cy="102" r="6"/>
+  <circle fill="#000" cx="244" cy="102" r="3"/>
+  <text class="label" x="256" y="106">テキスト</text>
+  <circle class="radio" cx="330" cy="102" r="6"/>
+  <text class="label" x="342" y="106">バイナリ</text>
+  <rect class="checkbox" x="16" y="148" width="13" height="13"/>
+  <text class="label" x="34" y="159">BOM</text>
+  <rect class="checkbox" x="16" y="168" width="13" height="13"/>
+  <text class="label" x="34" y="179">プレーンテキスト</text>
+  <rect class="checkbox" x="120" y="168" width="13" height="13"/>
+  <text class="label" x="138" y="179">タイムスタンプ</text>
+  <rect class="checkbox" x="16" y="188" width="13" height="13"/>
+  <text class="label" x="34" y="199">ダイアログを非表示</text>
+  <rect class="checkbox" x="16" y="208" width="13" height="13"/>
+  <text class="label" x="34" y="219">現在バッファを含む</text>
+  <rect class="group-box" x="16" y="230" width="480" height="52"/>
+  <text class="label" x="24" y="230" font-weight="bold">タイムスタンプ形式</text>
+  <circle class="radio" cx="30" cy="248" r="6"/>
+  <circle fill="#000" cx="30" cy="248" r="3"/>
+  <text class="label" x="42" y="252">ローカルタイム</text>
+  <circle class="radio" cx="140" cy="248" r="6"/>
+  <text class="label" x="152" y="252">UTC</text>
+  <circle class="radio" cx="200" cy="248" r="6"/>
+  <text class="label" x="212" y="252">経過時間(Logging)</text>
+  <circle class="radio" cx="350" cy="248" r="6"/>
+  <text class="label" x="362" y="252">経過時間(Connection)</text>
+  <rect class="button-default" x="120" y="298" width="64" height="24" rx="3"/>
+  <text class="button-text-default" x="152" y="314">OK</text>
+  <rect class="button" x="196" y="298" width="80" height="24" rx="3"/>
+  <text class="button-text" x="236" y="314">キャンセル</text>
+  <rect class="button" x="288" y="298" width="72" height="24" rx="3"/>
+  <text class="button-text" x="324" y="314">ヘルプ(&H)</text>
 </svg>

@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="508" height="320" font-family="MS Shell Dlg, Tahoma, sans-serif" font-size="11">
+<svg xmlns="http://www.w3.org/2000/svg" width="520" height="340" font-family="MS UI Gothic, Meiryo, sans-serif" font-size="11">
   <defs>
     <style>
       .title-bar { fill: #0078d4; }
@@ -15,62 +15,86 @@
       .checkbox { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
       .radio { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
       .combo-arrow { fill: #606060; }
+      .text-area { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .scrollbar { fill: #c0c0c0; stroke: #999; stroke-width: 1; }
+      .sample-box { fill: #000; stroke: #333; stroke-width: 2; }
+      .link { fill: #0066cc; font-size: 11px; text-decoration: underline; }
+      .tab-active { fill: #f0f0f0; stroke: #999; stroke-width: 1; }
+      .tab-inactive { fill: #d0d0d0; stroke: #999; stroke-width: 1; }
+      .tab-text { fill: #000; font-size: 10px; text-anchor: middle; }
+      .listbox { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .progress-bar { fill: #0078d4; }
+      .progress-bg { fill: #e0e0e0; stroke: #999; stroke-width: 1; }
     </style>
   </defs>
   <!-- Title bar -->
-  <rect class="title-bar" x="0" y="0" width="508" height="22" rx="4"/>
-  <text class="title-text" x="8" y="15">Tera Term: Terminal setup</text>
-  <!-- Dialog background -->
-  <rect class="dialog-bg" x="0" y="22" width="508" height="298"/>
-  <!-- Terminal size group box -->
+  <rect class="title-bar" x="0" y="0" width="520" height="22" rx="4"/>
+  <text class="title-text" x="8" y="15">Tera Term: 端末の設定</text>
+  <rect class="dialog-bg" x="0" y="22" width="520" height="318"/>
   <rect class="group-box" x="16" y="36" width="194" height="108"/>
-  <text class="label" x="24" y="36" font-weight="bold">Terminal size</text>
-  <!-- Width x Height -->
+  <text class="label" x="24" y="36" font-weight="bold">端末サイズ</text>
   <rect class="edit-box" x="42" y="52" width="44" height="20"/>
-  <text class="label" x="50" y="66">80</text>
+  <text class="label" x="48" y="66">80</text>
   <text class="label" x="96" y="66">X</text>
   <rect class="edit-box" x="130" y="52" width="44" height="20"/>
-  <text class="label" x="138" y="66">24</text>
-  <!-- Checkboxes -->
+  <text class="label" x="136" y="66">24</text>
   <rect class="checkbox" x="26" y="80" width="13" height="13"/>
-  <text class="label" x="44" y="91">Term size = win size</text>
+  <text class="label" x="44" y="91">端末サイズ = ウィンドウサイズ</text>
   <rect class="checkbox" x="26" y="100" width="13" height="13"/>
-  <text class="label" x="44" y="111">Auto window resize</text>
-  <!-- New-line group box -->
-  <rect class="group-box" x="224" y="36" width="158" height="88"/>
-  <text class="label" x="232" y="36" font-weight="bold">New-line</text>
-  <!-- Receive -->
-  <text class="label" x="232" y="60">Receive:</text>
-  <rect class="combo-box" x="300" y="48" width="72" height="20"/>
-  <rect fill="#e1e1e1" x="352" y="48" width="20" height="20" stroke="#7a7a7a" stroke-width="1"/>
-  <polygon class="combo-arrow" points="357,56 367,56 362,63"/>
+  <text class="label" x="44" y="111">自動的にウィンドウサイズを調整</text>
+  <rect class="group-box" x="224" y="36" width="170" height="88"/>
+  <text class="label" x="232" y="36" font-weight="bold">改行コード</text>
+  <text class="label" x="232" y="60">受信:</text>
+  <rect class="combo-box" x="300" y="48" width="84" height="20"/>
+  <rect fill="#e1e1e1" x="364" y="48" width="20" height="20" stroke="#7a7a7a" stroke-width="1"/>
+  <polygon class="combo-arrow" points="369,56 379,56 374,63"/>
   <text class="label" x="306" y="62">CR</text>
-  <!-- Transmit -->
-  <text class="label" x="232" y="84">Transmit:</text>
-  <rect class="combo-box" x="300" y="72" width="72" height="20"/>
-  <rect fill="#e1e1e1" x="352" y="72" width="20" height="20" stroke="#7a7a7a" stroke-width="1"/>
-  <polygon class="combo-arrow" points="357,80 367,80 362,87"/>
+  <text class="label" x="232" y="84">送信:</text>
+  <rect class="combo-box" x="300" y="72" width="84" height="20"/>
+  <rect fill="#e1e1e1" x="364" y="72" width="20" height="20" stroke="#7a7a7a" stroke-width="1"/>
+  <polygon class="combo-arrow" points="369,80 379,80 374,87"/>
   <text class="label" x="306" y="86">CR</text>
-  <!-- Terminal ID -->
-  <text class="label" x="18" y="150">Terminal ID:</text>
-  <rect class="combo-box" x="110" y="138" width="80" height="20"/>
-  <rect fill="#e1e1e1" x="170" y="138" width="20" height="20" stroke="#7a7a7a" stroke-width="1"/>
-  <polygon class="combo-arrow" points="175,146 185,146 180,153"/>
+  <text class="label" x="18" y="150">端末ID:</text>
+  <rect class="combo-box" x="110" y="138" width="100" height="20"/>
+  <rect fill="#e1e1e1" x="190" y="138" width="20" height="20" stroke="#7a7a7a" stroke-width="1"/>
+  <polygon class="combo-arrow" points="195,146 205,146 200,153"/>
   <text class="label" x="116" y="152">VT220</text>
-  <!-- Local echo -->
   <rect class="checkbox" x="246" y="140" width="13" height="13"/>
-  <text class="label" x="264" y="151">Local echo</text>
-  <!-- Answerback -->
-  <text class="label" x="18" y="174">Answerback:</text>
+  <text class="label" x="264" y="151">ローカルエコー</text>
+  <text class="label" x="18" y="174">応答:</text>
   <rect class="edit-box" x="110" y="162" width="122" height="20"/>
-  <!-- Auto switch -->
   <rect class="checkbox" x="246" y="164" width="13" height="13"/>
-  <text class="label" x="264" y="175">Auto switch (VT&lt;-&gt;TEK)</text>
-  <!-- Standard buttons -->
-  <rect class="button-default" x="130" y="280" width="64" height="24" rx="3"/>
-  <text class="button-text-default" x="162" y="296">OK</text>
-  <rect class="button" x="210" y="280" width="80" height="24" rx="3"/>
-  <text class="button-text" x="250" y="296">Cancel</text>
-  <rect class="button" x="306" y="280" width="72" height="24" rx="3"/>
-  <text class="button-text" x="342" y="296">Help</text>
+  <text class="label" x="264" y="175">自動切り替え(VT&lt;-&gt;TEK)</text>
+  <rect class="group-box" x="16" y="190" width="194" height="68"/>
+  <text class="label" x="24" y="190" font-weight="bold">エンコーディング-受信</text>
+  <rect class="combo-box" x="26" y="210" width="174" height="20"/>
+  <rect fill="#e1e1e1" x="180" y="210" width="20" height="20" stroke="#7a7a7a" stroke-width="1"/>
+  <polygon class="combo-arrow" points="185,218 195,218 190,225"/>
+  <text class="label" x="32" y="224">UTF-8</text>
+  <rect class="checkbox" x="26" y="236" width="13" height="13"/>
+  <text class="label" x="44" y="247">半角カナ</text>
+  <rect class="group-box" x="224" y="190" width="170" height="68"/>
+  <text class="label" x="232" y="190" font-weight="bold">エンコーディング-送信</text>
+  <rect class="combo-box" x="234" y="210" width="150" height="20"/>
+  <rect fill="#e1e1e1" x="364" y="210" width="20" height="20" stroke="#7a7a7a" stroke-width="1"/>
+  <polygon class="combo-arrow" points="369,218 379,218 374,225"/>
+  <text class="label" x="240" y="224">UTF-8</text>
+  <rect class="checkbox" x="234" y="236" width="13" height="13"/>
+  <text class="label" x="252" y="247">半角カナ</text>
+  <text class="label" x="18" y="276">漢字イン:</text>
+  <rect class="combo-box" x="110" y="264" width="100" height="20"/>
+  <rect fill="#e1e1e1" x="190" y="264" width="20" height="20" stroke="#7a7a7a" stroke-width="1"/>
+  <polygon class="combo-arrow" points="195,272 205,272 200,279"/>
+  <text class="label" x="116" y="278">@</text>
+  <text class="label" x="224" y="276">漢字アウト:</text>
+  <rect class="combo-box" x="316" y="264" width="100" height="20"/>
+  <rect fill="#e1e1e1" x="396" y="264" width="20" height="20" stroke="#7a7a7a" stroke-width="1"/>
+  <polygon class="combo-arrow" points="401,272 411,272 406,279"/>
+  <text class="label" x="322" y="278">B</text>
+  <rect class="button-default" x="140" y="298" width="64" height="24" rx="3"/>
+  <text class="button-text-default" x="172" y="314">OK</text>
+  <rect class="button" x="216" y="298" width="80" height="24" rx="3"/>
+  <text class="button-text" x="256" y="314">キャンセル</text>
+  <rect class="button" x="308" y="298" width="72" height="24" rx="3"/>
+  <text class="button-text" x="344" y="314">ヘルプ(&H)</text>
 </svg>

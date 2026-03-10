@@ -1,83 +1,94 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="540" height="440" font-family="Tahoma, MS Shell Dlg, sans-serif" font-size="11">
+<svg xmlns="http://www.w3.org/2000/svg" width="500" height="440" font-family="MS UI Gothic, Meiryo, sans-serif" font-size="11">
   <defs>
     <style>
+      .title-bar { fill: #0078d4; }
+      .title-text { fill: white; font-size: 11px; font-weight: bold; }
       .dialog-bg { fill: #f0f0f0; stroke: #999; stroke-width: 1; }
+      .group-box { fill: none; stroke: #999; stroke-width: 1; }
       .label { fill: #000; font-size: 11px; }
       .edit-box { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
       .combo-box { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .button { fill: #e1e1e1; stroke: #adadad; stroke-width: 1; }
+      .button-default { fill: #0078d4; stroke: #005a9e; stroke-width: 1; }
+      .button-text { fill: #000; font-size: 11px; text-anchor: middle; }
+      .button-text-default { fill: #fff; font-size: 11px; text-anchor: middle; }
       .checkbox { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
-      .group-box { fill: none; stroke: #999; stroke-width: 1; }
-      .scrollbar { fill: #c0c0c0; stroke: #999; stroke-width: 1; }
-      .list-box { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
-      .sample-box { fill: #000; stroke: #333; stroke-width: 2; }
+      .radio { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
       .combo-arrow { fill: #606060; }
+      .text-area { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .scrollbar { fill: #c0c0c0; stroke: #999; stroke-width: 1; }
+      .sample-box { fill: #000; stroke: #333; stroke-width: 2; }
+      .link { fill: #0066cc; font-size: 11px; text-decoration: underline; }
       .tab-active { fill: #f0f0f0; stroke: #999; stroke-width: 1; }
-      .tab-inactive { fill: #e0e0e0; stroke: #999; stroke-width: 1; }
+      .tab-inactive { fill: #d0d0d0; stroke: #999; stroke-width: 1; }
       .tab-text { fill: #000; font-size: 10px; text-anchor: middle; }
+      .listbox { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .progress-bar { fill: #0078d4; }
+      .progress-bg { fill: #e0e0e0; stroke: #999; stroke-width: 1; }
     </style>
   </defs>
-  <rect class="tab-inactive" x="0" y="0" width="60" height="24" rx="3"/>
-  <text class="tab-text" x="30" y="16">General</text>
-  <rect class="tab-inactive" x="62" y="0" width="70" height="24" rx="3"/>
-  <text class="tab-text" x="97" y="16">Sequence</text>
-  <rect class="tab-inactive" x="134" y="0" width="80" height="24" rx="3"/>
-  <text class="tab-text" x="174" y="16">Copy/Paste</text>
-  <rect class="tab-active" x="216" y="0" width="55" height="24" rx="3"/>
-  <text class="tab-text" x="243" y="16" font-weight="bold">Visual</text>
-  <rect class="dialog-bg" x="0" y="22" width="540" height="418"/>
-  <!-- Window Opacity -->
-  <text class="label" x="16" y="44" font-weight="bold">Window Opacity</text>
-  <text class="label" x="16" y="66">Active:</text>
-  <rect class="edit-box" x="80" y="54" width="40" height="20"/>
-  <text class="label" x="86" y="68">255</text>
-  <rect class="scrollbar" x="130" y="56" width="200" height="14" rx="2"/>
-  <text class="label" x="16" y="90">Inactive:</text>
-  <rect class="edit-box" x="80" y="78" width="40" height="20"/>
-  <text class="label" x="86" y="92">255</text>
-  <rect class="scrollbar" x="130" y="80" width="200" height="14" rx="2"/>
-  <!-- Mouse cursor -->
-  <text class="label" x="16" y="118">Mouse cursor:</text>
-  <rect class="combo-box" x="120" y="106" width="160" height="20"/>
-  <rect fill="#e1e1e1" x="260" y="106" width="20" height="20" stroke="#7a7a7a" stroke-width="1"/>
-  <polygon class="combo-arrow" points="265,114 275,114 270,121"/>
-  <!-- ANSI Color group -->
-  <rect class="group-box" x="16" y="134" width="508" height="140"/>
-  <text class="label" x="24" y="134" font-weight="bold">ANSI Color</text>
-  <rect class="list-box" x="30" y="150" width="200" height="100"/>
-  <text class="label" x="36" y="166" fill="#666">Color 0 - Black</text>
-  <text class="label" x="36" y="180" fill="#c00">Color 1 - Red</text>
-  <text class="label" x="36" y="194" fill="#0a0">Color 2 - Green</text>
-  <text class="label" x="36" y="208" fill="#aa0">Color 3 - Yellow</text>
-  <text class="label" x="250" y="162">R:</text>
-  <rect class="edit-box" x="270" y="150" width="40" height="20"/>
-  <text class="label" x="320" y="162">G:</text>
-  <rect class="edit-box" x="340" y="150" width="40" height="20"/>
-  <text class="label" x="390" y="162">B:</text>
-  <rect class="edit-box" x="410" y="150" width="40" height="20"/>
-  <rect class="sample-box" x="250" y="180" width="80" height="40"/>
-  <!-- Font quality -->
-  <text class="label" x="16" y="296">Font quality:</text>
-  <rect class="combo-box" x="120" y="284" width="160" height="20"/>
-  <rect fill="#e1e1e1" x="260" y="284" width="20" height="20" stroke="#7a7a7a" stroke-width="1"/>
-  <polygon class="combo-arrow" points="265,292 275,292 270,299"/>
-  <!-- Flicker / Corner -->
+  <!-- Title bar -->
+  <rect class="title-bar" x="0" y="0" width="500" height="22" rx="4"/>
+  <text class="title-text" x="8" y="15">Tera Term: その他の設定 - 表示</text>
+  <rect class="dialog-bg" x="0" y="22" width="500" height="418"/>
+  <rect class="group-box" x="16" y="36" width="220" height="60"/>
+  <text class="label" x="24" y="36" font-weight="bold">ウィンドウの不透明度</text>
+  <text class="label" x="30" y="56">アクティブ時:</text>
+  <rect class="edit-box" x="120" y="44" width="40" height="20"/>
+  <text class="label" x="126" y="58">255</text>
+  <text class="label" x="30" y="78">非アクティブ時:</text>
+  <rect class="edit-box" x="120" y="66" width="40" height="20"/>
+  <text class="label" x="126" y="80">255</text>
+  <text class="label" x="260" y="46">マウスカーソル:</text>
+  <rect class="combo-box" x="360" y="34" width="120" height="20"/>
+  <rect fill="#e1e1e1" x="460" y="34" width="20" height="20" stroke="#7a7a7a" stroke-width="1"/>
+  <polygon class="combo-arrow" points="465,42 475,42 470,49"/>
+  <text class="label" x="260" y="72">フォントの品質:</text>
+  <rect class="combo-box" x="360" y="60" width="120" height="20"/>
+  <rect fill="#e1e1e1" x="460" y="60" width="20" height="20" stroke="#7a7a7a" stroke-width="1"/>
+  <polygon class="combo-arrow" points="465,68 475,68 470,75"/>
+  <text class="label" x="366" y="74">デフォルト</text>
+  <rect class="group-box" x="16" y="106" width="466" height="60"/>
+  <text class="label" x="24" y="106" font-weight="bold">ANSIカラー</text>
+  <text class="label" x="30" y="128">赤:</text>
+  <rect class="edit-box" x="52" y="116" width="36" height="20"/>
+  <text class="label" x="100" y="128">緑:</text>
+  <rect class="edit-box" x="122" y="116" width="36" height="20"/>
+  <text class="label" x="170" y="128">青:</text>
+  <rect class="edit-box" x="192" y="116" width="36" height="20"/>
+  <rect class="checkbox" x="16" y="176" width="13" height="13"/>
+  <text class="label" x="34" y="187">ウィンドウの角を丸くしない</text>
+  <rect class="checkbox" x="16" y="196" width="13" height="13"/>
+  <text class="label" x="34" y="207">太字属性色を有効にする</text>
+  <rect class="checkbox" x="250" y="196" width="13" height="13"/>
+  <text class="label" x="268" y="207">太字属性フォントを有効にする</text>
+  <rect class="checkbox" x="16" y="216" width="13" height="13"/>
+  <text class="label" x="34" y="227">点滅属性色を有効にする</text>
+  <rect class="checkbox" x="16" y="236" width="13" height="13"/>
+  <text class="label" x="34" y="247">反転属性色を有効にする</text>
+  <rect class="checkbox" x="16" y="256" width="13" height="13"/>
+  <text class="label" x="34" y="267">下線属性色を有効にする</text>
+  <rect class="checkbox" x="250" y="256" width="13" height="13"/>
+  <text class="label" x="268" y="267">下線属性に下線を付加する</text>
+  <rect class="checkbox" x="16" y="276" width="13" height="13"/>
+  <text class="label" x="34" y="287">URL属性色を有効にする</text>
+  <rect class="checkbox" x="250" y="276" width="13" height="13"/>
+  <text class="label" x="268" y="287">URL文字列に下線を付加する</text>
+  <rect class="checkbox" x="16" y="296" width="13" height="13"/>
+  <text class="label" x="34" y="307">ANSIカラーを有効にする</text>
   <rect class="checkbox" x="16" y="316" width="13" height="13"/>
-  <text class="label" x="34" y="327">Flicker-less move</text>
-  <rect class="checkbox" x="200" y="316" width="13" height="13"/>
-  <text class="label" x="218" y="327">Corner don't round</text>
-  <!-- Attribute checkboxes -->
-  <rect class="group-box" x="16" y="340" width="508" height="60"/>
-  <text class="label" x="24" y="340" font-weight="bold">Character attributes</text>
-  <rect class="checkbox" x="30" y="356" width="13" height="13"/>
-  <text class="label" x="48" y="367">Bold color</text>
-  <rect class="checkbox" x="130" y="356" width="13" height="13"/>
-  <text class="label" x="148" y="367">Blink color</text>
-  <rect class="checkbox" x="230" y="356" width="13" height="13"/>
-  <text class="label" x="248" y="367">Reverse color</text>
-  <rect class="checkbox" x="340" y="356" width="13" height="13"/>
-  <text class="label" x="358" y="367">URL color</text>
-  <rect class="checkbox" x="430" y="356" width="13" height="13"/>
-  <text class="label" x="448" y="367">Underline</text>
-  <rect class="checkbox" x="30" y="376" width="13" height="13"/>
-  <text class="label" x="48" y="387">ANSI color</text>
+  <text class="label" x="34" y="327">ウィンドウ移動/リサイズ時テーマを一時的にdisableする</text>
+  <rect class="group-box" x="16" y="340" width="466" height="50"/>
+  <text class="label" x="24" y="340" font-weight="bold">起動時のテーマ</text>
+  <circle class="radio" cx="30" cy="358" r="6"/>
+  <circle fill="#000" cx="30" cy="358" r="3"/>
+  <text class="label" x="42" y="362">使用しない</text>
+  <circle class="radio" cx="130" cy="358" r="6"/>
+  <text class="label" x="142" y="362">固定テーマ(テーマファイル指定)</text>
+  <circle class="radio" cx="340" cy="358" r="6"/>
+  <text class="label" x="352" y="362">ランダムテーマ</text>
+  <rect class="button-default" x="130" y="402" width="64" height="24" rx="3"/>
+  <text class="button-text-default" x="162" y="418">OK</text>
+  <rect class="button" x="206" y="402" width="80" height="24" rx="3"/>
+  <text class="button-text" x="246" y="418">キャンセル</text>
 </svg>

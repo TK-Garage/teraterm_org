@@ -1,30 +1,42 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="350" height="130" font-family="MS Shell Dlg, Tahoma, sans-serif" font-size="11">
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="120" font-family="MS UI Gothic, Meiryo, sans-serif" font-size="11">
   <defs>
     <style>
       .title-bar { fill: #0078d4; }
       .title-text { fill: white; font-size: 11px; font-weight: bold; }
       .dialog-bg { fill: #f0f0f0; stroke: #999; stroke-width: 1; }
+      .group-box { fill: none; stroke: #999; stroke-width: 1; }
       .label { fill: #000; font-size: 11px; }
       .edit-box { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .combo-box { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
       .button { fill: #e1e1e1; stroke: #adadad; stroke-width: 1; }
       .button-default { fill: #0078d4; stroke: #005a9e; stroke-width: 1; }
       .button-text { fill: #000; font-size: 11px; text-anchor: middle; }
       .button-text-default { fill: #fff; font-size: 11px; text-anchor: middle; }
+      .checkbox { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .radio { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .combo-arrow { fill: #606060; }
+      .text-area { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .scrollbar { fill: #c0c0c0; stroke: #999; stroke-width: 1; }
+      .sample-box { fill: #000; stroke: #333; stroke-width: 2; }
+      .link { fill: #0066cc; font-size: 11px; text-decoration: underline; }
+      .tab-active { fill: #f0f0f0; stroke: #999; stroke-width: 1; }
+      .tab-inactive { fill: #d0d0d0; stroke: #999; stroke-width: 1; }
+      .tab-text { fill: #000; font-size: 10px; text-anchor: middle; }
+      .listbox { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .progress-bar { fill: #0078d4; }
+      .progress-bg { fill: #e0e0e0; stroke: #999; stroke-width: 1; }
     </style>
   </defs>
-  <rect class="title-bar" x="0" y="0" width="350" height="22" rx="4"/>
-  <text class="title-text" x="8" y="15">Tera Term: Change directory</text>
-  <rect class="dialog-bg" x="0" y="22" width="350" height="108"/>
-  <text class="label" x="92" y="44" text-anchor="end">Current dir:</text>
-  <text class="label" x="104" y="44" fill="#666">/home/user</text>
-  <text class="label" x="92" y="66" text-anchor="end">New dir:</text>
-  <rect class="edit-box" x="104" y="54" width="198" height="20"/>
-  <rect class="button" x="308" y="54" width="28" height="20" rx="2"/>
-  <text class="button-text" x="322" y="68">...</text>
-  <rect class="button-default" x="54" y="90" width="64" height="24" rx="3"/>
-  <text class="button-text-default" x="86" y="106">OK</text>
-  <rect class="button" x="134" y="90" width="80" height="24" rx="3"/>
-  <text class="button-text" x="174" y="106">Cancel</text>
-  <rect class="button" x="230" y="90" width="72" height="24" rx="3"/>
-  <text class="button-text" x="266" y="106">Help</text>
+  <!-- Title bar -->
+  <rect class="title-bar" x="0" y="0" width="400" height="22" rx="4"/>
+  <text class="title-text" x="8" y="15">Tera Term: ディレクトリの変更</text>
+  <rect class="dialog-bg" x="0" y="22" width="400" height="98"/>
+  <text class="label" x="16" y="46">新しいディレクトリを選択してください</text>
+  <rect class="edit-box" x="16" y="56" width="280" height="20"/>
+  <rect class="button" x="310" y="54" width="72" height="24" rx="3"/>
+  <text class="button-text" x="346" y="70">参照...</text>
+  <rect class="button-default" x="100" y="88" width="64" height="24" rx="3"/>
+  <text class="button-text-default" x="132" y="104">OK</text>
+  <rect class="button" x="176" y="88" width="80" height="24" rx="3"/>
+  <text class="button-text" x="216" y="104">キャンセル</text>
 </svg>

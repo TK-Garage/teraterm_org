@@ -1,26 +1,38 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="526" height="130" font-family="Tahoma, MS Shell Dlg, sans-serif" font-size="11">
+<svg xmlns="http://www.w3.org/2000/svg" width="340" height="140" font-family="MS UI Gothic, Meiryo, sans-serif" font-size="11">
   <defs>
     <style>
-      .title-bar { fill: #c42b1c; }
+      .title-bar { fill: #0078d4; }
       .title-text { fill: white; font-size: 11px; font-weight: bold; }
       .dialog-bg { fill: #f0f0f0; stroke: #999; stroke-width: 1; }
+      .group-box { fill: none; stroke: #999; stroke-width: 1; }
       .label { fill: #000; font-size: 11px; }
       .edit-box { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .combo-box { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
       .button { fill: #e1e1e1; stroke: #adadad; stroke-width: 1; }
+      .button-default { fill: #0078d4; stroke: #005a9e; stroke-width: 1; }
       .button-text { fill: #000; font-size: 11px; text-anchor: middle; }
+      .button-text-default { fill: #fff; font-size: 11px; text-anchor: middle; }
+      .checkbox { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .radio { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .combo-arrow { fill: #606060; }
+      .text-area { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .scrollbar { fill: #c0c0c0; stroke: #999; stroke-width: 1; }
+      .sample-box { fill: #000; stroke: #333; stroke-width: 2; }
+      .link { fill: #0066cc; font-size: 11px; text-decoration: underline; }
+      .tab-active { fill: #f0f0f0; stroke: #999; stroke-width: 1; }
+      .tab-inactive { fill: #d0d0d0; stroke: #999; stroke-width: 1; }
+      .tab-text { fill: #000; font-size: 10px; text-anchor: middle; }
+      .listbox { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .progress-bar { fill: #0078d4; }
+      .progress-bg { fill: #e0e0e0; stroke: #999; stroke-width: 1; }
     </style>
   </defs>
-  <rect class="title-bar" x="0" y="0" width="526" height="22" rx="4"/>
-  <text class="title-text" x="8" y="15">MACRO: Error</text>
-  <rect class="dialog-bg" x="0" y="22" width="526" height="108"/>
-  <text class="label" x="16" y="44" fill="#c42b1c">Error message text</text>
-  <text class="label" x="450" y="44" text-anchor="end">Line: 1</text>
-  <rect class="edit-box" x="16" y="52" width="494" height="20"/>
-  <text class="label" x="22" y="66" fill="#666">Error line content</text>
-  <rect class="button" x="100" y="86" width="100" height="24" rx="3"/>
-  <text class="button-text" x="150" y="102">Stop macro</text>
-  <rect class="button" x="216" y="86" width="100" height="24" rx="3"/>
-  <text class="button-text" x="266" y="102">Continue</text>
-  <rect class="button" x="332" y="86" width="80" height="24" rx="3"/>
-  <text class="button-text" x="372" y="102">Help</text>
+  <!-- Title bar -->
+  <rect class="title-bar" x="0" y="0" width="340" height="22" rx="4"/>
+  <text class="title-text" x="8" y="15">MACRO: エラー</text>
+  <rect class="dialog-bg" x="0" y="22" width="340" height="118"/>
+  <rect class="edit-box" x="16" y="32" width="306" height="60"/>
+  <text class="label" x="24" y="50">エラーメッセージ</text>
+  <rect class="button-default" x="130" y="104" width="80" height="24" rx="3"/>
+  <text class="button-text-default" x="170" y="120">OK</text>
 </svg>

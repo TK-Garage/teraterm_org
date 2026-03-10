@@ -1,52 +1,52 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="504" height="260" font-family="Tahoma, MS Shell Dlg, sans-serif" font-size="11">
+<svg xmlns="http://www.w3.org/2000/svg" width="520" height="400" font-family="MS UI Gothic, Meiryo, sans-serif" font-size="11">
   <defs>
     <style>
       .title-bar { fill: #0078d4; }
       .title-text { fill: white; font-size: 11px; font-weight: bold; }
       .dialog-bg { fill: #f0f0f0; stroke: #999; stroke-width: 1; }
+      .group-box { fill: none; stroke: #999; stroke-width: 1; }
       .label { fill: #000; font-size: 11px; }
+      .edit-box { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
       .combo-box { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
-      .list-box { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
-      .checkbox { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
-      .radio { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
       .button { fill: #e1e1e1; stroke: #adadad; stroke-width: 1; }
       .button-default { fill: #0078d4; stroke: #005a9e; stroke-width: 1; }
       .button-text { fill: #000; font-size: 11px; text-anchor: middle; }
       .button-text-default { fill: #fff; font-size: 11px; text-anchor: middle; }
+      .checkbox { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .radio { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
       .combo-arrow { fill: #606060; }
+      .text-area { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .scrollbar { fill: #c0c0c0; stroke: #999; stroke-width: 1; }
+      .sample-box { fill: #000; stroke: #333; stroke-width: 2; }
+      .link { fill: #0066cc; font-size: 11px; text-decoration: underline; }
+      .tab-active { fill: #f0f0f0; stroke: #999; stroke-width: 1; }
+      .tab-inactive { fill: #d0d0d0; stroke: #999; stroke-width: 1; }
+      .tab-text { fill: #000; font-size: 10px; text-anchor: middle; }
+      .listbox { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .progress-bar { fill: #0078d4; }
+      .progress-bg { fill: #e0e0e0; stroke: #999; stroke-width: 1; }
     </style>
   </defs>
-  <rect class="title-bar" x="0" y="0" width="504" height="22" rx="4"/>
-  <text class="title-text" x="8" y="15">Tera Term: Broadcast command</text>
-  <rect class="dialog-bg" x="0" y="22" width="504" height="238"/>
-  <!-- Command -->
-  <text class="label" x="16" y="44">Command:</text>
-  <rect class="combo-box" x="80" y="32" width="340" height="20"/>
-  <rect fill="#e1e1e1" x="400" y="32" width="20" height="20" stroke="#7a7a7a" stroke-width="1"/>
-  <polygon class="combo-arrow" points="405,40 415,40 410,47"/>
-  <rect class="checkbox" x="430" y="34" width="13" height="13"/>
-  <text class="label" x="448" y="45">History</text>
-  <!-- New-line radios -->
-  <circle class="radio" cx="90" cy="64" r="6"/>
-  <text class="label" x="100" y="68">CR+LF</text>
-  <circle class="radio" cx="160" cy="64" r="6"/>
-  <text class="label" x="170" y="68">CR</text>
-  <circle class="radio" cx="210" cy="64" r="6"/>
-  <text class="label" x="220" y="68">LF</text>
-  <rect class="checkbox" x="270" y="58" width="13" height="13"/>
-  <text class="label" x="288" y="69">Enter key</text>
-  <rect class="checkbox" x="370" y="58" width="13" height="13"/>
-  <text class="label" x="388" y="69">This process only</text>
-  <rect class="checkbox" x="80" y="78" width="13" height="13"/>
-  <text class="label" x="98" y="89">Realtime mode</text>
-  <!-- Window list -->
-  <text class="label" x="16" y="110">Windows:</text>
-  <rect class="list-box" x="16" y="118" width="400" height="80"/>
-  <!-- Buttons -->
-  <rect class="button-default" x="430" y="118" width="60" height="24" rx="3"/>
-  <text class="button-text-default" x="460" y="134">Submit</text>
-  <rect class="button" x="430" y="148" width="60" height="24" rx="3"/>
-  <text class="button-text" x="460" y="164">Close</text>
-  <rect class="button" x="430" y="178" width="60" height="24" rx="3"/>
-  <text class="button-text" x="460" y="194">Help</text>
+  <!-- Title bar -->
+  <rect class="title-bar" x="0" y="0" width="520" height="22" rx="4"/>
+  <text class="title-text" x="8" y="15">Tera Term: コマンドのブロードキャスト</text>
+  <rect class="dialog-bg" x="0" y="22" width="520" height="378"/>
+  <rect class="edit-box" x="16" y="32" width="486" height="60"/>
+  <rect class="checkbox" x="16" y="100" width="13" height="13"/>
+  <text class="label" x="34" y="111">リアルタイム</text>
+  <text class="label" x="16" y="130">ヒストリ</text>
+  <rect class="combo-box" x="80" y="118" width="254" height="20"/>
+  <rect fill="#e1e1e1" x="314" y="118" width="20" height="20" stroke="#7a7a7a" stroke-width="1"/>
+  <polygon class="combo-arrow" points="319,126 329,126 324,133"/>
+  <rect class="listbox" x="16" y="150" width="486" height="170"/>
+  <rect class="checkbox" x="16" y="330" width="13" height="13"/>
+  <text class="label" x="34" y="341">このプロセスのみに送信</text>
+  <rect class="checkbox" x="200" y="330" width="13" height="13"/>
+  <text class="label" x="218" y="341">Enterキー</text>
+  <rect class="button" x="16" y="358" width="80" height="24" rx="3"/>
+  <text class="button-text" x="56" y="374">送信</text>
+  <rect class="button" x="110" y="358" width="80" height="24" rx="3"/>
+  <text class="button-text" x="150" y="374">閉じる</text>
+  <rect class="button" x="204" y="358" width="80" height="24" rx="3"/>
+  <text class="button-text" x="244" y="374">ヘルプ(&H)</text>
 </svg>

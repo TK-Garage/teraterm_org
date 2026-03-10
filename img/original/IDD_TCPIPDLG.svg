@@ -1,51 +1,58 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="520" height="400" font-family="Tahoma, MS Shell Dlg, sans-serif" font-size="11">
+<svg xmlns="http://www.w3.org/2000/svg" width="520" height="400" font-family="MS UI Gothic, Meiryo, sans-serif" font-size="11">
   <defs>
     <style>
       .title-bar { fill: #0078d4; }
       .title-text { fill: white; font-size: 11px; font-weight: bold; }
       .dialog-bg { fill: #f0f0f0; stroke: #999; stroke-width: 1; }
+      .group-box { fill: none; stroke: #999; stroke-width: 1; }
       .label { fill: #000; font-size: 11px; }
       .edit-box { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .combo-box { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
       .button { fill: #e1e1e1; stroke: #adadad; stroke-width: 1; }
       .button-default { fill: #0078d4; stroke: #005a9e; stroke-width: 1; }
       .button-text { fill: #000; font-size: 11px; text-anchor: middle; }
       .button-text-default { fill: #fff; font-size: 11px; text-anchor: middle; }
       .checkbox { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .radio { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .combo-arrow { fill: #606060; }
+      .text-area { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .scrollbar { fill: #c0c0c0; stroke: #999; stroke-width: 1; }
+      .sample-box { fill: #000; stroke: #333; stroke-width: 2; }
+      .link { fill: #0066cc; font-size: 11px; text-decoration: underline; }
+      .tab-active { fill: #f0f0f0; stroke: #999; stroke-width: 1; }
+      .tab-inactive { fill: #d0d0d0; stroke: #999; stroke-width: 1; }
+      .tab-text { fill: #000; font-size: 10px; text-anchor: middle; }
+      .listbox { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .progress-bar { fill: #0078d4; }
+      .progress-bg { fill: #e0e0e0; stroke: #999; stroke-width: 1; }
     </style>
   </defs>
+  <!-- Title bar -->
   <rect class="title-bar" x="0" y="0" width="520" height="22" rx="4"/>
-  <text class="title-text" x="8" y="15">TCP/IP setup</text>
+  <text class="title-text" x="8" y="15">Tera Term: TCP/IPの設定</text>
   <rect class="dialog-bg" x="0" y="22" width="520" height="378"/>
-  <!-- Save history -->
   <rect class="checkbox" x="24" y="42" width="13" height="13"/>
-  <text class="label" x="42" y="53">Save history when new connection</text>
-  <!-- Edit host list button -->
-  <rect class="button" x="24" y="64" width="148" height="24" rx="3"/>
-  <text class="button-text" x="98" y="80">Edit host list</text>
-  <!-- Telnet -->
+  <text class="label" x="42" y="53">新規接続時にホストリストに追加</text>
+  <rect class="button" x="24" y="64" width="160" height="24" rx="3"/>
+  <text class="button-text" x="104" y="80">ホストリストの編集</text>
   <rect class="checkbox" x="24" y="104" width="13" height="13"/>
   <text class="label" x="42" y="115">Telnet</text>
-  <!-- TCP Port# -->
-  <text class="label" x="24" y="142">TCP Port#:</text>
+  <text class="label" x="24" y="142">ポート#:</text>
   <rect class="edit-box" x="46" y="152" width="60" height="20"/>
   <text class="label" x="52" y="166">23</text>
-  <!-- Telnet Keep alive -->
-  <text class="label" x="24" y="194">Telnet Keep alive</text>
+  <text class="label" x="24" y="194">Telnet Keep-alive</text>
   <rect class="edit-box" x="46" y="204" width="50" height="20"/>
   <text class="label" x="52" y="218">300</text>
-  <text class="label" x="102" y="218">Sec.(0 to turn off)</text>
-  <!-- Auto window close -->
+  <text class="label" x="102" y="218">秒(0指定で無効)</text>
   <rect class="checkbox" x="24" y="240" width="13" height="13"/>
-  <text class="label" x="42" y="251">Auto window close</text>
-  <!-- Term type -->
-  <text class="label" x="24" y="278">Term type:</text>
+  <text class="label" x="42" y="251">自動的にウィンドウを閉じる</text>
+  <text class="label" x="24" y="278">端末タイプ:</text>
   <rect class="edit-box" x="46" y="288" width="110" height="20"/>
   <text class="label" x="52" y="302">xterm</text>
-  <!-- Buttons -->
   <rect class="button-default" x="130" y="360" width="64" height="24" rx="3"/>
   <text class="button-text-default" x="162" y="376">OK</text>
-  <rect class="button" x="210" y="360" width="80" height="24" rx="3"/>
-  <text class="button-text" x="250" y="376">Cancel</text>
-  <rect class="button" x="306" y="360" width="72" height="24" rx="3"/>
-  <text class="button-text" x="342" y="376">Help</text>
+  <rect class="button" x="206" y="360" width="80" height="24" rx="3"/>
+  <text class="button-text" x="246" y="376">キャンセル</text>
+  <rect class="button" x="298" y="360" width="72" height="24" rx="3"/>
+  <text class="button-text" x="334" y="376">ヘルプ(&H)</text>
 </svg>

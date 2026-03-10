@@ -1,51 +1,84 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="540" height="400" font-family="Tahoma, MS Shell Dlg, sans-serif" font-size="11">
+<svg xmlns="http://www.w3.org/2000/svg" width="500" height="420" font-family="MS UI Gothic, Meiryo, sans-serif" font-size="11">
   <defs>
     <style>
+      .title-bar { fill: #0078d4; }
+      .title-text { fill: white; font-size: 11px; font-weight: bold; }
       .dialog-bg { fill: #f0f0f0; stroke: #999; stroke-width: 1; }
+      .group-box { fill: none; stroke: #999; stroke-width: 1; }
       .label { fill: #000; font-size: 11px; }
+      .edit-box { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
       .combo-box { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .button { fill: #e1e1e1; stroke: #adadad; stroke-width: 1; }
+      .button-default { fill: #0078d4; stroke: #005a9e; stroke-width: 1; }
+      .button-text { fill: #000; font-size: 11px; text-anchor: middle; }
+      .button-text-default { fill: #fff; font-size: 11px; text-anchor: middle; }
       .checkbox { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .radio { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
       .combo-arrow { fill: #606060; }
+      .text-area { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .scrollbar { fill: #c0c0c0; stroke: #999; stroke-width: 1; }
+      .sample-box { fill: #000; stroke: #333; stroke-width: 2; }
+      .link { fill: #0066cc; font-size: 11px; text-decoration: underline; }
       .tab-active { fill: #f0f0f0; stroke: #999; stroke-width: 1; }
-      .tab-inactive { fill: #e0e0e0; stroke: #999; stroke-width: 1; }
+      .tab-inactive { fill: #d0d0d0; stroke: #999; stroke-width: 1; }
       .tab-text { fill: #000; font-size: 10px; text-anchor: middle; }
+      .listbox { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .progress-bar { fill: #0078d4; }
+      .progress-bg { fill: #e0e0e0; stroke: #999; stroke-width: 1; }
     </style>
   </defs>
-  <rect class="tab-inactive" x="0" y="0" width="60" height="24" rx="3"/>
-  <text class="tab-text" x="30" y="16">General</text>
-  <rect class="tab-active" x="62" y="0" width="70" height="24" rx="3"/>
-  <text class="tab-text" x="97" y="16" font-weight="bold">Sequence</text>
-  <rect class="dialog-bg" x="0" y="22" width="540" height="378"/>
+  <!-- Title bar -->
+  <rect class="title-bar" x="0" y="0" width="500" height="22" rx="4"/>
+  <text class="title-text" x="8" y="15">Tera Term: その他の設定 - 制御シーケンス</text>
+  <rect class="dialog-bg" x="0" y="22" width="500" height="398"/>
   <rect class="checkbox" x="16" y="36" width="13" height="13"/>
-  <text class="label" x="34" y="47">Accept mouse event tracking</text>
+  <text class="label" x="34" y="47">マウスイベント通知要求を受け入れる</text>
   <rect class="checkbox" x="16" y="56" width="13" height="13"/>
-  <text class="label" x="34" y="67">Disable mouse tracking ctrl</text>
-  <text class="label" x="16" y="94">Accept title changing:</text>
-  <rect class="combo-box" x="160" y="82" width="160" height="20"/>
-  <rect fill="#e1e1e1" x="300" y="82" width="20" height="20" stroke="#7a7a7a" stroke-width="1"/>
-  <polygon class="combo-arrow" points="305,90 315,90 310,97"/>
-  <text class="label" x="16" y="120">Title report:</text>
-  <rect class="combo-box" x="160" y="108" width="160" height="20"/>
-  <rect fill="#e1e1e1" x="300" y="108" width="20" height="20" stroke="#7a7a7a" stroke-width="1"/>
-  <polygon class="combo-arrow" points="305,116 315,116 310,123"/>
-  <rect class="checkbox" x="16" y="138" width="13" height="13"/>
-  <text class="label" x="34" y="149">Window control sequence</text>
-  <rect class="checkbox" x="16" y="158" width="13" height="13"/>
-  <text class="label" x="34" y="169">Window report sequence</text>
-  <rect class="checkbox" x="16" y="178" width="13" height="13"/>
-  <text class="label" x="34" y="189">Cursor control sequence</text>
-  <text class="label" x="16" y="216">Clipboard access:</text>
-  <rect class="combo-box" x="160" y="204" width="160" height="20"/>
-  <rect fill="#e1e1e1" x="300" y="204" width="20" height="20" stroke="#7a7a7a" stroke-width="1"/>
-  <polygon class="combo-arrow" points="305,212 315,212 310,219"/>
-  <rect class="checkbox" x="16" y="234" width="13" height="13"/>
-  <text class="label" x="34" y="245">Clipboard notify</text>
-  <rect class="checkbox" x="16" y="254" width="13" height="13"/>
-  <text class="label" x="34" y="265">Accept clear scroll buffer</text>
-  <rect class="checkbox" x="16" y="274" width="13" height="13"/>
-  <text class="label" x="34" y="285">Disable print start</text>
-  <text class="label" x="16" y="312">Beep:</text>
-  <rect class="combo-box" x="160" y="300" width="160" height="20"/>
-  <rect fill="#e1e1e1" x="300" y="300" width="20" height="20" stroke="#7a7a7a" stroke-width="1"/>
-  <polygon class="combo-arrow" points="305,308 315,308 310,315"/>
+  <text class="label" x="34" y="67">Controlキーを押している間はマウスイベントを通知しない</text>
+  <text class="label" x="16" y="80">ウィンドウタイトルの変更要求を受け入れる:</text>
+  <rect class="combo-box" x="300" y="68" width="120" height="20"/>
+  <rect fill="#e1e1e1" x="400" y="68" width="20" height="20" stroke="#7a7a7a" stroke-width="1"/>
+  <polygon class="combo-arrow" points="405,76 415,76 410,83"/>
+  <text class="label" x="306" y="82">上書き</text>
+  <text class="label" x="16" y="106">カーソル形状/点滅変更制御シーケンス:</text>
+  <rect class="combo-box" x="300" y="94" width="120" height="20"/>
+  <rect fill="#e1e1e1" x="400" y="94" width="20" height="20" stroke="#7a7a7a" stroke-width="1"/>
+  <polygon class="combo-arrow" points="405,102 415,102 410,109"/>
+  <text class="label" x="16" y="130">ウィンドウ操作制御シーケンス:</text>
+  <rect class="combo-box" x="300" y="118" width="120" height="20"/>
+  <rect fill="#e1e1e1" x="400" y="118" width="20" height="20" stroke="#7a7a7a" stroke-width="1"/>
+  <polygon class="combo-arrow" points="405,126 415,126 410,133"/>
+  <text class="label" x="16" y="154">ウィンドウ情報報告シーケンス:</text>
+  <rect class="combo-box" x="300" y="142" width="120" height="20"/>
+  <rect fill="#e1e1e1" x="400" y="142" width="20" height="20" stroke="#7a7a7a" stroke-width="1"/>
+  <polygon class="combo-arrow" points="405,150 415,150 410,157"/>
+  <text class="label" x="16" y="180">ウィンドウタイトルの報告要求:</text>
+  <circle class="radio" cx="300" cy="172" r="6"/>
+  <text class="label" x="312" y="176">無視</text>
+  <circle class="radio" cx="360" cy="172" r="6"/>
+  <text class="label" x="372" y="176">応答</text>
+  <circle class="radio" cx="420" cy="172" r="6"/>
+  <text class="label" x="432" y="176">空白</text>
+  <text class="label" x="16" y="204">リモートからのクリップボードアクセス:</text>
+  <rect class="combo-box" x="300" y="192" width="120" height="20"/>
+  <rect fill="#e1e1e1" x="400" y="192" width="20" height="20" stroke="#7a7a7a" stroke-width="1"/>
+  <polygon class="combo-arrow" points="405,200 415,200 410,207"/>
+  <text class="label" x="306" y="206">無効</text>
+  <rect class="checkbox" x="16" y="220" width="13" height="13"/>
+  <text class="label" x="34" y="231">リモートからのクリップボードアクセスを通知する</text>
+  <rect class="checkbox" x="16" y="240" width="13" height="13"/>
+  <text class="label" x="34" y="251">リモートからのスクロールバッファの消去を受け入れる</text>
+  <rect class="checkbox" x="16" y="260" width="13" height="13"/>
+  <text class="label" x="34" y="271">印字開始シーケンスを無効化</text>
+  <text class="label" x="16" y="284">ベル:</text>
+  <circle class="radio" cx="60" cy="278" r="6"/>
+  <text class="label" x="72" y="282">無視</text>
+  <circle class="radio" cx="130" cy="278" r="6"/>
+  <text class="label" x="142" y="282">サウンド</text>
+  <circle class="radio" cx="210" cy="278" r="6"/>
+  <text class="label" x="222" y="282">ビジュアルベル</text>
+  <rect class="button-default" x="130" y="380" width="64" height="24" rx="3"/>
+  <text class="button-text-default" x="162" y="396">OK</text>
+  <rect class="button" x="206" y="380" width="80" height="24" rx="3"/>
+  <text class="button-text" x="246" y="396">キャンセル</text>
 </svg>
