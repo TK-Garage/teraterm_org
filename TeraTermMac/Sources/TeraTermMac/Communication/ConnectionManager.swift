@@ -41,6 +41,8 @@ enum ConnectionType {
     case tcpip(host: String, port: Int)
     case serial(device: String, baudRate: Int, dataBits: Int, parity: Parity, stopBits: Int, flowControl: FlowControl)
     case localShell(command: String, arguments: [String], environment: [String: String])
+    case ssh(host: String, port: Int, username: String, password: String,
+             authMethod: SSHAuthMethod, keyFile: String, forwardAgent: Bool)
 }
 
 // MARK: - Connection Delegate
@@ -96,6 +98,11 @@ class ConnectionManager {
             )
         case .localShell(let command, let arguments, let environment):
             connection = LocalShellConnection(command: command, arguments: arguments, environment: environment)
+        case .ssh(let host, let port, let username, let password, let authMethod, let keyFile, let forwardAgent):
+            connection = SSHConnection(
+                host: host, port: port, username: username, password: password,
+                authMethod: authMethod, keyFile: keyFile, forwardAgent: forwardAgent,
+                termType: settings.termType)
         }
 
         connection.delegate = self
@@ -150,6 +157,8 @@ class ConnectionManager {
             tcp.send(Data([0xFF, 0xF3])) // IAC BREAK
         } else if let serial = currentConnection as? SerialConnection {
             serial.sendBreak()
+        } else if let ssh = currentConnection as? SSHConnection {
+            ssh.sendBreak()
         }
     }
 
@@ -185,6 +194,21 @@ class ConnectionManager {
             let env = pty.environment
             pty.disconnect()
             let newConn = LocalShellConnection(command: cmd, arguments: args, environment: env)
+            newConn.delegate = self
+            currentConnection = newConn
+            newConn.connect()
+        } else if let ssh = conn as? SSHConnection {
+            let h = ssh.host
+            let p = ssh.port
+            let u = ssh.username
+            let m = ssh.authMethod
+            let k = ssh.keyFile
+            let f = ssh.forwardAgent
+            let t = ssh.termType
+            ssh.disconnect()
+            let newConn = SSHConnection(
+                host: h, port: p, username: u, password: "",
+                authMethod: m, keyFile: k, forwardAgent: f, termType: t)
             newConn.delegate = self
             currentConnection = newConn
             newConn.connect()
@@ -927,7 +951,9 @@ enum ConnectionError: LocalizedError {
     case connectionRefused(host: String, port: Int)
     case connectionTimeout(host: String, port: Int)
     case hostNotFound(host: String)
-    case sshNotSupported(host: String, port: Int)
+    case sshConnectionFailed(host: String, port: Int, detail: String?)
+    case sshForkFailed(detail: String?)
+    case sshNotFound
     case serialPortOpenFailed(device: String, detail: String?)
     case ptyCreationFailed
     case sendFailed
@@ -946,8 +972,16 @@ enum ConnectionError: LocalizedError {
             return L("error.connection.timeout", host, port)
         case .hostNotFound(let host):
             return L("error.connection.hostNotFound", host)
-        case .sshNotSupported(let host, let port):
-            return L("error.connection.sshNotSupported", host, port)
+        case .sshConnectionFailed(let host, let port, let detail):
+            let base = "SSH connection to \(host):\(port) failed"
+            if let detail = detail { return "\(base)\n\(detail)" }
+            return base
+        case .sshForkFailed(let detail):
+            let base = "Failed to start SSH process"
+            if let detail = detail { return "\(base): \(detail)" }
+            return base
+        case .sshNotFound:
+            return "/usr/bin/ssh not found. Please ensure OpenSSH is installed."
         case .serialPortOpenFailed(let device, let detail):
             let base = L("error.connection.serialFailed", device)
             if let detail = detail { return "\(base)\n\(detail)" }
@@ -968,8 +1002,8 @@ enum ConnectionError: LocalizedError {
             return L("error.connection.title.refused")
         case .connectionTimeout:
             return L("error.connection.title.timeout")
-        case .sshNotSupported:
-            return L("error.connection.title.ssh")
+        case .sshConnectionFailed, .sshForkFailed, .sshNotFound:
+            return "SSH Error"
         case .serialPortOpenFailed:
             return L("error.connection.title.serial")
         default:

@@ -1192,8 +1192,12 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
             self.settings.sshUsername = username
             self.settings.sshAuthMethod = authMethod
             self.settings.sshKeyFile = keyFile
-            // Proceed with TCP connection (SSH protocol layer will use these settings)
-            wc.connectTCP(host: host, port: port, telnet: false)
+            // Connect via SSH using system OpenSSH
+            wc.connectSSH(
+                host: host, port: port,
+                username: username, password: passphrase,
+                authMethod: authMethod, keyFile: keyFile,
+                forwardAgent: self.settings.sshForwardAgent)
         }
         vc.cancelHandler = {
             // User chose "Disconnect" — do nothing

@@ -156,6 +156,24 @@ class TerminalWindowController: NSWindowController {
         updateWindowTitle()
     }
 
+    func connectSSH(host: String, port: Int, username: String, password: String,
+                     authMethod: SSHAuthMethod, keyFile: String, forwardAgent: Bool) {
+        settings.hostname = host
+        settings.defaultPort = port
+        useTelnet = false
+        connectionManager.connect(type: .ssh(
+            host: host, port: port, username: username, password: password,
+            authMethod: authMethod, keyFile: keyFile, forwardAgent: forwardAgent))
+
+        // Set initial PTY window size
+        if let ssh = connectionManager.currentConnection as? SSHConnection {
+            let size = terminalView.terminalSize
+            ssh.resize(cols: UInt16(size.columns), rows: UInt16(size.rows))
+        }
+
+        updateWindowTitle()
+    }
+
     func connectSerial(device: String) {
         settings.serialPort = device
         connectionManager.connect(type: .serial(
@@ -183,6 +201,8 @@ class TerminalWindowController: NSWindowController {
             if let conn = connectionManager.currentConnection {
                 if conn is LocalShellConnection {
                     title += " - " + L("window.title.localShell")
+                } else if let ssh = conn as? SSHConnection {
+                    title += " - \(ssh.username)@\(ssh.host):\(ssh.port) (SSH)"
                 } else if let tcp = conn as? TCPConnection {
                     title += " - \(tcp.host):\(tcp.port)"
                 } else if let serial = conn as? SerialConnection {
@@ -320,6 +340,11 @@ class TerminalWindowController: NSWindowController {
             if size.columns > 0 && size.rows > 0 {
                 pty.resize(cols: UInt16(size.columns), rows: UInt16(size.rows))
             }
+        } else if let ssh = connectionManager.currentConnection as? SSHConnection {
+            let size = terminalView.terminalSize
+            if size.columns > 0 && size.rows > 0 {
+                ssh.resize(cols: UInt16(size.columns), rows: UInt16(size.rows))
+            }
         }
 
         // Telnet NAWS update
@@ -451,6 +476,8 @@ class TerminalWindowController: NSWindowController {
 
         if let pty = connectionManager.currentConnection as? LocalShellConnection {
             pty.resize(cols: UInt16(size.columns), rows: UInt16(size.rows))
+        } else if let ssh = connectionManager.currentConnection as? SSHConnection {
+            ssh.resize(cols: UInt16(size.columns), rows: UInt16(size.rows))
         }
 
         if useTelnet {
