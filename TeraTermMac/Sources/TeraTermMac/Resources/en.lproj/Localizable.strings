@@ -13,6 +13,12 @@
 "menu.file.duplicateSession" = "Duplicate Session";
 "menu.file.log" = "Log…";
 "menu.file.stopLog" = "Stop Log";
+"menu.file.pauseLog" = "Pause Log";
+"menu.file.resumeLog" = "Resume Log";
+"menu.file.commentToLog" = "Comment to Log…";
+"menu.file.viewLog" = "View Log";
+"menu.file.showLogDialog" = "Show Log Dialog";
+"menu.file.quitAll" = "Quit All Tera Term";
 "menu.file.fileTransfer" = "File Transfer";
 "menu.file.xmodemSend" = "XMODEM Send…";
 "menu.file.xmodemReceive" = "XMODEM Receive…";
@@ -245,6 +251,34 @@
 "error.connection.serialFailed" = "Failed to open serial port %@.";
 "error.connection.ptyFailed" = "Failed to create pseudo-terminal.";
 "error.connection.sendFailed" = "Failed to send data.";
+
+/* Log Comment Dialog */
+"dialog.logComment.title" = "Comment to Log";
+"dialog.logComment.message" = "Enter a comment to append to the log file:";
+"dialog.logComment.placeholder" = "Comment";
+"dialog.logComment.ok" = "Append";
+"dialog.logComment.cancel" = "Cancel";
+
+/* Log Progress Panel (IDD_LOGDLG progress) */
+"dialog.logProgress.title" = "Tera Term: Log";
+"dialog.logProgress.filename" = "Filename:";
+"dialog.logProgress.fullpath" = "Fullpath:";
+"dialog.logProgress.bytesLogged" = "Bytes logged:";
+"dialog.logProgress.elapsed" = "Elapsed time:";
+"dialog.logProgress.state" = "State:";
+"dialog.logProgress.stateActive" = "Logging";
+"dialog.logProgress.statePaused" = "Paused";
+"dialog.logProgress.pause" = "Pause";
+"dialog.logProgress.resume" = "Resume";
+"dialog.logProgress.close" = "Close";
+"dialog.logProgress.comment" = "Comment";
+"dialog.logProgress.help" = "Help";
+
+/* Quit All Confirmation */
+"dialog.quitAll.title" = "Quit All";
+"dialog.quitAll.message" = "There are %d Tera Term window(s). Close all?";
+"dialog.quitAll.quit" = "Quit All";
+"dialog.quitAll.cancel" = "Cancel";
 
 /* SSH Authentication Dialog */
 "dialog.sshAuth.title" = "SSH Authentication";

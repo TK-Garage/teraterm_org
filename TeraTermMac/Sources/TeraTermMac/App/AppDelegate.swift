@@ -202,6 +202,14 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         fileMenu.addItem(NSMenuItem.separator())
         let logItem = fileMenu.addItem(withTitle: L("menu.file.log"), action: #selector(showLogDialog(_:)), keyEquivalent: "")
         setSymbol("doc.text", for: logItem)
+        let pauseLogItem = fileMenu.addItem(withTitle: L("menu.file.pauseLog"), action: #selector(pauseLog(_:)), keyEquivalent: "")
+        setSymbol("pause.circle", for: pauseLogItem)
+        let commentLogItem = fileMenu.addItem(withTitle: L("menu.file.commentToLog"), action: #selector(commentToLog(_:)), keyEquivalent: "")
+        setSymbol("text.bubble", for: commentLogItem)
+        let viewLogItem = fileMenu.addItem(withTitle: L("menu.file.viewLog"), action: #selector(viewLog(_:)), keyEquivalent: "")
+        setSymbol("eye.circle", for: viewLogItem)
+        let showLogDlgItem = fileMenu.addItem(withTitle: L("menu.file.showLogDialog"), action: #selector(showLogProgressDialog(_:)), keyEquivalent: "")
+        setSymbol("chart.bar.doc.horizontal", for: showLogDlgItem)
         let stopLogItem = fileMenu.addItem(withTitle: L("menu.file.stopLog"), action: #selector(stopLog(_:)), keyEquivalent: "")
         setSymbol("doc.text.fill", for: stopLogItem)
         fileMenu.addItem(NSMenuItem.separator())
@@ -241,6 +249,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         let disconnItem = fileMenu.addItem(withTitle: L("menu.file.disconnect"), action: #selector(doDisconnect(_:)), keyEquivalent: "")
         setSymbol("xmark.circle", for: disconnItem)
         fileMenu.addItem(NSMenuItem.separator())
+        let quitAllItem = fileMenu.addItem(withTitle: L("menu.file.quitAll"), action: #selector(quitAllTeraTerm(_:)), keyEquivalent: "")
+        setSymbol("xmark.square.fill", for: quitAllItem)
         let closeItem = fileMenu.addItem(withTitle: L("menu.file.close"), action: #selector(NSWindow.performClose(_:)), keyEquivalent: "w")
         setSymbol("xmark.square", for: closeItem)
 
@@ -441,6 +451,113 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
 
     @objc func stopLog(_ sender: Any?) {
         activeWindowController?.stopLog()
+    }
+
+    // MARK: - Log Pause / Resume (port of vtwin.cpp OnFilePause)
+
+    @objc func pauseLog(_ sender: Any?) {
+        guard let wc = activeWindowController else { return }
+        let logger = wc.logger!
+        if logger.state == .paused {
+            logger.resumeLogging()
+        } else if logger.state == .active {
+            logger.pauseLogging()
+        }
+        logProgressPanel?.updateState(logger)
+    }
+
+    // MARK: - Comment to Log (port of vtwin.cpp OnCommentToLog / IDD_COMMENT_DIALOG)
+
+    @objc func commentToLog(_ sender: Any?) {
+        guard let wc = activeWindowController, let win = wc.window else { return }
+        let logger = wc.logger!
+        guard logger.state == .active || logger.state == .paused else { return }
+
+        let alert = NSAlert()
+        alert.messageText = L("dialog.logComment.title")
+        alert.informativeText = L("dialog.logComment.message")
+        alert.addButton(withTitle: L("dialog.logComment.ok"))
+        alert.addButton(withTitle: L("dialog.logComment.cancel"))
+
+        let textField = NSTextField(frame: NSRect(x: 0, y: 0, width: 300, height: 24))
+        textField.placeholderString = L("dialog.logComment.placeholder")
+        textField.font = NSFont.monospacedSystemFont(ofSize: 13, weight: .regular)
+        alert.accessoryView = textField
+        alert.window.initialFirstResponder = textField
+
+        alert.beginSheetModal(for: win) { response in
+            guard response == .alertFirstButtonReturn else { return }
+            let comment = textField.stringValue
+            guard !comment.isEmpty else { return }
+            logger.logComment(comment)
+        }
+    }
+
+    // MARK: - View Log (port of vtwin.cpp OnViewLog)
+
+    @objc func viewLog(_ sender: Any?) {
+        guard let wc = activeWindowController else { return }
+        let logger = wc.logger!
+        guard let path = logger.logFilePath else { return }
+
+        let url = URL(fileURLWithPath: path)
+        // Open the log file with the default editor (matching original Tera Term behavior
+        // which uses the configured log viewer or system default)
+        NSWorkspace.shared.open(url)
+    }
+
+    // MARK: - Show Log Progress Dialog (port of IDD_FOPT_LOGDLG)
+
+    private var logProgressPanel: LogProgressPanel?
+
+    @objc func showLogProgressDialog(_ sender: Any?) {
+        guard let wc = activeWindowController else { return }
+        let logger = wc.logger!
+        guard logger.state != .inactive else { return }
+
+        if let panel = logProgressPanel, panel.isVisible {
+            panel.orderFront(nil)
+            return
+        }
+
+        let panel = LogProgressPanel(logger: logger)
+        panel.onPause = { [weak self] in
+            self?.pauseLog(nil)
+        }
+        panel.onComment = { [weak self] in
+            self?.commentToLog(nil)
+        }
+        panel.onClose = { [weak self] in
+            self?.activeWindowController?.stopLog()
+            self?.logProgressPanel?.close()
+            self?.logProgressPanel = nil
+        }
+        logProgressPanel = panel
+        panel.orderFront(nil)
+    }
+
+    // MARK: - Quit All Tera Term (port of vtwin.cpp OnAllClose)
+
+    @objc func quitAllTeraTerm(_ sender: Any?) {
+        let count = windowControllers.count
+        if count == 0 { return }
+
+        // Confirm before closing all windows
+        let alert = NSAlert()
+        alert.messageText = L("dialog.quitAll.title")
+        alert.informativeText = String(format: L("dialog.quitAll.message"), count)
+        alert.alertStyle = .warning
+        alert.addButton(withTitle: L("dialog.quitAll.quit"))
+        alert.addButton(withTitle: L("dialog.quitAll.cancel"))
+
+        if alert.runModal() == .alertSecondButtonReturn { return }
+
+        // Close all windows (this triggers disconnect via windowWillClose)
+        let controllers = windowControllers
+        for wc in controllers {
+            wc.disconnect()
+            wc.window?.close()
+        }
     }
 
     @objc func showChangeDir(_ sender: Any?) {
@@ -888,6 +1005,31 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
             return hasWindow
         case #selector(stopMacro(_:)):
             return activeWindowController?.macroInterpreter != nil
+
+        // Log menu items: enabled only when logging is active
+        case #selector(pauseLog(_:)):
+            let logState = activeWindowController?.logger.state ?? .inactive
+            if logState == .paused {
+                menuItem.title = L("menu.file.resumeLog")
+            } else {
+                menuItem.title = L("menu.file.pauseLog")
+            }
+            return logState == .active || logState == .paused
+        case #selector(commentToLog(_:)):
+            let logState = activeWindowController?.logger.state ?? .inactive
+            return logState == .active || logState == .paused
+        case #selector(viewLog(_:)):
+            return activeWindowController?.logger.logFilePath != nil
+        case #selector(showLogProgressDialog(_:)):
+            let logState = activeWindowController?.logger.state ?? .inactive
+            return logState != .inactive
+        case #selector(stopLog(_:)):
+            let logState = activeWindowController?.logger.state ?? .inactive
+            return logState != .inactive
+
+        case #selector(quitAllTeraTerm(_:)):
+            return !windowControllers.isEmpty
+
         case #selector(toggleBroadcast(_:)):
             // Update checkmark state
             menuItem.state = (broadcastPanel?.isVisible == true) ? .on : .off

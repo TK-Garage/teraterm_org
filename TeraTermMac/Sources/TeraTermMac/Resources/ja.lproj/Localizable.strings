@@ -13,6 +13,12 @@
 "menu.file.duplicateSession" = "セッションの複製";
 "menu.file.log" = "ログ…";
 "menu.file.stopLog" = "ログ停止";
+"menu.file.pauseLog" = "ログを中断";
+"menu.file.resumeLog" = "ログを再開";
+"menu.file.commentToLog" = "ログにコメントを付加…";
+"menu.file.viewLog" = "ログを表示";
+"menu.file.showLogDialog" = "ログ記録中ダイアログを表示";
+"menu.file.quitAll" = "Tera Termの全終了";
 "menu.file.fileTransfer" = "ファイル転送";
 "menu.file.xmodemSend" = "XMODEM 送信…";
 "menu.file.xmodemReceive" = "XMODEM 受信…";
@@ -245,6 +251,34 @@
 "error.connection.serialFailed" = "シリアルポート %@ を開けませんでした。";
 "error.connection.ptyFailed" = "擬似端末の作成に失敗しました。";
 "error.connection.sendFailed" = "データの送信に失敗しました。";
+
+/* Log Comment Dialog */
+"dialog.logComment.title" = "ログにコメントを付加";
+"dialog.logComment.message" = "ログファイルに追記するコメントを入力してください:";
+"dialog.logComment.placeholder" = "コメント";
+"dialog.logComment.ok" = "追記";
+"dialog.logComment.cancel" = "キャンセル";
+
+/* Log Progress Panel (IDD_LOGDLG progress) */
+"dialog.logProgress.title" = "Tera Term: ログ";
+"dialog.logProgress.filename" = "ファイル名:";
+"dialog.logProgress.fullpath" = "フルパス:";
+"dialog.logProgress.bytesLogged" = "記録バイト数:";
+"dialog.logProgress.elapsed" = "経過時間:";
+"dialog.logProgress.state" = "状態:";
+"dialog.logProgress.stateActive" = "記録中";
+"dialog.logProgress.statePaused" = "中断";
+"dialog.logProgress.pause" = "中断";
+"dialog.logProgress.resume" = "再開";
+"dialog.logProgress.close" = "閉じる";
+"dialog.logProgress.comment" = "コメント";
+"dialog.logProgress.help" = "ヘルプ";
+
+/* Quit All Confirmation */
+"dialog.quitAll.title" = "全終了";
+"dialog.quitAll.message" = "%d 個のTera Termウインドウがあります。すべて閉じますか？";
+"dialog.quitAll.quit" = "全終了";
+"dialog.quitAll.cancel" = "キャンセル";
 
 /* SSH Authentication Dialog */
 "dialog.sshAuth.title" = "SSH認証";
