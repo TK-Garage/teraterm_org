@@ -462,15 +462,89 @@ class ZMODEMProtocol: FileTransferProtocol {
     }
 
     private func parseFileInfo() {
-        // Extract filename and size from ZFILE data
-        // Simplified version
+        // Extract filename and size from ZFILE data subpacket.
+        // The subpacket is: filename\0size\0  (both NUL-terminated, size is decimal ASCII).
+        guard !receiveBuffer.isEmpty else { return }
+
+        // Look for double NUL or at least one NUL for filename
+        if let nulIdx = receiveBuffer.firstIndex(of: 0) {
+            let nameData = Data(receiveBuffer[receiveBuffer.startIndex..<nulIdx])
+            currentFileName = String(data: nameData, encoding: .utf8) ?? "unknown"
+
+            // Parse size after the first NUL
+            let afterNul = receiveBuffer.index(after: nulIdx)
+            if afterNul < receiveBuffer.endIndex {
+                if let sizeNul = receiveBuffer[afterNul...].firstIndex(of: 0) {
+                    let sizeStr = String(data: Data(receiveBuffer[afterNul..<sizeNul]), encoding: .ascii) ?? ""
+                    // ZMODEM size field may contain "size mtime mode" separated by spaces
+                    let sizeOnly = sizeStr.split(separator: " ").first.flatMap { String($0) } ?? sizeStr
+                    totalFileSize = Int64(sizeOnly) ?? 0
+                    receiveBuffer = Data(receiveBuffer[receiveBuffer.index(after: sizeNul)...])
+                } else {
+                    let sizeStr = String(data: Data(receiveBuffer[afterNul...]), encoding: .ascii) ?? ""
+                    let sizeOnly = sizeStr.split(separator: " ").first.flatMap { String($0) } ?? sizeStr
+                    totalFileSize = Int64(sizeOnly) ?? 0
+                    receiveBuffer.removeAll()
+                }
+            } else {
+                receiveBuffer.removeAll()
+            }
+        }
     }
 
     private func processFileData() {
-        // Process incoming file data blocks
-        // Simplified version
-        fileData.append(receiveBuffer)
-        bytesTransferred += Int64(receiveBuffer.count)
+        // Process incoming file data, handling ZDLE escaping.
+        var i = receiveBuffer.startIndex
+        var decoded = Data()
+
+        while i < receiveBuffer.endIndex {
+            let byte = receiveBuffer[i]
+
+            if byte == ZMODEMProtocol.ZDLE {
+                let next = receiveBuffer.index(after: i)
+                guard next < receiveBuffer.endIndex else {
+                    // Incomplete escape – keep remainder for next call
+                    receiveBuffer = Data(receiveBuffer[i...])
+                    fileData.append(decoded)
+                    bytesTransferred += Int64(decoded.count)
+                    updateState(.inProgress(bytesTransferred: bytesTransferred, totalBytes: totalFileSize > 0 ? totalFileSize : nil, fileName: currentFileName))
+                    return
+                }
+
+                let escaped = receiveBuffer[next]
+                switch escaped {
+                case ZMODEMProtocol.ZCRCW, ZMODEMProtocol.ZCRCG,
+                     ZMODEMProtocol.ZCRCQ, ZMODEMProtocol.ZCRCE:
+                    // End of data subpacket
+                    fileData.append(decoded)
+                    bytesTransferred += Int64(decoded.count)
+                    receiveBuffer = Data(receiveBuffer[receiveBuffer.index(next, offsetBy: 1)...])
+
+                    if escaped == ZMODEMProtocol.ZCRCE {
+                        // Last subpacket – write to file
+                        if let path = filePath {
+                            try? fileData.write(to: URL(fileURLWithPath: path))
+                        }
+                        sendHexHeader(ZMODEMProtocol.ZACK, flags: [0, 0, 0, 0])
+                    } else {
+                        sendHexHeader(ZMODEMProtocol.ZACK, flags: [0, 0, 0, 0])
+                    }
+                    updateState(.inProgress(bytesTransferred: bytesTransferred, totalBytes: totalFileSize > 0 ? totalFileSize : nil, fileName: currentFileName))
+                    return
+
+                default:
+                    // XOR to un-escape
+                    decoded.append(escaped ^ 0x40)
+                    i = receiveBuffer.index(next, offsetBy: 1)
+                }
+            } else {
+                decoded.append(byte)
+                i = receiveBuffer.index(after: i)
+            }
+        }
+
+        fileData.append(decoded)
+        bytesTransferred += Int64(decoded.count)
         receiveBuffer.removeAll()
         updateState(.inProgress(bytesTransferred: bytesTransferred, totalBytes: totalFileSize > 0 ? totalFileSize : nil, fileName: currentFileName))
     }
@@ -511,21 +585,28 @@ class ZMODEMProtocol: FileTransferProtocol {
         header.append(ZMODEMProtocol.ZPAD)
         header.append(ZMODEMProtocol.ZDLE)
         header.append(ZMODEMProtocol.ZHEX)
-        header.append(hexByte(frameType))
+        header.append(hexEncode(frameType))
         for flag in flags.prefix(4) {
-            header.append(hexByte(flag))
+            header.append(hexEncode(flag))
         }
         // CRC
         let crcVal = crc16(Data([frameType] + flags.prefix(4)))
-        header.append(hexByte(UInt8(crcVal >> 8)))
-        header.append(hexByte(UInt8(crcVal & 0xFF)))
+        header.append(hexEncode(UInt8(crcVal >> 8)))
+        header.append(hexEncode(UInt8(crcVal & 0xFF)))
         header.append(0x0D) // CR
         header.append(0x0A) // LF
         sendData(header)
     }
 
-    private func hexByte(_ byte: UInt8) -> UInt8 {
-        return byte // Simplified - real implementation would encode as hex
+    /// Encode a byte as two hex ASCII characters appended to the output.
+    /// Returns a two-byte Data.
+    private func hexEncode(_ byte: UInt8) -> Data {
+        let hi = byte >> 4
+        let lo = byte & 0x0F
+        func hexChar(_ nibble: UInt8) -> UInt8 {
+            nibble < 10 ? (0x30 + nibble) : (0x61 + nibble - 10)
+        }
+        return Data([hexChar(hi), hexChar(lo)])
     }
 
     override func cancel() {
@@ -666,13 +747,106 @@ class KermitProtocol: FileTransferProtocol {
         delegate?.transferDidComplete(fileName: currentFileName, bytes: bytesTransferred)
     }
 
+    private var lastSentPacket: Data?
+
     private func handleACK(_ packet: Data) {
         sequence = (sequence + 1) % 64
-        // Continue sending based on state
+
+        switch kState {
+        case .sendInit:
+            // Send-Init ACKed → send File header
+            kState = .sendFile
+            sendFileHeaderPacket()
+        case .sendFile:
+            // File header ACKed → send data
+            kState = .sendData
+            sendNextDataPacket()
+        case .sendData:
+            sendNextDataPacket()
+        default:
+            break
+        }
     }
 
     private func handleNAK(_ packet: Data) {
         // Resend last packet
+        if let last = lastSentPacket {
+            sendData(last)
+        }
+    }
+
+    private func sendFileHeaderPacket() {
+        guard let path = filePath else { return }
+        let fileName = (path as NSString).lastPathComponent
+        var packet = Data()
+        packet.append(KermitProtocol.MARK)
+        let nameData = Data(fileName.utf8)
+        packet.append(UInt8(nameData.count + 3 + 32)) // LEN
+        packet.append(UInt8(sequence + 32))             // SEQ
+        packet.append(UInt8(Character("F").asciiValue!)) // TYPE = File-Header
+        packet.append(nameData)
+        let checksum = packet[1...].reduce(0) { ($0 + Int($1)) } % 256
+        packet.append(UInt8((checksum + (checksum >> 6)) & 0x3F + 32))
+        packet.append(0x0D)
+        lastSentPacket = packet
+        sendData(packet)
+    }
+
+    private func sendNextDataPacket() {
+        guard let handle = fileHandle else { return }
+        let maxData = maxPacketLen - 3 // LEN, SEQ, TYPE overhead
+        let data = handle.readData(ofLength: maxData)
+
+        if data.isEmpty {
+            // Send EOF (Z packet)
+            sendEOFPacket()
+            return
+        }
+
+        let encoded = encodeKermitData(data)
+        var packet = Data()
+        packet.append(KermitProtocol.MARK)
+        packet.append(UInt8(encoded.count + 3 + 32))
+        packet.append(UInt8(sequence + 32))
+        packet.append(UInt8(Character("D").asciiValue!))
+        packet.append(encoded)
+        let checksum = packet[1...].reduce(0) { ($0 + Int($1)) } % 256
+        packet.append(UInt8((checksum + (checksum >> 6)) & 0x3F + 32))
+        packet.append(0x0D)
+        lastSentPacket = packet
+        bytesTransferred += Int64(data.count)
+        updateState(.inProgress(bytesTransferred: bytesTransferred, totalBytes: nil, fileName: (filePath.map { ($0 as NSString).lastPathComponent }) ?? ""))
+        sendData(packet)
+    }
+
+    private func sendEOFPacket() {
+        var packet = Data()
+        packet.append(KermitProtocol.MARK)
+        packet.append(UInt8(3 + 32)) // LEN (just header, no data)
+        packet.append(UInt8(sequence + 32))
+        packet.append(UInt8(Character("Z").asciiValue!))
+        let checksum = packet[1...].reduce(0) { ($0 + Int($1)) } % 256
+        packet.append(UInt8((checksum + (checksum >> 6)) & 0x3F + 32))
+        packet.append(0x0D)
+        lastSentPacket = packet
+        sendData(packet)
+        kState = .complete
+    }
+
+    private func encodeKermitData(_ data: Data) -> Data {
+        var result = Data()
+        for byte in data {
+            if byte < 0x20 || byte == 0x7F {
+                result.append(0x23) // '#' control prefix
+                result.append(byte ^ 0x40)
+            } else if byte == 0x23 {
+                result.append(0x23)
+                result.append(0x23) // Literal '#'
+            } else {
+                result.append(byte)
+            }
+        }
+        return result
     }
 
     private func sendInitPacket() {
