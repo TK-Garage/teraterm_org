@@ -20,6 +20,9 @@
 "menu.file.zmodemReceive" = "ZMODEM 受信…";
 "menu.file.kermitSend" = "Kermit 送信…";
 "menu.file.kermitReceive" = "Kermit 受信…";
+"menu.file.sendFile" = "ファイル送信…";
+"menu.file.receiveFile" = "ファイル受信…";
+"menu.file.changeDir" = "ディレクトリ変更…";
 "menu.file.disconnect" = "切断";
 "menu.file.close" = "閉じる";
 
@@ -32,6 +35,7 @@
 "menu.edit.clearScreen" = "画面クリア";
 "menu.edit.clearBuffer" = "バッファクリア";
 "menu.edit.selectAll" = "すべてを選択";
+"menu.edit.editHistory" = "編集履歴…";
 
 /* Setup Menu */
 "menu.setup" = "設定";
@@ -40,6 +44,8 @@
 "menu.setup.font" = "フォント…";
 "menu.setup.keyboard" = "キーボード…";
 "menu.setup.serialPort" = "シリアルポート…";
+"menu.setup.tcpip" = "TCP/IP…";
+"menu.setup.additionalSettings" = "その他の設定…";
 "menu.setup.saveSetup" = "設定の保存…";
 "menu.setup.restoreSetup" = "設定の復元…";
 
@@ -69,6 +75,7 @@
 "menu.window" = "ウインドウ";
 "menu.window.minimize" = "しまう";
 "menu.window.zoom" = "拡大/縮小";
+"menu.window.windowList" = "ウインドウ一覧";
 
 /* Help Menu */
 "menu.help" = "ヘルプ";
@@ -334,3 +341,128 @@
 "dialog.recvFile.filename" = "ファイル名 (このダイアログにファイルをドロップ):";
 "dialog.recvFile.binary" = "バイナリ";
 "dialog.recvFile.autoStop" = "自動停止待ち時間(秒):";
+
+/* Additional Settings Dialog */
+"dialog.additionalSettings.title" = "Tera Term: その他の設定";
+
+/* Additional Settings - Tab Names */
+"tab.general" = "全般";
+"tab.coding" = "エンコーディング";
+"tab.copyPaste" = "コピーと貼り付け";
+"tab.sequence" = "制御シーケンス";
+"tab.mouse" = "マウス";
+"tab.log" = "ログ";
+"tab.visual" = "表示";
+"tab.font" = "フォント";
+"tab.tekFont" = "フォント(TEK)";
+"tab.theme" = "テーマ";
+"tab.ui" = "UI";
+"tab.plugin" = "プラグイン";
+"tab.debug" = "デバッグ";
+
+/* Additional Settings - General */
+"dialog.general.sendBreak" = "ブレーク送信のアクセラレータキーを無効にする";
+"dialog.general.broadcast" = "ブロードキャストを受け入れる";
+"dialog.general.autoScroll" = "最下行でだけ自動スクロールする";
+"dialog.general.clearOnResize" = "ウインドウサイズ変更時に表示内容をクリアする";
+"dialog.general.cursorIME" = "IMEの状態によってカーソル形状を変更する";
+"dialog.general.defaultPort" = "デフォルトポート:";
+"dialog.general.titleFormat" = "タイトル形式";
+"dialog.general.notifySound" = "通知音";
+"dialog.general.fileTransferFolder" = "ファイル転送フォルダ:";
+
+/* Additional Settings - Coding */
+"dialog.coding.receiveEncoding" = "受信エンコーディング:";
+"dialog.coding.sendEncoding" = "送信エンコーディング:";
+"dialog.coding.ambiguousWidth" = "曖昧な文字幅:";
+"dialog.coding.emojiWidth" = "絵文字の文字幅:";
+
+/* Additional Settings - Copy and Paste */
+"dialog.copyPaste.continuedLineCopy" = "継続行コピーを有効にする";
+"dialog.copyPaste.confirmPasteNewLine" = "改行を含む貼り付け時に確認する";
+"dialog.copyPaste.autoTextCopy" = "選択時に自動でクリップボードにコピーする";
+"dialog.copyPaste.delimiterList" = "区切り文字:";
+"dialog.copyPaste.pasteDelay" = "貼り付けの行間遅延(ミリ秒):";
+
+/* Additional Settings - Sequence */
+"dialog.sequence.mouseEventTracking" = "マウスイベント通知要求を受け入れる";
+"dialog.sequence.titleChanging" = "ウインドウタイトルの変更要求を受け入れる";
+"dialog.sequence.titleReport" = "ウインドウタイトルの報告要求";
+"dialog.sequence.windowControl" = "ウインドウ操作制御シーケンス";
+"dialog.sequence.cursorControl" = "カーソル形状/点滅変更制御シーケンス";
+"dialog.sequence.clipboardAccess" = "リモートからのクリップボードアクセス";
+"dialog.sequence.beep" = "ベル:";
+"dialog.sequence.beepOff" = "無効";
+"dialog.sequence.beepSystem" = "サウンド";
+"dialog.sequence.beepVisual" = "ビジュアルベル";
+
+/* Additional Settings - Mouse */
+"dialog.mouse.clickableURL" = "クリッカブルURLを有効にする";
+"dialog.mouse.wheelScrollLines" = "ホイールのスクロール行数:";
+"dialog.mouse.lines" = "行";
+
+/* Additional Settings - Log */
+"dialog.log.viewEditor" = "ログ表示用エディタ:";
+"dialog.log.editorArguments" = "引き数:";
+"dialog.log.defaultName" = "標準ログファイル名:";
+"dialog.log.defaultPath" = "標準のログ保存先フォルダ:";
+"dialog.log.autoStart" = "自動的にログ採取を開始する";
+"dialog.log.options" = "オプション";
+"dialog.log.binary" = "バイナリ";
+"dialog.log.append" = "追記";
+"dialog.log.plainText" = "プレインテキスト";
+"dialog.log.hideDialog" = "ダイアログを非表示";
+"dialog.log.screenBuffer" = "スクリーンバッファを含める";
+"dialog.log.timestamp" = "タイムスタンプ";
+"dialog.log.logRotate" = "ログのローテート";
+"dialog.log.rotateEnabled" = "ローテートを有効にする";
+"dialog.log.rotateSize" = "サイズ:";
+"dialog.log.rotateStep" = "世代:";
+
+/* Additional Settings - Visual */
+"dialog.visual.windowOpacity" = "ウインドウの不透明度";
+"dialog.visual.active" = "アクティブ時:";
+"dialog.visual.inactive" = "非アクティブ時:";
+"dialog.visual.ansiColorPalette" = "ANSIカラーパレット";
+"dialog.visual.charAttributes" = "文字属性";
+"dialog.visual.flickerlessMove" = "ウインドウ移動/リサイズ時テーマを一時的に無効にする";
+
+/* Additional Settings - Font */
+"dialog.font.vtWindowFont" = "VTウインドウフォント";
+"dialog.font.fontName" = "フォント:";
+"dialog.font.choose" = "選択…";
+"dialog.font.proportional" = "プロポーショナルフォントを表示する";
+"dialog.font.hidden" = "非表示フォントを表示する";
+"dialog.font.drawingAPI" = "描画API:";
+"dialog.font.codePage" = "コードページ:";
+"dialog.font.charSpace" = "文字間スペース";
+
+/* Additional Settings - TEK Font */
+"dialog.tekFont.fontName" = "フォント:";
+"dialog.tekFont.choose" = "選択…";
+"dialog.tekFont.proportional" = "プロポーショナルフォントを表示する";
+"dialog.tekFont.hidden" = "非表示フォントを表示する";
+
+/* Additional Settings - Theme */
+"dialog.theme.enable" = "テーマを有効にする";
+"dialog.theme.fastSizeMove" = "リサイズ時にテーマを無効にする";
+"dialog.theme.themeFile" = "テーマファイル:";
+"dialog.theme.startupTheme" = "起動時テーマ:";
+"dialog.theme.susiePath" = "Susieプラグインパス:";
+"dialog.theme.themeEditor" = "テーマエディタ…";
+
+/* Additional Settings - UI */
+"dialog.ui.language" = "言語:";
+"dialog.ui.dialogFont" = "ダイアログフォント";
+"dialog.ui.fontName" = "フォント:";
+"dialog.ui.chooseFont" = "選択…";
+"dialog.ui.proportional" = "プロポーショナルフォントを表示する";
+"dialog.ui.hidden" = "非表示フォントを表示する";
+
+/* Additional Settings - Plugin */
+"dialog.plugin.setupDirectories" = "プラグイン設定ディレクトリ:";
+"dialog.plugin.add" = "追加…";
+"dialog.plugin.remove" = "削除";
+
+/* Additional Settings - Debug */
+"dialog.debug.charInfoPopup" = "文字情報ポップアップを表示する";

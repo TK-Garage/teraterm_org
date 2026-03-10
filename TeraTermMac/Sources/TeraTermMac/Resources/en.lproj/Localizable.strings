@@ -20,6 +20,9 @@
 "menu.file.zmodemReceive" = "ZMODEM Receive…";
 "menu.file.kermitSend" = "Kermit Send…";
 "menu.file.kermitReceive" = "Kermit Receive…";
+"menu.file.sendFile" = "Send File…";
+"menu.file.receiveFile" = "Receive File…";
+"menu.file.changeDir" = "Change Directory…";
 "menu.file.disconnect" = "Disconnect";
 "menu.file.close" = "Close";
 
@@ -32,6 +35,7 @@
 "menu.edit.clearScreen" = "Clear Screen";
 "menu.edit.clearBuffer" = "Clear Buffer";
 "menu.edit.selectAll" = "Select All";
+"menu.edit.editHistory" = "Edit History…";
 
 /* Setup Menu */
 "menu.setup" = "Setup";
@@ -40,6 +44,8 @@
 "menu.setup.font" = "Font…";
 "menu.setup.keyboard" = "Keyboard…";
 "menu.setup.serialPort" = "Serial Port…";
+"menu.setup.tcpip" = "TCP/IP…";
+"menu.setup.additionalSettings" = "Additional Settings…";
 "menu.setup.saveSetup" = "Save Setup…";
 "menu.setup.restoreSetup" = "Restore Setup…";
 
@@ -69,6 +75,7 @@
 "menu.window" = "Window";
 "menu.window.minimize" = "Minimize";
 "menu.window.zoom" = "Zoom";
+"menu.window.windowList" = "Window List";
 
 /* Help Menu */
 "menu.help" = "Help";
@@ -334,3 +341,128 @@
 "dialog.recvFile.filename" = "Filename (drop file in this dialog):";
 "dialog.recvFile.binary" = "Binary";
 "dialog.recvFile.autoStop" = "Auto-stop wait time(sec):";
+
+/* Additional Settings Dialog */
+"dialog.additionalSettings.title" = "Tera Term: Additional Settings";
+
+/* Additional Settings - Tab Names */
+"tab.general" = "General";
+"tab.coding" = "Coding";
+"tab.copyPaste" = "Copy and Paste";
+"tab.sequence" = "Sequence";
+"tab.mouse" = "Mouse";
+"tab.log" = "Log";
+"tab.visual" = "Visual";
+"tab.font" = "Font";
+"tab.tekFont" = "TEK Font";
+"tab.theme" = "Theme";
+"tab.ui" = "UI";
+"tab.plugin" = "Plugin";
+"tab.debug" = "Debug";
+
+/* Additional Settings - General */
+"dialog.general.sendBreak" = "Disable Send Break accelerator key";
+"dialog.general.broadcast" = "Accept broadcast";
+"dialog.general.autoScroll" = "Auto-scroll only in bottom line";
+"dialog.general.clearOnResize" = "Clear on window resize";
+"dialog.general.cursorIME" = "Change cursor shape by IME state";
+"dialog.general.defaultPort" = "Default port:";
+"dialog.general.titleFormat" = "Title Format";
+"dialog.general.notifySound" = "Notification sound";
+"dialog.general.fileTransferFolder" = "File transfer folder:";
+
+/* Additional Settings - Coding */
+"dialog.coding.receiveEncoding" = "Receive encoding:";
+"dialog.coding.sendEncoding" = "Send encoding:";
+"dialog.coding.ambiguousWidth" = "Ambiguous character width:";
+"dialog.coding.emojiWidth" = "Emoji width:";
+
+/* Additional Settings - Copy and Paste */
+"dialog.copyPaste.continuedLineCopy" = "Enable continued line copy";
+"dialog.copyPaste.confirmPasteNewLine" = "Confirm paste with newline";
+"dialog.copyPaste.autoTextCopy" = "Auto-copy selection to clipboard";
+"dialog.copyPaste.delimiterList" = "Delimiter list:";
+"dialog.copyPaste.pasteDelay" = "Paste delay (ms):";
+
+/* Additional Settings - Sequence */
+"dialog.sequence.mouseEventTracking" = "Accept mouse event tracking";
+"dialog.sequence.titleChanging" = "Accept title changing";
+"dialog.sequence.titleReport" = "Title report request";
+"dialog.sequence.windowControl" = "Window control sequence";
+"dialog.sequence.cursorControl" = "Cursor control sequence";
+"dialog.sequence.clipboardAccess" = "Clipboard access from remote";
+"dialog.sequence.beep" = "Beep:";
+"dialog.sequence.beepOff" = "Off";
+"dialog.sequence.beepSystem" = "System Sound";
+"dialog.sequence.beepVisual" = "Visual Bell";
+
+/* Additional Settings - Mouse */
+"dialog.mouse.clickableURL" = "Enable clickable URL";
+"dialog.mouse.wheelScrollLines" = "Wheel scroll lines:";
+"dialog.mouse.lines" = "lines";
+
+/* Additional Settings - Log */
+"dialog.log.viewEditor" = "Log viewer/editor:";
+"dialog.log.editorArguments" = "Arguments:";
+"dialog.log.defaultName" = "Default log file name:";
+"dialog.log.defaultPath" = "Default log file path:";
+"dialog.log.autoStart" = "Auto start logging";
+"dialog.log.options" = "Options";
+"dialog.log.binary" = "Binary";
+"dialog.log.append" = "Append";
+"dialog.log.plainText" = "Plain text";
+"dialog.log.hideDialog" = "Hide dialog";
+"dialog.log.screenBuffer" = "Include screen buffer";
+"dialog.log.timestamp" = "Timestamp";
+"dialog.log.logRotate" = "Log Rotate";
+"dialog.log.rotateEnabled" = "Enable rotation";
+"dialog.log.rotateSize" = "Size:";
+"dialog.log.rotateStep" = "Step:";
+
+/* Additional Settings - Visual */
+"dialog.visual.windowOpacity" = "Window Opacity";
+"dialog.visual.active" = "Active:";
+"dialog.visual.inactive" = "Inactive:";
+"dialog.visual.ansiColorPalette" = "ANSI Color Palette";
+"dialog.visual.charAttributes" = "Character Attributes";
+"dialog.visual.flickerlessMove" = "Disable theme during window move/resize";
+
+/* Additional Settings - Font */
+"dialog.font.vtWindowFont" = "VT Window Font";
+"dialog.font.fontName" = "Font:";
+"dialog.font.choose" = "Choose…";
+"dialog.font.proportional" = "Show proportional fonts";
+"dialog.font.hidden" = "Show hidden fonts";
+"dialog.font.drawingAPI" = "Drawing API:";
+"dialog.font.codePage" = "Code page:";
+"dialog.font.charSpace" = "Character Space";
+
+/* Additional Settings - TEK Font */
+"dialog.tekFont.fontName" = "Font:";
+"dialog.tekFont.choose" = "Choose…";
+"dialog.tekFont.proportional" = "Show proportional fonts";
+"dialog.tekFont.hidden" = "Show hidden fonts";
+
+/* Additional Settings - Theme */
+"dialog.theme.enable" = "Enable theme";
+"dialog.theme.fastSizeMove" = "Disable theme during resize";
+"dialog.theme.themeFile" = "Theme file:";
+"dialog.theme.startupTheme" = "Startup theme:";
+"dialog.theme.susiePath" = "Susie plugin path:";
+"dialog.theme.themeEditor" = "Theme Editor…";
+
+/* Additional Settings - UI */
+"dialog.ui.language" = "Language:";
+"dialog.ui.dialogFont" = "Dialog Font";
+"dialog.ui.fontName" = "Font:";
+"dialog.ui.chooseFont" = "Choose…";
+"dialog.ui.proportional" = "Show proportional fonts";
+"dialog.ui.hidden" = "Show hidden fonts";
+
+/* Additional Settings - Plugin */
+"dialog.plugin.setupDirectories" = "Plugin setup directories:";
+"dialog.plugin.add" = "Add…";
+"dialog.plugin.remove" = "Remove";
+
+/* Additional Settings - Debug */
+"dialog.debug.charInfoPopup" = "Show character info popup";

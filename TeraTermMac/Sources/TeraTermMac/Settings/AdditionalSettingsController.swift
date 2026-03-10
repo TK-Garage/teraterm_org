@@ -181,7 +181,7 @@ protocol AdditionalSettingsTab: AnyObject {
 // MARK: - General Tab (IDD_TABSHEET_GENERAL)
 
 final class GeneralTab: AdditionalSettingsTab {
-    let tabTitle = "General"
+    let tabTitle = TTL("tab.general")
     let contentView = NSView()
 
     private var sendBreakCheck: NSButton!
@@ -277,7 +277,7 @@ final class GeneralTab: AdditionalSettingsTab {
 // MARK: - Coding Tab (IDD_TABSHEET_CODING)
 
 final class CodingTab: AdditionalSettingsTab {
-    let tabTitle = "Coding"
+    let tabTitle = TTL("tab.coding")
     let contentView = NSView()
 
     private var recvEncodingPopup: NSPopUpButton!
@@ -352,7 +352,7 @@ final class CodingTab: AdditionalSettingsTab {
 // MARK: - Copy and Paste Tab (IDD_TABSHEET_COPYPASTE)
 
 final class CopyPasteTab: AdditionalSettingsTab {
-    let tabTitle = "Copy and Paste"
+    let tabTitle = TTL("tab.copyPaste")
     let contentView = NSView()
 
     private var continuedLineCopyCheck: NSButton!
@@ -418,7 +418,7 @@ final class CopyPasteTab: AdditionalSettingsTab {
 // MARK: - Sequence Tab (IDD_TABSHEET_SEQUENCE)
 
 final class SequenceTab: AdditionalSettingsTab {
-    let tabTitle = "Sequence"
+    let tabTitle = TTL("tab.sequence")
     let contentView = NSView()
 
     private var mouseEventCheck: NSButton!
@@ -492,7 +492,7 @@ final class SequenceTab: AdditionalSettingsTab {
 // MARK: - Mouse Tab (IDD_TABSHEET_MOUSE)
 
 final class MouseTab: AdditionalSettingsTab {
-    let tabTitle = "Mouse"
+    let tabTitle = TTL("tab.mouse")
     let contentView = NSView()
 
     private var clickableURLCheck: NSButton!
@@ -537,7 +537,7 @@ final class MouseTab: AdditionalSettingsTab {
 // MARK: - Log Tab (IDD_TABSHEET_LOG)
 
 final class LogTab: AdditionalSettingsTab {
-    let tabTitle = "Log"
+    let tabTitle = TTL("tab.log")
     let contentView = NSView()
 
     private var editorField: NSTextField!
@@ -675,7 +675,7 @@ final class LogTab: AdditionalSettingsTab {
 // MARK: - Visual Tab (IDD_TABSHEET_VISUAL)
 
 final class VisualTab: AdditionalSettingsTab {
-    let tabTitle = "Visual"
+    let tabTitle = TTL("tab.visual")
     let contentView = NSView()
 
     private var opacityActiveSlider: NSSlider!
@@ -836,7 +836,7 @@ final class VisualTab: AdditionalSettingsTab {
 // MARK: - Font Tab (IDD_TABSHEET_FONT)
 
 final class FontTab: AdditionalSettingsTab {
-    let tabTitle = "Font"
+    let tabTitle = TTL("tab.font")
     let contentView = NSView()
 
     private var fontNameField: NSTextField!
@@ -949,7 +949,7 @@ final class FontTab: AdditionalSettingsTab {
 // MARK: - TEK Font Tab (IDD_TABSHEET_TEKFONT)
 
 final class TEKFontTab: AdditionalSettingsTab {
-    let tabTitle = "TEK Font"
+    let tabTitle = TTL("tab.tekFont")
     let contentView = NSView()
 
     private var fontNameField: NSTextField!
@@ -1004,7 +1004,7 @@ final class TEKFontTab: AdditionalSettingsTab {
 // MARK: - Theme Tab (IDD_TABSHEET_THEME)
 
 final class ThemeTab: AdditionalSettingsTab {
-    let tabTitle = "Theme"
+    let tabTitle = TTL("tab.theme")
     let contentView = NSView()
 
     private var enableCheck: NSButton!
@@ -1073,7 +1073,7 @@ final class ThemeTab: AdditionalSettingsTab {
 // MARK: - UI Tab (IDD_TABSHEET_UI)
 
 final class UITab: AdditionalSettingsTab {
-    let tabTitle = "UI"
+    let tabTitle = TTL("tab.ui")
     let contentView = NSView()
 
     private var languagePopup: NSPopUpButton!
@@ -1149,7 +1149,7 @@ final class UITab: AdditionalSettingsTab {
 // MARK: - Plugin Tab (IDD_TABSHEET_PLUGIN)
 
 final class PluginTab: NSObject, AdditionalSettingsTab {
-    let tabTitle = "Plugin"
+    let tabTitle = TTL("tab.plugin")
     let contentView = NSView()
 
     private var directoryList: NSTableView!
@@ -1242,7 +1242,7 @@ extension PluginTab: NSTableViewDataSource {
 // MARK: - Debug Tab (IDD_TABSHEET_DEBUG)
 
 final class DebugTab: AdditionalSettingsTab {
-    let tabTitle = "Debug"
+    let tabTitle = TTL("tab.debug")
     let contentView = NSView()
 
     private var charInfoCheck: NSButton!
