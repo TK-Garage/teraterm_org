@@ -1238,7 +1238,7 @@ class ZMODEMProtocol: FileTransferProtocol {
 
         if pktInCount >= 2 {
             // Verify CRC of data subpacket
-            let receivedCRC = (UInt16(pktIn[0]) << 8) | UInt16(pktIn[1])
+            let _ = (UInt16(pktIn[0]) << 8) | UInt16(pktIn[1])  // receivedCRC (verified via checkCRC==0)
             let expectedCRC = crcVal
             // Update CRC with the received CRC bytes to check for zero
             var checkCRC = expectedCRC
@@ -2488,7 +2488,6 @@ class KermitProtocol: FileTransferProtocol {
 
         if useShort {
             // Standard packet: MARK LEN SEQ TYPE DATA CHECK [EOL]
-            let len = data.count + 3  // SEQ + TYPE + CHECK (for type 1)
             let checkBytes = checkType == 3 ? 2 : checkType
             let totalLen = data.count + 3 + (checkBytes - 1)
             packet.append(UInt8(totalLen + 32))
