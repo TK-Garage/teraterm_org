@@ -525,6 +525,31 @@ class TerminalSettings: Codable {
     // File Transfer folder
     var fileTransferFolder: String = ""
 
+    // Proxy
+    var proxyType: Int = 0  // 0=none, 1=HTTP, 2=SOCKS4, 3=SOCKS5, 4=Telnet
+    var proxyHost: String = ""
+    var proxyPort: Int = 0
+    var proxyUsername: String = ""
+    var proxyPassword: String = ""
+
+    // SSH Setup
+    var sshHeartbeat: Int = 60
+    var sshConfirmAgentForwarding: Bool = true
+    var sshNotifyAgentAccess: Bool = false
+    var sshVerifyHostKeyDNS: Bool = false
+    var sshKnownHostsFile: String = ""
+    var sshHostKeyRotation: Int = 0  // 0=disabled, 1=enabled, 2=ask
+    var sshLogLevel: Int = 0
+
+    // SSH Forwarding
+    var sshPortForwardings: [String] = []
+    var sshXForwarding: Bool = false
+
+    // SSH Auth Setup
+    var sshDefaultUsernameMode: Int = 0  // 0=don't enter, 1=default, 2=logon
+    var sshDefaultUsername: String = ""
+    var sshCheckAuthBeforeLogin: Bool = false
+
     // Paths
     var setupDirectory: String = ""
     var macroDirectory: String = ""

@@ -232,6 +232,12 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         setSymbol("arrow.down.doc", for: kmRecv)
 
         fileMenu.addItem(NSMenuItem.separator())
+        let scpItem = fileMenu.addItem(withTitle: L("menu.file.sshSCP"), action: #selector(showSCPDialog(_:)), keyEquivalent: "")
+        setSymbol("lock.doc", for: scpItem)
+        fileMenu.addItem(NSMenuItem.separator())
+        let printItem = fileMenu.addItem(withTitle: L("menu.file.print"), action: #selector(printTerminal(_:)), keyEquivalent: "p")
+        setSymbol("printer", for: printItem)
+        fileMenu.addItem(NSMenuItem.separator())
         let disconnItem = fileMenu.addItem(withTitle: L("menu.file.disconnect"), action: #selector(doDisconnect(_:)), keyEquivalent: "")
         setSymbol("xmark.circle", for: disconnItem)
         fileMenu.addItem(NSMenuItem.separator())
@@ -282,6 +288,20 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         setSymbol("cable.connector", for: serialItem)
         let tcpipItem = setupMenu.addItem(withTitle: L("menu.setup.tcpip"), action: #selector(setupTCPIP(_:)), keyEquivalent: "")
         setSymbol("network", for: tcpipItem)
+        setupMenu.addItem(NSMenuItem.separator())
+        let proxyItem = setupMenu.addItem(withTitle: L("menu.setup.proxy"), action: #selector(setupProxy(_:)), keyEquivalent: "")
+        setSymbol("globe", for: proxyItem)
+        let sshSetupItem = setupMenu.addItem(withTitle: L("menu.setup.ssh"), action: #selector(setupSSH(_:)), keyEquivalent: "")
+        setSymbol("lock.shield", for: sshSetupItem)
+        let sshAuthSetupItem = setupMenu.addItem(withTitle: L("menu.setup.sshAuth"), action: #selector(setupSSHAuth(_:)), keyEquivalent: "")
+        setSymbol("person.badge.key", for: sshAuthSetupItem)
+        let sshFwdItem = setupMenu.addItem(withTitle: L("menu.setup.sshForward"), action: #selector(setupSSHForwarding(_:)), keyEquivalent: "")
+        setSymbol("arrow.triangle.branch", for: sshFwdItem)
+        let sshKeyGenItem = setupMenu.addItem(withTitle: L("menu.setup.sshKeyGen"), action: #selector(setupSSHKeyGen(_:)), keyEquivalent: "")
+        setSymbol("key", for: sshKeyGenItem)
+        setupMenu.addItem(NSMenuItem.separator())
+        let generalItem = setupMenu.addItem(withTitle: L("menu.setup.general"), action: #selector(setupGeneral(_:)), keyEquivalent: "")
+        setSymbol("gearshape", for: generalItem)
         setupMenu.addItem(NSMenuItem.separator())
         let additionalItem = setupMenu.addItem(withTitle: L("menu.setup.additionalSettings"), action: #selector(setupAdditional(_:)), keyEquivalent: "")
         setSymbol("slider.horizontal.3", for: additionalItem)
@@ -558,6 +578,39 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
 
     @objc func setupSerialPort(_ sender: Any?) {
         showSerialPortDialog()
+    }
+
+    @objc func setupProxy(_ sender: Any?) {
+        showProxySetupDialog()
+    }
+
+    @objc func setupSSH(_ sender: Any?) {
+        showSSHSetupDialog()
+    }
+
+    @objc func setupSSHAuth(_ sender: Any?) {
+        showSSHAuthSetupDialog()
+    }
+
+    @objc func setupSSHForwarding(_ sender: Any?) {
+        showSSHForwardingSetupDialog()
+    }
+
+    @objc func setupSSHKeyGen(_ sender: Any?) {
+        showSSHKeyGenDialog()
+    }
+
+    @objc func setupGeneral(_ sender: Any?) {
+        showGeneralSetupDialog()
+    }
+
+    @objc func showSCPDialog(_ sender: Any?) {
+        showSSHSCPDialog()
+    }
+
+    @objc func printTerminal(_ sender: Any?) {
+        guard let wc = activeWindowController, let win = wc.window else { return }
+        TerminalPrintHelper.printTerminalContent(from: wc, window: win)
     }
 
     @objc func saveSetup(_ sender: Any?) {
@@ -1388,6 +1441,149 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
             controller.showAsSheet(on: win)
         } else {
             controller.showModal()
+        }
+    }
+
+    // MARK: Proxy Setup Dialog
+
+    private func showProxySetupDialog() {
+        dismissCurrentSetupSheet()
+        let vc = ProxySetupDialogController(settings: settings)
+        vc.okHandler = { [weak self] in
+            self?.activeWindowController?.applySettings()
+        }
+        if let win = activeWindowController?.window {
+            currentSetupSheet = vc.presentAsSheet(on: win)
+        } else {
+            _ = vc.presentModal()
+        }
+    }
+
+    // MARK: SSH Setup Dialog
+
+    private func showSSHSetupDialog() {
+        dismissCurrentSetupSheet()
+        let vc = SSHSetupDialogController(settings: settings)
+        vc.okHandler = { [weak self] in
+            self?.activeWindowController?.applySettings()
+        }
+        if let win = activeWindowController?.window {
+            currentSetupSheet = vc.presentAsSheet(on: win)
+        } else {
+            _ = vc.presentModal()
+        }
+    }
+
+    // MARK: SSH Authentication Setup Dialog
+
+    private func showSSHAuthSetupDialog() {
+        dismissCurrentSetupSheet()
+        let vc = SSHAuthSetupDialogController(settings: settings)
+        vc.okHandler = { [weak self] in
+            self?.activeWindowController?.applySettings()
+        }
+        if let win = activeWindowController?.window {
+            currentSetupSheet = vc.presentAsSheet(on: win)
+        } else {
+            _ = vc.presentModal()
+        }
+    }
+
+    // MARK: SSH Forwarding Setup Dialog
+
+    private func showSSHForwardingSetupDialog() {
+        dismissCurrentSetupSheet()
+        let vc = SSHForwardingSetupDialogController(settings: settings)
+        vc.okHandler = { [weak self] in
+            self?.activeWindowController?.applySettings()
+        }
+        if let win = activeWindowController?.window {
+            currentSetupSheet = vc.presentAsSheet(on: win)
+        } else {
+            _ = vc.presentModal()
+        }
+    }
+
+    // MARK: SSH Key Generation Dialog
+
+    private func showSSHKeyGenDialog() {
+        dismissCurrentSetupSheet()
+        let vc = SSHKeyGenDialogController()
+        if let win = activeWindowController?.window {
+            currentSetupSheet = vc.presentAsSheet(on: win)
+        } else {
+            _ = vc.presentModal()
+        }
+    }
+
+    // MARK: General Setup Dialog
+
+    private func showGeneralSetupDialog() {
+        dismissCurrentSetupSheet()
+        let vc = GeneralSetupDialogController(settings: settings)
+        vc.okHandler = { [weak self] in
+            self?.activeWindowController?.applySettings()
+        }
+        if let win = activeWindowController?.window {
+            currentSetupSheet = vc.presentAsSheet(on: win)
+        } else {
+            _ = vc.presentModal()
+        }
+    }
+
+    // MARK: SSH SCP Dialog
+
+    private func showSSHSCPDialog() {
+        guard let wc = activeWindowController else { return }
+
+        // Check if connected via SSH
+        guard wc.connectionManager.currentConnection is SSHConnection else {
+            let alert = NSAlert()
+            alert.messageText = L("dialog.scp.error.notConnected")
+            alert.alertStyle = .warning
+            alert.addButton(withTitle: L("OK"))
+            if let win = wc.window {
+                alert.beginSheetModal(for: win, completionHandler: nil)
+            } else {
+                alert.runModal()
+            }
+            return
+        }
+
+        let ssh = wc.connectionManager.currentConnection as! SSHConnection
+        let vc = SCPDialogController(settings: settings)
+        vc.onSend = { localPath, remotePath in
+            SCPDialogController.executeSCP(
+                send: true, localPath: localPath, remotePath: remotePath,
+                host: ssh.host, port: ssh.port, username: ssh.username
+            ) { success, error in
+                if !success {
+                    let alert = NSAlert()
+                    alert.messageText = "SCP Error"
+                    alert.informativeText = error
+                    alert.alertStyle = .warning
+                    alert.addButton(withTitle: "OK")
+                    alert.runModal()
+                }
+            }
+        }
+        vc.onReceive = { remotePath, localDir in
+            SCPDialogController.executeSCP(
+                send: false, localPath: localDir, remotePath: remotePath,
+                host: ssh.host, port: ssh.port, username: ssh.username
+            ) { success, error in
+                if !success {
+                    let alert = NSAlert()
+                    alert.messageText = "SCP Error"
+                    alert.informativeText = error
+                    alert.alertStyle = .warning
+                    alert.addButton(withTitle: "OK")
+                    alert.runModal()
+                }
+            }
+        }
+        if let win = wc.window {
+            currentSetupSheet = vc.presentAsSheet(on: win)
         }
     }
 

@@ -522,3 +522,126 @@
 "dialog.windowList.title" = "Tera Term: Window list";
 "dialog.windowList.open" = "Open";
 "dialog.windowList.closeWindow" = "Close window";
+
+/* File Menu - SSH SCP */
+"menu.file.sshSCP" = "SSH SCP…";
+
+/* File Menu - Print */
+"menu.file.print" = "Print…";
+
+/* Setup Menu - SSH related */
+"menu.setup.proxy" = "Proxy…";
+"menu.setup.ssh" = "SSH…";
+"menu.setup.sshAuth" = "SSH Authentication…";
+"menu.setup.sshForward" = "SSH Forwarding…";
+"menu.setup.sshKeyGen" = "SSH Key Generation…";
+"menu.setup.general" = "General…";
+
+/* SSH SCP Dialog (IDD_SSHSCP) */
+"dialog.scp.title" = "Tera Term: Secure Copy Protocol (SCP)";
+"dialog.scp.sendFrom" = "From:";
+"dialog.scp.sendTo" = "To:";
+"dialog.scp.dragNote" = "You can drag the file to this window.";
+"dialog.scp.send" = "Send";
+"dialog.scp.receiveFrom" = "From:";
+"dialog.scp.receiveTo" = "To:";
+"dialog.scp.receive" = "Receive";
+"dialog.scp.selectFile" = "Select File to Send";
+"dialog.scp.selectDest" = "Select Destination Folder";
+"dialog.scp.progress.title.send" = "SCP: Sending file";
+"dialog.scp.progress.title.receive" = "SCP: Receiving file";
+"dialog.scp.progress.filename" = "Filename:";
+"dialog.scp.progress.bytes" = "Bytes transferred:";
+"dialog.scp.progress.time" = "Elapsed time:";
+"dialog.scp.error.notConnected" = "SCP requires an active SSH connection.";
+
+/* Proxy Setup Dialog (IDD_SETTING) */
+"dialog.proxy.title" = "Proxy Setup";
+"dialog.proxy.type" = "Type:";
+"dialog.proxy.typeNone" = "None";
+"dialog.proxy.typeHTTP" = "HTTP";
+"dialog.proxy.typeSocks4" = "SOCKS4";
+"dialog.proxy.typeSocks5" = "SOCKS5";
+"dialog.proxy.typeTelnet" = "Telnet";
+"dialog.proxy.hostname" = "Hostname:";
+"dialog.proxy.port" = "Port:";
+"dialog.proxy.username" = "Username:";
+"dialog.proxy.password" = "Password:";
+
+/* SSH Setup Dialog (IDD_SSHSETUP) */
+"dialog.sshSetup.title" = "SSH Setup";
+"dialog.sshSetup.cipherOrder" = "Preferred cipher order";
+"dialog.sshSetup.moveUp" = "Move Up";
+"dialog.sshSetup.moveDown" = "Move Down";
+"dialog.sshSetup.knownHosts" = "SSH Known Hosts";
+"dialog.sshSetup.knownHostsFile" = "Known hosts file:";
+"dialog.sshSetup.heartbeat" = "HeartBeat (keep-alive)";
+"dialog.sshSetup.heartbeatSec" = "sec. (0 to turn off)";
+"dialog.sshSetup.rememberPassword" = "Remember password in memory";
+"dialog.sshSetup.forwardAgent" = "Enable agent forwarding";
+"dialog.sshSetup.confirmAgent" = "Confirm agent forwarding";
+"dialog.sshSetup.notifyAgent" = "Notify access to the forwarded agent";
+"dialog.sshSetup.verifyDNS" = "Verify hostkey fingerprint by DNS";
+"dialog.sshSetup.notice" = "All options take effect the next time a session is started.";
+"dialog.sshSetup.hostKeyRotation" = "Hostkey rotation";
+"dialog.sshSetup.logLevel" = "LogLevel";
+"dialog.sshSetup.logLevelUnit" = "(0 to turn off)";
+
+/* SSH Authentication Setup Dialog (IDD_SSHAUTHSETUP) */
+"dialog.sshAuthSetup.title" = "SSH Authentication Setup";
+"dialog.sshAuthSetup.banner" = "Select defaults for authentication:";
+"dialog.sshAuthSetup.usernameGroup" = "User name";
+"dialog.sshAuthSetup.noUsername" = "Do not enter username";
+"dialog.sshAuthSetup.defaultUsername" = "Use default username";
+"dialog.sshAuthSetup.logonUsername" = "Use logon username";
+"dialog.sshAuthSetup.currentUser" = "Current username is \"%@\"";
+"dialog.sshAuthSetup.checkAuth" = "Check the enabled authentication methods before login (SSH2)";
+
+/* SSH Forwarding Setup Dialog (IDD_SSHFWDSETUP) */
+"dialog.sshFwd.title" = "SSH Forwarding Setup";
+"dialog.sshFwd.portForwarding" = "Port Forwarding";
+"dialog.sshFwd.add" = "Add…";
+"dialog.sshFwd.edit" = "Edit…";
+"dialog.sshFwd.remove" = "Remove";
+"dialog.sshFwd.xForwarding" = "X Forwarding";
+"dialog.sshFwd.xDisplay" = "Display remote X applications on local X server";
+
+/* SSH Forwarding Edit Dialog (IDD_SSHFWDEDIT) */
+"dialog.sshFwdEdit.title" = "SSH Port Forwarding";
+"dialog.sshFwdEdit.banner" = "Select direction for forwarded port:";
+"dialog.sshFwdEdit.localPort" = "Forward local port";
+"dialog.sshFwdEdit.listen" = "listen";
+"dialog.sshFwdEdit.toRemote" = "to remote machine";
+"dialog.sshFwdEdit.port" = "port";
+"dialog.sshFwdEdit.remotePort" = "Forward remote server port";
+"dialog.sshFwdEdit.toLocal" = "to local machine";
+"dialog.sshFwdEdit.dynamicPort" = "Forward dynamic port";
+
+/* SSH Key Generation Dialog (IDD_SSHKEYGEN) */
+"dialog.sshKeyGen.title" = "SSH Key Generator";
+"dialog.sshKeyGen.keyType" = "Key type";
+"dialog.sshKeyGen.keyBits" = "Key Bits:";
+"dialog.sshKeyGen.passphrase" = "Key passphrase:";
+"dialog.sshKeyGen.confirm" = "Confirm passphrase:";
+"dialog.sshKeyGen.comment" = "Comment:";
+"dialog.sshKeyGen.generate" = "Generate";
+"dialog.sshKeyGen.savePublic" = "Save public key";
+"dialog.sshKeyGen.savePrivate" = "Save private key";
+"dialog.sshKeyGen.generating" = "Generating key…";
+"dialog.sshKeyGen.generated" = "Key generated.";
+"dialog.sshKeyGen.mismatch" = "Passphrases do not match.";
+"dialog.sshKeyGen.emptyPassphrase" = "Use empty passphrase?";
+"dialog.sshKeyGen.savePublicTitle" = "Save Public Key";
+"dialog.sshKeyGen.savePrivateTitle" = "Save Private Key";
+"dialog.sshKeyGen.error" = "Key generation failed: %@";
+
+/* General Setup Dialog (IDD_GENDLG) */
+"dialog.generalSetup.title" = "General Setup";
+"dialog.generalSetup.language" = "Language:";
+"dialog.generalSetup.languageEnglish" = "English";
+"dialog.generalSetup.languageJapanese" = "Japanese";
+"dialog.generalSetup.defaultPort" = "Default port:";
+"dialog.generalSetup.autoWindowClose" = "Auto window close";
+"dialog.generalSetup.titleFormat" = "Title format";
+"dialog.generalSetup.titleHostname" = "Hostname";
+"dialog.generalSetup.titleSession" = "Session No.";

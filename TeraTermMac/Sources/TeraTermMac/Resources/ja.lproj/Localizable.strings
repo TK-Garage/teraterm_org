@@ -522,3 +522,126 @@
 "dialog.windowList.title" = "Tera Term: ウィンドウのリスト";
 "dialog.windowList.open" = "開く";
 "dialog.windowList.closeWindow" = "閉じる";
+
+/* File Menu - SSH SCP */
+"menu.file.sshSCP" = "SSH SCP…";
+
+/* File Menu - Print */
+"menu.file.print" = "印刷…";
+
+/* Setup Menu - SSH related */
+"menu.setup.proxy" = "プロキシ…";
+"menu.setup.ssh" = "SSH…";
+"menu.setup.sshAuth" = "SSH認証…";
+"menu.setup.sshForward" = "SSH転送…";
+"menu.setup.sshKeyGen" = "SSH鍵生成…";
+"menu.setup.general" = "全般…";
+
+/* SSH SCP Dialog (IDD_SSHSCP) */
+"dialog.scp.title" = "Tera Term: Secure Copy Protocol (SCP)";
+"dialog.scp.sendFrom" = "From:";
+"dialog.scp.sendTo" = "To:";
+"dialog.scp.dragNote" = "このウィンドウにファイルをドラッグできます";
+"dialog.scp.send" = "送信";
+"dialog.scp.receiveFrom" = "From:";
+"dialog.scp.receiveTo" = "To:";
+"dialog.scp.receive" = "受信";
+"dialog.scp.selectFile" = "送信ファイル選択";
+"dialog.scp.selectDest" = "受信フォルダ選択";
+"dialog.scp.progress.title.send" = "SCP: ファイル送信中";
+"dialog.scp.progress.title.receive" = "SCP: ファイル受信中";
+"dialog.scp.progress.filename" = "ファイル名:";
+"dialog.scp.progress.bytes" = "転送済み:";
+"dialog.scp.progress.time" = "経過時間:";
+"dialog.scp.error.notConnected" = "SCPにはSSH接続が必要です。";
+
+/* Proxy Setup Dialog (IDD_SETTING) */
+"dialog.proxy.title" = "プロキシの設定";
+"dialog.proxy.type" = "種類:";
+"dialog.proxy.typeNone" = "なし";
+"dialog.proxy.typeHTTP" = "HTTP";
+"dialog.proxy.typeSocks4" = "SOCKS4";
+"dialog.proxy.typeSocks5" = "SOCKS5";
+"dialog.proxy.typeTelnet" = "Telnet";
+"dialog.proxy.hostname" = "ホスト名:";
+"dialog.proxy.port" = "ポート番号:";
+"dialog.proxy.username" = "ユーザ名:";
+"dialog.proxy.password" = "パスワード:";
+
+/* SSH Setup Dialog (IDD_SSHSETUP) */
+"dialog.sshSetup.title" = "SSH設定";
+"dialog.sshSetup.cipherOrder" = "優先する暗号アルゴリズムの順";
+"dialog.sshSetup.moveUp" = "上へ";
+"dialog.sshSetup.moveDown" = "下へ";
+"dialog.sshSetup.knownHosts" = "SSH Known Hosts";
+"dialog.sshSetup.knownHostsFile" = "Known hostsファイル:";
+"dialog.sshSetup.heartbeat" = "ハートビート(keep-alive)";
+"dialog.sshSetup.heartbeatSec" = "秒(0を指定すると無効)";
+"dialog.sshSetup.rememberPassword" = "パスワードをメモリ上に記憶する";
+"dialog.sshSetup.forwardAgent" = "エージェント転送を有効にする";
+"dialog.sshSetup.confirmAgent" = "エージェント転送を確認する";
+"dialog.sshSetup.notifyAgent" = "転送したエージェントの利用を通知する";
+"dialog.sshSetup.verifyDNS" = "ホストキーの鍵指紋をDNSで確認する";
+"dialog.sshSetup.notice" = "いずれの変更も次回のセッション以降有効になります。";
+"dialog.sshSetup.hostKeyRotation" = "ホスト公開鍵の自動更新";
+"dialog.sshSetup.logLevel" = "ログレベル";
+"dialog.sshSetup.logLevelUnit" = "(0を指定すると無効)";
+
+/* SSH Authentication Setup Dialog (IDD_SSHAUTHSETUP) */
+"dialog.sshAuthSetup.title" = "SSH認証設定";
+"dialog.sshAuthSetup.banner" = "通常使用する認証設定:";
+"dialog.sshAuthSetup.usernameGroup" = "ユーザ名";
+"dialog.sshAuthSetup.noUsername" = "入力しない";
+"dialog.sshAuthSetup.defaultUsername" = "デフォルトユーザ名を使用";
+"dialog.sshAuthSetup.logonUsername" = "ログオンユーザ名を使用";
+"dialog.sshAuthSetup.currentUser" = "現在のユーザ名 \"%@\"";
+"dialog.sshAuthSetup.checkAuth" = "ログイン前にサーバで有効な認証方式を確認する (SSH2)";
+
+/* SSH Forwarding Setup Dialog (IDD_SSHFWDSETUP) */
+"dialog.sshFwd.title" = "SSHポート転送設定";
+"dialog.sshFwd.portForwarding" = "ポート転送";
+"dialog.sshFwd.add" = "追加…";
+"dialog.sshFwd.edit" = "編集…";
+"dialog.sshFwd.remove" = "削除";
+"dialog.sshFwd.xForwarding" = "X転送";
+"dialog.sshFwd.xDisplay" = "リモートのXアプリケーションをローカルのXサーバに表示する";
+
+/* SSH Forwarding Edit Dialog (IDD_SSHFWDEDIT) */
+"dialog.sshFwdEdit.title" = "SSHポート転送";
+"dialog.sshFwdEdit.banner" = "ポート転送を行う向きの選択:";
+"dialog.sshFwdEdit.localPort" = "ローカルのポート";
+"dialog.sshFwdEdit.listen" = "リッスン";
+"dialog.sshFwdEdit.toRemote" = "リモート側ホスト";
+"dialog.sshFwdEdit.port" = "ポート";
+"dialog.sshFwdEdit.remotePort" = "リモートサーバのポート";
+"dialog.sshFwdEdit.toLocal" = "ローカル側ホスト";
+"dialog.sshFwdEdit.dynamicPort" = "ダイナミックポート";
+
+/* SSH Key Generation Dialog (IDD_SSHKEYGEN) */
+"dialog.sshKeyGen.title" = "SSH鍵生成";
+"dialog.sshKeyGen.keyType" = "鍵の種類";
+"dialog.sshKeyGen.keyBits" = "ビット数:";
+"dialog.sshKeyGen.passphrase" = "鍵のパスフレーズ:";
+"dialog.sshKeyGen.confirm" = "パスフレーズの確認:";
+"dialog.sshKeyGen.comment" = "コメント:";
+"dialog.sshKeyGen.generate" = "生成";
+"dialog.sshKeyGen.savePublic" = "公開鍵の保存";
+"dialog.sshKeyGen.savePrivate" = "秘密鍵の保存";
+"dialog.sshKeyGen.generating" = "鍵を生成しています…";
+"dialog.sshKeyGen.generated" = "鍵を生成しました。";
+"dialog.sshKeyGen.mismatch" = "パスフレーズが一致しません。";
+"dialog.sshKeyGen.emptyPassphrase" = "空のパスフレーズを使用しますか？";
+"dialog.sshKeyGen.savePublicTitle" = "公開鍵の保存先";
+"dialog.sshKeyGen.savePrivateTitle" = "秘密鍵の保存先";
+"dialog.sshKeyGen.error" = "鍵生成に失敗しました: %@";
+
+/* General Setup Dialog (IDD_GENDLG) */
+"dialog.generalSetup.title" = "全般の設定";
+"dialog.generalSetup.language" = "言語:";
+"dialog.generalSetup.languageEnglish" = "English";
+"dialog.generalSetup.languageJapanese" = "Japanese";
+"dialog.generalSetup.defaultPort" = "デフォルトポート:";
+"dialog.generalSetup.autoWindowClose" = "自動的にウィンドウを閉じる";
+"dialog.generalSetup.titleFormat" = "タイトル形式";
+"dialog.generalSetup.titleHostname" = "ホスト名";
+"dialog.generalSetup.titleSession" = "セッション番号";
