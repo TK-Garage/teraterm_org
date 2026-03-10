@@ -231,6 +231,7 @@
 "error.connection.title.timeout" = "Connection Timeout";
 "error.connection.title.ssh" = "SSH Not Supported";
 "error.connection.title.serial" = "Serial Port Error";
+"error.connection.title.sshError" = "SSH Error";
 "error.connection.ok" = "OK";
 "error.connection.streamFailed" = "Failed to create network streams to %@:%d.";
 "error.connection.failed" = "Could not connect to %@:%d.";
@@ -238,6 +239,9 @@
 "error.connection.timeout" = "Connection to %@:%d timed out.\nThe host may be unreachable or a firewall is blocking access.";
 "error.connection.hostNotFound" = "Host \"%@\" could not be found.\nPlease check the hostname and your network connection.";
 "error.connection.sshNotSupported" = "SSH connection to %@:%d is not yet supported.\nPlease use an external SSH client or connect via Telnet.";
+"error.connection.sshFailed" = "SSH connection to %@:%d failed.";
+"error.connection.sshProcessFailed" = "Failed to start SSH process.";
+"error.connection.sshNotFound" = "/usr/bin/ssh not found. Please ensure OpenSSH is installed.";
 "error.connection.serialFailed" = "Failed to open serial port %@.";
 "error.connection.ptyFailed" = "Failed to create pseudo-terminal.";
 "error.connection.sendFailed" = "Failed to send data.";

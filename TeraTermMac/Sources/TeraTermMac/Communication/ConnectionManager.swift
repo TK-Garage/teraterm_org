@@ -951,6 +951,7 @@ enum ConnectionError: LocalizedError {
     case connectionRefused(host: String, port: Int)
     case connectionTimeout(host: String, port: Int)
     case hostNotFound(host: String)
+    case sshNotSupported(host: String, port: Int)
     case sshConnectionFailed(host: String, port: Int, detail: String?)
     case sshForkFailed(detail: String?)
     case sshNotFound
@@ -972,16 +973,18 @@ enum ConnectionError: LocalizedError {
             return L("error.connection.timeout", host, port)
         case .hostNotFound(let host):
             return L("error.connection.hostNotFound", host)
+        case .sshNotSupported(let host, let port):
+            return L("error.connection.sshNotSupported", host, port)
         case .sshConnectionFailed(let host, let port, let detail):
-            let base = "SSH connection to \(host):\(port) failed"
+            let base = L("error.connection.sshFailed", host, port)
             if let detail = detail { return "\(base)\n\(detail)" }
             return base
         case .sshForkFailed(let detail):
-            let base = "Failed to start SSH process"
-            if let detail = detail { return "\(base): \(detail)" }
+            let base = L("error.connection.sshProcessFailed")
+            if let detail = detail { return "\(base)\n\(detail)" }
             return base
         case .sshNotFound:
-            return "/usr/bin/ssh not found. Please ensure OpenSSH is installed."
+            return L("error.connection.sshNotFound")
         case .serialPortOpenFailed(let device, let detail):
             let base = L("error.connection.serialFailed", device)
             if let detail = detail { return "\(base)\n\(detail)" }
@@ -993,7 +996,7 @@ enum ConnectionError: LocalizedError {
         }
     }
 
-    /// Title string for the error alert dialog.
+    /// Title string for the error alert dialog (port of original Tera Term MessageBox titles).
     var alertTitle: String {
         switch self {
         case .hostNotFound:
@@ -1002,8 +1005,10 @@ enum ConnectionError: LocalizedError {
             return L("error.connection.title.refused")
         case .connectionTimeout:
             return L("error.connection.title.timeout")
+        case .sshNotSupported:
+            return L("error.connection.title.ssh")
         case .sshConnectionFailed, .sshForkFailed, .sshNotFound:
-            return "SSH Error"
+            return L("error.connection.title.sshError")
         case .serialPortOpenFailed:
             return L("error.connection.title.serial")
         default:

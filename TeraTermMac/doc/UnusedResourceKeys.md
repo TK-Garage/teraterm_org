@@ -47,16 +47,16 @@
 
 ### 接続エラーメッセージ (コードで直接英語文字列を使用している可能性あり)
 
-| キー | 日本語テキスト |
-|------|---------------|
-| `error.connection.failed` | %@:%d に接続できませんでした。 |
-| `error.connection.refused` | %@:%d への接続が拒否されました。ホストがこのポートで待ち受けていない可能性があります。 |
-| `error.connection.timeout` | %@:%d への接続がタイムアウトしました。ホストに到達できないか、ファイアウォールでブロックされている可能性があります。 |
-| `error.connection.hostNotFound` | ホスト "%@" が見つかりません。ホスト名とネットワーク接続を確認してください。 |
-| `error.connection.sshNotSupported` | %@:%d へのSSH接続はまだサポートされていません。外部のSSHクライアントを使用するか、Telnetで接続してください。 |
-| `error.connection.streamFailed` | %@:%d へのネットワークストリームの作成に失敗しました。 |
-| `error.connection.serialFailed` | シリアルポート %@ を開けませんでした。 |
-| `error.connection.title.ssh` | SSH未対応 |
+| キー | 日本語テキスト | 状態 |
+|------|---------------|------|
+| `error.connection.failed` | %@:%d に接続できませんでした。 | 実装済 (ConnectionError.connectionFailed) |
+| `error.connection.refused` | %@:%d への接続が拒否されました。ホストがこのポートで待ち受けていない可能性があります。 | 実装済 (ConnectionError.connectionRefused) |
+| `error.connection.timeout` | %@:%d への接続がタイムアウトしました。ホストに到達できないか、ファイアウォールでブロックされている可能性があります。 | 実装済 (ConnectionError.connectionTimeout) |
+| `error.connection.hostNotFound` | ホスト "%@" が見つかりません。ホスト名とネットワーク接続を確認してください。 | 実装済 (ConnectionError.hostNotFound) |
+| `error.connection.sshNotSupported` | %@:%d へのSSH接続はまだサポートされていません。外部のSSHクライアントを使用するか、Telnetで接続してください。 | 実装済 (ConnectionError.sshNotSupported) |
+| `error.connection.streamFailed` | %@:%d へのネットワークストリームの作成に失敗しました。 | 実装済 (ConnectionError.streamCreationFailed) |
+| `error.connection.serialFailed` | シリアルポート %@ を開けませんでした。 | 実装済 (ConnectionError.serialPortOpenFailed) |
+| `error.connection.title.ssh` | SSH未対応 | 実装済 (ConnectionError.sshNotSupported.alertTitle) |
 
 ---
 

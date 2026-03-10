@@ -231,6 +231,7 @@
 "error.connection.title.timeout" = "接続タイムアウト";
 "error.connection.title.ssh" = "SSH未対応";
 "error.connection.title.serial" = "シリアルポートエラー";
+"error.connection.title.sshError" = "SSHエラー";
 "error.connection.ok" = "OK";
 "error.connection.streamFailed" = "%@:%d へのネットワークストリームの作成に失敗しました。";
 "error.connection.failed" = "%@:%d に接続できませんでした。";
@@ -238,6 +239,9 @@
 "error.connection.timeout" = "%@:%d への接続がタイムアウトしました。\nホストに到達できないか、ファイアウォールでブロックされている可能性があります。";
 "error.connection.hostNotFound" = "ホスト \"%@\" が見つかりません。\nホスト名とネットワーク接続を確認してください。";
 "error.connection.sshNotSupported" = "%@:%d へのSSH接続はまだサポートされていません。\n外部のSSHクライアントを使用するか、Telnetで接続してください。";
+"error.connection.sshFailed" = "%@:%d へのSSH接続に失敗しました。";
+"error.connection.sshProcessFailed" = "SSHプロセスの起動に失敗しました。";
+"error.connection.sshNotFound" = "/usr/bin/ssh が見つかりません。OpenSSHがインストールされていることを確認してください。";
 "error.connection.serialFailed" = "シリアルポート %@ を開けませんでした。";
 "error.connection.ptyFailed" = "擬似端末の作成に失敗しました。";
 "error.connection.sendFailed" = "データの送信に失敗しました。";

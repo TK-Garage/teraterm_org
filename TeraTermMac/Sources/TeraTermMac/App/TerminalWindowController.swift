@@ -632,17 +632,32 @@ extension TerminalWindowController: ConnectionDelegate {
         isConnected = false
         updateWindowTitle()
 
+        // Port of original Tera Term MessageBox error dialogs.
+        // The original used MB_TASKMODAL | MB_ICONEXCLAMATION for connection
+        // errors, presented via CommDlgProc / PostMessage in commlib.c.
+        // macOS equivalent: NSAlert sheet modal with .warning style.
         let alert = NSAlert()
-        alert.alertStyle = .warning
         alert.addButton(withTitle: L("error.connection.ok"))
 
         if let connError = error as? ConnectionError {
-            // Use structured error — title from error type, detail as informative text
             alert.messageText = connError.alertTitle
             alert.informativeText = connError.localizedDescription
+
+            // Match original Tera Term icon style:
+            // DNS/host errors and SSH-not-supported use .warning (MB_ICONEXCLAMATION)
+            // Connection refused/timeout use .warning
+            // Fatal errors (stream/pty failed) use .critical (MB_ICONERROR)
+            switch connError {
+            case .streamCreationFailed, .ptyCreationFailed, .sendFailed,
+                 .sshNotFound, .sshForkFailed:
+                alert.alertStyle = .critical
+            default:
+                alert.alertStyle = .warning
+            }
         } else {
             alert.messageText = L("error.connection.title")
             alert.informativeText = error.localizedDescription
+            alert.alertStyle = .warning
         }
 
         if let win = window {
