@@ -14,6 +14,8 @@
  *   - IDD_PROTDLG (protocol transfer progress)
  *   - IDD_FILETRANSDLG (file send/log transfer progress)
  *   - IDD_GETFNDLG (Kermit GET remote filename input)
+ *   - IDD_SENDFILEDLG (send file dialog with delay/read options)
+ *   - IDD_RECVFILEDLG (receive file dialog with auto-stop option)
  */
 
 #if canImport(AppKit)
@@ -733,6 +735,369 @@ enum FileTransferDialogHelper {
         DispatchQueue.main.async {
             completion(vc.resultFilename)
         }
+    }
+
+    // MARK: - Send File Dialog
+
+    /// Present the Send File dialog (IDD_SENDFILEDLG).
+    static func presentSendFileDialog(
+        on window: NSWindow,
+        completion: @escaping (SendFileDialogController.Result?) -> Void
+    ) {
+        let vc = SendFileDialogController()
+        vc.presentAsSheet(on: window)
+
+        DispatchQueue.main.async {
+            completion(vc.result)
+        }
+    }
+
+    // MARK: - Receive File Dialog
+
+    /// Present the Receive File dialog (IDD_RECVFILEDLG).
+    static func presentRecvFileDialog(
+        on window: NSWindow,
+        completion: @escaping (RecvFileDialogController.Result?) -> Void
+    ) {
+        let vc = RecvFileDialogController()
+        vc.presentAsSheet(on: window)
+
+        DispatchQueue.main.async {
+            completion(vc.result)
+        }
+    }
+}
+
+// MARK: - Send File Dialog Controller (IDD_SENDFILEDLG)
+
+/// Modal dialog for sending a file — provides filename selection,
+/// reading method, binary mode, delay type/time, and send size options.
+///
+///  Filename: [______________] [...]
+///  File reading method:
+///    ◉ Bulk read    ○ Sequential read
+///  ☑ Binary
+///  Delay type:  [No delay ▾]
+///  Send size:   [All ▾]
+///  Delay time(ms): [0___]
+///  [OK]  [Cancel]  [Help]
+///
+/// Maps to Tera Term IDD_SENDFILEDLG (271×227 DLU).
+final class SendFileDialogController: BaseSetupDialogController {
+
+    /// Delay type options matching original Tera Term.
+    enum DelayType: Int, CaseIterable {
+        case noDelay = 0
+        case perChar
+        case perLine
+
+        var localizedTitle: String {
+            switch self {
+            case .noDelay: return NSLocalizedString("dialog.sendFile.delayNone", value: "No delay", comment: "")
+            case .perChar: return NSLocalizedString("dialog.sendFile.delayPerChar", value: "Per character", comment: "")
+            case .perLine: return NSLocalizedString("dialog.sendFile.delayPerLine", value: "Per line", comment: "")
+            }
+        }
+    }
+
+    /// Result returned after user clicks OK.
+    struct Result {
+        let fileURL: URL
+        let bulkRead: Bool
+        let binary: Bool
+        let delayType: DelayType
+        let sendSize: Int   // 0 = all
+        let delayTimeMs: Int
+    }
+
+    private var filenameField: NSTextField!
+    private var bulkRadio: NSButton!
+    private var sequentialRadio: NSButton!
+    private var binaryCheck: NSButton!
+    private var delayTypePopup: NSPopUpButton!
+    private var sendSizePopup: NSPopUpButton!
+    private var delayTimeField: NSTextField!
+
+    private(set) var result: Result?
+
+    init() {
+        super.init(nibName: nil, bundle: nil)
+        self.title = NSLocalizedString("dialog.sendFile.title",
+            value: "Send file", comment: "")
+    }
+
+    required init?(coder: NSCoder) { fatalError() }
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        setupControls()
+    }
+
+    private func setupControls() {
+        contentArea.widthAnchor.constraint(equalToConstant: 420).isActive = true
+
+        // --- Filename row ---
+        let fnLabel = NSView.makeLabel(
+            NSLocalizedString("dialog.sendFile.filename",
+                value: "Filename (drop file in this dialog):", comment: ""))
+        fnLabel.alignment = .left
+
+        filenameField = NSView.makeTextField(value: "", placeholder: "")
+        filenameField.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+
+        let browseBtn = NSButton(
+            title: "...", target: self, action: #selector(browseFile(_:)))
+        browseBtn.translatesAutoresizingMaskIntoConstraints = false
+        browseBtn.bezelStyle = .rounded
+        browseBtn.widthAnchor.constraint(equalToConstant: 30).isActive = true
+
+        let fnRow = NSStackView(views: [filenameField, browseBtn])
+        fnRow.translatesAutoresizingMaskIntoConstraints = false
+        fnRow.orientation = .horizontal
+        fnRow.spacing = 4
+
+        // --- Reading method ---
+        let readLabel = NSView.makeLabel(
+            NSLocalizedString("dialog.sendFile.readingMethod",
+                value: "File reading method:", comment: ""))
+        readLabel.alignment = .left
+
+        bulkRadio = NSView.makeRadioButton(
+            NSLocalizedString("dialog.sendFile.bulkRead",
+                value: "Bulk read", comment: ""), tag: 0)
+        bulkRadio.state = .on
+        bulkRadio.target = self
+        bulkRadio.action = #selector(readMethodChanged(_:))
+
+        sequentialRadio = NSView.makeRadioButton(
+            NSLocalizedString("dialog.sendFile.sequentialRead",
+                value: "Sequential read", comment: ""), tag: 1)
+        sequentialRadio.state = .off
+        sequentialRadio.target = self
+        sequentialRadio.action = #selector(readMethodChanged(_:))
+
+        let radioRow = NSStackView(views: [bulkRadio, sequentialRadio])
+        radioRow.translatesAutoresizingMaskIntoConstraints = false
+        radioRow.orientation = .horizontal
+        radioRow.spacing = 16
+
+        // --- Binary checkbox ---
+        binaryCheck = NSView.makeCheckbox(
+            NSLocalizedString("dialog.sendFile.binary",
+                value: "Binary", comment: ""), checked: false)
+
+        // --- Delay type ---
+        let delayLabel = NSView.makeLabel(
+            NSLocalizedString("dialog.sendFile.delayType",
+                value: "Delay type:", comment: ""))
+        delayLabel.alignment = .left
+
+        delayTypePopup = NSView.makePopUpButton(
+            items: DelayType.allCases.map { $0.localizedTitle }, width: 140)
+
+        let delayRow = NSStackView(views: [delayLabel, delayTypePopup])
+        delayRow.translatesAutoresizingMaskIntoConstraints = false
+        delayRow.orientation = .horizontal
+        delayRow.spacing = 8
+
+        // --- Send size ---
+        let sizeLabel = NSView.makeLabel(
+            NSLocalizedString("dialog.sendFile.sendSize",
+                value: "Send size(bytes):", comment: ""))
+        sizeLabel.alignment = .left
+
+        let sizeItems = ["All", "80", "160", "320", "640", "1280", "2560", "5120", "10240"]
+        sendSizePopup = NSView.makePopUpButton(items: sizeItems, width: 140)
+
+        let sizeRow = NSStackView(views: [sizeLabel, sendSizePopup])
+        sizeRow.translatesAutoresizingMaskIntoConstraints = false
+        sizeRow.orientation = .horizontal
+        sizeRow.spacing = 8
+
+        // --- Delay time ---
+        let timeLabel = NSView.makeLabel(
+            NSLocalizedString("dialog.sendFile.delayTime",
+                value: "Delay time(ms):", comment: ""))
+        timeLabel.alignment = .left
+
+        delayTimeField = NSView.makeTextField(value: "0", width: 60)
+
+        let timeRow = NSStackView(views: [timeLabel, delayTimeField])
+        timeRow.translatesAutoresizingMaskIntoConstraints = false
+        timeRow.orientation = .horizontal
+        timeRow.spacing = 8
+
+        // --- Assemble ---
+        let stack = NSStackView(views: [
+            fnLabel, fnRow, readLabel, radioRow,
+            binaryCheck, delayRow, sizeRow, timeRow
+        ])
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        stack.orientation = .vertical
+        stack.alignment = .leading
+        stack.spacing = 8
+        contentArea.addSubview(stack)
+
+        NSLayoutConstraint.activate([
+            stack.topAnchor.constraint(equalTo: contentArea.topAnchor),
+            stack.leadingAnchor.constraint(equalTo: contentArea.leadingAnchor),
+            stack.trailingAnchor.constraint(equalTo: contentArea.trailingAnchor),
+            stack.bottomAnchor.constraint(equalTo: contentArea.bottomAnchor),
+            fnRow.widthAnchor.constraint(equalTo: stack.widthAnchor),
+        ])
+    }
+
+    @objc private func readMethodChanged(_ sender: NSButton) {
+        bulkRadio.state = (sender === bulkRadio) ? .on : .off
+        sequentialRadio.state = (sender === sequentialRadio) ? .on : .off
+    }
+
+    @objc private func browseFile(_ sender: Any?) {
+        let openPanel = NSOpenPanel()
+        openPanel.canChooseFiles = true
+        openPanel.canChooseDirectories = false
+        openPanel.allowsMultipleSelection = false
+        if openPanel.runModal() == .OK, let url = openPanel.url {
+            filenameField.stringValue = url.path
+        }
+    }
+
+    override func applySettings() {
+        let path = filenameField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !path.isEmpty else { result = nil; return }
+        let url = URL(fileURLWithPath: path)
+
+        let delayType = DelayType(rawValue: delayTypePopup.indexOfSelectedItem) ?? .noDelay
+
+        let sizeStr = sendSizePopup.titleOfSelectedItem ?? "All"
+        let sendSize = (sizeStr == "All") ? 0 : (Int(sizeStr) ?? 0)
+
+        let delayMs = Int(delayTimeField.stringValue) ?? 0
+
+        result = Result(
+            fileURL: url,
+            bulkRead: bulkRadio.state == .on,
+            binary: binaryCheck.state == .on,
+            delayType: delayType,
+            sendSize: sendSize,
+            delayTimeMs: delayMs
+        )
+    }
+}
+
+// MARK: - Receive File Dialog Controller (IDD_RECVFILEDLG)
+
+/// Modal dialog for receiving a file — provides filename selection,
+/// binary mode, and auto-stop wait time.
+///
+///  Filename: [______________] [...]
+///  ☑ Binary
+///  Auto-stop wait time(sec): [0___]
+///  [OK]  [Cancel]  [Help]
+///
+/// Maps to Tera Term IDD_RECVFILEDLG (271×102 DLU).
+final class RecvFileDialogController: BaseSetupDialogController {
+
+    struct Result {
+        let fileURL: URL
+        let binary: Bool
+        let autoStopWaitSec: Int
+    }
+
+    private var filenameField: NSTextField!
+    private var binaryCheck: NSButton!
+    private var autoStopField: NSTextField!
+
+    private(set) var result: Result?
+
+    init() {
+        super.init(nibName: nil, bundle: nil)
+        self.title = NSLocalizedString("dialog.recvFile.title",
+            value: "Receive file", comment: "")
+    }
+
+    required init?(coder: NSCoder) { fatalError() }
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        setupControls()
+    }
+
+    private func setupControls() {
+        contentArea.widthAnchor.constraint(equalToConstant: 420).isActive = true
+
+        // --- Filename row ---
+        let fnLabel = NSView.makeLabel(
+            NSLocalizedString("dialog.recvFile.filename",
+                value: "Filename (drop file in this dialog):", comment: ""))
+        fnLabel.alignment = .left
+
+        filenameField = NSView.makeTextField(value: "", placeholder: "")
+        filenameField.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+
+        let browseBtn = NSButton(
+            title: "...", target: self, action: #selector(browseFile(_:)))
+        browseBtn.translatesAutoresizingMaskIntoConstraints = false
+        browseBtn.bezelStyle = .rounded
+        browseBtn.widthAnchor.constraint(equalToConstant: 30).isActive = true
+
+        let fnRow = NSStackView(views: [filenameField, browseBtn])
+        fnRow.translatesAutoresizingMaskIntoConstraints = false
+        fnRow.orientation = .horizontal
+        fnRow.spacing = 4
+
+        // --- Binary checkbox ---
+        binaryCheck = NSView.makeCheckbox(
+            NSLocalizedString("dialog.recvFile.binary",
+                value: "Binary", comment: ""), checked: false)
+
+        // --- Auto-stop wait time ---
+        let autoLabel = NSView.makeLabel(
+            NSLocalizedString("dialog.recvFile.autoStop",
+                value: "Auto-stop wait time(sec):", comment: ""))
+        autoLabel.alignment = .left
+
+        autoStopField = NSView.makeTextField(value: "0", width: 60)
+
+        let autoRow = NSStackView(views: [autoLabel, autoStopField])
+        autoRow.translatesAutoresizingMaskIntoConstraints = false
+        autoRow.orientation = .horizontal
+        autoRow.spacing = 8
+
+        // --- Assemble ---
+        let stack = NSStackView(views: [fnLabel, fnRow, binaryCheck, autoRow])
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        stack.orientation = .vertical
+        stack.alignment = .leading
+        stack.spacing = 8
+        contentArea.addSubview(stack)
+
+        NSLayoutConstraint.activate([
+            stack.topAnchor.constraint(equalTo: contentArea.topAnchor),
+            stack.leadingAnchor.constraint(equalTo: contentArea.leadingAnchor),
+            stack.trailingAnchor.constraint(equalTo: contentArea.trailingAnchor),
+            stack.bottomAnchor.constraint(equalTo: contentArea.bottomAnchor),
+            fnRow.widthAnchor.constraint(equalTo: stack.widthAnchor),
+        ])
+    }
+
+    @objc private func browseFile(_ sender: Any?) {
+        let savePanel = NSSavePanel()
+        if savePanel.runModal() == .OK, let url = savePanel.url {
+            filenameField.stringValue = url.path
+        }
+    }
+
+    override func applySettings() {
+        let path = filenameField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !path.isEmpty else { result = nil; return }
+        let url = URL(fileURLWithPath: path)
+
+        result = Result(
+            fileURL: url,
+            binary: binaryCheck.state == .on,
+            autoStopWaitSec: Int(autoStopField.stringValue) ?? 0
+        )
     }
 }
 

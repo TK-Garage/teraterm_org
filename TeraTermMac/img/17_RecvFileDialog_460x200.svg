@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="460" height="200" viewBox="0 0 460 200">
+  <defs>
+    <style>
+      .bg { fill: #ECECEC; }
+      .border { fill: none; stroke: red; stroke-width: 2; }
+      .label { font-family: -apple-system, sans-serif; font-size: 13px; fill: #333; }
+      .title { font-family: -apple-system, sans-serif; font-size: 13px; fill: #333; font-weight: 600; }
+      .field { fill: #FFF; stroke: #B0B0B0; stroke-width: 1; rx: 3; }
+      .btn { fill: #F0F0F0; stroke: #B0B0B0; stroke-width: 1; rx: 5; }
+      .btn-primary { fill: #007AFF; stroke: #006AE0; stroke-width: 1; rx: 5; }
+      .btn-label { font-family: -apple-system, sans-serif; font-size: 13px; fill: #333; text-anchor: middle; }
+      .btn-label-w { font-family: -apple-system, sans-serif; font-size: 13px; fill: #FFF; text-anchor: middle; }
+      .sep { stroke: #C0C0C0; stroke-width: 1; }
+      .check-box { fill: none; stroke: #666; stroke-width: 1.5; rx: 2; }
+      .size-label { font-family: monospace; font-size: 10px; fill: red; }
+    </style>
+  </defs>
+  <rect width="460" height="200" class="bg"/>
+  <rect x="1" y="1" width="458" height="198" class="border"/>
+
+  <!-- Title bar -->
+  <rect x="0" y="0" width="460" height="22" fill="#E8E8E8" stroke="#C0C0C0" stroke-width="1"/>
+  <text x="230" y="15" class="title" text-anchor="middle">Receive file</text>
+  <circle cx="14" cy="11" r="5" fill="#FF5F57"/>
+  <circle cx="30" cy="11" r="5" fill="#FEBC2E"/>
+  <circle cx="46" cy="11" r="5" fill="#28C840"/>
+
+  <!-- Filename label -->
+  <text x="20" y="48" class="label">Filename (drop file in this dialog):</text>
+
+  <!-- Filename field + browse button -->
+  <rect x="20" y="56" width="380" height="22" class="field"/>
+  <text x="28" y="71" class="label" fill="#999">/path/to/received_file.bin</text>
+  <rect x="408" y="56" width="30" height="22" class="btn"/>
+  <text x="423" y="71" class="btn-label">...</text>
+
+  <!-- Binary checkbox -->
+  <rect x="20" y="88" width="13" height="13" class="check-box"/>
+  <text x="38" y="99" class="label">Binary</text>
+
+  <!-- Auto-stop wait time -->
+  <text x="20" y="124" class="label">Auto-stop wait time(sec):</text>
+  <rect x="190" y="110" width="60" height="22" class="field"/>
+  <text x="198" y="125" class="label">0</text>
+
+  <!-- Separator -->
+  <line x1="0" y1="142" x2="460" y2="142" class="sep"/>
+
+  <!-- Buttons -->
+  <rect x="200" y="156" width="70" height="24" class="btn-primary"/>
+  <text x="235" y="172" class="btn-label-w">OK</text>
+
+  <rect x="280" y="156" width="70" height="24" class="btn"/>
+  <text x="315" y="172" class="btn-label">Cancel</text>
+
+  <rect x="370" y="156" width="70" height="24" class="btn"/>
+  <text x="405" y="172" class="btn-label">Help</text>
+
+  <text x="450" y="196" class="size-label" text-anchor="end">460 x 200</text>
+</svg>

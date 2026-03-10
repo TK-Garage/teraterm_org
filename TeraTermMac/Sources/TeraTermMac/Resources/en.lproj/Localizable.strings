@@ -314,3 +314,23 @@
 "dialog.ftrans.pause" = "Pause";
 "dialog.ftrans.resume" = "Resume";
 "dialog.ftrans.help" = "Help";
+
+/* Send File Dialog (IDD_SENDFILEDLG) */
+"dialog.sendFile.title" = "Send file";
+"dialog.sendFile.filename" = "Filename (drop file in this dialog):";
+"dialog.sendFile.readingMethod" = "File reading method:";
+"dialog.sendFile.bulkRead" = "Bulk read";
+"dialog.sendFile.sequentialRead" = "Sequential read";
+"dialog.sendFile.binary" = "Binary";
+"dialog.sendFile.delayType" = "Delay type:";
+"dialog.sendFile.delayNone" = "No delay";
+"dialog.sendFile.delayPerChar" = "Per character";
+"dialog.sendFile.delayPerLine" = "Per line";
+"dialog.sendFile.sendSize" = "Send size(bytes):";
+"dialog.sendFile.delayTime" = "Delay time(ms):";
+
+/* Receive File Dialog (IDD_RECVFILEDLG) */
+"dialog.recvFile.title" = "Receive file";
+"dialog.recvFile.filename" = "Filename (drop file in this dialog):";
+"dialog.recvFile.binary" = "Binary";
+"dialog.recvFile.autoStop" = "Auto-stop wait time(sec):";

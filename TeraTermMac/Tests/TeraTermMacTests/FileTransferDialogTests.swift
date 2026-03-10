@@ -203,3 +203,104 @@ class KermitGetDialogControllerTests: XCTestCase {
         XCTAssertEqual(vc.title, "Tera Term: Kermit Get")
     }
 }
+
+// MARK: - SendFileDialogController Tests
+
+class SendFileDialogControllerTests: XCTestCase {
+
+    func testTitleIsSet() {
+        let vc = SendFileDialogController()
+        XCTAssertEqual(vc.title, "Send file")
+    }
+
+    func testDelayTypeEnum() {
+        XCTAssertEqual(SendFileDialogController.DelayType.noDelay.rawValue, 0)
+        XCTAssertEqual(SendFileDialogController.DelayType.perChar.rawValue, 1)
+        XCTAssertEqual(SendFileDialogController.DelayType.perLine.rawValue, 2)
+        XCTAssertEqual(SendFileDialogController.DelayType.allCases.count, 3)
+    }
+
+    func testDelayTypeLocalizedTitles() {
+        // Verify each delay type produces a non-empty title
+        for dt in SendFileDialogController.DelayType.allCases {
+            XCTAssertFalse(dt.localizedTitle.isEmpty,
+                "DelayType \(dt) should have non-empty localized title")
+        }
+    }
+
+    func testResultInitialization() {
+        let url = URL(fileURLWithPath: "/tmp/test.txt")
+        let result = SendFileDialogController.Result(
+            fileURL: url,
+            bulkRead: true,
+            binary: false,
+            delayType: .perChar,
+            sendSize: 1280,
+            delayTimeMs: 50
+        )
+        XCTAssertEqual(result.fileURL, url)
+        XCTAssertTrue(result.bulkRead)
+        XCTAssertFalse(result.binary)
+        XCTAssertEqual(result.delayType, .perChar)
+        XCTAssertEqual(result.sendSize, 1280)
+        XCTAssertEqual(result.delayTimeMs, 50)
+    }
+
+    func testResultAllSendSize() {
+        let url = URL(fileURLWithPath: "/tmp/test.txt")
+        let result = SendFileDialogController.Result(
+            fileURL: url,
+            bulkRead: false,
+            binary: true,
+            delayType: .noDelay,
+            sendSize: 0,
+            delayTimeMs: 0
+        )
+        XCTAssertEqual(result.sendSize, 0) // 0 = "All"
+        XCTAssertTrue(result.binary)
+        XCTAssertFalse(result.bulkRead)
+    }
+
+    func testInitialResultIsNil() {
+        let vc = SendFileDialogController()
+        XCTAssertNil(vc.result)
+    }
+}
+
+// MARK: - RecvFileDialogController Tests
+
+class RecvFileDialogControllerTests: XCTestCase {
+
+    func testTitleIsSet() {
+        let vc = RecvFileDialogController()
+        XCTAssertEqual(vc.title, "Receive file")
+    }
+
+    func testResultInitialization() {
+        let url = URL(fileURLWithPath: "/tmp/recv.bin")
+        let result = RecvFileDialogController.Result(
+            fileURL: url,
+            binary: true,
+            autoStopWaitSec: 30
+        )
+        XCTAssertEqual(result.fileURL, url)
+        XCTAssertTrue(result.binary)
+        XCTAssertEqual(result.autoStopWaitSec, 30)
+    }
+
+    func testResultZeroAutoStop() {
+        let url = URL(fileURLWithPath: "/tmp/test.bin")
+        let result = RecvFileDialogController.Result(
+            fileURL: url,
+            binary: false,
+            autoStopWaitSec: 0
+        )
+        XCTAssertFalse(result.binary)
+        XCTAssertEqual(result.autoStopWaitSec, 0)
+    }
+
+    func testInitialResultIsNil() {
+        let vc = RecvFileDialogController()
+        XCTAssertNil(vc.result)
+    }
+}

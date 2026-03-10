@@ -314,3 +314,23 @@
 "dialog.ftrans.pause" = "一時停止";
 "dialog.ftrans.resume" = "再開";
 "dialog.ftrans.help" = "ヘルプ";
+
+/* Send File Dialog (IDD_SENDFILEDLG) */
+"dialog.sendFile.title" = "ファイル送信";
+"dialog.sendFile.filename" = "ファイル名 (このダイアログにファイルをドロップ):";
+"dialog.sendFile.readingMethod" = "ファイル読み込み方法:";
+"dialog.sendFile.bulkRead" = "一括読み込み";
+"dialog.sendFile.sequentialRead" = "逐次読み込み";
+"dialog.sendFile.binary" = "バイナリ";
+"dialog.sendFile.delayType" = "ディレイ種別:";
+"dialog.sendFile.delayNone" = "ディレイなし";
+"dialog.sendFile.delayPerChar" = "文字毎";
+"dialog.sendFile.delayPerLine" = "行毎";
+"dialog.sendFile.sendSize" = "送信サイズ(バイト):";
+"dialog.sendFile.delayTime" = "ディレイ時間(ミリ秒):";
+
+/* Receive File Dialog (IDD_RECVFILEDLG) */
+"dialog.recvFile.title" = "ファイル受信";
+"dialog.recvFile.filename" = "ファイル名 (このダイアログにファイルをドロップ):";
+"dialog.recvFile.binary" = "バイナリ";
+"dialog.recvFile.autoStop" = "自動停止待ち時間(秒):";
