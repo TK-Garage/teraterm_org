@@ -1,0 +1,1275 @@
+/*
+ * Copyright (C) 1994-1998 T. Teranishi
+ * (C) 2004- TeraTerm Project
+ * All rights reserved.
+ *
+ * Ported to Swift/macOS
+ *
+ * Additional Settings — tabbed dialog containing 13 setting pages
+ * (all Tera Term 5.6 tab sheets except Cygwin).
+ *
+ * Tab sheets ported:
+ *   IDD_TABSHEET_GENERAL, IDD_TABSHEET_CODING, IDD_TABSHEET_COPYPASTE,
+ *   IDD_TABSHEET_SEQUENCE, IDD_TABSHEET_MOUSE, IDD_TABSHEET_LOG,
+ *   IDD_TABSHEET_VISUAL, IDD_TABSHEET_FONT, IDD_TABSHEET_TEKFONT,
+ *   IDD_TABSHEET_THEME, IDD_TABSHEET_UI, IDD_TABSHEET_PLUGIN,
+ *   IDD_TABSHEET_DEBUG
+ */
+
+#if canImport(AppKit)
+import AppKit
+
+// MARK: - Additional Settings Window Controller
+
+final class AdditionalSettingsController: NSObject {
+
+    private var window: NSWindow?
+    private var tabView: NSTabView?
+    private var settings: TerminalSettings
+    var onApply: (() -> Void)?
+
+    private var tabControllers: [AdditionalSettingsTab] = []
+
+    init(settings: TerminalSettings) {
+        self.settings = settings
+        super.init()
+    }
+
+    func showAsSheet(on parent: NSWindow) {
+        if window != nil { return }
+        buildWindow()
+        guard let win = window else { return }
+        parent.beginSheet(win) { [weak self] response in
+            if response == .OK {
+                self?.applyAll()
+                self?.onApply?()
+            }
+            self?.window = nil
+        }
+    }
+
+    func showModal() {
+        if window != nil { return }
+        buildWindow()
+        guard let win = window else { return }
+        win.center()
+        let response = NSApplication.shared.runModal(for: win)
+        if response == .OK {
+            applyAll()
+            onApply?()
+        }
+        window = nil
+    }
+
+    private func applyAll() {
+        for tc in tabControllers {
+            tc.apply(to: settings)
+        }
+    }
+
+    private func buildWindow() {
+        let tv = NSTabView()
+        tv.translatesAutoresizingMaskIntoConstraints = false
+        tv.tabViewType = .topTabsBezelBorder
+
+        tabControllers = [
+            GeneralTab(settings: settings),
+            CodingTab(settings: settings),
+            CopyPasteTab(settings: settings),
+            SequenceTab(settings: settings),
+            MouseTab(settings: settings),
+            LogTab(settings: settings),
+            VisualTab(settings: settings),
+            FontTab(settings: settings),
+            TEKFontTab(settings: settings),
+            ThemeTab(settings: settings),
+            UITab(settings: settings),
+            PluginTab(settings: settings),
+            DebugTab(settings: settings),
+        ]
+
+        for tc in tabControllers {
+            let item = NSTabViewItem(identifier: tc.tabTitle)
+            item.label = tc.tabTitle
+            item.view = tc.contentView
+            tv.addTabViewItem(item)
+        }
+
+        // Buttons
+        let okButton = NSView.makePushButton(TTL("OK"), keyEquivalent: "\r")
+        okButton.target = self
+        okButton.action = #selector(okAction(_:))
+
+        let cancelButton = NSView.makePushButton(TTL("Cancel"), keyEquivalent: "\u{1b}")
+        cancelButton.target = self
+        cancelButton.action = #selector(cancelAction(_:))
+
+        let helpButton = NSView.makePushButton(TTL("Help"))
+        helpButton.target = self
+        helpButton.action = #selector(helpAction(_:))
+
+        let container = NSView()
+        container.translatesAutoresizingMaskIntoConstraints = false
+        container.addSubview(tv)
+        container.addSubview(okButton)
+        container.addSubview(cancelButton)
+        container.addSubview(helpButton)
+
+        let m: CGFloat = 16
+        NSLayoutConstraint.activate([
+            tv.topAnchor.constraint(equalTo: container.topAnchor, constant: m),
+            tv.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: m),
+            tv.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -m),
+
+            okButton.topAnchor.constraint(equalTo: tv.bottomAnchor, constant: m),
+            okButton.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -m),
+            okButton.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -m),
+
+            cancelButton.centerYAnchor.constraint(equalTo: okButton.centerYAnchor),
+            cancelButton.trailingAnchor.constraint(equalTo: okButton.leadingAnchor, constant: -8),
+
+            helpButton.centerYAnchor.constraint(equalTo: okButton.centerYAnchor),
+            helpButton.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: m),
+
+            tv.widthAnchor.constraint(greaterThanOrEqualToConstant: 540),
+            tv.heightAnchor.constraint(greaterThanOrEqualToConstant: 420),
+        ])
+
+        let win = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 600, height: 520),
+                           styleMask: [.titled, .closable],
+                           backing: .buffered, defer: false)
+        win.title = TTL("dialog.additionalSettings.title")
+        win.contentView = container
+        win.isReleasedWhenClosed = false
+        self.window = win
+        self.tabView = tv
+    }
+
+    @objc private func okAction(_ sender: Any?) {
+        if let sheet = window, let parent = sheet.sheetParent {
+            parent.endSheet(sheet, returnCode: .OK)
+        } else if let win = window {
+            NSApplication.shared.stopModal(withCode: .OK)
+            win.close()
+        }
+    }
+
+    @objc private func cancelAction(_ sender: Any?) {
+        if let sheet = window, let parent = sheet.sheetParent {
+            parent.endSheet(sheet, returnCode: .cancel)
+        } else if let win = window {
+            NSApplication.shared.stopModal(withCode: .cancel)
+            win.close()
+        }
+    }
+
+    @objc private func helpAction(_ sender: Any?) {
+        if let url = URL(string: "https://teratermproject.github.io/") {
+            NSWorkspace.shared.open(url)
+        }
+    }
+}
+
+// MARK: - Tab Protocol
+
+protocol AdditionalSettingsTab: AnyObject {
+    var tabTitle: String { get }
+    var contentView: NSView { get }
+    func apply(to settings: TerminalSettings)
+}
+
+// MARK: - General Tab (IDD_TABSHEET_GENERAL)
+
+final class GeneralTab: AdditionalSettingsTab {
+    let tabTitle = "General"
+    let contentView = NSView()
+
+    private var sendBreakCheck: NSButton!
+    private var broadcastCheck: NSButton!
+    private var autoScrollCheck: NSButton!
+    private var clearOnResizeCheck: NSButton!
+    private var cursorIMECheck: NSButton!
+    private var defaultPortPopup: NSPopUpButton!
+    private var titleFormatTCPCheck: NSButton!
+    private var titleFormatSerialCheck: NSButton!
+    private var titleFormatSessionCheck: NSButton!
+    private var notifySoundCheck: NSButton!
+    private var fileTransferField: NSTextField!
+
+    init(settings: TerminalSettings) {
+        contentView.translatesAutoresizingMaskIntoConstraints = false
+        buildUI(settings)
+    }
+
+    private func buildUI(_ s: TerminalSettings) {
+        sendBreakCheck = NSView.makeCheckbox(TTL("dialog.general.sendBreak"))
+        broadcastCheck = NSView.makeCheckbox(TTL("dialog.general.broadcast"))
+        autoScrollCheck = NSView.makeCheckbox(TTL("dialog.general.autoScroll"), checked: s.autoScrollOnOutput)
+        clearOnResizeCheck = NSView.makeCheckbox(TTL("dialog.general.clearOnResize"), checked: s.clearOnResize)
+        cursorIMECheck = NSView.makeCheckbox(TTL("dialog.general.cursorIME"), checked: s.cursorChangeIME)
+
+        let portLabel = NSView.makeLabel(TTL("dialog.general.defaultPort"), alignment: .left)
+        defaultPortPopup = NSView.makePopUpButton(items: ["TCP/IP", "Serial"], width: 120)
+        defaultPortPopup.selectItem(at: s.portType == .serial ? 1 : 0)
+
+        let portRow = NSStackView(views: [portLabel, defaultPortPopup])
+        portRow.translatesAutoresizingMaskIntoConstraints = false
+        portRow.orientation = .horizontal
+        portRow.spacing = 8
+
+        let titleBox = NSView.makeGroupBox(title: TTL("dialog.general.titleFormat"))
+        titleFormatTCPCheck = NSView.makeCheckbox("TCP/IP", checked: s.titleFormatTCP)
+        titleFormatSerialCheck = NSView.makeCheckbox("Serial", checked: s.titleFormatSerial)
+        titleFormatSessionCheck = NSView.makeCheckbox("Session", checked: s.titleFormatSession)
+        let titleStack = NSStackView(views: [titleFormatTCPCheck, titleFormatSerialCheck, titleFormatSessionCheck])
+        titleStack.translatesAutoresizingMaskIntoConstraints = false
+        titleStack.orientation = .vertical
+        titleStack.alignment = .leading
+        titleStack.spacing = 4
+        let tc = titleBox.contentView!
+        tc.addSubview(titleStack)
+        NSLayoutConstraint.activate([
+            titleStack.topAnchor.constraint(equalTo: tc.topAnchor, constant: 16),
+            titleStack.leadingAnchor.constraint(equalTo: tc.leadingAnchor, constant: 12),
+            titleStack.trailingAnchor.constraint(lessThanOrEqualTo: tc.trailingAnchor, constant: -12),
+            titleStack.bottomAnchor.constraint(equalTo: tc.bottomAnchor, constant: -8),
+        ])
+
+        notifySoundCheck = NSView.makeCheckbox(TTL("dialog.general.notifySound"), checked: s.notifySound)
+
+        let ftLabel = NSView.makeLabel(TTL("dialog.general.fileTransferFolder"), alignment: .left)
+        fileTransferField = NSView.makeTextField(value: s.fileTransferFolder)
+        let ftRow = NSStackView(views: [ftLabel, fileTransferField])
+        ftRow.translatesAutoresizingMaskIntoConstraints = false
+        ftRow.orientation = .horizontal
+        ftRow.spacing = 8
+
+        let stack = NSStackView(views: [
+            sendBreakCheck, broadcastCheck, autoScrollCheck, clearOnResizeCheck,
+            cursorIMECheck, portRow, titleBox, notifySoundCheck, ftRow
+        ])
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        stack.orientation = .vertical
+        stack.alignment = .leading
+        stack.spacing = 8
+        contentView.addSubview(stack)
+
+        NSLayoutConstraint.activate([
+            stack.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 12),
+            stack.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 12),
+            stack.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -12),
+        ])
+    }
+
+    func apply(to s: TerminalSettings) {
+        s.autoScrollOnOutput = autoScrollCheck.state == .on
+        s.clearOnResize = clearOnResizeCheck.state == .on
+        s.cursorChangeIME = cursorIMECheck.state == .on
+        s.portType = defaultPortPopup.indexOfSelectedItem == 1 ? .serial : .tcpip
+        s.titleFormatTCP = titleFormatTCPCheck.state == .on
+        s.titleFormatSerial = titleFormatSerialCheck.state == .on
+        s.titleFormatSession = titleFormatSessionCheck.state == .on
+        s.notifySound = notifySoundCheck.state == .on
+        s.fileTransferFolder = fileTransferField.stringValue
+    }
+}
+
+// MARK: - Coding Tab (IDD_TABSHEET_CODING)
+
+final class CodingTab: AdditionalSettingsTab {
+    let tabTitle = "Coding"
+    let contentView = NSView()
+
+    private var recvEncodingPopup: NSPopUpButton!
+    private var sendEncodingPopup: NSPopUpButton!
+    private var ambiguousWidthPopup: NSPopUpButton!
+    private var emojiWidthPopup: NSPopUpButton!
+
+    private let encodingItems = ["UTF-8", "Shift_JIS", "EUC-JP", "ISO-2022-JP"]
+
+    init(settings: TerminalSettings) {
+        contentView.translatesAutoresizingMaskIntoConstraints = false
+        buildUI(settings)
+    }
+
+    private func buildUI(_ s: TerminalSettings) {
+        let recvLabel = NSView.makeLabel(TTL("dialog.coding.receiveEncoding"), alignment: .left)
+        recvEncodingPopup = NSView.makePopUpButton(
+            items: CharacterEncoding.allCases.map { $0.displayName }, width: 240)
+        if let idx = CharacterEncoding.allCases.firstIndex(of: s.encoding) {
+            recvEncodingPopup.selectItem(at: idx)
+        }
+
+        let sendLabel = NSView.makeLabel(TTL("dialog.coding.sendEncoding"), alignment: .left)
+        sendEncodingPopup = NSView.makePopUpButton(
+            items: CharacterEncoding.allCases.map { $0.displayName }, width: 240)
+        if let idx = CharacterEncoding.allCases.firstIndex(of: s.sendEncoding) {
+            sendEncodingPopup.selectItem(at: idx)
+        }
+
+        let ambLabel = NSView.makeLabel(TTL("dialog.coding.ambiguousWidth"), alignment: .left)
+        ambiguousWidthPopup = NSView.makePopUpButton(items: ["1 (Narrow)", "2 (Wide)"], width: 120)
+        ambiguousWidthPopup.selectItem(at: s.unicodeAmbiguousWidth == 2 ? 1 : 0)
+
+        let emojiLabel = NSView.makeLabel(TTL("dialog.coding.emojiWidth"), alignment: .left)
+        emojiWidthPopup = NSView.makePopUpButton(items: ["1 (Narrow)", "2 (Wide)"], width: 120)
+        emojiWidthPopup.selectItem(at: s.unicodeEmojiWidth == 2 ? 1 : 0)
+
+        let grid = NSGridView(views: [
+            [recvLabel, recvEncodingPopup],
+            [sendLabel, sendEncodingPopup],
+            [ambLabel, ambiguousWidthPopup],
+            [emojiLabel, emojiWidthPopup],
+        ])
+        grid.translatesAutoresizingMaskIntoConstraints = false
+        grid.rowSpacing = 10
+        grid.columnSpacing = 10
+        grid.column(at: 0).xPlacement = .trailing
+        grid.column(at: 1).xPlacement = .leading
+        contentView.addSubview(grid)
+
+        NSLayoutConstraint.activate([
+            grid.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 16),
+            grid.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 12),
+        ])
+    }
+
+    func apply(to s: TerminalSettings) {
+        let allEncodings = CharacterEncoding.allCases
+        let recvIdx = recvEncodingPopup.indexOfSelectedItem
+        if recvIdx >= 0 && recvIdx < allEncodings.count {
+            s.encoding = allEncodings[recvIdx]
+        }
+        let sendIdx = sendEncodingPopup.indexOfSelectedItem
+        if sendIdx >= 0 && sendIdx < allEncodings.count {
+            s.sendEncoding = allEncodings[sendIdx]
+        }
+        s.unicodeAmbiguousWidth = ambiguousWidthPopup.indexOfSelectedItem == 1 ? 2 : 1
+        s.unicodeEmojiWidth = emojiWidthPopup.indexOfSelectedItem == 1 ? 2 : 1
+    }
+}
+
+// MARK: - Copy and Paste Tab (IDD_TABSHEET_COPYPASTE)
+
+final class CopyPasteTab: AdditionalSettingsTab {
+    let tabTitle = "Copy and Paste"
+    let contentView = NSView()
+
+    private var continuedLineCopyCheck: NSButton!
+    private var confirmPasteNewLineCheck: NSButton!
+    private var delimiterField: NSTextField!
+    private var pasteDelayField: NSTextField!
+    private var autoTextCopyCheck: NSButton!
+
+    init(settings: TerminalSettings) {
+        contentView.translatesAutoresizingMaskIntoConstraints = false
+        buildUI(settings)
+    }
+
+    private func buildUI(_ s: TerminalSettings) {
+        continuedLineCopyCheck = NSView.makeCheckbox(
+            TTL("dialog.copyPaste.continuedLineCopy"), checked: s.continuedLineCopy)
+        confirmPasteNewLineCheck = NSView.makeCheckbox(
+            TTL("dialog.copyPaste.confirmPasteNewLine"), checked: s.confirmPasteNewLine)
+        autoTextCopyCheck = NSView.makeCheckbox(
+            TTL("dialog.copyPaste.autoTextCopy"), checked: s.autoTextCopy)
+
+        let delimLabel = NSView.makeLabel(TTL("dialog.copyPaste.delimiterList"), alignment: .left)
+        delimiterField = NSView.makeTextField(value: s.delimiterList, width: 200)
+        let delimRow = NSStackView(views: [delimLabel, delimiterField])
+        delimRow.translatesAutoresizingMaskIntoConstraints = false
+        delimRow.orientation = .horizontal
+        delimRow.spacing = 8
+
+        let delayLabel = NSView.makeLabel(TTL("dialog.copyPaste.pasteDelay"), alignment: .left)
+        pasteDelayField = NSView.makeNumberField(value: s.pasteDelay, width: 60)
+        let msLabel = NSView.makeLabel("ms", alignment: .left)
+        let delayRow = NSStackView(views: [delayLabel, pasteDelayField, msLabel])
+        delayRow.translatesAutoresizingMaskIntoConstraints = false
+        delayRow.orientation = .horizontal
+        delayRow.spacing = 8
+
+        let stack = NSStackView(views: [
+            continuedLineCopyCheck, confirmPasteNewLineCheck,
+            delimRow, delayRow, autoTextCopyCheck
+        ])
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        stack.orientation = .vertical
+        stack.alignment = .leading
+        stack.spacing = 10
+        contentView.addSubview(stack)
+
+        NSLayoutConstraint.activate([
+            stack.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 16),
+            stack.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 12),
+            stack.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -12),
+        ])
+    }
+
+    func apply(to s: TerminalSettings) {
+        s.continuedLineCopy = continuedLineCopyCheck.state == .on
+        s.confirmPasteNewLine = confirmPasteNewLineCheck.state == .on
+        s.delimiterList = delimiterField.stringValue
+        s.pasteDelay = pasteDelayField.integerValue
+        s.autoTextCopy = autoTextCopyCheck.state == .on
+    }
+}
+
+// MARK: - Sequence Tab (IDD_TABSHEET_SEQUENCE)
+
+final class SequenceTab: AdditionalSettingsTab {
+    let tabTitle = "Sequence"
+    let contentView = NSView()
+
+    private var mouseEventCheck: NSButton!
+    private var titleChangeCheck: NSButton!
+    private var titleReportCheck: NSButton!
+    private var windowControlCheck: NSButton!
+    private var cursorControlCheck: NSButton!
+    private var clipboardAccessCheck: NSButton!
+    private var beepPopup: NSPopUpButton!
+
+    init(settings: TerminalSettings) {
+        contentView.translatesAutoresizingMaskIntoConstraints = false
+        buildUI(settings)
+    }
+
+    private func buildUI(_ s: TerminalSettings) {
+        mouseEventCheck = NSView.makeCheckbox(
+            TTL("dialog.sequence.mouseEventTracking"), checked: s.mouseTracking)
+        titleChangeCheck = NSView.makeCheckbox(
+            TTL("dialog.sequence.titleChanging"), checked: s.titleChangeRequest)
+        titleReportCheck = NSView.makeCheckbox(
+            TTL("dialog.sequence.titleReport"), checked: s.titleReportRequest)
+        windowControlCheck = NSView.makeCheckbox(
+            TTL("dialog.sequence.windowControl"), checked: s.windowControlSequence)
+        cursorControlCheck = NSView.makeCheckbox(
+            TTL("dialog.sequence.cursorControl"), checked: s.cursorControlSequence)
+        clipboardAccessCheck = NSView.makeCheckbox(
+            TTL("dialog.sequence.clipboardAccess"), checked: s.clipboardAccessFromRemote)
+
+        let beepLabel = NSView.makeLabel(TTL("dialog.sequence.beep"), alignment: .left)
+        beepPopup = NSView.makePopUpButton(
+            items: [TTL("dialog.sequence.beepOff"),
+                    TTL("dialog.sequence.beepSystem"),
+                    TTL("dialog.sequence.beepVisual")],
+            width: 140)
+        beepPopup.selectItem(at: s.beepType.rawValue)
+        let beepRow = NSStackView(views: [beepLabel, beepPopup])
+        beepRow.translatesAutoresizingMaskIntoConstraints = false
+        beepRow.orientation = .horizontal
+        beepRow.spacing = 8
+
+        let stack = NSStackView(views: [
+            mouseEventCheck, titleChangeCheck, titleReportCheck,
+            windowControlCheck, cursorControlCheck, clipboardAccessCheck, beepRow
+        ])
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        stack.orientation = .vertical
+        stack.alignment = .leading
+        stack.spacing = 10
+        contentView.addSubview(stack)
+
+        NSLayoutConstraint.activate([
+            stack.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 16),
+            stack.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 12),
+        ])
+    }
+
+    func apply(to s: TerminalSettings) {
+        s.mouseTracking = mouseEventCheck.state == .on
+        s.titleChangeRequest = titleChangeCheck.state == .on
+        s.titleReportRequest = titleReportCheck.state == .on
+        s.windowControlSequence = windowControlCheck.state == .on
+        s.cursorControlSequence = cursorControlCheck.state == .on
+        s.clipboardAccessFromRemote = clipboardAccessCheck.state == .on
+        if let bt = BeepType(rawValue: beepPopup.indexOfSelectedItem) {
+            s.beepType = bt
+        }
+    }
+}
+
+// MARK: - Mouse Tab (IDD_TABSHEET_MOUSE)
+
+final class MouseTab: AdditionalSettingsTab {
+    let tabTitle = "Mouse"
+    let contentView = NSView()
+
+    private var clickableURLCheck: NSButton!
+    private var wheelScrollField: NSTextField!
+
+    init(settings: TerminalSettings) {
+        contentView.translatesAutoresizingMaskIntoConstraints = false
+        buildUI(settings)
+    }
+
+    private func buildUI(_ s: TerminalSettings) {
+        clickableURLCheck = NSView.makeCheckbox(
+            TTL("dialog.mouse.clickableURL"), checked: true)
+
+        let wheelLabel = NSView.makeLabel(TTL("dialog.mouse.wheelScrollLines"), alignment: .left)
+        wheelScrollField = NSView.makeNumberField(value: s.mouseWheelScrollLines, width: 60)
+        let linesLabel = NSView.makeLabel(TTL("dialog.mouse.lines"), alignment: .left)
+
+        let wheelRow = NSStackView(views: [wheelLabel, wheelScrollField, linesLabel])
+        wheelRow.translatesAutoresizingMaskIntoConstraints = false
+        wheelRow.orientation = .horizontal
+        wheelRow.spacing = 8
+
+        let stack = NSStackView(views: [clickableURLCheck, wheelRow])
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        stack.orientation = .vertical
+        stack.alignment = .leading
+        stack.spacing = 12
+        contentView.addSubview(stack)
+
+        NSLayoutConstraint.activate([
+            stack.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 16),
+            stack.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 12),
+        ])
+    }
+
+    func apply(to s: TerminalSettings) {
+        s.mouseWheelScrollLines = max(1, wheelScrollField.integerValue)
+    }
+}
+
+// MARK: - Log Tab (IDD_TABSHEET_LOG)
+
+final class LogTab: AdditionalSettingsTab {
+    let tabTitle = "Log"
+    let contentView = NSView()
+
+    private var editorField: NSTextField!
+    private var editorArgsField: NSTextField!
+    private var defaultNameField: NSTextField!
+    private var defaultPathField: NSTextField!
+    private var autoStartCheck: NSButton!
+    private var binaryCheck: NSButton!
+    private var appendCheck: NSButton!
+    private var plainTextCheck: NSButton!
+    private var hideDialogCheck: NSButton!
+    private var screenBufferCheck: NSButton!
+    private var timestampCheck: NSButton!
+    private var rotateEnabledCheck: NSButton!
+    private var rotateSizeField: NSTextField!
+    private var rotateStepField: NSTextField!
+
+    init(settings: TerminalSettings) {
+        contentView.translatesAutoresizingMaskIntoConstraints = false
+        buildUI(settings)
+    }
+
+    private func buildUI(_ s: TerminalSettings) {
+        let editorLabel = NSView.makeLabel(TTL("dialog.log.viewEditor"), alignment: .left)
+        editorField = NSView.makeTextField(value: s.logViewEditor)
+        let editorRow = NSStackView(views: [editorLabel, editorField])
+        editorRow.translatesAutoresizingMaskIntoConstraints = false
+        editorRow.orientation = .horizontal
+        editorRow.spacing = 8
+
+        let argsLabel = NSView.makeLabel(TTL("dialog.log.editorArguments"), alignment: .left)
+        editorArgsField = NSView.makeTextField(value: s.logEditorArguments)
+        let argsRow = NSStackView(views: [argsLabel, editorArgsField])
+        argsRow.translatesAutoresizingMaskIntoConstraints = false
+        argsRow.orientation = .horizontal
+        argsRow.spacing = 8
+
+        let nameLabel = NSView.makeLabel(TTL("dialog.log.defaultName"), alignment: .left)
+        defaultNameField = NSView.makeTextField(value: s.logDefaultName)
+        let nameRow = NSStackView(views: [nameLabel, defaultNameField])
+        nameRow.translatesAutoresizingMaskIntoConstraints = false
+        nameRow.orientation = .horizontal
+        nameRow.spacing = 8
+
+        let pathLabel = NSView.makeLabel(TTL("dialog.log.defaultPath"), alignment: .left)
+        defaultPathField = NSView.makeTextField(value: s.logDefaultDirectory)
+        let pathRow = NSStackView(views: [pathLabel, defaultPathField])
+        pathRow.translatesAutoresizingMaskIntoConstraints = false
+        pathRow.orientation = .horizontal
+        pathRow.spacing = 8
+
+        autoStartCheck = NSView.makeCheckbox(TTL("dialog.log.autoStart"), checked: s.logAutoStart)
+
+        let optionsBox = NSView.makeGroupBox(title: TTL("dialog.log.options"))
+        binaryCheck = NSView.makeCheckbox(TTL("dialog.log.binary"), checked: s.logBinary)
+        appendCheck = NSView.makeCheckbox(TTL("dialog.log.append"), checked: s.logAppend)
+        plainTextCheck = NSView.makeCheckbox(TTL("dialog.log.plainText"), checked: s.logPlainText)
+        hideDialogCheck = NSView.makeCheckbox(TTL("dialog.log.hideDialog"), checked: s.logHideDialog)
+        screenBufferCheck = NSView.makeCheckbox(TTL("dialog.log.screenBuffer"), checked: s.logIncludeScreenBuffer)
+        timestampCheck = NSView.makeCheckbox(TTL("dialog.log.timestamp"), checked: s.logTimestamp)
+        let optStack = NSStackView(views: [
+            binaryCheck, appendCheck, plainTextCheck, hideDialogCheck, screenBufferCheck, timestampCheck
+        ])
+        optStack.translatesAutoresizingMaskIntoConstraints = false
+        optStack.orientation = .vertical
+        optStack.alignment = .leading
+        optStack.spacing = 4
+        let oc = optionsBox.contentView!
+        oc.addSubview(optStack)
+        NSLayoutConstraint.activate([
+            optStack.topAnchor.constraint(equalTo: oc.topAnchor, constant: 16),
+            optStack.leadingAnchor.constraint(equalTo: oc.leadingAnchor, constant: 12),
+            optStack.trailingAnchor.constraint(lessThanOrEqualTo: oc.trailingAnchor, constant: -12),
+            optStack.bottomAnchor.constraint(equalTo: oc.bottomAnchor, constant: -8),
+        ])
+
+        let rotateBox = NSView.makeGroupBox(title: TTL("dialog.log.logRotate"))
+        rotateEnabledCheck = NSView.makeCheckbox(TTL("dialog.log.rotateEnabled"), checked: s.logRotateEnabled)
+        let sizeLabel = NSView.makeLabel(TTL("dialog.log.rotateSize"), alignment: .left)
+        rotateSizeField = NSView.makeNumberField(value: s.logRotateSize, width: 80)
+        let stepLabel = NSView.makeLabel(TTL("dialog.log.rotateStep"), alignment: .left)
+        rotateStepField = NSView.makeNumberField(value: s.logRotateStep, width: 60)
+        let rotateStack = NSStackView(views: [
+            rotateEnabledCheck,
+            NSStackView(views: [sizeLabel, rotateSizeField]),
+            NSStackView(views: [stepLabel, rotateStepField]),
+        ])
+        rotateStack.translatesAutoresizingMaskIntoConstraints = false
+        rotateStack.orientation = .vertical
+        rotateStack.alignment = .leading
+        rotateStack.spacing = 6
+        let rc = rotateBox.contentView!
+        rc.addSubview(rotateStack)
+        NSLayoutConstraint.activate([
+            rotateStack.topAnchor.constraint(equalTo: rc.topAnchor, constant: 16),
+            rotateStack.leadingAnchor.constraint(equalTo: rc.leadingAnchor, constant: 12),
+            rotateStack.trailingAnchor.constraint(lessThanOrEqualTo: rc.trailingAnchor, constant: -12),
+            rotateStack.bottomAnchor.constraint(equalTo: rc.bottomAnchor, constant: -8),
+        ])
+
+        let stack = NSStackView(views: [
+            editorRow, argsRow, nameRow, pathRow, autoStartCheck, optionsBox, rotateBox
+        ])
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        stack.orientation = .vertical
+        stack.alignment = .leading
+        stack.spacing = 8
+        contentView.addSubview(stack)
+
+        NSLayoutConstraint.activate([
+            stack.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 12),
+            stack.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 12),
+            stack.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -12),
+        ])
+    }
+
+    func apply(to s: TerminalSettings) {
+        s.logViewEditor = editorField.stringValue
+        s.logEditorArguments = editorArgsField.stringValue
+        s.logDefaultName = defaultNameField.stringValue
+        s.logDefaultDirectory = defaultPathField.stringValue
+        s.logAutoStart = autoStartCheck.state == .on
+        s.logBinary = binaryCheck.state == .on
+        s.logAppend = appendCheck.state == .on
+        s.logPlainText = plainTextCheck.state == .on
+        s.logHideDialog = hideDialogCheck.state == .on
+        s.logIncludeScreenBuffer = screenBufferCheck.state == .on
+        s.logTimestamp = timestampCheck.state == .on
+        s.logRotateEnabled = rotateEnabledCheck.state == .on
+        s.logRotateSize = rotateSizeField.integerValue
+        s.logRotateStep = rotateStepField.integerValue
+    }
+}
+
+// MARK: - Visual Tab (IDD_TABSHEET_VISUAL)
+
+final class VisualTab: AdditionalSettingsTab {
+    let tabTitle = "Visual"
+    let contentView = NSView()
+
+    private var opacityActiveSlider: NSSlider!
+    private var opacityInactiveSlider: NSSlider!
+    private var opacityActiveLabel: NSTextField!
+    private var opacityInactiveLabel: NSTextField!
+    private var mouseCursorPopup: NSPopUpButton!
+    private var fontQualityPopup: NSPopUpButton!
+    private var flickerlessCheck: NSButton!
+    private var cornerField: NSTextField!
+    private var boldCheck: NSButton!
+    private var blinkCheck: NSButton!
+    private var reverseCheck: NSButton!
+    private var underlineCheck: NSButton!
+    private var strikethroughCheck: NSButton!
+    private var colorWells: [NSColorWell] = []
+
+    init(settings: TerminalSettings) {
+        contentView.translatesAutoresizingMaskIntoConstraints = false
+        buildUI(settings)
+    }
+
+    private func buildUI(_ s: TerminalSettings) {
+        // Opacity
+        let opacityBox = NSView.makeGroupBox(title: TTL("dialog.visual.windowOpacity"))
+        let activeLabel = NSView.makeLabel(TTL("dialog.visual.active"), alignment: .left)
+        opacityActiveSlider = NSView.makeSlider(min: 20, max: 100, value: Double(s.windowOpacityActive))
+        opacityActiveSlider.target = self
+        opacityActiveSlider.action = #selector(activeSliderChanged(_:))
+        opacityActiveLabel = NSView.makeLabel("\(s.windowOpacityActive)%", alignment: .left)
+        opacityActiveLabel.widthAnchor.constraint(equalToConstant: 40).isActive = true
+
+        let inactiveLabel = NSView.makeLabel(TTL("dialog.visual.inactive"), alignment: .left)
+        opacityInactiveSlider = NSView.makeSlider(min: 20, max: 100, value: Double(s.windowOpacityInactive))
+        opacityInactiveSlider.target = self
+        opacityInactiveSlider.action = #selector(inactiveSliderChanged(_:))
+        opacityInactiveLabel = NSView.makeLabel("\(s.windowOpacityInactive)%", alignment: .left)
+        opacityInactiveLabel.widthAnchor.constraint(equalToConstant: 40).isActive = true
+
+        let opGrid = NSGridView(views: [
+            [activeLabel, opacityActiveSlider, opacityActiveLabel],
+            [inactiveLabel, opacityInactiveSlider, opacityInactiveLabel],
+        ])
+        opGrid.translatesAutoresizingMaskIntoConstraints = false
+        opGrid.rowSpacing = 8
+        opGrid.columnSpacing = 8
+        let opc = opacityBox.contentView!
+        opc.addSubview(opGrid)
+        NSLayoutConstraint.activate([
+            opGrid.topAnchor.constraint(equalTo: opc.topAnchor, constant: 16),
+            opGrid.leadingAnchor.constraint(equalTo: opc.leadingAnchor, constant: 12),
+            opGrid.trailingAnchor.constraint(equalTo: opc.trailingAnchor, constant: -12),
+            opGrid.bottomAnchor.constraint(equalTo: opc.bottomAnchor, constant: -8),
+        ])
+
+        // ANSI color palette
+        let colorBox = NSView.makeGroupBox(title: TTL("dialog.visual.ansiColorPalette"))
+        let colorNames = ["Black", "Red", "Green", "Yellow", "Blue", "Magenta", "Cyan", "White",
+                          "Bright Black", "Bright Red", "Bright Green", "Bright Yellow",
+                          "Bright Blue", "Bright Magenta", "Bright Cyan", "Bright White"]
+        let colorGrid = NSView()
+        colorGrid.translatesAutoresizingMaskIntoConstraints = false
+        colorWells = []
+        for i in 0..<16 {
+            let c = i < s.colorTheme.ansiColors.count ? s.colorTheme.ansiColors[i] : TerminalColor(r: 0, g: 0, b: 0)
+            let well = NSView.makeColorWell(color: NSColor(
+                red: CGFloat(c.r)/255, green: CGFloat(c.g)/255, blue: CGFloat(c.b)/255, alpha: 1))
+            well.toolTip = colorNames[i]
+            colorWells.append(well)
+            colorGrid.addSubview(well)
+        }
+        // Layout: 2 rows of 8
+        for i in 0..<16 {
+            let row = i / 8
+            let col = i % 8
+            NSLayoutConstraint.activate([
+                colorWells[i].topAnchor.constraint(equalTo: colorGrid.topAnchor, constant: CGFloat(row) * 36),
+                colorWells[i].leadingAnchor.constraint(equalTo: colorGrid.leadingAnchor, constant: CGFloat(col) * 36),
+            ])
+        }
+        colorGrid.heightAnchor.constraint(equalToConstant: 72).isActive = true
+        colorGrid.widthAnchor.constraint(equalToConstant: 288).isActive = true
+        let cbc = colorBox.contentView!
+        cbc.addSubview(colorGrid)
+        NSLayoutConstraint.activate([
+            colorGrid.topAnchor.constraint(equalTo: cbc.topAnchor, constant: 16),
+            colorGrid.leadingAnchor.constraint(equalTo: cbc.leadingAnchor, constant: 12),
+            colorGrid.bottomAnchor.constraint(equalTo: cbc.bottomAnchor, constant: -8),
+        ])
+
+        // Attributes
+        let attrBox = NSView.makeGroupBox(title: TTL("dialog.visual.charAttributes"))
+        boldCheck = NSView.makeCheckbox("Bold", checked: s.attrBold)
+        blinkCheck = NSView.makeCheckbox("Blink", checked: s.attrBlink)
+        reverseCheck = NSView.makeCheckbox("Reverse", checked: s.attrReverse)
+        underlineCheck = NSView.makeCheckbox("Underline", checked: s.attrUnderline)
+        strikethroughCheck = NSView.makeCheckbox("Strikethrough", checked: s.attrStrikethrough)
+        let attrStack = NSStackView(views: [boldCheck, blinkCheck, reverseCheck, underlineCheck, strikethroughCheck])
+        attrStack.translatesAutoresizingMaskIntoConstraints = false
+        attrStack.orientation = .horizontal
+        attrStack.spacing = 12
+        let abc = attrBox.contentView!
+        abc.addSubview(attrStack)
+        NSLayoutConstraint.activate([
+            attrStack.topAnchor.constraint(equalTo: abc.topAnchor, constant: 16),
+            attrStack.leadingAnchor.constraint(equalTo: abc.leadingAnchor, constant: 12),
+            attrStack.bottomAnchor.constraint(equalTo: abc.bottomAnchor, constant: -8),
+        ])
+
+        flickerlessCheck = NSView.makeCheckbox(TTL("dialog.visual.flickerlessMove"), checked: s.flickerlessMoveEnabled)
+
+        let stack = NSStackView(views: [opacityBox, colorBox, attrBox, flickerlessCheck])
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        stack.orientation = .vertical
+        stack.alignment = .leading
+        stack.spacing = 8
+        contentView.addSubview(stack)
+
+        NSLayoutConstraint.activate([
+            stack.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 8),
+            stack.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 8),
+            stack.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -8),
+        ])
+    }
+
+    @objc private func activeSliderChanged(_ sender: NSSlider) {
+        opacityActiveLabel.stringValue = "\(Int(sender.doubleValue))%"
+    }
+    @objc private func inactiveSliderChanged(_ sender: NSSlider) {
+        opacityInactiveLabel.stringValue = "\(Int(sender.doubleValue))%"
+    }
+
+    func apply(to s: TerminalSettings) {
+        s.windowOpacityActive = Int(opacityActiveSlider.doubleValue)
+        s.windowOpacityInactive = Int(opacityInactiveSlider.doubleValue)
+        s.flickerlessMoveEnabled = flickerlessCheck.state == .on
+        s.attrBold = boldCheck.state == .on
+        s.attrBlink = blinkCheck.state == .on
+        s.attrReverse = reverseCheck.state == .on
+        s.attrUnderline = underlineCheck.state == .on
+        s.attrStrikethrough = strikethroughCheck.state == .on
+
+        for i in 0..<min(16, colorWells.count) {
+            let c = colorWells[i].color
+            var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0
+            let converted = c.usingColorSpace(.sRGB) ?? c
+            converted.getRed(&r, green: &g, blue: &b, alpha: nil)
+            if i < s.colorTheme.ansiColors.count {
+                s.colorTheme.ansiColors[i] = TerminalColor(
+                    r: UInt8(clamping: Int(r * 255)),
+                    g: UInt8(clamping: Int(g * 255)),
+                    b: UInt8(clamping: Int(b * 255)))
+            }
+        }
+    }
+}
+
+// MARK: - Font Tab (IDD_TABSHEET_FONT)
+
+final class FontTab: AdditionalSettingsTab {
+    let tabTitle = "Font"
+    let contentView = NSView()
+
+    private var fontNameField: NSTextField!
+    private var proportionalCheck: NSButton!
+    private var hiddenCheck: NSButton!
+    private var drawingAPIPopup: NSPopUpButton!
+    private var codePageField: NSTextField!
+    private var charSpaceHField: NSTextField!
+    private var charSpaceVField: NSTextField!
+
+    init(settings: TerminalSettings) {
+        contentView.translatesAutoresizingMaskIntoConstraints = false
+        buildUI(settings)
+    }
+
+    private func buildUI(_ s: TerminalSettings) {
+        let fontBox = NSView.makeGroupBox(title: TTL("dialog.font.vtWindowFont"))
+
+        let fontLabel = NSView.makeLabel(TTL("dialog.font.fontName"), alignment: .left)
+        fontNameField = NSView.makeTextField(value: "\(s.fontName) \(Int(s.fontSize))pt")
+        fontNameField.isEditable = false
+
+        let chooseFontBtn = NSView.makePushButton(TTL("dialog.font.choose"))
+        chooseFontBtn.target = self
+        chooseFontBtn.action = #selector(chooseFont(_:))
+
+        let fontRow = NSStackView(views: [fontLabel, fontNameField, chooseFontBtn])
+        fontRow.translatesAutoresizingMaskIntoConstraints = false
+        fontRow.orientation = .horizontal
+        fontRow.spacing = 8
+
+        proportionalCheck = NSView.makeCheckbox(TTL("dialog.font.proportional"), checked: s.vtFontProportional)
+        hiddenCheck = NSView.makeCheckbox(TTL("dialog.font.hidden"), checked: s.vtFontHidden)
+
+        let fc = fontBox.contentView!
+        let fontStack = NSStackView(views: [fontRow, proportionalCheck, hiddenCheck])
+        fontStack.translatesAutoresizingMaskIntoConstraints = false
+        fontStack.orientation = .vertical
+        fontStack.alignment = .leading
+        fontStack.spacing = 6
+        fc.addSubview(fontStack)
+        NSLayoutConstraint.activate([
+            fontStack.topAnchor.constraint(equalTo: fc.topAnchor, constant: 16),
+            fontStack.leadingAnchor.constraint(equalTo: fc.leadingAnchor, constant: 12),
+            fontStack.trailingAnchor.constraint(equalTo: fc.trailingAnchor, constant: -12),
+            fontStack.bottomAnchor.constraint(equalTo: fc.bottomAnchor, constant: -8),
+        ])
+
+        let apiLabel = NSView.makeLabel(TTL("dialog.font.drawingAPI"), alignment: .left)
+        drawingAPIPopup = NSView.makePopUpButton(items: ["Default", "CoreText", "CoreGraphics"], width: 140)
+        drawingAPIPopup.selectItem(at: s.drawingAPI)
+        let apiRow = NSStackView(views: [apiLabel, drawingAPIPopup])
+        apiRow.translatesAutoresizingMaskIntoConstraints = false
+        apiRow.orientation = .horizontal
+        apiRow.spacing = 8
+
+        let cpLabel = NSView.makeLabel(TTL("dialog.font.codePage"), alignment: .left)
+        codePageField = NSView.makeNumberField(value: s.codePage, width: 80)
+        let cpRow = NSStackView(views: [cpLabel, codePageField])
+        cpRow.translatesAutoresizingMaskIntoConstraints = false
+        cpRow.orientation = .horizontal
+        cpRow.spacing = 8
+
+        let spaceBox = NSView.makeGroupBox(title: TTL("dialog.font.charSpace"))
+        let hLabel = NSView.makeLabel("H:", alignment: .left)
+        charSpaceHField = NSView.makeNumberField(value: s.charSpaceH, width: 50)
+        let vLabel = NSView.makeLabel("V:", alignment: .left)
+        charSpaceVField = NSView.makeNumberField(value: s.charSpaceV, width: 50)
+        let spaceRow = NSStackView(views: [hLabel, charSpaceHField, vLabel, charSpaceVField])
+        spaceRow.translatesAutoresizingMaskIntoConstraints = false
+        spaceRow.orientation = .horizontal
+        spaceRow.spacing = 8
+        let sc = spaceBox.contentView!
+        sc.addSubview(spaceRow)
+        NSLayoutConstraint.activate([
+            spaceRow.topAnchor.constraint(equalTo: sc.topAnchor, constant: 16),
+            spaceRow.leadingAnchor.constraint(equalTo: sc.leadingAnchor, constant: 12),
+            spaceRow.bottomAnchor.constraint(equalTo: sc.bottomAnchor, constant: -8),
+        ])
+
+        let stack = NSStackView(views: [fontBox, apiRow, cpRow, spaceBox])
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        stack.orientation = .vertical
+        stack.alignment = .leading
+        stack.spacing = 10
+        contentView.addSubview(stack)
+
+        NSLayoutConstraint.activate([
+            stack.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 12),
+            stack.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 12),
+            stack.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -12),
+        ])
+    }
+
+    @objc private func chooseFont(_ sender: Any?) {
+        let fm = NSFontManager.shared
+        fm.orderFrontFontPanel(sender)
+    }
+
+    func apply(to s: TerminalSettings) {
+        s.vtFontProportional = proportionalCheck.state == .on
+        s.vtFontHidden = hiddenCheck.state == .on
+        s.drawingAPI = drawingAPIPopup.indexOfSelectedItem
+        s.codePage = codePageField.integerValue
+        s.charSpaceH = charSpaceHField.integerValue
+        s.charSpaceV = charSpaceVField.integerValue
+    }
+}
+
+// MARK: - TEK Font Tab (IDD_TABSHEET_TEKFONT)
+
+final class TEKFontTab: AdditionalSettingsTab {
+    let tabTitle = "TEK Font"
+    let contentView = NSView()
+
+    private var fontNameField: NSTextField!
+    private var proportionalCheck: NSButton!
+    private var hiddenCheck: NSButton!
+
+    init(settings: TerminalSettings) {
+        contentView.translatesAutoresizingMaskIntoConstraints = false
+        buildUI(settings)
+    }
+
+    private func buildUI(_ s: TerminalSettings) {
+        let fontLabel = NSView.makeLabel(TTL("dialog.tekFont.fontName"), alignment: .left)
+        fontNameField = NSView.makeTextField(value: "\(s.tekFontName) \(Int(s.tekFontSize))pt")
+        fontNameField.isEditable = false
+
+        let chooseFontBtn = NSView.makePushButton(TTL("dialog.tekFont.choose"))
+        chooseFontBtn.target = self
+        chooseFontBtn.action = #selector(chooseFont(_:))
+
+        let fontRow = NSStackView(views: [fontLabel, fontNameField, chooseFontBtn])
+        fontRow.translatesAutoresizingMaskIntoConstraints = false
+        fontRow.orientation = .horizontal
+        fontRow.spacing = 8
+
+        proportionalCheck = NSView.makeCheckbox(TTL("dialog.tekFont.proportional"), checked: s.tekFontProportional)
+        hiddenCheck = NSView.makeCheckbox(TTL("dialog.tekFont.hidden"), checked: s.tekFontHidden)
+
+        let stack = NSStackView(views: [fontRow, proportionalCheck, hiddenCheck])
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        stack.orientation = .vertical
+        stack.alignment = .leading
+        stack.spacing = 10
+        contentView.addSubview(stack)
+
+        NSLayoutConstraint.activate([
+            stack.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 16),
+            stack.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 12),
+        ])
+    }
+
+    @objc private func chooseFont(_ sender: Any?) {
+        NSFontManager.shared.orderFrontFontPanel(sender)
+    }
+
+    func apply(to s: TerminalSettings) {
+        s.tekFontProportional = proportionalCheck.state == .on
+        s.tekFontHidden = hiddenCheck.state == .on
+    }
+}
+
+// MARK: - Theme Tab (IDD_TABSHEET_THEME)
+
+final class ThemeTab: AdditionalSettingsTab {
+    let tabTitle = "Theme"
+    let contentView = NSView()
+
+    private var enableCheck: NSButton!
+    private var themeFileField: NSTextField!
+    private var startupThemeField: NSTextField!
+    private var fastSizeMoveCheck: NSButton!
+    private var susiePathField: NSTextField!
+
+    init(settings: TerminalSettings) {
+        contentView.translatesAutoresizingMaskIntoConstraints = false
+        buildUI(settings)
+    }
+
+    private func buildUI(_ s: TerminalSettings) {
+        enableCheck = NSView.makeCheckbox(TTL("dialog.theme.enable"), checked: s.themeEnabled)
+        fastSizeMoveCheck = NSView.makeCheckbox(TTL("dialog.theme.fastSizeMove"), checked: s.fastSizeMove)
+
+        let themeLabel = NSView.makeLabel(TTL("dialog.theme.themeFile"), alignment: .left)
+        themeFileField = NSView.makeTextField(value: s.themeFile)
+        let themeRow = NSStackView(views: [themeLabel, themeFileField])
+        themeRow.translatesAutoresizingMaskIntoConstraints = false
+        themeRow.orientation = .horizontal
+        themeRow.spacing = 8
+
+        let startupLabel = NSView.makeLabel(TTL("dialog.theme.startupTheme"), alignment: .left)
+        startupThemeField = NSView.makeTextField(value: s.startupTheme)
+        let startupRow = NSStackView(views: [startupLabel, startupThemeField])
+        startupRow.translatesAutoresizingMaskIntoConstraints = false
+        startupRow.orientation = .horizontal
+        startupRow.spacing = 8
+
+        let susieLabel = NSView.makeLabel(TTL("dialog.theme.susiePath"), alignment: .left)
+        susiePathField = NSView.makeTextField(value: s.susiePath)
+        let susieRow = NSStackView(views: [susieLabel, susiePathField])
+        susieRow.translatesAutoresizingMaskIntoConstraints = false
+        susieRow.orientation = .horizontal
+        susieRow.spacing = 8
+
+        let editorBtn = NSView.makePushButton(TTL("dialog.theme.themeEditor"))
+
+        let stack = NSStackView(views: [
+            enableCheck, editorBtn, fastSizeMoveCheck, startupRow, themeRow, susieRow
+        ])
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        stack.orientation = .vertical
+        stack.alignment = .leading
+        stack.spacing = 10
+        contentView.addSubview(stack)
+
+        NSLayoutConstraint.activate([
+            stack.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 16),
+            stack.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 12),
+            stack.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -12),
+        ])
+    }
+
+    func apply(to s: TerminalSettings) {
+        s.themeEnabled = enableCheck.state == .on
+        s.themeFile = themeFileField.stringValue
+        s.startupTheme = startupThemeField.stringValue
+        s.fastSizeMove = fastSizeMoveCheck.state == .on
+        s.susiePath = susiePathField.stringValue
+    }
+}
+
+// MARK: - UI Tab (IDD_TABSHEET_UI)
+
+final class UITab: AdditionalSettingsTab {
+    let tabTitle = "UI"
+    let contentView = NSView()
+
+    private var languagePopup: NSPopUpButton!
+    private var dialogFontField: NSTextField!
+    private var proportionalCheck: NSButton!
+    private var hiddenCheck: NSButton!
+
+    init(settings: TerminalSettings) {
+        contentView.translatesAutoresizingMaskIntoConstraints = false
+        buildUI(settings)
+    }
+
+    private func buildUI(_ s: TerminalSettings) {
+        let langLabel = NSView.makeLabel(TTL("dialog.ui.language"), alignment: .left)
+        languagePopup = NSView.makePopUpButton(
+            items: ["English", "Japanese", "German", "French", "Russian", "Korean", "Chinese (Simplified)", "Chinese (Traditional)"],
+            selected: s.language, width: 200)
+        let langRow = NSStackView(views: [langLabel, languagePopup])
+        langRow.translatesAutoresizingMaskIntoConstraints = false
+        langRow.orientation = .horizontal
+        langRow.spacing = 8
+
+        let fontBox = NSView.makeGroupBox(title: TTL("dialog.ui.dialogFont"))
+        let fontLabel = NSView.makeLabel(TTL("dialog.ui.fontName"), alignment: .left)
+        let displayName = s.dialogFontName.isEmpty ? "(System Default)" : "\(s.dialogFontName) \(Int(s.dialogFontSize))pt"
+        dialogFontField = NSView.makeTextField(value: displayName)
+        dialogFontField.isEditable = false
+
+        let chooseFontBtn = NSView.makePushButton(TTL("dialog.ui.chooseFont"))
+        proportionalCheck = NSView.makeCheckbox(TTL("dialog.ui.proportional"), checked: s.dialogFontProportional)
+        hiddenCheck = NSView.makeCheckbox(TTL("dialog.ui.hidden"), checked: s.dialogFontHidden)
+
+        let fontRow = NSStackView(views: [fontLabel, dialogFontField, chooseFontBtn])
+        fontRow.translatesAutoresizingMaskIntoConstraints = false
+        fontRow.orientation = .horizontal
+        fontRow.spacing = 8
+
+        let fontStack = NSStackView(views: [fontRow, proportionalCheck, hiddenCheck])
+        fontStack.translatesAutoresizingMaskIntoConstraints = false
+        fontStack.orientation = .vertical
+        fontStack.alignment = .leading
+        fontStack.spacing = 6
+        let fc = fontBox.contentView!
+        fc.addSubview(fontStack)
+        NSLayoutConstraint.activate([
+            fontStack.topAnchor.constraint(equalTo: fc.topAnchor, constant: 16),
+            fontStack.leadingAnchor.constraint(equalTo: fc.leadingAnchor, constant: 12),
+            fontStack.trailingAnchor.constraint(equalTo: fc.trailingAnchor, constant: -12),
+            fontStack.bottomAnchor.constraint(equalTo: fc.bottomAnchor, constant: -8),
+        ])
+
+        let stack = NSStackView(views: [langRow, fontBox])
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        stack.orientation = .vertical
+        stack.alignment = .leading
+        stack.spacing = 12
+        contentView.addSubview(stack)
+
+        NSLayoutConstraint.activate([
+            stack.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 16),
+            stack.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 12),
+            stack.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -12),
+        ])
+    }
+
+    func apply(to s: TerminalSettings) {
+        s.language = languagePopup.titleOfSelectedItem ?? "English"
+        s.dialogFontProportional = proportionalCheck.state == .on
+        s.dialogFontHidden = hiddenCheck.state == .on
+    }
+}
+
+// MARK: - Plugin Tab (IDD_TABSHEET_PLUGIN)
+
+final class PluginTab: AdditionalSettingsTab {
+    let tabTitle = "Plugin"
+    let contentView = NSView()
+
+    private var directoryList: NSTableView!
+    private var directories: [String]
+
+    init(settings: TerminalSettings) {
+        self.directories = settings.pluginDirectories
+        contentView.translatesAutoresizingMaskIntoConstraints = false
+        buildUI()
+    }
+
+    private func buildUI() {
+        let label = NSView.makeLabel(TTL("dialog.plugin.setupDirectories"), alignment: .left)
+
+        let scrollView = NSScrollView()
+        scrollView.translatesAutoresizingMaskIntoConstraints = false
+        scrollView.hasVerticalScroller = true
+        scrollView.borderType = .bezelBorder
+
+        directoryList = NSTableView()
+        let col = NSTableColumn(identifier: NSUserInterfaceItemIdentifier("dir"))
+        col.title = "Directory"
+        col.width = 400
+        directoryList.addTableColumn(col)
+        directoryList.headerView = nil
+        directoryList.dataSource = self
+        directoryList.reloadData()
+        scrollView.documentView = directoryList
+
+        let addBtn = NSView.makePushButton(TTL("dialog.plugin.add"))
+        addBtn.target = self
+        addBtn.action = #selector(addDirectory(_:))
+
+        let removeBtn = NSView.makePushButton(TTL("dialog.plugin.remove"))
+        removeBtn.target = self
+        removeBtn.action = #selector(removeDirectory(_:))
+
+        let btnRow = NSStackView(views: [addBtn, removeBtn])
+        btnRow.translatesAutoresizingMaskIntoConstraints = false
+        btnRow.orientation = .horizontal
+        btnRow.spacing = 8
+
+        let stack = NSStackView(views: [label, scrollView, btnRow])
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        stack.orientation = .vertical
+        stack.alignment = .leading
+        stack.spacing = 8
+        contentView.addSubview(stack)
+
+        NSLayoutConstraint.activate([
+            stack.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 12),
+            stack.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 12),
+            stack.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -12),
+            scrollView.heightAnchor.constraint(equalToConstant: 150),
+            scrollView.widthAnchor.constraint(equalTo: stack.widthAnchor),
+        ])
+    }
+
+    @objc private func addDirectory(_ sender: Any?) {
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = false
+        panel.canChooseDirectories = true
+        if panel.runModal() == .OK, let url = panel.url {
+            directories.append(url.path)
+            directoryList.reloadData()
+        }
+    }
+
+    @objc private func removeDirectory(_ sender: Any?) {
+        let row = directoryList.selectedRow
+        guard row >= 0 && row < directories.count else { return }
+        directories.remove(at: row)
+        directoryList.reloadData()
+    }
+
+    func apply(to s: TerminalSettings) {
+        s.pluginDirectories = directories
+    }
+}
+
+extension PluginTab: NSTableViewDataSource {
+    func numberOfRows(in tableView: NSTableView) -> Int { directories.count }
+    func tableView(_ tableView: NSTableView, objectValueFor tableColumn: NSTableColumn?, row: Int) -> Any? {
+        guard row >= 0 && row < directories.count else { return nil }
+        return directories[row]
+    }
+}
+
+// MARK: - Debug Tab (IDD_TABSHEET_DEBUG)
+
+final class DebugTab: AdditionalSettingsTab {
+    let tabTitle = "Debug"
+    let contentView = NSView()
+
+    private var charInfoCheck: NSButton!
+
+    init(settings: TerminalSettings) {
+        contentView.translatesAutoresizingMaskIntoConstraints = false
+        buildUI(settings)
+    }
+
+    private func buildUI(_ s: TerminalSettings) {
+        charInfoCheck = NSView.makeCheckbox(TTL("dialog.debug.charInfoPopup"), checked: s.debugCharInfoPopup)
+
+        let stack = NSStackView(views: [charInfoCheck])
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        stack.orientation = .vertical
+        stack.alignment = .leading
+        stack.spacing = 10
+        contentView.addSubview(stack)
+
+        NSLayoutConstraint.activate([
+            stack.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 16),
+            stack.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 12),
+        ])
+    }
+
+    func apply(to s: TerminalSettings) {
+        s.debugCharInfoPopup = charInfoCheck.state == .on
+    }
+}
+
+#endif

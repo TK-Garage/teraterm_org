@@ -191,10 +191,18 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         let dupItem = fileMenu.addItem(withTitle: L("menu.file.duplicateSession"), action: #selector(duplicateSession(_:)), keyEquivalent: "d")
         setSymbol("doc.on.doc", for: dupItem)
         fileMenu.addItem(NSMenuItem.separator())
-        let logItem = fileMenu.addItem(withTitle: L("menu.file.log"), action: #selector(startLog(_:)), keyEquivalent: "")
+        let sendFileItem = fileMenu.addItem(withTitle: L("menu.file.sendFile"), action: #selector(showSendFileDialog(_:)), keyEquivalent: "")
+        setSymbol("arrow.up.doc", for: sendFileItem)
+        let recvFileItem = fileMenu.addItem(withTitle: L("menu.file.receiveFile"), action: #selector(showRecvFileDialog(_:)), keyEquivalent: "")
+        setSymbol("arrow.down.doc", for: recvFileItem)
+        fileMenu.addItem(NSMenuItem.separator())
+        let logItem = fileMenu.addItem(withTitle: L("menu.file.log"), action: #selector(showLogDialog(_:)), keyEquivalent: "")
         setSymbol("doc.text", for: logItem)
         let stopLogItem = fileMenu.addItem(withTitle: L("menu.file.stopLog"), action: #selector(stopLog(_:)), keyEquivalent: "")
         setSymbol("doc.text.fill", for: stopLogItem)
+        fileMenu.addItem(NSMenuItem.separator())
+        let changeDirItem = fileMenu.addItem(withTitle: L("menu.file.changeDir"), action: #selector(showChangeDir(_:)), keyEquivalent: "")
+        setSymbol("folder", for: changeDirItem)
         fileMenu.addItem(NSMenuItem.separator())
 
         // File transfer submenu
@@ -248,6 +256,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         editMenu.addItem(NSMenuItem.separator())
         let selAllItem = editMenu.addItem(withTitle: L("menu.edit.selectAll"), action: #selector(NSText.selectAll(_:)), keyEquivalent: "a")
         setSymbol("selection.pin.in.out", for: selAllItem)
+        editMenu.addItem(NSMenuItem.separator())
+        let editHistoryItem = editMenu.addItem(withTitle: L("menu.edit.editHistory"), action: #selector(showEditHistory(_:)), keyEquivalent: "")
+        setSymbol("clock.arrow.circlepath", for: editHistoryItem)
 
         // Setup menu
         let setupMenuItem = NSMenuItem()
@@ -265,6 +276,11 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         setSymbol("keyboard", for: kbItem)
         let serialItem = setupMenu.addItem(withTitle: L("menu.setup.serialPort"), action: #selector(setupSerialPort(_:)), keyEquivalent: "")
         setSymbol("cable.connector", for: serialItem)
+        let tcpipItem = setupMenu.addItem(withTitle: L("menu.setup.tcpip"), action: #selector(setupTCPIP(_:)), keyEquivalent: "")
+        setSymbol("network", for: tcpipItem)
+        setupMenu.addItem(NSMenuItem.separator())
+        let additionalItem = setupMenu.addItem(withTitle: L("menu.setup.additionalSettings"), action: #selector(setupAdditional(_:)), keyEquivalent: "")
+        setSymbol("slider.horizontal.3", for: additionalItem)
         setupMenu.addItem(NSMenuItem.separator())
         let saveItem = setupMenu.addItem(withTitle: L("menu.setup.saveSetup"), action: #selector(saveSetup(_:)), keyEquivalent: "")
         setSymbol("square.and.arrow.down", for: saveItem)
@@ -316,6 +332,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         setSymbol("minus.square", for: minItem)
         let zoomItem = windowMenu.addItem(withTitle: L("menu.window.zoom"), action: #selector(NSWindow.performZoom(_:)), keyEquivalent: "")
         setSymbol("arrow.up.left.and.arrow.down.right", for: zoomItem)
+        windowMenu.addItem(NSMenuItem.separator())
+        let winListItem = windowMenu.addItem(withTitle: L("menu.window.windowList"), action: #selector(showWindowList(_:)), keyEquivalent: "")
+        setSymbol("list.bullet.rectangle", for: winListItem)
         NSApp.windowsMenu = windowMenu
 
         // Help menu
@@ -368,12 +387,63 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         }
     }
 
-    @objc func startLog(_ sender: Any?) {
-        activeWindowController?.startLog()
+    @objc func showSendFileDialog(_ sender: Any?) {
+        guard let wc = activeWindowController, let win = wc.window else { return }
+        FileTransferDialogHelper.presentSendFileDialog(on: win) { result in
+            // result handled by window controller
+        }
+    }
+
+    @objc func showRecvFileDialog(_ sender: Any?) {
+        guard let wc = activeWindowController, let win = wc.window else { return }
+        FileTransferDialogHelper.presentRecvFileDialog(on: win) { result in
+            // result handled by window controller
+        }
+    }
+
+    @objc func showLogDialog(_ sender: Any?) {
+        guard let wc = activeWindowController, let win = wc.window else { return }
+        let vc = LogDialogController()
+        vc.okHandler = { [weak wc, weak vc] in
+            guard let result = vc?.result else { return }
+            // Apply log settings to window controller
+            _ = result
+            wc?.startLog()
+        }
+        currentSetupSheet = vc.presentAsSheet(on: win)
     }
 
     @objc func stopLog(_ sender: Any?) {
         activeWindowController?.stopLog()
+    }
+
+    @objc func showChangeDir(_ sender: Any?) {
+        guard let wc = activeWindowController, let win = wc.window else { return }
+        let currentDir = FileManager.default.currentDirectoryPath
+        ChangeDirectoryDialog.show(currentDir: currentDir, on: win) { newDir in
+            guard let dir = newDir else { return }
+            FileManager.default.changeCurrentDirectoryPath(dir)
+            // Send cd command if connected
+            if wc.connectionManager.state == .connected {
+                wc.connectionManager.send(Data("cd \(dir)\r".utf8))
+            }
+        }
+    }
+
+    @objc func showEditHistory(_ sender: Any?) {
+        guard let win = activeWindowController?.window else { return }
+        dismissCurrentSetupSheet()
+        let vc = EditHistoryDialogController(history: settings.hostHistory)
+        vc.okHandler = { [weak self, weak vc] in
+            guard let self = self, let vc = vc else { return }
+            self.settings.hostHistory = vc.resultHistory
+        }
+        currentSetupSheet = vc.presentAsSheet(on: win)
+    }
+
+    @objc func showWindowList(_ sender: Any?) {
+        guard let win = activeWindowController?.window else { return }
+        WindowListDialog.show(on: win) { _ in }
     }
 
     @objc func xmodemSend(_ sender: Any?) { activeWindowController?.sendFile(protocol: .xmodemCRC) }
@@ -445,6 +515,14 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
 
     @objc func setupWindow(_ sender: Any?) {
         showWindowSetupDialog()
+    }
+
+    @objc func setupTCPIP(_ sender: Any?) {
+        showTCPIPDialog()
+    }
+
+    @objc func setupAdditional(_ sender: Any?) {
+        showAdditionalSettingsDialog()
     }
 
     @objc func setupFont(_ sender: Any?) {
@@ -1269,6 +1347,39 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
             currentSetupSheet = vc.presentAsSheet(on: win)
         } else {
             _ = vc.presentModal()
+        }
+    }
+
+    // MARK: TCP/IP Setup Dialog
+
+    private func showTCPIPDialog() {
+        dismissCurrentSetupSheet()
+        let vc = TCPIPDialogController(settings: settings)
+        vc.okHandler = { [weak self] in
+            self?.activeWindowController?.applySettings()
+        }
+        if let win = activeWindowController?.window {
+            currentSetupSheet = vc.presentAsSheet(on: win)
+        } else {
+            _ = vc.presentModal()
+        }
+    }
+
+    // MARK: Additional Settings Dialog
+
+    private var additionalSettingsController: AdditionalSettingsController?
+
+    private func showAdditionalSettingsDialog() {
+        dismissCurrentSetupSheet()
+        let controller = AdditionalSettingsController(settings: settings)
+        controller.onApply = { [weak self] in
+            self?.activeWindowController?.applySettings()
+        }
+        additionalSettingsController = controller
+        if let win = activeWindowController?.window {
+            controller.showAsSheet(on: win)
+        } else {
+            controller.showModal()
         }
     }
 

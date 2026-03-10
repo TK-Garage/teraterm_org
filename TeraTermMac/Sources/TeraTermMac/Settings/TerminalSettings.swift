@@ -436,6 +436,94 @@ class TerminalSettings: Codable {
     // Misc
     var confirmOnDisconnect: Bool = true
     var beepOnConnect: Bool = false
+    var clipboardConfirmPaste: Bool = true
+    var autoScrollOnOutput: Bool = true
+    var clearOnResize: Bool = false
+    var cursorChangeIME: Bool = true
+    var notifySound: Bool = true
+
+    // Title Format
+    var titleFormatTCP: Bool = true
+    var titleFormatSerial: Bool = true
+    var titleFormatSession: Bool = false
+
+    // Copy and Paste
+    var continuedLineCopy: Bool = true
+    var confirmPasteNewLine: Bool = true
+    var pasteDelay: Int = 5
+    var autoTextCopy: Bool = true
+    var delimiterList: String = " ;,()\"'"
+
+    // Control Sequence
+    var titleChangeRequest: Bool = false
+    var titleReportRequest: Bool = false
+    var windowControlSequence: Bool = true
+    var cursorControlSequence: Bool = true
+    var clipboardAccessFromRemote: Bool = false
+
+    // Debug
+    var debugCharInfoPopup: Bool = false
+
+    // Font additional
+    var vtFontProportional: Bool = false
+    var vtFontHidden: Bool = false
+    var tekFontName: String = "Menlo"
+    var tekFontSize: Double = 14.0
+    var tekFontProportional: Bool = false
+    var tekFontHidden: Bool = false
+    var drawingAPI: Int = 0
+    var codePage: Int = 65001
+    var charSpaceH: Int = 0
+    var charSpaceV: Int = 0
+    var fontQuality: Int = 0
+
+    // Visual
+    var windowOpacityActive: Int = 100
+    var windowOpacityInactive: Int = 100
+    var mouseCursorType: Int = 0
+    var flickerlessMoveEnabled: Bool = false
+    var cornerRounding: Int = 0
+    var attrBold: Bool = true
+    var attrBlink: Bool = true
+    var attrReverse: Bool = true
+    var attrUnderline: Bool = true
+    var attrStrikethrough: Bool = false
+
+    // Plugin
+    var pluginDirectories: [String] = []
+
+    // Theme
+    var themeEnabled: Bool = false
+    var themeFile: String = ""
+    var startupTheme: String = ""
+    var fastSizeMove: Bool = false
+    var susiePath: String = ""
+
+    // UI
+    var language: String = "English"
+    var dialogFontName: String = ""
+    var dialogFontSize: Double = 0
+    var dialogFontProportional: Bool = false
+    var dialogFontHidden: Bool = false
+
+    // TCP/IP additional
+    var tcpKeepAlive: Bool = true
+    var tcpKeepAliveInterval: Int = 300
+    var autoWindowClose: Bool = true
+
+    // Log additional
+    var logViewEditor: String = ""
+    var logEditorArguments: String = ""
+    var logAppend: Bool = false
+    var logBinary: Bool = false
+    var logHideDialog: Bool = false
+    var logIncludeScreenBuffer: Bool = false
+    var logRotateEnabled: Bool = false
+    var logRotateSize: Int = 0
+    var logRotateStep: Int = 0
+
+    // File Transfer folder
+    var fileTransferFolder: String = ""
 
     // Paths
     var setupDirectory: String = ""
