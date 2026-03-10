@@ -584,6 +584,18 @@
 "dialog.sshSetup.verifyDNS" = "ホストキーの鍵指紋をDNSで確認する";
 "dialog.sshSetup.notice" = "いずれの変更も次回のセッション以降有効になります。";
 "dialog.sshSetup.hostKeyRotation" = "ホスト公開鍵の自動更新";
+"dialog.sshSetup.rotationDisabled" = "無効";
+"dialog.sshSetup.rotationEnabled" = "有効";
+"dialog.sshSetup.rotationAsk" = "確認する";
+"dialog.sshSetup.browse" = "参照…";
+"dialog.sshSetup.readOnlyFiles" = "読み取り専用ファイル:";
+"dialog.sshSetup.kexOrder" = "KEX順序 (SSH2)";
+"dialog.sshSetup.hostKeyOrder" = "ホスト鍵順序 (SSH2)";
+"dialog.sshSetup.macOrder" = "MAC順序 (SSH2)";
+"dialog.sshSetup.compOrder" = "圧縮順序 (SSH2)";
+"dialog.sshSetup.compressionLevel" = "圧縮レベル:";
+"dialog.sshSetup.compressionNone" = "なし";
+"dialog.sshSetup.compressionHigh" = "最高";
 "dialog.sshSetup.logLevel" = "ログレベル";
 "dialog.sshSetup.logLevelUnit" = "(0を指定すると無効)";
 

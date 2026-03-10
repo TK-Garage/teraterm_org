@@ -538,8 +538,38 @@ class TerminalSettings: Codable {
     var sshNotifyAgentAccess: Bool = false
     var sshVerifyHostKeyDNS: Bool = false
     var sshKnownHostsFile: String = ""
+    var sshReadOnlyHostsFile: String = ""
     var sshHostKeyRotation: Int = 0  // 0=disabled, 1=enabled, 2=ask
     var sshLogLevel: Int = 0
+    var sshCompressionLevel: Int = 0  // 0-9, 0=off
+
+    // SSH algorithm orders (SSH2)
+    var sshCipherOrder: [String] = [
+        "aes256-gcm@openssh.com", "aes128-gcm@openssh.com",
+        "chacha20-poly1305@openssh.com",
+        "aes256-ctr", "aes192-ctr", "aes128-ctr",
+        "aes256-cbc", "aes192-cbc", "aes128-cbc",
+        "3des-cbc",
+    ]
+    var sshKexOrder: [String] = [
+        "curve25519-sha256", "curve25519-sha256@libssh.org",
+        "ecdh-sha2-nistp521", "ecdh-sha2-nistp384", "ecdh-sha2-nistp256",
+        "diffie-hellman-group18-sha512", "diffie-hellman-group16-sha512",
+        "diffie-hellman-group14-sha256", "diffie-hellman-group14-sha1",
+        "diffie-hellman-group-exchange-sha256",
+    ]
+    var sshHostKeyOrder: [String] = [
+        "ssh-ed25519", "ssh-ed25519-cert-v01@openssh.com",
+        "ecdsa-sha2-nistp521", "ecdsa-sha2-nistp384", "ecdsa-sha2-nistp256",
+        "rsa-sha2-512", "rsa-sha2-256", "ssh-rsa",
+    ]
+    var sshMACOrder: [String] = [
+        "hmac-sha2-512-etm@openssh.com", "hmac-sha2-256-etm@openssh.com",
+        "hmac-sha2-512", "hmac-sha2-256", "hmac-sha1",
+    ]
+    var sshCompressionOrder: [String] = [
+        "none", "zlib@openssh.com", "zlib",
+    ]
 
     // SSH Forwarding
     var sshPortForwardings: [String] = []

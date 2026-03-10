@@ -584,6 +584,18 @@
 "dialog.sshSetup.verifyDNS" = "Verify hostkey fingerprint by DNS";
 "dialog.sshSetup.notice" = "All options take effect the next time a session is started.";
 "dialog.sshSetup.hostKeyRotation" = "Hostkey rotation";
+"dialog.sshSetup.rotationDisabled" = "Disabled";
+"dialog.sshSetup.rotationEnabled" = "Enabled";
+"dialog.sshSetup.rotationAsk" = "Ask";
+"dialog.sshSetup.browse" = "Browse…";
+"dialog.sshSetup.readOnlyFiles" = "Read-only files:";
+"dialog.sshSetup.kexOrder" = "KEX order (SSH2)";
+"dialog.sshSetup.hostKeyOrder" = "Host Key order (SSH2)";
+"dialog.sshSetup.macOrder" = "MAC order (SSH2)";
+"dialog.sshSetup.compOrder" = "Compression order (SSH2)";
+"dialog.sshSetup.compressionLevel" = "Compression level:";
+"dialog.sshSetup.compressionNone" = "None";
+"dialog.sshSetup.compressionHigh" = "Highest";
 "dialog.sshSetup.logLevel" = "LogLevel";
 "dialog.sshSetup.logLevelUnit" = "(0 to turn off)";
 

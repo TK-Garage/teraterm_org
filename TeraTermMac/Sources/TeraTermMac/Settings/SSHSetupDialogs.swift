@@ -344,6 +344,20 @@ final class ProxySetupDialogController: BaseSetupDialogController {
 final class SSHSetupDialogController: BaseSetupDialogController {
 
     private var settings: TerminalSettings
+
+    // Algorithm order lists (matching IDD_SSHSETUP layout: top row of 3 + bottom row of 2)
+    private var cipherListView: AlgorithmOrderListView!
+    private var kexListView: AlgorithmOrderListView!
+    private var hostKeyListView: AlgorithmOrderListView!
+    private var macListView: AlgorithmOrderListView!
+    private var compListView: AlgorithmOrderListView!
+
+    // Known Hosts
+    private var knownHostsFileField: NSTextField!
+    private var readOnlyHostsFileField: NSTextField!
+    private var hostKeyRotationPopup: NSPopUpButton!
+
+    // Options
     private var heartbeatField: NSTextField!
     private var rememberPasswordCheck: NSButton!
     private var forwardAgentCheck: NSButton!
@@ -351,6 +365,8 @@ final class SSHSetupDialogController: BaseSetupDialogController {
     private var notifyAgentCheck: NSButton!
     private var verifyDNSCheck: NSButton!
     private var logLevelField: NSTextField!
+    private var compressionSlider: NSSlider!
+    private var compressionValueLabel: NSTextField!
 
     init(settings: TerminalSettings) {
         self.settings = settings
@@ -366,8 +382,130 @@ final class SSHSetupDialogController: BaseSetupDialogController {
     }
 
     private func setupControls() {
-        let dialogWidth: CGFloat = 450
+        let dialogWidth: CGFloat = 640
         contentArea.widthAnchor.constraint(equalToConstant: dialogWidth).isActive = true
+
+        // ═══════════════════════════════════════════════════
+        // Top row: Cipher | KEX | Host Key (3 columns)
+        // ═══════════════════════════════════════════════════
+
+        cipherListView = AlgorithmOrderListView(
+            title: TTL("dialog.sshSetup.cipherOrder"),
+            items: settings.sshCipherOrder,
+            moveUpTitle: TTL("dialog.sshSetup.moveUp"),
+            moveDownTitle: TTL("dialog.sshSetup.moveDown"))
+
+        kexListView = AlgorithmOrderListView(
+            title: TTL("dialog.sshSetup.kexOrder"),
+            items: settings.sshKexOrder,
+            moveUpTitle: TTL("dialog.sshSetup.moveUp"),
+            moveDownTitle: TTL("dialog.sshSetup.moveDown"))
+
+        hostKeyListView = AlgorithmOrderListView(
+            title: TTL("dialog.sshSetup.hostKeyOrder"),
+            items: settings.sshHostKeyOrder,
+            moveUpTitle: TTL("dialog.sshSetup.moveUp"),
+            moveDownTitle: TTL("dialog.sshSetup.moveDown"))
+
+        let topRow = NSStackView(views: [cipherListView, kexListView, hostKeyListView])
+        topRow.translatesAutoresizingMaskIntoConstraints = false
+        topRow.orientation = .horizontal
+        topRow.spacing = DialogLayout.innerMargin
+        topRow.distribution = .fillEqually
+
+        // ═══════════════════════════════════════════════════
+        // Bottom left: MAC | Compression (2 columns)
+        // ═══════════════════════════════════════════════════
+
+        macListView = AlgorithmOrderListView(
+            title: TTL("dialog.sshSetup.macOrder"),
+            items: settings.sshMACOrder,
+            moveUpTitle: TTL("dialog.sshSetup.moveUp"),
+            moveDownTitle: TTL("dialog.sshSetup.moveDown"))
+
+        compListView = AlgorithmOrderListView(
+            title: TTL("dialog.sshSetup.compOrder"),
+            items: settings.sshCompressionOrder,
+            moveUpTitle: TTL("dialog.sshSetup.moveUp"),
+            moveDownTitle: TTL("dialog.sshSetup.moveDown"))
+
+        let bottomAlgoRow = NSStackView(views: [macListView, compListView])
+        bottomAlgoRow.translatesAutoresizingMaskIntoConstraints = false
+        bottomAlgoRow.orientation = .horizontal
+        bottomAlgoRow.spacing = DialogLayout.innerMargin
+        bottomAlgoRow.distribution = .fillEqually
+
+        // ═══════════════════════════════════════════════════
+        // Known Hosts group box
+        // ═══════════════════════════════════════════════════
+
+        let knownHostsBox = NSView.makeGroupBox(title: TTL("dialog.sshSetup.knownHosts"))
+        let khContent = NSView()
+        khContent.translatesAutoresizingMaskIntoConstraints = false
+
+        let rwLabel = NSView.makeLabel(TTL("dialog.sshSetup.knownHostsFile"))
+        knownHostsFileField = NSView.makeTextField(value: settings.sshKnownHostsFile)
+        let rwBrowse = NSView.makePushButton(TTL("dialog.sshSetup.browse"))
+        rwBrowse.target = self
+        rwBrowse.action = #selector(browseKnownHostsFile(_:))
+
+        let rwRow = NSStackView(views: [rwLabel, knownHostsFileField, rwBrowse])
+        rwRow.translatesAutoresizingMaskIntoConstraints = false
+        rwRow.orientation = .horizontal
+        rwRow.spacing = 6
+        rwRow.alignment = .firstBaseline
+
+        let roLabel = NSView.makeLabel(TTL("dialog.sshSetup.readOnlyFiles"))
+        readOnlyHostsFileField = NSView.makeTextField(value: settings.sshReadOnlyHostsFile)
+        let roBrowse = NSView.makePushButton(TTL("dialog.sshSetup.browse"))
+        roBrowse.target = self
+        roBrowse.action = #selector(browseReadOnlyHostsFile(_:))
+
+        let roRow = NSStackView(views: [roLabel, readOnlyHostsFileField, roBrowse])
+        roRow.translatesAutoresizingMaskIntoConstraints = false
+        roRow.orientation = .horizontal
+        roRow.spacing = 6
+        roRow.alignment = .firstBaseline
+
+        let rotLabel = NSView.makeLabel(TTL("dialog.sshSetup.hostKeyRotation"))
+        hostKeyRotationPopup = NSView.makePopUpButton(
+            items: [
+                TTL("dialog.sshSetup.rotationDisabled"),
+                TTL("dialog.sshSetup.rotationEnabled"),
+                TTL("dialog.sshSetup.rotationAsk"),
+            ],
+            width: 120)
+        if settings.sshHostKeyRotation >= 0 && settings.sshHostKeyRotation <= 2 {
+            hostKeyRotationPopup.selectItem(at: settings.sshHostKeyRotation)
+        }
+
+        let rotRow = NSStackView(views: [rotLabel, hostKeyRotationPopup])
+        rotRow.translatesAutoresizingMaskIntoConstraints = false
+        rotRow.orientation = .horizontal
+        rotRow.spacing = 6
+        rotRow.alignment = .firstBaseline
+
+        let khStack = NSStackView(views: [rwRow, roRow, rotRow])
+        khStack.translatesAutoresizingMaskIntoConstraints = false
+        khStack.orientation = .vertical
+        khStack.alignment = .leading
+        khStack.spacing = 6
+        khContent.addSubview(khStack)
+
+        let khPad = DialogLayout.groupBoxPadding
+        NSLayoutConstraint.activate([
+            khStack.topAnchor.constraint(equalTo: khContent.topAnchor, constant: khPad),
+            khStack.leadingAnchor.constraint(equalTo: khContent.leadingAnchor, constant: khPad),
+            khStack.trailingAnchor.constraint(equalTo: khContent.trailingAnchor, constant: -khPad),
+            khStack.bottomAnchor.constraint(equalTo: khContent.bottomAnchor, constant: -khPad),
+            knownHostsFileField.widthAnchor.constraint(greaterThanOrEqualToConstant: 200),
+            readOnlyHostsFileField.widthAnchor.constraint(greaterThanOrEqualToConstant: 200),
+        ])
+        knownHostsBox.contentView = khContent
+
+        // ═══════════════════════════════════════════════════
+        // Bottom options: left side + right side
+        // ═══════════════════════════════════════════════════
 
         // ── Heartbeat ──
         let heartbeatLabel = NSView.makeLabel(TTL("dialog.sshSetup.heartbeat"))
@@ -403,33 +541,118 @@ final class SSHSetupDialogController: BaseSetupDialogController {
         logRow.spacing = DialogLayout.labelTrailing
         logRow.alignment = .firstBaseline
 
+        // ── Compression Level ──
+        let compLabel = NSView.makeLabel(TTL("dialog.sshSetup.compressionLevel"))
+        compressionSlider = NSView.makeSlider(min: 0, max: 9, value: Double(settings.sshCompressionLevel))
+        compressionSlider.numberOfTickMarks = 10
+        compressionSlider.allowsTickMarkValuesOnly = true
+        compressionSlider.target = self
+        compressionSlider.action = #selector(compressionSliderChanged(_:))
+        compressionSlider.widthAnchor.constraint(equalToConstant: 120).isActive = true
+
+        let noneLabel = NSView.makeLabel(TTL("dialog.sshSetup.compressionNone"), alignment: .left)
+        noneLabel.font = NSFont.systemFont(ofSize: 10)
+        let highLabel = NSView.makeLabel(TTL("dialog.sshSetup.compressionHigh"), alignment: .left)
+        highLabel.font = NSFont.systemFont(ofSize: 10)
+
+        compressionValueLabel = NSView.makeLabel("\(settings.sshCompressionLevel)", alignment: .left)
+        compressionValueLabel.widthAnchor.constraint(equalToConstant: 20).isActive = true
+
+        let compRow = NSStackView(views: [compLabel, noneLabel, compressionSlider, highLabel, compressionValueLabel])
+        compRow.translatesAutoresizingMaskIntoConstraints = false
+        compRow.orientation = .horizontal
+        compRow.spacing = 4
+        compRow.alignment = .centerY
+
         // ── Notice ──
         let noticeLabel = NSView.makeLabel(TTL("dialog.sshSetup.notice"), alignment: .left)
         noticeLabel.textColor = .secondaryLabelColor
         noticeLabel.font = NSFont.systemFont(ofSize: 11)
 
-        // ── Stack ──
-        let stack = NSStackView(views: [
+        // ── Options column ──
+        let optionsStack = NSStackView(views: [
             heartbeatRow,
             rememberPasswordCheck, forwardAgentCheck,
             confirmAgentCheck, notifyAgentCheck, verifyDNSCheck,
-            logRow, noticeLabel,
+            logRow, compRow, noticeLabel,
         ])
-        stack.translatesAutoresizingMaskIntoConstraints = false
-        stack.orientation = .vertical
-        stack.alignment = .leading
-        stack.spacing = DialogLayout.rowSpacing
-        contentArea.addSubview(stack)
+        optionsStack.translatesAutoresizingMaskIntoConstraints = false
+        optionsStack.orientation = .vertical
+        optionsStack.alignment = .leading
+        optionsStack.spacing = DialogLayout.rowSpacing
+
+        // ═══════════════════════════════════════════════════
+        // Main vertical stack
+        // ═══════════════════════════════════════════════════
+
+        let mainStack = NSStackView(views: [
+            topRow, bottomAlgoRow, knownHostsBox, optionsStack,
+        ])
+        mainStack.translatesAutoresizingMaskIntoConstraints = false
+        mainStack.orientation = .vertical
+        mainStack.alignment = .leading
+        mainStack.spacing = DialogLayout.sectionSpacing
+        contentArea.addSubview(mainStack)
 
         NSLayoutConstraint.activate([
-            stack.topAnchor.constraint(equalTo: contentArea.topAnchor),
-            stack.leadingAnchor.constraint(equalTo: contentArea.leadingAnchor),
-            stack.trailingAnchor.constraint(equalTo: contentArea.trailingAnchor),
-            stack.bottomAnchor.constraint(equalTo: contentArea.bottomAnchor),
+            mainStack.topAnchor.constraint(equalTo: contentArea.topAnchor),
+            mainStack.leadingAnchor.constraint(equalTo: contentArea.leadingAnchor),
+            mainStack.trailingAnchor.constraint(equalTo: contentArea.trailingAnchor),
+            mainStack.bottomAnchor.constraint(equalTo: contentArea.bottomAnchor),
+            topRow.widthAnchor.constraint(equalTo: mainStack.widthAnchor),
+            bottomAlgoRow.widthAnchor.constraint(equalTo: mainStack.widthAnchor),
+            knownHostsBox.widthAnchor.constraint(equalTo: mainStack.widthAnchor),
         ])
     }
 
+    // MARK: - Actions
+
+    @objc private func browseKnownHostsFile(_ sender: Any?) {
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = true
+        panel.canChooseDirectories = false
+        panel.allowsMultipleSelection = false
+        panel.directoryURL = URL(fileURLWithPath: NSHomeDirectory() + "/.ssh")
+        panel.begin { [weak self] response in
+            if response == .OK, let url = panel.url {
+                self?.knownHostsFileField.stringValue = url.path
+            }
+        }
+    }
+
+    @objc private func browseReadOnlyHostsFile(_ sender: Any?) {
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = true
+        panel.canChooseDirectories = false
+        panel.allowsMultipleSelection = false
+        panel.directoryURL = URL(fileURLWithPath: NSHomeDirectory() + "/.ssh")
+        panel.begin { [weak self] response in
+            if response == .OK, let url = panel.url {
+                self?.readOnlyHostsFileField.stringValue = url.path
+            }
+        }
+    }
+
+    @objc private func compressionSliderChanged(_ sender: NSSlider) {
+        compressionValueLabel.stringValue = "\(sender.integerValue)"
+    }
+
+    // MARK: - Apply
+
     override func applySettings() {
+        // Algorithm orders
+        settings.sshCipherOrder = cipherListView.orderedItems
+        settings.sshKexOrder = kexListView.orderedItems
+        settings.sshHostKeyOrder = hostKeyListView.orderedItems
+        settings.sshMACOrder = macListView.orderedItems
+        settings.sshCompressionOrder = compListView.orderedItems
+
+        // Known Hosts
+        settings.sshKnownHostsFile = knownHostsFileField.stringValue
+        settings.sshReadOnlyHostsFile = readOnlyHostsFileField.stringValue
+        settings.sshHostKeyRotation = hostKeyRotationPopup.indexOfSelectedItem
+
+        // Options
         settings.sshHeartbeat = heartbeatField.integerValue
         settings.sshRememberPassword = rememberPasswordCheck.state == .on
         settings.sshForwardAgent = forwardAgentCheck.state == .on
@@ -437,6 +660,137 @@ final class SSHSetupDialogController: BaseSetupDialogController {
         settings.sshNotifyAgentAccess = notifyAgentCheck.state == .on
         settings.sshVerifyHostKeyDNS = verifyDNSCheck.state == .on
         settings.sshLogLevel = logLevelField.integerValue
+        settings.sshCompressionLevel = compressionSlider.integerValue
+    }
+}
+
+// MARK: - Algorithm Order List View (reusable for cipher/kex/hostkey/mac/comp)
+
+/// A group box containing a scrollable list and move up/down buttons.
+/// Matches the LISTBOX + PUSHBUTTON pattern from IDD_SSHSETUP.
+private final class AlgorithmOrderListView: NSView, NSTableViewDataSource, NSTableViewDelegate {
+
+    private var items: [String]
+    private let tableView: NSTableView
+    private let scrollView: NSScrollView
+    private let moveUpButton: NSButton
+    private let moveDownButton: NSButton
+
+    var orderedItems: [String] { items }
+
+    init(title: String, items: [String], moveUpTitle: String, moveDownTitle: String) {
+        self.items = items
+
+        // Table view
+        tableView = NSTableView()
+        tableView.headerView = nil
+        tableView.rowHeight = 18
+        tableView.focusRingType = .none
+        let column = NSTableColumn(identifier: NSUserInterfaceItemIdentifier("algo"))
+        column.title = ""
+        column.isEditable = false
+        tableView.addTableColumn(column)
+
+        // Scroll view
+        scrollView = NSScrollView()
+        scrollView.translatesAutoresizingMaskIntoConstraints = false
+        scrollView.documentView = tableView
+        scrollView.hasVerticalScroller = true
+        scrollView.borderType = .bezelBorder
+
+        // Buttons
+        moveUpButton = NSView.makePushButton(moveUpTitle)
+        moveDownButton = NSView.makePushButton(moveDownTitle)
+
+        super.init(frame: .zero)
+        translatesAutoresizingMaskIntoConstraints = false
+
+        tableView.dataSource = self
+        tableView.delegate = self
+
+        moveUpButton.target = self
+        moveUpButton.action = #selector(moveUp(_:))
+        moveDownButton.target = self
+        moveDownButton.action = #selector(moveDown(_:))
+
+        // Layout: group box containing scroll view + buttons
+        let box = NSView.makeGroupBox(title: title)
+        let boxContent = NSView()
+        boxContent.translatesAutoresizingMaskIntoConstraints = false
+
+        let buttonRow = NSStackView(views: [moveUpButton, moveDownButton])
+        buttonRow.translatesAutoresizingMaskIntoConstraints = false
+        buttonRow.orientation = .horizontal
+        buttonRow.spacing = DialogLayout.buttonSpacing
+
+        boxContent.addSubview(scrollView)
+        boxContent.addSubview(buttonRow)
+
+        let pad = DialogLayout.groupBoxPadding
+        NSLayoutConstraint.activate([
+            scrollView.topAnchor.constraint(equalTo: boxContent.topAnchor, constant: pad),
+            scrollView.leadingAnchor.constraint(equalTo: boxContent.leadingAnchor, constant: pad),
+            scrollView.trailingAnchor.constraint(equalTo: boxContent.trailingAnchor, constant: -pad),
+            scrollView.heightAnchor.constraint(equalToConstant: 80),
+
+            buttonRow.topAnchor.constraint(equalTo: scrollView.bottomAnchor, constant: 6),
+            buttonRow.centerXAnchor.constraint(equalTo: boxContent.centerXAnchor),
+            buttonRow.bottomAnchor.constraint(equalTo: boxContent.bottomAnchor, constant: -pad),
+        ])
+        box.contentView = boxContent
+
+        addSubview(box)
+        NSLayoutConstraint.activate([
+            box.topAnchor.constraint(equalTo: topAnchor),
+            box.leadingAnchor.constraint(equalTo: leadingAnchor),
+            box.trailingAnchor.constraint(equalTo: trailingAnchor),
+            box.bottomAnchor.constraint(equalTo: bottomAnchor),
+        ])
+    }
+
+    required init?(coder: NSCoder) { fatalError() }
+
+    // MARK: - Actions
+
+    @objc private func moveUp(_ sender: Any?) {
+        let row = tableView.selectedRow
+        guard row > 0 else { return }
+        items.swapAt(row, row - 1)
+        tableView.reloadData()
+        tableView.selectRowIndexes(IndexSet(integer: row - 1), byExtendingSelection: false)
+    }
+
+    @objc private func moveDown(_ sender: Any?) {
+        let row = tableView.selectedRow
+        guard row >= 0, row < items.count - 1 else { return }
+        items.swapAt(row, row + 1)
+        tableView.reloadData()
+        tableView.selectRowIndexes(IndexSet(integer: row + 1), byExtendingSelection: false)
+    }
+
+    // MARK: - NSTableViewDataSource
+
+    func numberOfRows(in tableView: NSTableView) -> Int {
+        return items.count
+    }
+
+    func tableView(_ tableView: NSTableView, objectValueFor tableColumn: NSTableColumn?, row: Int) -> Any? {
+        return items[row]
+    }
+
+    // MARK: - NSTableViewDelegate
+
+    func tableView(_ tableView: NSTableView, viewFor tableColumn: NSTableColumn?, row: Int) -> NSView? {
+        let cellID = NSUserInterfaceItemIdentifier("AlgoCell")
+        var cell = tableView.makeView(withIdentifier: cellID, owner: nil) as? NSTextField
+        if cell == nil {
+            cell = NSTextField(labelWithString: "")
+            cell!.identifier = cellID
+            cell!.font = NSFont.systemFont(ofSize: 11)
+            cell!.lineBreakMode = .byTruncatingTail
+        }
+        cell!.stringValue = items[row]
+        return cell
     }
 }
 
