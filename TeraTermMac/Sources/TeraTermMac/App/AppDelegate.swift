@@ -338,6 +338,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         let macroItem = controlMenu.addItem(withTitle: L("menu.control.macro"), action: #selector(runMacro(_:)), keyEquivalent: "m")
         macroItem.keyEquivalentModifierMask = [.command, .shift]
         setSymbol("applescript", for: macroItem)
+        let stopMacroItem = controlMenu.addItem(withTitle: L("menu.control.stopMacro"), action: #selector(stopMacro(_:)), keyEquivalent: "")
+        setSymbol("stop.circle", for: stopMacroItem)
         let replayItem = controlMenu.addItem(withTitle: L("menu.control.replayLog"), action: #selector(replayLog(_:)), keyEquivalent: "")
         setSymbol("play.rectangle", for: replayItem)
 
@@ -666,6 +668,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         }
     }
 
+    @objc func stopMacro(_ sender: Any?) {
+        activeWindowController?.stopMacro()
+    }
+
     @objc func replayLog(_ sender: Any?) {
         guard let wc = activeWindowController else { return }
         let panel = NSOpenPanel()
@@ -880,6 +886,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         case #selector(runMacro(_:)),
              #selector(replayLog(_:)):
             return hasWindow
+        case #selector(stopMacro(_:)):
+            return activeWindowController?.macroInterpreter != nil
         case #selector(toggleBroadcast(_:)):
             // Update checkmark state
             menuItem.state = (broadcastPanel?.isVisible == true) ? .on : .off

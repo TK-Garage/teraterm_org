@@ -2430,7 +2430,7 @@ class TTLInterpreter {
 
     private func ttlFilenameBox() throws {
         let varId = try parser.getStrVar()
-        var title = "Select File"
+        var title = NSLocalizedString("dialog.macro.selectFile", comment: "")
         if parser.checkParameterGiven() {
             title = try parser.getStrExpression()
         }
@@ -2453,7 +2453,7 @@ class TTLInterpreter {
 
     private func ttlDirnameBox() throws {
         let varId = try parser.getStrVar()
-        var title = "Select Folder"
+        var title = NSLocalizedString("dialog.macro.selectFolder", comment: "")
         if parser.checkParameterGiven() {
             title = try parser.getStrExpression()
         }

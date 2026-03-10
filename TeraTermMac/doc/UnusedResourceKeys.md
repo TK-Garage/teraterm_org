@@ -1,6 +1,6 @@
 # Tera Term Mac: 未使用リソースキー・未移植機能の一覧
 
-## 1. 日本語リソース (`ja.lproj/Localizable.strings`) で定義済みだがSwiftコードで未使用のキー (40個)
+## 1. 日本語リソース (`ja.lproj/Localizable.strings`) で定義済みだがSwiftコードで未使用のキー (36個)
 
 ### 端末設定ダイアログ (旧 — `dialog.termSetup.*` に置換済み)
 
@@ -44,15 +44,6 @@
 | `dialog.serialPort.flow` | フロー: |
 | `dialog.serialPort.connect` | 接続 |
 | `dialog.serialPort.cancel` | キャンセル |
-
-### マクロ関連
-
-| キー | 日本語テキスト |
-|------|---------------|
-| `dialog.macro.selectFile` | ファイルを選択 |
-| `dialog.macro.selectFolder` | フォルダを選択 |
-| `macroStatus.resume` | 再開 |
-| `menu.control.stopMacro` | マクロ停止 |
 
 ### 接続エラーメッセージ (コードで直接英語文字列を使用している可能性あり)
 
