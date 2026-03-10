@@ -651,7 +651,6 @@ enum FileTransferDialogHelper {
 
         let accessory = XMODEMOptionAccessory(isSend: false, defaultCRC: true)
         panel.accessoryView = accessory
-        panel.isAccessoryViewDisclosed = true
 
         panel.beginSheetModal(for: window) { response in
             guard response == .OK, let url = panel.url else { return }
@@ -712,7 +711,6 @@ enum FileTransferDialogHelper {
 
         let accessory = FileOptionAccessory()
         panel.accessoryView = accessory
-        panel.isAccessoryViewDisclosed = true
 
         panel.beginSheetModal(for: window) { response in
             guard response == .OK, let url = panel.url else { return }

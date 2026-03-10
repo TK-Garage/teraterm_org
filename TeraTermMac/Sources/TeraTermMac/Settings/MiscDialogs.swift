@@ -301,7 +301,7 @@ final class EditHistoryDialogController: BaseSetupDialogController {
         historyList.reloadData()
     }
 
-    @objc private func moveUp(_ sender: Any?) {
+    @objc override func moveUp(_ sender: Any?) {
         let row = historyList.selectedRow
         guard row > 0 && row < items.count else { return }
         items.swapAt(row, row - 1)
@@ -309,7 +309,7 @@ final class EditHistoryDialogController: BaseSetupDialogController {
         historyList.selectRowIndexes(IndexSet(integer: row - 1), byExtendingSelection: false)
     }
 
-    @objc private func moveDown(_ sender: Any?) {
+    @objc override func moveDown(_ sender: Any?) {
         let row = historyList.selectedRow
         guard row >= 0 && row < items.count - 1 else { return }
         items.swapAt(row, row + 1)

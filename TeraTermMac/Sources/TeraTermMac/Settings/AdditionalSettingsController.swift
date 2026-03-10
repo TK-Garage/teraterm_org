@@ -1148,7 +1148,7 @@ final class UITab: AdditionalSettingsTab {
 
 // MARK: - Plugin Tab (IDD_TABSHEET_PLUGIN)
 
-final class PluginTab: AdditionalSettingsTab {
+final class PluginTab: NSObject, AdditionalSettingsTab {
     let tabTitle = "Plugin"
     let contentView = NSView()
 
@@ -1157,6 +1157,7 @@ final class PluginTab: AdditionalSettingsTab {
 
     init(settings: TerminalSettings) {
         self.directories = settings.pluginDirectories
+        super.init()
         contentView.translatesAutoresizingMaskIntoConstraints = false
         buildUI()
     }
