@@ -275,6 +275,60 @@ class TerminalWindowController: NSWindowController {
         protocolTransferPanel.show(fileName: fileName, protocolName: protoName)
     }
 
+    // MARK: - Apply Settings to Active Window
+
+    /// Apply all current settings immediately to the terminal window.
+    /// Called when any settings dialog closes with OK.
+    /// This ensures the frontmost active terminal reflects changes instantly.
+    func applySettings() {
+        // Push settings to all components (they hold references, but
+        // some cache values that need explicit refresh)
+        terminalView.settings = settings
+        terminalEmulator.settings = settings
+        keyboardHandler.settings = settings
+
+        // Font and cell metrics
+        terminalView.updateFont()
+
+        // Terminal dimensions: resize window to match new column/row settings
+        let preferredSize = terminalView.preferredSize(
+            columns: settings.terminalWidth,
+            rows: settings.terminalHeight
+        )
+        window?.setContentSize(preferredSize)
+
+        // Resize the emulator buffer to match
+        let viewSize = terminalView.terminalSize
+        if viewSize.columns > 0 && viewSize.rows > 0 {
+            terminalEmulator.resize(width: viewSize.columns, height: viewSize.rows)
+        }
+
+        // Window appearance
+        window?.title = settings.title
+        window?.alphaValue = CGFloat(settings.windowAlpha)
+
+        // Cursor blink / shape — TerminalView reads from settings on draw,
+        // but we trigger a refresh to pick up changes immediately
+        terminalView.refresh()
+
+        // Telnet terminal type
+        telnetProtocol.terminalType = settings.termType
+
+        // Notify the PTY of any size change
+        if let pty = connectionManager.currentConnection as? LocalShellConnection {
+            let size = terminalView.terminalSize
+            if size.columns > 0 && size.rows > 0 {
+                pty.resize(cols: UInt16(size.columns), rows: UInt16(size.rows))
+            }
+        }
+
+        // Telnet NAWS update
+        if useTelnet {
+            let size = terminalView.terminalSize
+            telnetProtocol.updateWindowSize(width: size.columns, height: size.rows)
+        }
+    }
+
     // MARK: - Terminal Actions
 
     func resetTerminal() {

@@ -467,8 +467,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         let newFont = fontManager.convert(currentFont)
         settings.fontName = newFont.fontName
         settings.fontSize = Double(newFont.pointSize)
-        activeWindowController?.terminalView.settings = settings
-        activeWindowController?.terminalView.updateFont()
+        activeWindowController?.applySettings()
     }
 
     @objc func setupKeyboard(_ sender: Any?) {
@@ -494,8 +493,11 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         panel.begin { [weak self] response in
             guard response == .OK, let url = panel.url else { return }
             self?.settings = TerminalSettings.load(from: url)
-            self?.activeWindowController?.terminalView.settings = self!.settings
-            self?.activeWindowController?.terminalView.updateFont()
+            // When loading a new settings object, update the window controller's reference
+            if let self = self, let wc = self.activeWindowController {
+                wc.settings = self.settings
+                wc.applySettings()
+            }
         }
     }
 
@@ -724,7 +726,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         }
 
         // Apply to active window
-        activeWindowController?.terminalView.settings = settings
+        activeWindowController?.applySettings()
     }
 
     // MARK: - Menu Validation
@@ -1143,17 +1145,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         dismissCurrentSetupSheet()
         let vc = TerminalSetupViewController(settings: settings)
         vc.okHandler = { [weak self] in
-            guard let self = self else { return }
-            if let wc = self.activeWindowController {
-                wc.terminalView.settings = self.settings
-                wc.terminalView.updateFont()
-                // 端末サイズ設定に合わせてウィンドウをリサイズ
-                let size = wc.terminalView.preferredSize(
-                    columns: self.settings.terminalWidth,
-                    rows: self.settings.terminalHeight
-                )
-                wc.window?.setContentSize(size)
-            }
+            self?.activeWindowController?.applySettings()
         }
         if let win = activeWindowController?.window {
             currentSetupSheet = vc.presentAsSheet(on: win)
@@ -1168,13 +1160,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         dismissCurrentSetupSheet()
         let vc = WindowSetupViewController(settings: settings)
         vc.okHandler = { [weak self] in
-            guard let self = self else { return }
-            if let wc = self.activeWindowController {
-                wc.terminalView.settings = self.settings
-                wc.terminalView.needsDisplay = true
-                wc.window?.title = self.settings.title
-                wc.window?.alphaValue = CGFloat(self.settings.windowAlpha)
-            }
+            self?.activeWindowController?.applySettings()
         }
         if let win = activeWindowController?.window {
             currentSetupSheet = vc.presentAsSheet(on: win)
@@ -1265,9 +1251,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
             settings.metaKey = metaPopup.indexOfSelectedItem
             settings.answerback = ansField.stringValue
 
-            if let wc = activeWindowController {
-                wc.terminalView.settings = settings
-            }
+            activeWindowController?.applySettings()
         }
     }
 
@@ -1276,6 +1260,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         let vc = SerialPortSetupViewController(settings: settings)
         vc.okHandler = { [weak self] in
             guard let self = self else { return }
+            self.activeWindowController?.applySettings()
             if let port = self.settings.serialPort.isEmpty ? nil : self.settings.serialPort {
                 self.activeWindowController?.connectSerial(device: port)
             }
