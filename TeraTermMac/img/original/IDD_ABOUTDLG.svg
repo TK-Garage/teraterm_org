@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="460" height="340" font-family="MS UI Gothic, Meiryo, sans-serif" font-size="11">
+  <defs>
+    <style>
+      .title-bar { fill: #0078d4; }
+      .title-text { fill: white; font-size: 11px; font-weight: bold; }
+      .dialog-bg { fill: #f0f0f0; stroke: #999; stroke-width: 1; }
+      .group-box { fill: none; stroke: #999; stroke-width: 1; }
+      .label { fill: #000; font-size: 11px; }
+      .edit-box { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .combo-box { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .button { fill: #e1e1e1; stroke: #adadad; stroke-width: 1; }
+      .button-default { fill: #0078d4; stroke: #005a9e; stroke-width: 1; }
+      .button-text { fill: #000; font-size: 11px; text-anchor: middle; }
+      .button-text-default { fill: #fff; font-size: 11px; text-anchor: middle; }
+      .checkbox { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .radio { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .combo-arrow { fill: #606060; }
+      .text-area { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .scrollbar { fill: #c0c0c0; stroke: #999; stroke-width: 1; }
+      .sample-box { fill: #000; stroke: #333; stroke-width: 2; }
+      .link { fill: #0066cc; font-size: 11px; text-decoration: underline; }
+      .tab-active { fill: #f0f0f0; stroke: #999; stroke-width: 1; }
+      .tab-inactive { fill: #d0d0d0; stroke: #999; stroke-width: 1; }
+      .tab-text { fill: #000; font-size: 10px; text-anchor: middle; }
+      .listbox { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .progress-bar { fill: #0078d4; }
+      .progress-bg { fill: #e0e0e0; stroke: #999; stroke-width: 1; }
+    </style>
+  </defs>
+  <!-- Title bar -->
+  <rect class="title-bar" x="0" y="0" width="460" height="22" rx="4"/>
+  <text class="title-text" x="8" y="15">Tera Term について</text>
+  <rect class="dialog-bg" x="0" y="22" width="460" height="318"/>
+  <rect fill="#ddd" stroke="#999" x="12" y="38" width="40" height="40" rx="4"/>
+  <text class="label" x="22" y="62" fill="#666">TT</text>
+  <text class="label" x="76" y="42" font-weight="bold" font-size="13">Tera Term</text>
+  <text class="label" x="76" y="58">Version 5.x</text>
+  <text class="label" x="86" y="72">(C) 2004-2026 TeraTerm Project</text>
+  <text class="label" x="76" y="96">含む:</text>
+  <text class="label" x="76" y="112">Tera Term Pro version 2.3</text>
+  <text class="label" x="86" y="126">Copyright (C) 1994-1998 T. Teranishi</text>
+  <text class="label" x="76" y="146">IPv6 extention version 0.81</text>
+  <text class="label" x="86" y="160">(C) 2000-2003 Jun-ya KATO</text>
+  <text class="label" x="76" y="180">Oniguruma: x.x.x</text>
+  <text class="label" x="76" y="196">SFMT: x.x</text>
+  <text class="label" x="14" y="220">ビルド情報:</text>
+  <text class="label" fill="#666" x="14" y="236">コンパイラ / プラットフォーム 情報</text>
+  <text class="label" x="14" y="296">作者:</text>
+  <text class="link" x="72" y="296">https://teratermproject.github.io/</text>
+  <rect class="button-default" x="380" y="32" width="64" height="24" rx="3"/>
+  <text class="button-text-default" x="412" y="48">OK</text>
+</svg>

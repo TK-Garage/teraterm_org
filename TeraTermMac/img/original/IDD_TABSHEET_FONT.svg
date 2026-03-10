@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="500" height="420" font-family="MS UI Gothic, Meiryo, sans-serif" font-size="11">
+  <defs>
+    <style>
+      .title-bar { fill: #0078d4; }
+      .title-text { fill: white; font-size: 11px; font-weight: bold; }
+      .dialog-bg { fill: #f0f0f0; stroke: #999; stroke-width: 1; }
+      .group-box { fill: none; stroke: #999; stroke-width: 1; }
+      .label { fill: #000; font-size: 11px; }
+      .edit-box { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .combo-box { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .button { fill: #e1e1e1; stroke: #adadad; stroke-width: 1; }
+      .button-default { fill: #0078d4; stroke: #005a9e; stroke-width: 1; }
+      .button-text { fill: #000; font-size: 11px; text-anchor: middle; }
+      .button-text-default { fill: #fff; font-size: 11px; text-anchor: middle; }
+      .checkbox { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .radio { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .combo-arrow { fill: #606060; }
+      .text-area { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .scrollbar { fill: #c0c0c0; stroke: #999; stroke-width: 1; }
+      .sample-box { fill: #000; stroke: #333; stroke-width: 2; }
+      .link { fill: #0066cc; font-size: 11px; text-decoration: underline; }
+      .tab-active { fill: #f0f0f0; stroke: #999; stroke-width: 1; }
+      .tab-inactive { fill: #d0d0d0; stroke: #999; stroke-width: 1; }
+      .tab-text { fill: #000; font-size: 10px; text-anchor: middle; }
+      .listbox { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .progress-bar { fill: #0078d4; }
+      .progress-bg { fill: #e0e0e0; stroke: #999; stroke-width: 1; }
+    </style>
+  </defs>
+  <!-- Title bar -->
+  <rect class="title-bar" x="0" y="0" width="500" height="22" rx="4"/>
+  <text class="title-text" x="8" y="15">Tera Term: その他の設定 - フォント</text>
+  <rect class="dialog-bg" x="0" y="22" width="500" height="398"/>
+  <rect class="group-box" x="16" y="36" width="466" height="60"/>
+  <text class="label" x="24" y="36" font-weight="bold">VTウィンドウフォント</text>
+  <text class="label" x="30" y="56">フォント名: MS Gothic 14pt</text>
+  <rect class="button" x="350" y="44" width="80" height="24" rx="3"/>
+  <text class="button-text" x="390" y="60">選択...</text>
+  <text class="label" x="30" y="78">文字描画で使用するAPI:</text>
+  <rect class="combo-box" x="200" y="66" width="200" height="20"/>
+  <rect fill="#e1e1e1" x="380" y="66" width="20" height="20" stroke="#7a7a7a" stroke-width="1"/>
+  <polygon class="combo-arrow" points="385,74 395,74 390,81"/>
+  <rect class="group-box" x="16" y="102" width="466" height="50"/>
+  <text class="label" x="24" y="102" font-weight="bold">ダイアログフォント</text>
+  <text class="label" x="30" y="126">フォント名: MS UI Gothic 9pt</text>
+  <rect class="button" x="350" y="114" width="80" height="24" rx="3"/>
+  <text class="button-text" x="390" y="130">選択...</text>
+  <rect class="button" x="350" y="160" width="80" height="24" rx="3"/>
+  <text class="button-text" x="390" y="176">デフォルト</text>
+  <text class="label" x="16" y="174">表示用文字変換コードページ(0の時自動):</text>
+  <rect class="edit-box" x="300" y="162" width="60" height="20"/>
+  <text class="label" x="306" y="176">0</text>
+  <rect class="checkbox" x="16" y="196" width="13" height="13"/>
+  <text class="label" x="34" y="207">プロポーショナルフォントをフォントダイアログの一覧に表示する(VT)</text>
+  <rect class="checkbox" x="16" y="216" width="13" height="13"/>
+  <text class="label" x="34" y="227">プロポーショナルフォントをフォントダイアログの一覧に表示する(DLG)</text>
+  <text class="label" x="16" y="244">文字間スペース:</text>
+  <rect class="edit-box" x="120" y="232" width="50" height="20"/>
+  <text class="label" x="126" y="246">0</text>
+  <rect class="checkbox" x="16" y="264" width="13" height="13"/>
+  <text class="label" x="34" y="275">描画幅に合わせてリサイズしたフォントを描画</text>
+  <text class="label" x="16" y="290">フォント設定/フォントフォルダを開く</text>
+  <rect class="button-default" x="130" y="380" width="64" height="24" rx="3"/>
+  <text class="button-text-default" x="162" y="396">OK</text>
+  <rect class="button" x="206" y="380" width="80" height="24" rx="3"/>
+  <text class="button-text" x="246" y="396">キャンセル</text>
+</svg>

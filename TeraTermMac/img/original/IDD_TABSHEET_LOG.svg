@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="500" height="360" font-family="MS UI Gothic, Meiryo, sans-serif" font-size="11">
+  <defs>
+    <style>
+      .title-bar { fill: #0078d4; }
+      .title-text { fill: white; font-size: 11px; font-weight: bold; }
+      .dialog-bg { fill: #f0f0f0; stroke: #999; stroke-width: 1; }
+      .group-box { fill: none; stroke: #999; stroke-width: 1; }
+      .label { fill: #000; font-size: 11px; }
+      .edit-box { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .combo-box { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .button { fill: #e1e1e1; stroke: #adadad; stroke-width: 1; }
+      .button-default { fill: #0078d4; stroke: #005a9e; stroke-width: 1; }
+      .button-text { fill: #000; font-size: 11px; text-anchor: middle; }
+      .button-text-default { fill: #fff; font-size: 11px; text-anchor: middle; }
+      .checkbox { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .radio { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .combo-arrow { fill: #606060; }
+      .text-area { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .scrollbar { fill: #c0c0c0; stroke: #999; stroke-width: 1; }
+      .sample-box { fill: #000; stroke: #333; stroke-width: 2; }
+      .link { fill: #0066cc; font-size: 11px; text-decoration: underline; }
+      .tab-active { fill: #f0f0f0; stroke: #999; stroke-width: 1; }
+      .tab-inactive { fill: #d0d0d0; stroke: #999; stroke-width: 1; }
+      .tab-text { fill: #000; font-size: 10px; text-anchor: middle; }
+      .listbox { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .progress-bar { fill: #0078d4; }
+      .progress-bg { fill: #e0e0e0; stroke: #999; stroke-width: 1; }
+    </style>
+  </defs>
+  <!-- Title bar -->
+  <rect class="title-bar" x="0" y="0" width="500" height="22" rx="4"/>
+  <text class="title-text" x="8" y="15">Tera Term: その他の設定 - ログ</text>
+  <rect class="dialog-bg" x="0" y="22" width="500" height="338"/>
+  <rect class="group-box" x="16" y="36" width="466" height="64"/>
+  <text class="label" x="24" y="36" font-weight="bold">ログ表示用エディタ</text>
+  <text class="label" x="30" y="56">実行ファイル:</text>
+  <rect class="edit-box" x="120" y="44" width="270" height="20"/>
+  <rect class="button" x="396" y="42" width="72" height="24" rx="3"/>
+  <text class="button-text" x="432" y="58">参照...</text>
+  <text class="label" x="30" y="78">引き数:</text>
+  <rect class="edit-box" x="120" y="66" width="270" height="20"/>
+  <text class="label" x="16" y="116">標準ログファイル名(strftimeフォーマット可):</text>
+  <rect class="edit-box" x="16" y="126" width="370" height="20"/>
+  <text class="label" x="16" y="158">標準のログ保存先フォルダ:</text>
+  <rect class="edit-box" x="16" y="168" width="370" height="20"/>
+  <rect class="button" x="394" y="166" width="72" height="24" rx="3"/>
+  <text class="button-text" x="430" y="182">参照...</text>
+  <rect class="checkbox" x="16" y="200" width="13" height="13"/>
+  <text class="label" x="34" y="211">自動的にログ採取を開始する</text>
+  <rect class="group-box" x="16" y="224" width="466" height="64"/>
+  <text class="label" x="24" y="224" font-weight="bold">ログのローテート</text>
+  <text class="label" x="30" y="248">サイズ:</text>
+  <rect class="edit-box" x="80" y="236" width="80" height="20"/>
+  <text class="label" x="176" y="248">世代:</text>
+  <rect class="edit-box" x="210" y="236" width="50" height="20"/>
+  <rect class="button-default" x="130" y="310" width="64" height="24" rx="3"/>
+  <text class="button-text-default" x="162" y="326">OK</text>
+  <rect class="button" x="206" y="310" width="80" height="24" rx="3"/>
+  <text class="button-text" x="246" y="326">キャンセル</text>
+</svg>

@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="480" height="360" font-family="MS UI Gothic, Meiryo, sans-serif" font-size="11">
+  <defs>
+    <style>
+      .title-bar { fill: #0078d4; }
+      .title-text { fill: white; font-size: 11px; font-weight: bold; }
+      .dialog-bg { fill: #f0f0f0; stroke: #999; stroke-width: 1; }
+      .group-box { fill: none; stroke: #999; stroke-width: 1; }
+      .label { fill: #000; font-size: 11px; }
+      .edit-box { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .combo-box { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .button { fill: #e1e1e1; stroke: #adadad; stroke-width: 1; }
+      .button-default { fill: #0078d4; stroke: #005a9e; stroke-width: 1; }
+      .button-text { fill: #000; font-size: 11px; text-anchor: middle; }
+      .button-text-default { fill: #fff; font-size: 11px; text-anchor: middle; }
+      .checkbox { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .radio { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .combo-arrow { fill: #606060; }
+      .text-area { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .scrollbar { fill: #c0c0c0; stroke: #999; stroke-width: 1; }
+      .sample-box { fill: #000; stroke: #333; stroke-width: 2; }
+      .link { fill: #0066cc; font-size: 11px; text-decoration: underline; }
+      .tab-active { fill: #f0f0f0; stroke: #999; stroke-width: 1; }
+      .tab-inactive { fill: #d0d0d0; stroke: #999; stroke-width: 1; }
+      .tab-text { fill: #000; font-size: 10px; text-anchor: middle; }
+      .listbox { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .progress-bar { fill: #0078d4; }
+      .progress-bg { fill: #e0e0e0; stroke: #999; stroke-width: 1; }
+    </style>
+  </defs>
+  <!-- Title bar -->
+  <rect class="title-bar" x="0" y="0" width="480" height="22" rx="4"/>
+  <text class="title-text" x="8" y="15">Tera Term: ファイル ドラッグ&amp;ドロップ</text>
+  <rect class="dialog-bg" x="0" y="22" width="480" height="338"/>
+  <text class="label" x="16" y="42">ファイル転送を行いますか？</text>
+  <circle class="radio" cx="30" cy="62" r="6"/>
+  <circle fill="#000" cx="30" cy="62" r="3"/>
+  <text class="label" x="42" y="66">SCP</text>
+  <circle class="radio" cx="30" cy="82" r="6"/>
+  <text class="label" x="42" y="86">ファイル送信（ファイルの内容を貼り付け）</text>
+  <circle class="radio" cx="30" cy="102" r="6"/>
+  <text class="label" x="42" y="106">ファイル名を貼り付け</text>
+  <text class="label" x="30" y="130">送信先:</text>
+  <rect class="edit-box" x="100" y="118" width="300" height="20"/>
+  <text class="label" x="30" y="150" font-size="9">空のときはホームディレクトリに送信されます</text>
+  <rect class="checkbox" x="30" y="168" width="13" height="13"/>
+  <text class="label" x="48" y="179">バイナリ</text>
+  <rect class="checkbox" x="30" y="188" width="13" height="13"/>
+  <text class="label" x="48" y="199">エスケープ</text>
+  <circle class="radio" cx="50" cy="210" r="6"/>
+  <text class="label" x="62" y="214">スペースで区切る</text>
+  <circle class="radio" cx="50" cy="230" r="6"/>
+  <text class="label" x="62" y="234">改行で区切る</text>
+  <rect class="checkbox" x="30" y="256" width="13" height="13"/>
+  <text class="label" x="48" y="267">同じ処理を次のファイルに適用</text>
+  <rect class="checkbox" x="30" y="276" width="13" height="13"/>
+  <text class="label" x="48" y="287">次のドロップ時、同じ処理を行う</text>
+  <rect class="checkbox" x="30" y="296" width="13" height="13"/>
+  <text class="label" x="48" y="307">次のドロップ時、ダイアログを表示しない</text>
+  <text class="label" x="16" y="322" font-size="9">このダイアログは、CTRLを押しながらドロップすると必ず表示されます</text>
+  <rect class="button-default" x="120" y="336" width="64" height="24" rx="3"/>
+  <text class="button-text-default" x="152" y="352">OK</text>
+  <rect class="button" x="196" y="336" width="80" height="24" rx="3"/>
+  <text class="button-text" x="236" y="352">キャンセル</text>
+</svg>

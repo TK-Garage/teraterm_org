@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="320" height="270" font-family="MS UI Gothic, Meiryo, sans-serif" font-size="11">
+  <defs>
+    <style>
+      .title-bar { fill: #0078d4; }
+      .title-text { fill: white; font-size: 11px; font-weight: bold; }
+      .dialog-bg { fill: #f0f0f0; stroke: #999; stroke-width: 1; }
+      .group-box { fill: none; stroke: #999; stroke-width: 1; }
+      .label { fill: #000; font-size: 11px; }
+      .edit-box { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .combo-box { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .button { fill: #e1e1e1; stroke: #adadad; stroke-width: 1; }
+      .button-default { fill: #0078d4; stroke: #005a9e; stroke-width: 1; }
+      .button-text { fill: #000; font-size: 11px; text-anchor: middle; }
+      .button-text-default { fill: #fff; font-size: 11px; text-anchor: middle; }
+      .checkbox { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .radio { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .combo-arrow { fill: #606060; }
+      .text-area { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .scrollbar { fill: #c0c0c0; stroke: #999; stroke-width: 1; }
+      .sample-box { fill: #000; stroke: #333; stroke-width: 2; }
+      .link { fill: #0066cc; font-size: 11px; text-decoration: underline; }
+      .tab-active { fill: #f0f0f0; stroke: #999; stroke-width: 1; }
+      .tab-inactive { fill: #d0d0d0; stroke: #999; stroke-width: 1; }
+      .tab-text { fill: #000; font-size: 10px; text-anchor: middle; }
+      .listbox { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .progress-bar { fill: #0078d4; }
+      .progress-bg { fill: #e0e0e0; stroke: #999; stroke-width: 1; }
+    </style>
+  </defs>
+  <!-- Title bar -->
+  <rect class="title-bar" x="0" y="0" width="320" height="22" rx="4"/>
+  <text class="title-text" x="8" y="15">Tera Term: キーボードの設定</text>
+  <rect class="dialog-bg" x="0" y="22" width="320" height="248"/>
+  <rect class="group-box" x="20" y="32" width="180" height="78"/>
+  <text class="label" x="28" y="32" font-weight="bold">DELを送信するキー:</text>
+  <rect class="checkbox" x="40" y="48" width="13" height="13"/>
+  <text class="label" x="58" y="59">Backspace キー</text>
+  <rect class="checkbox" x="40" y="70" width="13" height="13"/>
+  <text class="label" x="58" y="81">Delete キー</text>
+  <text class="label" x="24" y="124">キーボード:</text>
+  <rect class="combo-box" x="124" y="112" width="88" height="20"/>
+  <rect fill="#e1e1e1" x="192" y="112" width="20" height="20" stroke="#7a7a7a" stroke-width="1"/>
+  <polygon class="combo-arrow" points="197,120 207,120 202,127"/>
+  <text class="label" x="24" y="148">Meta キー:</text>
+  <rect class="combo-box" x="124" y="136" width="88" height="20"/>
+  <rect fill="#e1e1e1" x="192" y="136" width="20" height="20" stroke="#7a7a7a" stroke-width="1"/>
+  <polygon class="combo-arrow" points="197,144 207,144 202,151"/>
+  <text class="label" x="130" y="150">off</text>
+  <rect class="group-box" x="20" y="164" width="260" height="58"/>
+  <text class="label" x="28" y="164" font-weight="bold">無効化するモード</text>
+  <rect class="checkbox" x="40" y="180" width="13" height="13"/>
+  <text class="label" x="58" y="191">アプリケーションキーパッド</text>
+  <rect class="checkbox" x="40" y="200" width="13" height="13"/>
+  <text class="label" x="58" y="211">アプリケーションカーソル</text>
+  <rect class="button-default" x="224" y="36" width="72" height="24" rx="3"/>
+  <text class="button-text-default" x="260" y="52">OK</text>
+  <rect class="button" x="224" y="66" width="72" height="24" rx="3"/>
+  <text class="button-text" x="260" y="82">キャンセル</text>
+  <rect class="button" x="224" y="96" width="72" height="24" rx="3"/>
+  <text class="button-text" x="260" y="112">ヘルプ(&H)</text>
+</svg>

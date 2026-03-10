@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="380" height="200" font-family="MS UI Gothic, Meiryo, sans-serif" font-size="11">
+  <defs>
+    <style>
+      .title-bar { fill: #0078d4; }
+      .title-text { fill: white; font-size: 11px; font-weight: bold; }
+      .dialog-bg { fill: #f0f0f0; stroke: #999; stroke-width: 1; }
+      .group-box { fill: none; stroke: #999; stroke-width: 1; }
+      .label { fill: #000; font-size: 11px; }
+      .edit-box { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .combo-box { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .button { fill: #e1e1e1; stroke: #adadad; stroke-width: 1; }
+      .button-default { fill: #0078d4; stroke: #005a9e; stroke-width: 1; }
+      .button-text { fill: #000; font-size: 11px; text-anchor: middle; }
+      .button-text-default { fill: #fff; font-size: 11px; text-anchor: middle; }
+      .checkbox { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .radio { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .combo-arrow { fill: #606060; }
+      .text-area { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .scrollbar { fill: #c0c0c0; stroke: #999; stroke-width: 1; }
+      .sample-box { fill: #000; stroke: #333; stroke-width: 2; }
+      .link { fill: #0066cc; font-size: 11px; text-decoration: underline; }
+      .tab-active { fill: #f0f0f0; stroke: #999; stroke-width: 1; }
+      .tab-inactive { fill: #d0d0d0; stroke: #999; stroke-width: 1; }
+      .tab-text { fill: #000; font-size: 10px; text-anchor: middle; }
+      .listbox { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .progress-bar { fill: #0078d4; }
+      .progress-bg { fill: #e0e0e0; stroke: #999; stroke-width: 1; }
+    </style>
+  </defs>
+  <!-- Title bar -->
+  <rect class="title-bar" x="0" y="0" width="380" height="22" rx="4"/>
+  <text class="title-text" x="8" y="15">ファイル送信</text>
+  <rect class="dialog-bg" x="0" y="22" width="380" height="178"/>
+  <text class="label" x="16" y="42">ファイル名:</text>
+  <text class="label" x="100" y="42">example.txt</text>
+  <text class="label" x="16" y="62">フルパス:</text>
+  <text class="label" x="100" y="62">C:\Users\...</text>
+  <text class="label" x="16" y="82">転送済容量:</text>
+  <text class="label" x="100" y="82">0 bytes</text>
+  <text class="label" x="16" y="102">経過時間:</text>
+  <text class="label" x="100" y="102">00:00:00</text>
+  <rect class="progress-bg" x="16" y="112" width="346" height="16"/>
+  <rect class="progress-bar" x="16" y="112" width="0" height="16"/>
+  <rect class="button" x="60" y="150" width="80" height="24" rx="3"/>
+  <text class="button-text" x="100" y="166">一時停止(&S)</text>
+  <rect class="button" x="160" y="150" width="80" height="24" rx="3"/>
+  <text class="button-text" x="200" y="166">閉じる</text>
+  <rect class="button" x="260" y="150" width="80" height="24" rx="3"/>
+  <text class="button-text" x="300" y="166">ヘルプ(&H)</text>
+</svg>

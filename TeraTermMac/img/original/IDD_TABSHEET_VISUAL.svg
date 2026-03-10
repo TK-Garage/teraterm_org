@@ -1,0 +1,94 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="500" height="440" font-family="MS UI Gothic, Meiryo, sans-serif" font-size="11">
+  <defs>
+    <style>
+      .title-bar { fill: #0078d4; }
+      .title-text { fill: white; font-size: 11px; font-weight: bold; }
+      .dialog-bg { fill: #f0f0f0; stroke: #999; stroke-width: 1; }
+      .group-box { fill: none; stroke: #999; stroke-width: 1; }
+      .label { fill: #000; font-size: 11px; }
+      .edit-box { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .combo-box { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .button { fill: #e1e1e1; stroke: #adadad; stroke-width: 1; }
+      .button-default { fill: #0078d4; stroke: #005a9e; stroke-width: 1; }
+      .button-text { fill: #000; font-size: 11px; text-anchor: middle; }
+      .button-text-default { fill: #fff; font-size: 11px; text-anchor: middle; }
+      .checkbox { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .radio { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .combo-arrow { fill: #606060; }
+      .text-area { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .scrollbar { fill: #c0c0c0; stroke: #999; stroke-width: 1; }
+      .sample-box { fill: #000; stroke: #333; stroke-width: 2; }
+      .link { fill: #0066cc; font-size: 11px; text-decoration: underline; }
+      .tab-active { fill: #f0f0f0; stroke: #999; stroke-width: 1; }
+      .tab-inactive { fill: #d0d0d0; stroke: #999; stroke-width: 1; }
+      .tab-text { fill: #000; font-size: 10px; text-anchor: middle; }
+      .listbox { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .progress-bar { fill: #0078d4; }
+      .progress-bg { fill: #e0e0e0; stroke: #999; stroke-width: 1; }
+    </style>
+  </defs>
+  <!-- Title bar -->
+  <rect class="title-bar" x="0" y="0" width="500" height="22" rx="4"/>
+  <text class="title-text" x="8" y="15">Tera Term: その他の設定 - 表示</text>
+  <rect class="dialog-bg" x="0" y="22" width="500" height="418"/>
+  <rect class="group-box" x="16" y="36" width="220" height="60"/>
+  <text class="label" x="24" y="36" font-weight="bold">ウィンドウの不透明度</text>
+  <text class="label" x="30" y="56">アクティブ時:</text>
+  <rect class="edit-box" x="120" y="44" width="40" height="20"/>
+  <text class="label" x="126" y="58">255</text>
+  <text class="label" x="30" y="78">非アクティブ時:</text>
+  <rect class="edit-box" x="120" y="66" width="40" height="20"/>
+  <text class="label" x="126" y="80">255</text>
+  <text class="label" x="260" y="46">マウスカーソル:</text>
+  <rect class="combo-box" x="360" y="34" width="120" height="20"/>
+  <rect fill="#e1e1e1" x="460" y="34" width="20" height="20" stroke="#7a7a7a" stroke-width="1"/>
+  <polygon class="combo-arrow" points="465,42 475,42 470,49"/>
+  <text class="label" x="260" y="72">フォントの品質:</text>
+  <rect class="combo-box" x="360" y="60" width="120" height="20"/>
+  <rect fill="#e1e1e1" x="460" y="60" width="20" height="20" stroke="#7a7a7a" stroke-width="1"/>
+  <polygon class="combo-arrow" points="465,68 475,68 470,75"/>
+  <text class="label" x="366" y="74">デフォルト</text>
+  <rect class="group-box" x="16" y="106" width="466" height="60"/>
+  <text class="label" x="24" y="106" font-weight="bold">ANSIカラー</text>
+  <text class="label" x="30" y="128">赤:</text>
+  <rect class="edit-box" x="52" y="116" width="36" height="20"/>
+  <text class="label" x="100" y="128">緑:</text>
+  <rect class="edit-box" x="122" y="116" width="36" height="20"/>
+  <text class="label" x="170" y="128">青:</text>
+  <rect class="edit-box" x="192" y="116" width="36" height="20"/>
+  <rect class="checkbox" x="16" y="176" width="13" height="13"/>
+  <text class="label" x="34" y="187">ウィンドウの角を丸くしない</text>
+  <rect class="checkbox" x="16" y="196" width="13" height="13"/>
+  <text class="label" x="34" y="207">太字属性色を有効にする</text>
+  <rect class="checkbox" x="250" y="196" width="13" height="13"/>
+  <text class="label" x="268" y="207">太字属性フォントを有効にする</text>
+  <rect class="checkbox" x="16" y="216" width="13" height="13"/>
+  <text class="label" x="34" y="227">点滅属性色を有効にする</text>
+  <rect class="checkbox" x="16" y="236" width="13" height="13"/>
+  <text class="label" x="34" y="247">反転属性色を有効にする</text>
+  <rect class="checkbox" x="16" y="256" width="13" height="13"/>
+  <text class="label" x="34" y="267">下線属性色を有効にする</text>
+  <rect class="checkbox" x="250" y="256" width="13" height="13"/>
+  <text class="label" x="268" y="267">下線属性に下線を付加する</text>
+  <rect class="checkbox" x="16" y="276" width="13" height="13"/>
+  <text class="label" x="34" y="287">URL属性色を有効にする</text>
+  <rect class="checkbox" x="250" y="276" width="13" height="13"/>
+  <text class="label" x="268" y="287">URL文字列に下線を付加する</text>
+  <rect class="checkbox" x="16" y="296" width="13" height="13"/>
+  <text class="label" x="34" y="307">ANSIカラーを有効にする</text>
+  <rect class="checkbox" x="16" y="316" width="13" height="13"/>
+  <text class="label" x="34" y="327">ウィンドウ移動/リサイズ時テーマを一時的にdisableする</text>
+  <rect class="group-box" x="16" y="340" width="466" height="50"/>
+  <text class="label" x="24" y="340" font-weight="bold">起動時のテーマ</text>
+  <circle class="radio" cx="30" cy="358" r="6"/>
+  <circle fill="#000" cx="30" cy="358" r="3"/>
+  <text class="label" x="42" y="362">使用しない</text>
+  <circle class="radio" cx="130" cy="358" r="6"/>
+  <text class="label" x="142" y="362">固定テーマ(テーマファイル指定)</text>
+  <circle class="radio" cx="340" cy="358" r="6"/>
+  <text class="label" x="352" y="362">ランダムテーマ</text>
+  <rect class="button-default" x="130" y="402" width="64" height="24" rx="3"/>
+  <text class="button-text-default" x="162" y="418">OK</text>
+  <rect class="button" x="206" y="402" width="80" height="24" rx="3"/>
+  <text class="button-text" x="246" y="418">キャンセル</text>
+</svg>
