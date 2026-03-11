@@ -68,6 +68,25 @@ class TEKWindowController: NSWindowController {
     func clearScreen() {
         tekView.clearScreen()
     }
+
+    // MARK: - Printing (port of TEK window print functionality)
+
+    /// Print the current TEK graphics content using macOS standard print dialog.
+    func printTEKWindow() {
+        guard let window = window else { return }
+
+        let printInfo = NSPrintInfo.shared
+        printInfo.horizontalPagination = .fit
+        printInfo.verticalPagination = .fit
+        printInfo.isHorizontallyCentered = true
+        printInfo.isVerticallyCentered = true
+        printInfo.orientation = tekView.bounds.width > tekView.bounds.height ? .landscape : .portrait
+
+        let printOp = NSPrintOperation(view: tekView, printInfo: printInfo)
+        printOp.showsPrintPanel = true
+        printOp.showsProgressPanel = true
+        printOp.runModal(for: window, delegate: nil, didRun: nil, contextInfo: nil)
+    }
 }
 
 // MARK: - TEK View (port of teklib.c drawing surface)

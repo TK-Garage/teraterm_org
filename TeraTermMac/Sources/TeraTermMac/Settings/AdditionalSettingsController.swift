@@ -18,6 +18,7 @@
 
 #if canImport(AppKit)
 import AppKit
+import UniformTypeIdentifiers
 
 // MARK: - Additional Settings Window Controller
 
@@ -692,6 +693,8 @@ final class LogTab: AdditionalSettingsTab {
     private var rotateEnabledCheck: NSButton!
     private var rotateSizeField: NSTextField!
     private var rotateStepField: NSTextField!
+    private var bomCheck: NSButton!
+    private var timestampTypePopup: NSPopUpButton!
 
     init(settings: TerminalSettings) {
         contentView.translatesAutoresizingMaskIntoConstraints = false
@@ -776,8 +779,22 @@ final class LogTab: AdditionalSettingsTab {
             rotateStack.bottomAnchor.constraint(equalTo: rc.bottomAnchor, constant: -8),
         ])
 
+        // BOM output
+        bomCheck = NSView.makeCheckbox(TTL("dialog.log.bom"), checked: s.logBOM)
+
+        // Timestamp type
+        let tsTypeLabel = NSView.makeLabel(TTL("dialog.log.timestampType"), alignment: .left)
+        timestampTypePopup = NSView.makePopUpButton(
+            items: LogTimestampType.allCases.map { $0.displayName }, width: 160)
+        timestampTypePopup.selectItem(at: s.logTimestampType)
+        let tsTypeRow = NSStackView(views: [tsTypeLabel, timestampTypePopup])
+        tsTypeRow.translatesAutoresizingMaskIntoConstraints = false
+        tsTypeRow.orientation = .horizontal
+        tsTypeRow.spacing = 8
+
         let stack = NSStackView(views: [
-            editorRow, argsRow, nameRow, pathRow, autoStartCheck, optionsBox, rotateBox
+            editorRow, argsRow, nameRow, pathRow, autoStartCheck, optionsBox,
+            bomCheck, tsTypeRow, rotateBox
         ])
         stack.translatesAutoresizingMaskIntoConstraints = false
         stack.orientation = .vertical
@@ -807,6 +824,8 @@ final class LogTab: AdditionalSettingsTab {
         s.logRotateEnabled = rotateEnabledCheck.state == .on
         s.logRotateSize = rotateSizeField.integerValue
         s.logRotateStep = rotateStepField.integerValue
+        s.logBOM = bomCheck.state == .on
+        s.logTimestampType = timestampTypePopup.indexOfSelectedItem
     }
 }
 
@@ -841,6 +860,20 @@ final class VisualTab: AdditionalSettingsTab {
     private var enableURLColorCheck: NSButton!
     private var enableURLUnderlineCheck: NSButton!
     private var enableANSIColorCheck: NSButton!
+
+    // Window extended settings
+    private var enableBoldDisplayCheck: NSButton!
+    private var hideWindowFrameCheck: NSButton!
+    private var enableAixtermColorsCheck: NSButton!
+    private var enableXterm256ColorsCheck: NSButton!
+    private var useStandardBGColorCheck: NSButton!
+    // Attribute color wells
+    private var attrColorNormalWell: NSColorWell!
+    private var attrColorBoldWell: NSColorWell!
+    private var attrColorBlinkWell: NSColorWell!
+    private var attrColorReverseWell: NSColorWell!
+    private var attrColorURLWell: NSColorWell!
+    private var attrColorUnderlineWell: NSColorWell!
 
     init(settings: TerminalSettings) {
         contentView.translatesAutoresizingMaskIntoConstraints = false
@@ -1004,9 +1037,74 @@ final class VisualTab: AdditionalSettingsTab {
 
         flickerlessCheck = NSView.makeCheckbox(TTL("dialog.visual.flickerlessMove"), checked: s.flickerlessMoveEnabled)
 
+        // ── Window Extended Settings Group Box ──
+        let winExtBox = NSView.makeGroupBox(title: TTL("dialog.visual.windowExtended"))
+        enableBoldDisplayCheck = NSView.makeCheckbox(
+            TTL("dialog.visual.enableBoldDisplay"), checked: s.enableBoldDisplay)
+        hideWindowFrameCheck = NSView.makeCheckbox(
+            TTL("dialog.visual.hideWindowFrame"), checked: s.hideWindowFrame)
+        enableAixtermColorsCheck = NSView.makeCheckbox(
+            TTL("dialog.visual.aixtermColors"), checked: s.enableAixtermColors)
+        enableXterm256ColorsCheck = NSView.makeCheckbox(
+            TTL("dialog.visual.xterm256Colors"), checked: s.enableXterm256Colors)
+        useStandardBGColorCheck = NSView.makeCheckbox(
+            TTL("dialog.visual.useStandardBGColor"), checked: s.useStandardBGColor)
+
+        let winExtStack = NSStackView(views: [
+            enableBoldDisplayCheck, hideWindowFrameCheck,
+            enableAixtermColorsCheck, enableXterm256ColorsCheck,
+            useStandardBGColorCheck
+        ])
+        winExtStack.translatesAutoresizingMaskIntoConstraints = false
+        winExtStack.orientation = .vertical
+        winExtStack.alignment = .leading
+        winExtStack.spacing = 4
+        let wec = winExtBox.contentView!
+        wec.addSubview(winExtStack)
+        NSLayoutConstraint.activate([
+            winExtStack.topAnchor.constraint(equalTo: wec.topAnchor, constant: 16),
+            winExtStack.leadingAnchor.constraint(equalTo: wec.leadingAnchor, constant: 12),
+            winExtStack.trailingAnchor.constraint(lessThanOrEqualTo: wec.trailingAnchor, constant: -12),
+            winExtStack.bottomAnchor.constraint(equalTo: wec.bottomAnchor, constant: -8),
+        ])
+
+        // ── Attribute Color Settings Group Box ──
+        let attrColorSettingsBox = NSView.makeGroupBox(title: TTL("dialog.visual.attrColorSettings"))
+        func colorWell(for c: TerminalColor) -> NSColorWell {
+            NSView.makeColorWell(color: NSColor(
+                red: CGFloat(c.r)/255, green: CGFloat(c.g)/255, blue: CGFloat(c.b)/255, alpha: 1))
+        }
+        attrColorNormalWell = colorWell(for: s.attrColorNormal)
+        attrColorBoldWell = colorWell(for: s.attrColorBold)
+        attrColorBlinkWell = colorWell(for: s.attrColorBlink)
+        attrColorReverseWell = colorWell(for: s.attrColorReverse)
+        attrColorURLWell = colorWell(for: s.attrColorURL)
+        attrColorUnderlineWell = colorWell(for: s.attrColorUnderline)
+
+        let attrColorGrid = NSGridView(views: [
+            [NSView.makeLabel(TTL("dialog.visual.colorNormal"), alignment: .right), attrColorNormalWell,
+             NSView.makeLabel(TTL("dialog.visual.colorBold"), alignment: .right), attrColorBoldWell],
+            [NSView.makeLabel(TTL("dialog.visual.colorBlink"), alignment: .right), attrColorBlinkWell,
+             NSView.makeLabel(TTL("dialog.visual.colorReverse"), alignment: .right), attrColorReverseWell],
+            [NSView.makeLabel(TTL("dialog.visual.colorURL"), alignment: .right), attrColorURLWell,
+             NSView.makeLabel(TTL("dialog.visual.colorUnderline"), alignment: .right), attrColorUnderlineWell],
+        ])
+        attrColorGrid.translatesAutoresizingMaskIntoConstraints = false
+        attrColorGrid.rowSpacing = 8
+        attrColorGrid.columnSpacing = 8
+        let acsc = attrColorSettingsBox.contentView!
+        acsc.addSubview(attrColorGrid)
+        NSLayoutConstraint.activate([
+            attrColorGrid.topAnchor.constraint(equalTo: acsc.topAnchor, constant: 16),
+            attrColorGrid.leadingAnchor.constraint(equalTo: acsc.leadingAnchor, constant: 12),
+            attrColorGrid.trailingAnchor.constraint(lessThanOrEqualTo: acsc.trailingAnchor, constant: -12),
+            attrColorGrid.bottomAnchor.constraint(equalTo: acsc.bottomAnchor, constant: -8),
+        ])
+
         let stack = NSStackView(views: [
             cursorRow, qualityRow,
-            opacityBox, colorBox, attrBox, attrColorBox, flickerlessCheck
+            opacityBox, colorBox, attrBox, attrColorBox,
+            winExtBox, attrColorSettingsBox, flickerlessCheck
         ])
         stack.translatesAutoresizingMaskIntoConstraints = false
         stack.orientation = .vertical
@@ -1061,6 +1159,29 @@ final class VisualTab: AdditionalSettingsTab {
                     b: UInt8(clamping: Int(b * 255)))
             }
         }
+
+        // Window extended settings
+        s.enableBoldDisplay = enableBoldDisplayCheck.state == .on
+        s.hideWindowFrame = hideWindowFrameCheck.state == .on
+        s.enableAixtermColors = enableAixtermColorsCheck.state == .on
+        s.enableXterm256Colors = enableXterm256ColorsCheck.state == .on
+        s.useStandardBGColor = useStandardBGColorCheck.state == .on
+
+        // Attribute colors
+        func extractColor(_ well: NSColorWell) -> TerminalColor {
+            var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0
+            let c = well.color.usingColorSpace(.sRGB) ?? well.color
+            c.getRed(&r, green: &g, blue: &b, alpha: nil)
+            return TerminalColor(r: UInt8(clamping: Int(r * 255)),
+                                 g: UInt8(clamping: Int(g * 255)),
+                                 b: UInt8(clamping: Int(b * 255)))
+        }
+        s.attrColorNormal = extractColor(attrColorNormalWell)
+        s.attrColorBold = extractColor(attrColorBoldWell)
+        s.attrColorBlink = extractColor(attrColorBlinkWell)
+        s.attrColorReverse = extractColor(attrColorReverseWell)
+        s.attrColorURL = extractColor(attrColorURLWell)
+        s.attrColorUnderline = extractColor(attrColorUnderlineWell)
     }
 }
 
@@ -1077,6 +1198,7 @@ final class FontTab: AdditionalSettingsTab {
     private var codePageField: NSTextField!
     private var charSpaceHField: NSTextField!
     private var charSpaceVField: NSTextField!
+    private var resizeFontToFitCheck: NSButton!
 
     init(settings: TerminalSettings) {
         contentView.translatesAutoresizingMaskIntoConstraints = false
@@ -1101,9 +1223,11 @@ final class FontTab: AdditionalSettingsTab {
 
         proportionalCheck = NSView.makeCheckbox(TTL("dialog.font.proportional"), checked: s.vtFontProportional)
         hiddenCheck = NSView.makeCheckbox(TTL("dialog.font.hidden"), checked: s.vtFontHidden)
+        resizeFontToFitCheck = NSView.makeCheckbox(
+            TTL("dialog.font.resizeFontToFit"), checked: s.resizeFontToFitWidth)
 
         let fc = fontBox.contentView!
-        let fontStack = NSStackView(views: [fontRow, proportionalCheck, hiddenCheck])
+        let fontStack = NSStackView(views: [fontRow, proportionalCheck, hiddenCheck, resizeFontToFitCheck])
         fontStack.translatesAutoresizingMaskIntoConstraints = false
         fontStack.orientation = .vertical
         fontStack.alignment = .leading
@@ -1170,6 +1294,7 @@ final class FontTab: AdditionalSettingsTab {
     func apply(to s: TerminalSettings) {
         s.vtFontProportional = proportionalCheck.state == .on
         s.vtFontHidden = hiddenCheck.state == .on
+        s.resizeFontToFitWidth = resizeFontToFitCheck.state == .on
         s.drawingAPI = drawingAPIPopup.indexOfSelectedItem
         s.codePage = codePageField.integerValue
         s.charSpaceH = charSpaceHField.integerValue
@@ -1234,7 +1359,7 @@ final class TEKFontTab: AdditionalSettingsTab {
 
 // MARK: - Theme Tab (IDD_TABSHEET_THEME)
 
-final class ThemeTab: AdditionalSettingsTab {
+final class ThemeTab: NSObject, AdditionalSettingsTab {
     let tabTitle = TTL("tab.theme")
     let contentView = NSView()
 
@@ -1244,7 +1369,25 @@ final class ThemeTab: AdditionalSettingsTab {
     private var fastSizeMoveCheck: NSButton!
     private var susiePathField: NSTextField!
 
+    // Background image settings
+    private var bgImagePathField: NSTextField!
+    private var bgAlphaNormalSlider: NSSlider!
+    private var bgAlphaReverseSlider: NSSlider!
+    private var bgAlphaOtherSlider: NSSlider!
+    private var bgAlphaNormalLabel: NSTextField!
+    private var bgAlphaReverseLabel: NSTextField!
+    private var bgAlphaOtherLabel: NSTextField!
+
+    // Theme color editor wells
+    private var themeForegroundWell: NSColorWell!
+    private var themeBackgroundWell: NSColorWell!
+    private var themeCursorWell: NSColorWell!
+    private var themeSelFgWell: NSColorWell!
+    private var themeSelBgWell: NSColorWell!
+    private var themeURLWell: NSColorWell!
+
     init(settings: TerminalSettings) {
+        super.init()
         contentView.translatesAutoresizingMaskIntoConstraints = false
         buildUI(settings)
     }
@@ -1276,8 +1419,99 @@ final class ThemeTab: AdditionalSettingsTab {
 
         let editorBtn = NSView.makePushButton(TTL("dialog.theme.themeEditor"))
 
+        // ── Background Image Group Box ──
+        let bgBox = NSView.makeGroupBox(title: TTL("dialog.theme.bgImage"))
+        let bgPathLabel = NSView.makeLabel(TTL("dialog.theme.bgImagePath"), alignment: .left)
+        bgImagePathField = NSView.makeTextField(value: s.bgImagePath, width: 240)
+        let browseBtn = NSView.makePushButton(TTL("dialog.theme.browse"))
+        browseBtn.target = self
+        browseBtn.action = #selector(browseBGImage(_:))
+        let bgPathRow = NSStackView(views: [bgPathLabel, bgImagePathField, browseBtn])
+        bgPathRow.translatesAutoresizingMaskIntoConstraints = false
+        bgPathRow.orientation = .horizontal
+        bgPathRow.spacing = 8
+
+        // Alpha sliders for transparency
+        let normalAlphaLabel = NSView.makeLabel(TTL("dialog.theme.alphaNormal"), alignment: .left)
+        bgAlphaNormalSlider = NSView.makeSlider(min: 0, max: 100, value: s.bgImageAlphaNormal * 100)
+        bgAlphaNormalSlider.target = self
+        bgAlphaNormalSlider.action = #selector(bgAlphaChanged(_:))
+        bgAlphaNormalLabel = NSView.makeLabel("\(Int(s.bgImageAlphaNormal * 100))%", alignment: .left)
+        bgAlphaNormalLabel.widthAnchor.constraint(equalToConstant: 40).isActive = true
+
+        let reverseAlphaLabel = NSView.makeLabel(TTL("dialog.theme.alphaReverse"), alignment: .left)
+        bgAlphaReverseSlider = NSView.makeSlider(min: 0, max: 100, value: s.bgImageAlphaReverse * 100)
+        bgAlphaReverseSlider.target = self
+        bgAlphaReverseSlider.action = #selector(bgAlphaChanged(_:))
+        bgAlphaReverseLabel = NSView.makeLabel("\(Int(s.bgImageAlphaReverse * 100))%", alignment: .left)
+        bgAlphaReverseLabel.widthAnchor.constraint(equalToConstant: 40).isActive = true
+
+        let otherAlphaLabel = NSView.makeLabel(TTL("dialog.theme.alphaOther"), alignment: .left)
+        bgAlphaOtherSlider = NSView.makeSlider(min: 0, max: 100, value: s.bgImageAlphaOther * 100)
+        bgAlphaOtherSlider.target = self
+        bgAlphaOtherSlider.action = #selector(bgAlphaChanged(_:))
+        bgAlphaOtherLabel = NSView.makeLabel("\(Int(s.bgImageAlphaOther * 100))%", alignment: .left)
+        bgAlphaOtherLabel.widthAnchor.constraint(equalToConstant: 40).isActive = true
+
+        let alphaGrid = NSGridView(views: [
+            [normalAlphaLabel, bgAlphaNormalSlider, bgAlphaNormalLabel],
+            [reverseAlphaLabel, bgAlphaReverseSlider, bgAlphaReverseLabel],
+            [otherAlphaLabel, bgAlphaOtherSlider, bgAlphaOtherLabel],
+        ])
+        alphaGrid.translatesAutoresizingMaskIntoConstraints = false
+        alphaGrid.rowSpacing = 6
+        alphaGrid.columnSpacing = 8
+
+        let bgStack = NSStackView(views: [bgPathRow, alphaGrid])
+        bgStack.translatesAutoresizingMaskIntoConstraints = false
+        bgStack.orientation = .vertical
+        bgStack.alignment = .leading
+        bgStack.spacing = 8
+        let bgc = bgBox.contentView!
+        bgc.addSubview(bgStack)
+        NSLayoutConstraint.activate([
+            bgStack.topAnchor.constraint(equalTo: bgc.topAnchor, constant: 16),
+            bgStack.leadingAnchor.constraint(equalTo: bgc.leadingAnchor, constant: 12),
+            bgStack.trailingAnchor.constraint(equalTo: bgc.trailingAnchor, constant: -12),
+            bgStack.bottomAnchor.constraint(equalTo: bgc.bottomAnchor, constant: -8),
+        ])
+
+        // ── Theme Color Editor Group Box ──
+        let colorEditorBox = NSView.makeGroupBox(title: TTL("dialog.theme.colorEditor"))
+        func wellFor(_ c: TerminalColor) -> NSColorWell {
+            NSView.makeColorWell(color: NSColor(
+                red: CGFloat(c.r)/255, green: CGFloat(c.g)/255, blue: CGFloat(c.b)/255, alpha: 1))
+        }
+        themeForegroundWell = wellFor(s.colorTheme.foreground)
+        themeBackgroundWell = wellFor(s.colorTheme.background)
+        themeCursorWell = wellFor(s.colorTheme.cursorColor)
+        themeSelFgWell = wellFor(s.colorTheme.selectionForeground)
+        themeSelBgWell = wellFor(s.colorTheme.selectionBackground)
+        themeURLWell = wellFor(s.colorTheme.urlColor)
+
+        let colorEditorGrid = NSGridView(views: [
+            [NSView.makeLabel(TTL("dialog.theme.foreground"), alignment: .right), themeForegroundWell,
+             NSView.makeLabel(TTL("dialog.theme.background"), alignment: .right), themeBackgroundWell],
+            [NSView.makeLabel(TTL("dialog.theme.cursor"), alignment: .right), themeCursorWell,
+             NSView.makeLabel(TTL("dialog.theme.url"), alignment: .right), themeURLWell],
+            [NSView.makeLabel(TTL("dialog.theme.selFg"), alignment: .right), themeSelFgWell,
+             NSView.makeLabel(TTL("dialog.theme.selBg"), alignment: .right), themeSelBgWell],
+        ])
+        colorEditorGrid.translatesAutoresizingMaskIntoConstraints = false
+        colorEditorGrid.rowSpacing = 8
+        colorEditorGrid.columnSpacing = 8
+        let cec = colorEditorBox.contentView!
+        cec.addSubview(colorEditorGrid)
+        NSLayoutConstraint.activate([
+            colorEditorGrid.topAnchor.constraint(equalTo: cec.topAnchor, constant: 16),
+            colorEditorGrid.leadingAnchor.constraint(equalTo: cec.leadingAnchor, constant: 12),
+            colorEditorGrid.trailingAnchor.constraint(lessThanOrEqualTo: cec.trailingAnchor, constant: -12),
+            colorEditorGrid.bottomAnchor.constraint(equalTo: cec.bottomAnchor, constant: -8),
+        ])
+
         let stack = NSStackView(views: [
-            enableCheck, editorBtn, fastSizeMoveCheck, startupRow, themeRow, susieRow
+            enableCheck, editorBtn, fastSizeMoveCheck, startupRow, themeRow, susieRow,
+            bgBox, colorEditorBox
         ])
         stack.translatesAutoresizingMaskIntoConstraints = false
         stack.orientation = .vertical
@@ -1292,12 +1526,54 @@ final class ThemeTab: AdditionalSettingsTab {
         ])
     }
 
+    @objc private func browseBGImage(_ sender: Any?) {
+        let panel = NSOpenPanel()
+        panel.allowedContentTypes = [.image]
+        panel.canChooseFiles = true
+        panel.canChooseDirectories = false
+        if panel.runModal() == .OK, let url = panel.url {
+            bgImagePathField.stringValue = url.path
+        }
+    }
+
+    @objc private func bgAlphaChanged(_ sender: NSSlider) {
+        if sender === bgAlphaNormalSlider {
+            bgAlphaNormalLabel.stringValue = "\(Int(sender.doubleValue))%"
+        } else if sender === bgAlphaReverseSlider {
+            bgAlphaReverseLabel.stringValue = "\(Int(sender.doubleValue))%"
+        } else if sender === bgAlphaOtherSlider {
+            bgAlphaOtherLabel.stringValue = "\(Int(sender.doubleValue))%"
+        }
+    }
+
     func apply(to s: TerminalSettings) {
         s.themeEnabled = enableCheck.state == .on
         s.themeFile = themeFileField.stringValue
         s.startupTheme = startupThemeField.stringValue
         s.fastSizeMove = fastSizeMoveCheck.state == .on
         s.susiePath = susiePathField.stringValue
+
+        // Background image
+        s.bgImagePath = bgImagePathField.stringValue
+        s.bgImageAlphaNormal = bgAlphaNormalSlider.doubleValue / 100.0
+        s.bgImageAlphaReverse = bgAlphaReverseSlider.doubleValue / 100.0
+        s.bgImageAlphaOther = bgAlphaOtherSlider.doubleValue / 100.0
+
+        // Theme color editor
+        func extractColor(_ well: NSColorWell) -> TerminalColor {
+            var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0
+            let c = well.color.usingColorSpace(.sRGB) ?? well.color
+            c.getRed(&r, green: &g, blue: &b, alpha: nil)
+            return TerminalColor(r: UInt8(clamping: Int(r * 255)),
+                                 g: UInt8(clamping: Int(g * 255)),
+                                 b: UInt8(clamping: Int(b * 255)))
+        }
+        s.colorTheme.foreground = extractColor(themeForegroundWell)
+        s.colorTheme.background = extractColor(themeBackgroundWell)
+        s.colorTheme.cursorColor = extractColor(themeCursorWell)
+        s.colorTheme.selectionForeground = extractColor(themeSelFgWell)
+        s.colorTheme.selectionBackground = extractColor(themeSelBgWell)
+        s.colorTheme.urlColor = extractColor(themeURLWell)
     }
 }
 

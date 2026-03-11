@@ -264,6 +264,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         fileMenu.addItem(NSMenuItem.separator())
         let printItem = fileMenu.addItem(withTitle: L("menu.file.print"), action: #selector(printTerminal(_:)), keyEquivalent: "p")
         setSymbol("printer", for: printItem)
+        let tekPrintItem = fileMenu.addItem(withTitle: L("menu.file.printTEK"), action: #selector(printTEKWindow(_:)), keyEquivalent: "")
+        setSymbol("printer", for: tekPrintItem)
         fileMenu.addItem(NSMenuItem.separator())
         let disconnItem = fileMenu.addItem(withTitle: L("menu.file.disconnect"), action: #selector(doDisconnect(_:)), keyEquivalent: "")
         setSymbol("xmark.circle", for: disconnItem)
@@ -811,6 +813,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         TerminalPrintHelper.printTerminalContent(from: wc, window: win)
     }
 
+    @objc func printTEKWindow(_ sender: Any?) {
+        tekWindowController?.printTEKWindow()
+    }
+
     @objc func saveSetup(_ sender: Any?) {
         let panel = NSSavePanel()
         panel.nameFieldStringValue = "settings.json"
@@ -1128,6 +1134,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
             return activeWindowController?.terminalEmulator.buffer.selection.isActive == true
         case #selector(selectScreen(_:)):
             return hasWindow
+
+        // TEK window printing: enabled only when TEK window is visible
+        case #selector(printTEKWindow(_:)):
+            return tekWindowController?.window?.isVisible == true
 
         // Control menu: reset remote title
         case #selector(resetRemoteTitle(_:)):

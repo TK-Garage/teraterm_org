@@ -297,6 +297,22 @@ enum BeepType: Int, Codable {
     case visual = 2
 }
 
+// MARK: - Log Timestamp Type
+
+enum LogTimestampType: Int, Codable, CaseIterable {
+    case local = 0
+    case utc = 1
+    case elapsed = 2
+
+    var displayName: String {
+        switch self {
+        case .local: return "Local Time"
+        case .utc: return "UTC"
+        case .elapsed: return "Elapsed Time"
+        }
+    }
+}
+
 // MARK: - Color Theme
 
 struct TerminalColorTheme: Codable {
@@ -522,6 +538,29 @@ class TerminalSettings: Codable {
     var enableANSIColor: Bool = true
     var fontRenderingQuality: Int = 0  // 0=Default, 1=AntiAlias, 2=Subpixel
 
+    // Window extended settings (port of IDD_TABSHEET_VISUAL window section)
+    var enableBoldDisplay: Bool = true       // Enable bold text rendering
+    var hideWindowFrame: Bool = false         // Frameless window display
+    var enableAixtermColors: Bool = false     // aixterm 16 color mode
+    var enableXterm256Colors: Bool = true     // xterm 256 color mode
+    var useStandardBGColor: Bool = false      // Always use standard background color
+    // Attribute-specific colors (Normal/Bold/Blink/Reverse/URL/Underline)
+    var attrColorNormal: TerminalColor = TerminalColor(r: 255, g: 255, b: 255)
+    var attrColorBold: TerminalColor = TerminalColor(r: 255, g: 255, b: 0)
+    var attrColorBlink: TerminalColor = TerminalColor(r: 255, g: 128, b: 0)
+    var attrColorReverse: TerminalColor = TerminalColor(r: 0, g: 255, b: 255)
+    var attrColorURL: TerminalColor = TerminalColor(r: 0, g: 128, b: 255)
+    var attrColorUnderline: TerminalColor = TerminalColor(r: 0, g: 255, b: 0)
+
+    // Font extended settings
+    var resizeFontToFitWidth: Bool = false   // Resize font to fit drawing width
+
+    // Background image settings (Theme)
+    var bgImagePath: String = ""              // Background image file path
+    var bgImageAlphaNormal: Double = 1.0      // Transparency for normal text (0.0-1.0)
+    var bgImageAlphaReverse: Double = 1.0     // Transparency for reverse text (0.0-1.0)
+    var bgImageAlphaOther: Double = 1.0       // Transparency for other elements (0.0-1.0)
+
     // Plugin
     var pluginDirectories: [String] = []
 
@@ -554,6 +593,8 @@ class TerminalSettings: Codable {
     var logRotateEnabled: Bool = false
     var logRotateSize: Int = 0
     var logRotateStep: Int = 0
+    var logBOM: Bool = false              // Write UTF-8 BOM at start of log
+    var logTimestampType: Int = 0         // 0=Local, 1=UTC, 2=Elapsed time
 
     // File Transfer folder
     var fileTransferFolder: String = ""

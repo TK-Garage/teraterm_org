@@ -29,6 +29,8 @@ struct LogOptions {
     var appendMode: Bool = false
     var autoStart: Bool = false
     var includeScreenBuffer: Bool = false
+    var writeBOM: Bool = false           // Write UTF-8 BOM at start
+    var timestampType: LogTimestampType = .local  // Timestamp type: local/UTC/elapsed
 }
 
 // MARK: - Terminal Logger (port of filesys_log.cpp)
@@ -54,9 +56,38 @@ class TerminalLogger {
 
     var onStateChanged: ((LogState) -> Void)?
 
+    private var logStartTime: Date = Date()
+
     init(options: LogOptions = LogOptions()) {
         self.options = options
-        dateFormatter.dateFormat = options.timestampFormat
+        configureDateFormatter()
+    }
+
+    private func configureDateFormatter() {
+        switch options.timestampType {
+        case .local:
+            dateFormatter.dateFormat = options.timestampFormat
+            dateFormatter.timeZone = .current
+        case .utc:
+            dateFormatter.dateFormat = options.timestampFormat
+            dateFormatter.timeZone = TimeZone(identifier: "UTC")
+        case .elapsed:
+            dateFormatter.dateFormat = options.timestampFormat
+        }
+    }
+
+    func formattedTimestamp() -> String {
+        switch options.timestampType {
+        case .local, .utc:
+            return dateFormatter.string(from: Date())
+        case .elapsed:
+            let elapsed = Date().timeIntervalSince(logStartTime)
+            let hours = Int(elapsed) / 3600
+            let minutes = (Int(elapsed) % 3600) / 60
+            let seconds = Int(elapsed) % 60
+            let ms = Int((elapsed.truncatingRemainder(dividingBy: 1)) * 1000)
+            return String(format: "%02d:%02d:%02d.%03d", hours, minutes, seconds, ms)
+        }
     }
 
     // MARK: - Start/Stop Logging
@@ -64,6 +95,7 @@ class TerminalLogger {
     func startLogging(to path: String, options: LogOptions? = nil) -> Bool {
         if let opts = options {
             self.options = opts
+            configureDateFormatter()
         }
 
         let fileManager = FileManager.default
@@ -84,9 +116,16 @@ class TerminalLogger {
         state = .active
         bytesLogged = 0
         escapeState = .normal
+        logStartTime = Date()
+
+        // Write UTF-8 BOM if configured
+        if self.options.writeBOM && !self.options.appendMode {
+            let bom = Data([0xEF, 0xBB, 0xBF])
+            writeRawToLog(bom)
+        }
 
         // Write log header
-        let header = "=== Tera Term Mac Log Start: \(dateFormatter.string(from: Date())) ===\n"
+        let header = "=== Tera Term Mac Log Start: \(formattedTimestamp()) ===\n"
         writeToLog(header)
 
         onStateChanged?(.active)
@@ -97,7 +136,7 @@ class TerminalLogger {
         guard state != .inactive else { return }
 
         // Write log footer
-        let footer = "\n=== Tera Term Mac Log End: \(dateFormatter.string(from: Date())) ===\n"
+        let footer = "\n=== Tera Term Mac Log End: \(formattedTimestamp()) ===\n"
         writeToLog(footer)
 
         fileHandle?.closeFile()
@@ -139,7 +178,7 @@ class TerminalLogger {
         guard state == .active else { return }
         var line = ""
         if options.addTimestamp {
-            line += "[\(dateFormatter.string(from: Date()))] "
+            line += "[\(formattedTimestamp())] "
         }
         line += "# \(comment)\n"
         writeToLog(line)
