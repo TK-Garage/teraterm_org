@@ -812,3 +812,27 @@
 "dialog.generalSetup.titleFormat" = "Title format";
 "dialog.generalSetup.titleHostname" = "Hostname";
 "dialog.generalSetup.titleSession" = "Session No.";
+
+/* Multilingual Settings System */
+"settings.multilingual.title" = "Tera Term: Multilingual Settings";
+"settings.multilingual.languageSection" = "Language Settings";
+"settings.multilingual.currentLanguage" = "Current Language:";
+"settings.multilingual.autoDetect" = "Use system language";
+"settings.multilingual.restartRequired" = "Restart required to apply language changes.";
+"settings.multilingual.apply" = "Apply";
+"settings.multilingual.preview" = "Preview";
+
+/* Dynamic Layout Test Labels */
+"settings.layout.terminalEmulation" = "Terminal Emulation Settings";
+"settings.layout.connectionSettings" = "Connection Settings";
+"settings.layout.displaySettings" = "Display Settings";
+"settings.layout.keyboardShortcuts" = "Keyboard Shortcuts";
+"settings.layout.characterEncoding" = "Character Encoding";
+"settings.layout.scrollBufferSettings" = "Scroll Buffer Settings";
+"settings.layout.autoWrapMode" = "Automatic Line Wrapping Mode";
+"settings.layout.transmitDelaySettings" = "Transmit Delay Settings (ms/char)";
+
+/* Localization Validation */
+"validation.truncation.warning" = "Text truncation detected";
+"validation.layout.overflow" = "Layout overflow detected";
+"validation.language.mismatch" = "Language mismatch detected";

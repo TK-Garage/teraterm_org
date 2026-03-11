@@ -812,3 +812,27 @@
 "dialog.generalSetup.titleFormat" = "タイトル形式";
 "dialog.generalSetup.titleHostname" = "ホスト名";
 "dialog.generalSetup.titleSession" = "セッション番号";
+
+/* 多言語設定システム */
+"settings.multilingual.title" = "Tera Term: 多言語設定";
+"settings.multilingual.languageSection" = "言語設定";
+"settings.multilingual.currentLanguage" = "現在の言語:";
+"settings.multilingual.autoDetect" = "システムの言語を使用";
+"settings.multilingual.restartRequired" = "言語変更を適用するには再起動が必要です。";
+"settings.multilingual.apply" = "適用";
+"settings.multilingual.preview" = "プレビュー";
+
+/* 動的レイアウトテストラベル */
+"settings.layout.terminalEmulation" = "端末エミュレーション設定";
+"settings.layout.connectionSettings" = "接続設定";
+"settings.layout.displaySettings" = "表示設定";
+"settings.layout.keyboardShortcuts" = "キーボードショートカット";
+"settings.layout.characterEncoding" = "文字エンコーディング";
+"settings.layout.scrollBufferSettings" = "スクロールバッファ設定";
+"settings.layout.autoWrapMode" = "自動折り返しモード";
+"settings.layout.transmitDelaySettings" = "送信遅延設定 (ミリ秒/文字)";
+
+/* ローカライズ検証 */
+"validation.truncation.warning" = "テキストの切り詰めを検出しました";
+"validation.layout.overflow" = "レイアウトのオーバーフローを検出しました";
+"validation.language.mismatch" = "言語の不一致を検出しました";

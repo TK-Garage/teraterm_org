@@ -586,3 +586,57 @@ SSH 関連設定。オリジナルは TTSSH プラグインが管理するため
 - **x** : Mac 版で未対応（Windows 専用機能、または未実装）
 - **型**: `on/off` = GetOnOff (off=0,on=非0), `int` = GetPrivateProfileInt, `string` = GetPrivateProfileString
 - INI ファイルの値は全てテキスト表現。bool は `on`/`off` 文字列で保存。
+
+---
+
+## 多言語対応 (Localization) 状況
+
+全てのメニュー項目、ダイアログラベル、ボタン、ツールチップは `NSLocalizedString` 経由で
+`Localizable.strings` から取得する設計。
+
+### 対応言語
+
+| 言語 | リソース | ステータス |
+|------|---------|-----------|
+| English (en) | `en.lproj/Localizable.strings` | Yes — 完全対応 |
+| 日本語 (ja) | `ja.lproj/Localizable.strings` | Yes — 完全対応 |
+
+### ローカライズ済みUIコンポーネント
+
+| コンポーネント | ローカライズ | NSStackView動的レイアウト | テスト済み |
+|--------------|------------|------------------------|----------|
+| メインメニュー (File/Edit/Setup/Code/Control/Window/Help) | Yes | N/A (NSMenu) | Yes |
+| 接続ダイアログ (IDD_HOSTDLG) | Yes | Yes | Yes |
+| 端末設定ダイアログ (IDD_TERMDLG) | Yes | Yes (LocalizedTerminalSetupViewController) | Yes |
+| ウインドウ設定ダイアログ (IDD_WINDLG) | Yes | — | Yes |
+| キーボード設定ダイアログ | Yes | — | Yes |
+| シリアルポート設定ダイアログ (IDD_SERIALDLG) | Yes | — | Yes |
+| SSH認証ダイアログ | Yes | — | Yes |
+| SSH設定ダイアログ群 (IDD_SSHSETUP等) | Yes | — | Yes |
+| プロキシ設定ダイアログ (IDD_SETTING) | Yes | — | Yes |
+| その他の設定 13タブ (AdditionalSettings) | Yes | — | Yes |
+| ファイル転送ダイアログ群 | Yes | — | Yes |
+| ブロードキャストダイアログ | Yes | — | Yes |
+| セキュリティダイアログ群 (Unknown Host等) | Yes | — | Yes |
+| マクロダイアログ群 (messagebox等) | Yes | — | Yes |
+| SCP ダイアログ | Yes | — | Yes |
+
+### テスト検証体制
+
+| テスト種別 | ファイル | 内容 |
+|-----------|--------|------|
+| XCUITest 言語切替 | `MultilingualSettingsTests.swift` | `-AppleLanguages (ja/en)` で起動し、メニュー・ボタン翻訳を検証 |
+| ローカライズキー検証 | `MultilingualSettingsTests.swift` | 全ての重要キーが en/ja 両方で値を持つことを確認 |
+| はみ出し検知 | `MultilingualSnapshotTests.swift` | NSButton/NSTextField のフレーム幅 vs テキスト幅を比較 |
+| PNG スナップショット | `MultilingualSnapshotTests.swift` | 各言語のダイアログ状態を PNG で保存し、視覚的に検証 |
+| NSStackView検証 | `MultilingualSettingsTests.swift` | Compression Resistance が高いことを確認し、ラベル切れを防止 |
+
+### INI の Language プロパティとの連携
+
+INI ファイルの `UILanguageFile` キーに言語設定が保存されている場合、
+`TerminalSettings.language` プロパティにマッピングされる。
+アプリ起動時にこの値を `UserDefaults.standard.set(["ja"], forKey: "AppleLanguages")`
+等で適用することで、INI ファイルの言語設定をシステム言語より優先させることが可能。
+
+ただし macOS では OS 標準のローカライズ機構を尊重し、INI からの言語上書きは
+Additional Settings > UI タブ の「言語」設定からのみ行う設計とする。
