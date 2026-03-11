@@ -109,11 +109,11 @@
 
 | Windows版の機能 | 備考 |
 |----------------|------|
-| すべて最小化 | 全ウインドウの最小化 |
-| 重ねて表示 | カスケード配置 |
-| 上下に並べて表示 | タイル配置 (縦) |
-| 左右に並べて表示 | タイル配置 (横) |
-| すべて復元 | 全ウインドウの復元 |
+| ~~すべて最小化~~ | ~~全ウインドウの最小化~~ → **実装済み** (`minimizeAllWindows()` + NSWindow.miniaturize) |
+| ~~重ねて表示~~ | ~~カスケード配置~~ → **実装済み** (`cascadeAllWindows()` + NSWindow.cascadeTopLeft) |
+| ~~上下に並べて表示~~ | ~~タイル配置 (縦)~~ → **実装済み** (`tileWindowsVertically()` + visibleFrame分割) |
+| ~~左右に並べて表示~~ | ~~タイル配置 (横)~~ → **実装済み** (`tileWindowsHorizontally()` + visibleFrame分割) |
+| ~~すべて復元~~ | ~~全ウインドウの復元~~ → **実装済み** (`restoreAllWindows()` + NSWindow.deminiaturize) |
 
 ### キーボード設定
 

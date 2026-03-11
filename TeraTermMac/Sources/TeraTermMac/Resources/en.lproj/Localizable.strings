@@ -97,6 +97,11 @@
 "menu.window.minimize" = "Minimize";
 "menu.window.zoom" = "Zoom";
 "menu.window.windowList" = "Window List";
+"menu.window.minimizeAll" = "Minimize All";
+"menu.window.restoreAll" = "Restore All";
+"menu.window.cascade" = "Cascade";
+"menu.window.tileVertical" = "Tile Vertically";
+"menu.window.tileHorizontal" = "Tile Horizontally";
 
 /* Help Menu */
 "menu.help" = "Help";

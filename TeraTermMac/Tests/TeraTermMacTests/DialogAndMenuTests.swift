@@ -534,10 +534,13 @@ final class MenuStructureTests: XCTestCase {
 
     func testWindowMenuHasAllItems() {
         let expectedWindowItems = [
-            "Minimize", "Zoom", "Window list"
+            "Minimize", "Zoom",
+            "Minimize All", "Cascade",
+            "Tile Vertically", "Tile Horizontally",
+            "Restore All", "Window List"
         ]
-        XCTAssertEqual(expectedWindowItems.count, 3,
-            "Window menu should have 3 items")
+        XCTAssertEqual(expectedWindowItems.count, 8,
+            "Window menu should have 8 items")
     }
 }
 

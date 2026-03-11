@@ -405,6 +405,18 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         let zoomItem = windowMenu.addItem(withTitle: L("menu.window.zoom"), action: #selector(NSWindow.performZoom(_:)), keyEquivalent: "")
         setSymbol("arrow.up.left.and.arrow.down.right", for: zoomItem)
         windowMenu.addItem(NSMenuItem.separator())
+        windowMenu.addItem(NSMenuItem.separator())
+        let minAllItem = windowMenu.addItem(withTitle: L("menu.window.minimizeAll"), action: #selector(minimizeAllWindows(_:)), keyEquivalent: "")
+        setSymbol("arrow.down.to.line.compact", for: minAllItem)
+        let cascadeItem = windowMenu.addItem(withTitle: L("menu.window.cascade"), action: #selector(cascadeAllWindows(_:)), keyEquivalent: "")
+        setSymbol("square.on.square", for: cascadeItem)
+        let tileVItem = windowMenu.addItem(withTitle: L("menu.window.tileVertical"), action: #selector(tileWindowsVertically(_:)), keyEquivalent: "")
+        setSymbol("rectangle.split.1x2", for: tileVItem)
+        let tileHItem = windowMenu.addItem(withTitle: L("menu.window.tileHorizontal"), action: #selector(tileWindowsHorizontally(_:)), keyEquivalent: "")
+        setSymbol("rectangle.split.2x1", for: tileHItem)
+        let restoreAllItem = windowMenu.addItem(withTitle: L("menu.window.restoreAll"), action: #selector(restoreAllWindows(_:)), keyEquivalent: "")
+        setSymbol("arrow.up.to.line.compact", for: restoreAllItem)
+        windowMenu.addItem(NSMenuItem.separator())
         let winListItem = windowMenu.addItem(withTitle: L("menu.window.windowList"), action: #selector(showWindowList(_:)), keyEquivalent: "")
         setSymbol("list.bullet.rectangle", for: winListItem)
         NSApp.windowsMenu = windowMenu
@@ -623,6 +635,96 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
     @objc func showWindowList(_ sender: Any?) {
         guard let win = activeWindowController?.window else { return }
         WindowListDialog.show(on: win) { _ in }
+    }
+
+    // MARK: - Window Arrangement (port of ID_WINDOW_MINIMIZEALL / CASCADE / STACKED / SIDEBYSIDE / RESTOREALL)
+
+    /// Minimize all Tera Term windows (port of OnWindowMinimizeAll → ShowAllWin(SW_MINIMIZE))
+    @objc func minimizeAllWindows(_ sender: Any?) {
+        for wc in windowControllers {
+            wc.window?.miniaturize(nil)
+        }
+    }
+
+    /// Cascade all Tera Term windows (port of OnWindowCascade → ShowAllWinCascade)
+    @objc func cascadeAllWindows(_ sender: Any?) {
+        // Restore any minimized windows first
+        for wc in windowControllers {
+            if wc.window?.isMiniaturized == true {
+                wc.window?.deminiaturize(nil)
+            }
+        }
+        // Use macOS standard cascade: NSWindow.cascadeTopLeftFrom(_:)
+        var topLeft = NSPoint.zero
+        for wc in windowControllers {
+            guard let win = wc.window else { continue }
+            topLeft = win.cascadeTopLeft(from: topLeft)
+        }
+    }
+
+    /// Tile all Tera Term windows vertically / stacked (port of OnWindowStacked → TileWindows MDITILE_HORIZONTAL)
+    /// Note: Windows "Stacked" = vertically stacked = split screen top/bottom
+    @objc func tileWindowsVertically(_ sender: Any?) {
+        tileWindows(horizontal: false)
+    }
+
+    /// Tile all Tera Term windows horizontally / side by side (port of OnWindowSidebySide → TileWindows MDITILE_VERTICAL)
+    /// Note: Windows "Side by Side" = horizontally side-by-side = split screen left/right
+    @objc func tileWindowsHorizontally(_ sender: Any?) {
+        tileWindows(horizontal: true)
+    }
+
+    /// Restore all Tera Term windows (port of OnWindowRestoreAll → ShowAllWin(SW_RESTORE))
+    @objc func restoreAllWindows(_ sender: Any?) {
+        for wc in windowControllers {
+            if wc.window?.isMiniaturized == true {
+                wc.window?.deminiaturize(nil)
+            }
+            if wc.window?.isZoomed == true {
+                wc.window?.zoom(nil)
+            }
+        }
+    }
+
+    /// Tile windows in a grid layout on the main screen.
+    private func tileWindows(horizontal: Bool) {
+        let visibleControllers = windowControllers.filter { $0.window != nil }
+        guard !visibleControllers.isEmpty else { return }
+
+        // Restore minimized windows first
+        for wc in visibleControllers {
+            if wc.window?.isMiniaturized == true {
+                wc.window?.deminiaturize(nil)
+            }
+        }
+
+        guard let screen = NSScreen.main else { return }
+        let frame = screen.visibleFrame
+        let count = visibleControllers.count
+
+        if horizontal {
+            // Side by side: split horizontally (left/right)
+            let width = frame.width / CGFloat(count)
+            for (i, wc) in visibleControllers.enumerated() {
+                let rect = NSRect(
+                    x: frame.origin.x + width * CGFloat(i),
+                    y: frame.origin.y,
+                    width: width,
+                    height: frame.height)
+                wc.window?.setFrame(rect, display: true)
+            }
+        } else {
+            // Stacked: split vertically (top/bottom)
+            let height = frame.height / CGFloat(count)
+            for (i, wc) in visibleControllers.enumerated() {
+                let rect = NSRect(
+                    x: frame.origin.x,
+                    y: frame.origin.y + height * CGFloat(count - 1 - i),
+                    width: frame.width,
+                    height: height)
+                wc.window?.setFrame(rect, display: true)
+            }
+        }
     }
 
     @objc func xmodemSend(_ sender: Any?) { activeWindowController?.sendFile(protocol: .xmodemCRC) }
@@ -1173,6 +1275,12 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
             return logState != .inactive
 
         case #selector(quitAllTeraTerm(_:)):
+            return !windowControllers.isEmpty
+        case #selector(minimizeAllWindows(_:)),
+             #selector(cascadeAllWindows(_:)),
+             #selector(tileWindowsVertically(_:)),
+             #selector(tileWindowsHorizontally(_:)),
+             #selector(restoreAllWindows(_:)):
             return !windowControllers.isEmpty
 
         case #selector(toggleBroadcast(_:)):

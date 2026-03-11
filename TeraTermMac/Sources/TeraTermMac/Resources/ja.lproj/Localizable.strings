@@ -97,6 +97,11 @@
 "menu.window.minimize" = "しまう";
 "menu.window.zoom" = "拡大/縮小";
 "menu.window.windowList" = "ウインドウ一覧";
+"menu.window.minimizeAll" = "すべて最小化";
+"menu.window.restoreAll" = "すべて復元";
+"menu.window.cascade" = "重ねて表示";
+"menu.window.tileVertical" = "上下に並べて表示";
+"menu.window.tileHorizontal" = "左右に並べて表示";
 
 /* Help Menu */
 "menu.help" = "ヘルプ";
