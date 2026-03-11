@@ -1034,7 +1034,7 @@ private final class AlgorithmOrderListView: NSView, NSTableViewDataSource, NSTab
 
     // MARK: - Actions
 
-    @objc private func moveUp(_ sender: Any?) {
+    @objc override func moveUp(_ sender: Any?) {
         let row = tableView.selectedRow
         guard row > 0 else { return }
         items.swapAt(row, row - 1)
@@ -1042,7 +1042,7 @@ private final class AlgorithmOrderListView: NSView, NSTableViewDataSource, NSTab
         tableView.selectRowIndexes(IndexSet(integer: row - 1), byExtendingSelection: false)
     }
 
-    @objc private func moveDown(_ sender: Any?) {
+    @objc override func moveDown(_ sender: Any?) {
         let row = tableView.selectedRow
         guard row >= 0, row < items.count - 1 else { return }
         items.swapAt(row, row + 1)

@@ -62,6 +62,19 @@
 		BB0001000000000000000035 /* FileTransferTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0001000000000000000038 /* FileTransferTests.swift */; };
 		BB0001000000000000000036 /* SettingsApplicationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0001000000000000000039 /* SettingsApplicationTests.swift */; };
 		BB0001000000000000000037 /* SSHSetupDialogs.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000100000000000000003A /* SSHSetupDialogs.swift */; };
+		BB0001000000000000000038 /* KeymapLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000100000000000000003B /* KeymapLoader.swift */; };
+		BB0001000000000000000039 /* TEKWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000100000000000000003C /* TEKWindowController.swift */; };
+		BB000100000000000000003A /* BroadcastDialog.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000100000000000000003D /* BroadcastDialog.swift */; };
+		BB000100000000000000003B /* TransferMenuProtocolTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000100000000000000003E /* TransferMenuProtocolTests.swift */; };
+		BB000100000000000000003C /* KeyboardSetupTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000100000000000000003F /* KeyboardSetupTests.swift */; };
+		BB000100000000000000003D /* SecurityBroadcastDisplayTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0001000000000000000040 /* SecurityBroadcastDisplayTests.swift */; };
+		BB000100000000000000003E /* ExtendedSettingsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0001000000000000000041 /* ExtendedSettingsTests.swift */; };
+		BB000100000000000000003F /* LogAndMenuFeatureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0001000000000000000042 /* LogAndMenuFeatureTests.swift */; };
+		BB0001000000000000000040 /* WindowMenuTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0001000000000000000043 /* WindowMenuTests.swift */; };
+		BB0001000000000000000041 /* MacroFileEncodingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0001000000000000000044 /* MacroFileEncodingTests.swift */; };
+		BB0001000000000000000042 /* KeymapLoaderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0001000000000000000045 /* KeymapLoaderTests.swift */; };
+		BB0001000000000000000043 /* TTLFileTransferCommandTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0001000000000000000046 /* TTLFileTransferCommandTests.swift */; };
+		BB0001000000000000000044 /* FileTransferFileSelectionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0001000000000000000047 /* FileTransferFileSelectionTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -132,6 +145,19 @@
 		AA0001000000000000000038 /* FileTransferTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileTransferTests.swift; sourceTree = "<group>"; };
 		AA0001000000000000000039 /* SettingsApplicationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsApplicationTests.swift; sourceTree = "<group>"; };
 		AA000100000000000000003A /* SSHSetupDialogs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SSHSetupDialogs.swift; sourceTree = "<group>"; };
+		AA000100000000000000003B /* KeymapLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeymapLoader.swift; sourceTree = "<group>"; };
+		AA000100000000000000003C /* TEKWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TEKWindowController.swift; sourceTree = "<group>"; };
+		AA000100000000000000003D /* BroadcastDialog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BroadcastDialog.swift; sourceTree = "<group>"; };
+		AA000100000000000000003E /* TransferMenuProtocolTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransferMenuProtocolTests.swift; sourceTree = "<group>"; };
+		AA000100000000000000003F /* KeyboardSetupTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardSetupTests.swift; sourceTree = "<group>"; };
+		AA0001000000000000000040 /* SecurityBroadcastDisplayTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecurityBroadcastDisplayTests.swift; sourceTree = "<group>"; };
+		AA0001000000000000000041 /* ExtendedSettingsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExtendedSettingsTests.swift; sourceTree = "<group>"; };
+		AA0001000000000000000042 /* LogAndMenuFeatureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogAndMenuFeatureTests.swift; sourceTree = "<group>"; };
+		AA0001000000000000000043 /* WindowMenuTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowMenuTests.swift; sourceTree = "<group>"; };
+		AA0001000000000000000044 /* MacroFileEncodingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacroFileEncodingTests.swift; sourceTree = "<group>"; };
+		AA0001000000000000000045 /* KeymapLoaderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeymapLoaderTests.swift; sourceTree = "<group>"; };
+		AA0001000000000000000046 /* TTLFileTransferCommandTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TTLFileTransferCommandTests.swift; sourceTree = "<group>"; };
+		AA0001000000000000000047 /* FileTransferFileSelectionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileTransferFileSelectionTests.swift; sourceTree = "<group>"; };
 		DD0001000000000000000004 /* TeraTermMac.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TeraTermMac.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		DD0001000000000000000005 /* TeraTermMacTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TeraTermMacTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -188,6 +214,7 @@
 				AA0001000000000000000002 /* AppDelegate.swift */,
 				AA0001000000000000000003 /* TerminalWindowController.swift */,
 				AA0001000000000000000004 /* TerminalLog.swift */,
+				AA000100000000000000003C /* TEKWindowController.swift */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -231,6 +258,7 @@
 			isa = PBXGroup;
 			children = (
 				AA000100000000000000000B /* KeyboardHandler.swift */,
+				AA000100000000000000003B /* KeymapLoader.swift */,
 			);
 			path = Keyboard;
 			sourceTree = "<group>";
@@ -268,6 +296,7 @@
 				AA0001000000000000000033 /* AdditionalSettingsController.swift */,
 				AA0001000000000000000034 /* NSView+DebugSnapshot.swift */,
 				AA000100000000000000003A /* SSHSetupDialogs.swift */,
+				AA000100000000000000003D /* BroadcastDialog.swift */,
 			);
 			path = Settings;
 			sourceTree = "<group>";
@@ -325,6 +354,16 @@
 				AA0001000000000000000037 /* FileTransferSelfTests.swift */,
 				AA0001000000000000000038 /* FileTransferTests.swift */,
 				AA0001000000000000000039 /* SettingsApplicationTests.swift */,
+				AA000100000000000000003E /* TransferMenuProtocolTests.swift */,
+				AA000100000000000000003F /* KeyboardSetupTests.swift */,
+				AA0001000000000000000040 /* SecurityBroadcastDisplayTests.swift */,
+				AA0001000000000000000041 /* ExtendedSettingsTests.swift */,
+				AA0001000000000000000042 /* LogAndMenuFeatureTests.swift */,
+				AA0001000000000000000043 /* WindowMenuTests.swift */,
+				AA0001000000000000000044 /* MacroFileEncodingTests.swift */,
+				AA0001000000000000000045 /* KeymapLoaderTests.swift */,
+				AA0001000000000000000046 /* TTLFileTransferCommandTests.swift */,
+				AA0001000000000000000047 /* FileTransferFileSelectionTests.swift */,
 			);
 			path = TeraTermMacTests;
 			sourceTree = "<group>";
@@ -474,6 +513,9 @@
 				BB0001000000000000000030 /* AdditionalSettingsController.swift in Sources */,
 				BB0001000000000000000031 /* NSView+DebugSnapshot.swift in Sources */,
 				BB0001000000000000000037 /* SSHSetupDialogs.swift in Sources */,
+				BB0001000000000000000038 /* KeymapLoader.swift in Sources */,
+				BB0001000000000000000039 /* TEKWindowController.swift in Sources */,
+				BB000100000000000000003A /* BroadcastDialog.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -503,6 +545,16 @@
 				BB0001000000000000000034 /* FileTransferSelfTests.swift in Sources */,
 				BB0001000000000000000035 /* FileTransferTests.swift in Sources */,
 				BB0001000000000000000036 /* SettingsApplicationTests.swift in Sources */,
+				BB000100000000000000003B /* TransferMenuProtocolTests.swift in Sources */,
+				BB000100000000000000003C /* KeyboardSetupTests.swift in Sources */,
+				BB000100000000000000003D /* SecurityBroadcastDisplayTests.swift in Sources */,
+				BB000100000000000000003E /* ExtendedSettingsTests.swift in Sources */,
+				BB000100000000000000003F /* LogAndMenuFeatureTests.swift in Sources */,
+				BB0001000000000000000040 /* WindowMenuTests.swift in Sources */,
+				BB0001000000000000000041 /* MacroFileEncodingTests.swift in Sources */,
+				BB0001000000000000000042 /* KeymapLoaderTests.swift in Sources */,
+				BB0001000000000000000043 /* TTLFileTransferCommandTests.swift in Sources */,
+				BB0001000000000000000044 /* FileTransferFileSelectionTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
