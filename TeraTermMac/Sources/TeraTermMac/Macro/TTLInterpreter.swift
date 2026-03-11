@@ -1895,8 +1895,8 @@ class TTLInterpreter {
     }
 
     private func ttlCode2Str() throws {
-        let code = try parser.getIntExpression()
         let varId = try parser.getStrVar()
+        let code = try parser.getIntExpression()
         var s = ""
         for i in stride(from: 24, through: 0, by: -8) {
             let byte = UInt8((code >> i) & 0xFF)
