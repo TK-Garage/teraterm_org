@@ -9,6 +9,118 @@
 
 import Foundation
 
+// MARK: - Macro File Encoding Detection (port of fileread.cpp LoadFileU8C)
+
+/// Detected encoding of a macro file.
+enum MacroFileEncoding {
+    case utf8
+    case utf8BOM
+    case utf16LEBOM
+    case utf16BEBOM
+    case shiftJIS       // Japanese legacy (ACP on Japanese Windows)
+    case eucJP          // Japanese Unix legacy
+    case iso2022JP      // JIS encoding
+    case ascii          // Pure ASCII (subset of UTF-8)
+}
+
+/// Auto-detects character encoding and line endings of a macro file,
+/// converting the content to a Swift String.
+///
+/// Detection order (matching original Tera Term's LoadFileU8C):
+/// 1. UTF-8 BOM (EF BB BF) → strip BOM, decode as UTF-8
+/// 2. UTF-16LE BOM (FF FE)  → decode as UTF-16LE
+/// 3. UTF-16BE BOM (FE FF)  → decode as UTF-16BE
+/// 4. Try UTF-8 (no BOM)
+/// 5. Try Shift-JIS (Windows-31J / CP932)
+/// 6. Try EUC-JP
+/// 7. Try ISO-2022-JP (JIS)
+/// 8. Fall back to ISO Latin-1 (lossless byte→char)
+struct MacroFileLoader {
+
+    struct Result {
+        let content: String
+        let encoding: MacroFileEncoding
+    }
+
+    /// Load a macro file with automatic encoding detection.
+    static func loadFile(from url: URL) throws -> Result {
+        let data = try Data(contentsOf: url)
+        return try decodeData(data)
+    }
+
+    /// Decode raw bytes with automatic encoding detection.
+    static func decodeData(_ data: Data) throws -> Result {
+        guard !data.isEmpty else {
+            return Result(content: "", encoding: .ascii)
+        }
+
+        let bytes = [UInt8](data)
+
+        // 1. Check BOM
+        if bytes.count >= 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF {
+            // UTF-8 BOM
+            let stripped = Data(bytes[3...])
+            if let str = String(data: stripped, encoding: .utf8) {
+                return Result(content: str, encoding: .utf8BOM)
+            }
+        }
+
+        if bytes.count >= 2 && bytes[0] == 0xFF && bytes[1] == 0xFE {
+            // UTF-16LE BOM
+            let stripped = Data(bytes[2...])
+            if let str = String(data: stripped, encoding: .utf16LittleEndian) {
+                return Result(content: str, encoding: .utf16LEBOM)
+            }
+        }
+
+        if bytes.count >= 2 && bytes[0] == 0xFE && bytes[1] == 0xFF {
+            // UTF-16BE BOM
+            let stripped = Data(bytes[2...])
+            if let str = String(data: stripped, encoding: .utf16BigEndian) {
+                return Result(content: str, encoding: .utf16BEBOM)
+            }
+        }
+
+        // 2. Check if valid UTF-8 (no BOM)
+        if let str = String(data: data, encoding: .utf8) {
+            // Determine if it's pure ASCII or UTF-8
+            let hasBytesAbove7F = bytes.contains { $0 > 0x7F }
+            return Result(content: str, encoding: hasBytesAbove7F ? .utf8 : .ascii)
+        }
+
+        // 3. Try Shift-JIS (CP932 / Windows-31J) — most common legacy encoding for TTL macros
+        let shiftJIS = String.Encoding(rawValue: CFStringConvertEncodingToNSStringEncoding(
+            CFStringEncoding(CFStringEncodings.dosJapanese.rawValue)))
+        if let str = String(data: data, encoding: shiftJIS) {
+            return Result(content: str, encoding: .shiftJIS)
+        }
+
+        // 4. Try EUC-JP
+        if let str = String(data: data, encoding: .japaneseEUC) {
+            return Result(content: str, encoding: .eucJP)
+        }
+
+        // 5. Try ISO-2022-JP (JIS)
+        if let str = String(data: data, encoding: .iso2022JP) {
+            return Result(content: str, encoding: .iso2022JP)
+        }
+
+        // 6. Fallback: ISO Latin-1 (never fails — 1:1 byte mapping)
+        if let str = String(data: data, encoding: .isoLatin1) {
+            return Result(content: str, encoding: .ascii)
+        }
+
+        throw TTLError.cantOpen
+    }
+
+    /// Normalize line endings: CRLF and CR → LF, then split into lines.
+    static func splitIntoLines(_ source: String) -> [String] {
+        let normalized = source.replacingOccurrences(of: "\r\n", with: "\n")
+                               .replacingOccurrences(of: "\r", with: "\n")
+        return normalized.components(separatedBy: "\n")
+    }
+}
+
 // MARK: - Constants
 
 let MaxNameLen = 128
@@ -269,8 +381,8 @@ class TTLParser {
     }
 
     func loadScript(from url: URL) throws {
-        let source = try String(contentsOf: url, encoding: .utf8)
-        loadScript(source)
+        let result = try MacroFileLoader.loadFile(from: url)
+        loadScript(result.content)
     }
 
     private func initSystemVariables() {

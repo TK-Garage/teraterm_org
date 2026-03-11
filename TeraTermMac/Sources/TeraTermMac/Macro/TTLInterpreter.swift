@@ -914,14 +914,14 @@ class TTLInterpreter {
             url = URL(fileURLWithPath: currentDir).appendingPathComponent(filename)
         }
 
-        guard let source = try? String(contentsOf: url, encoding: .utf8) else {
+        guard let result = try? MacroFileLoader.loadFile(from: url) else {
             throw TTLError.cantOpen
         }
 
         // Push current file state
         guard parser.fileStack.count < maxFileNestLevel else { throw TTLError.stackOver }
         parser.fileStack.append((lines: parser.lines, lineIndex: parser.currentLine))
-        parser.lines = source.components(separatedBy: .newlines)
+        parser.lines = MacroFileLoader.splitIntoLines(result.content)
         parser.currentLine = 0
 
         // Pre-scan labels in included file
