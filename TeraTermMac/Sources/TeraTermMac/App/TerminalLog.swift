@@ -269,12 +269,12 @@ private func LL(_ key: String) -> String {
 /// Tera Term log dialog (IDD_FOPT_LOGDLG / IDD_LOGDLG).
 final class LogProgressPanel: NSPanel {
 
-    private var filenameField: NSTextField!
-    private var fullpathField: NSTextField!
-    private var bytesField: NSTextField!
-    private var elapsedField: NSTextField!
-    private var stateField: NSTextField!
-    private var pauseButton: NSButton!
+    private var filenameField: NSTextField = NSTextField(labelWithString: "")
+    private var fullpathField: NSTextField = NSTextField(labelWithString: "")
+    private var bytesField: NSTextField = NSTextField(labelWithString: "0")
+    private var elapsedField: NSTextField = NSTextField(labelWithString: "0:00")
+    private var stateField: NSTextField = NSTextField(labelWithString: "")
+    private var pauseButton: NSButton = NSButton(title: "Pause", target: nil, action: nil)
 
     private var startTime: Date = Date()
     private var updateTimer: Timer?
