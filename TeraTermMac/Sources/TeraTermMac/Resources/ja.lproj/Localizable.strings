@@ -221,6 +221,7 @@
 "OK" = "OK";
 "Cancel" = "キャンセル";
 "Help" = "ヘルプ";
+"Close" = "閉じる";
 
 /* Paste Special Dialog */
 "dialog.pasteSpecial.title" = "特殊貼り付け";
@@ -235,9 +236,48 @@
 "dialog.replayLog.title" = "ログ再生";
 
 /* Broadcast Panel */
+"dialog.broadcast.title" = "ブロードキャストコマンド";
 "dialog.broadcast.label" = "接続中のすべてのセッションに送信するコマンドを入力:";
 "dialog.broadcast.placeholder" = "コマンド";
 "dialog.broadcast.send" = "送信";
+"dialog.broadcast.sendToThisOnly" = "このプロセスのみに送信";
+"dialog.broadcast.sendEnter" = "Enterキー";
+"dialog.broadcast.realtime" = "リアルタイム";
+"dialog.broadcast.windowList" = "送信先ウインドウ:";
+"dialog.broadcast.windowTitle" = "ウインドウ";
+"dialog.broadcast.bringToFront" = "前面に表示";
+"dialog.broadcast.minimize" = "最小化";
+"dialog.broadcast.selectAll" = "すべて選択";
+"dialog.broadcast.invertSelection" = "選択を反転";
+
+/* SSH Security Dialogs */
+"dialog.security.unknownHost.title" = "未知のホスト鍵";
+"dialog.security.unknownHost.message" = "サーバー '%@' が提示したホスト鍵は known_hosts ファイルに登録されていません。\n\n鍵の種類: %@\nフィンガープリント: %@\n\n接続を続行しますか？";
+"dialog.security.differentKey.title" = "ホスト鍵の変更";
+"dialog.security.differentKey.message" = "警告: '%@' のホスト鍵が変更されています！\n\n鍵の種類: %@\n\n中間者攻撃の可能性、またはサーバーが再構成された可能性があります。";
+"dialog.security.differentKey.warning" = "警告: セキュリティ上の脅威の可能性があります！";
+"dialog.security.differentTypeKey.title" = "鍵の種類が異なります";
+"dialog.security.differentTypeKey.message" = "サーバー '%@' は、保存されている種類 '%@' ではなく '%@' の鍵を提示しました。\n\n新しいフィンガープリント: %@";
+"dialog.security.storedFingerprint" = "保存済みフィンガープリント:";
+"dialog.security.newFingerprint" = "新しいフィンガープリント:";
+"dialog.security.accept" = "承認して保存";
+"dialog.security.acceptOnce" = "今回のみ承認";
+"dialog.security.reject" = "切断";
+"dialog.security.keyType" = "鍵の種類: %@";
+"dialog.security.fingerprint" = "フィンガープリント: %@";
+"dialog.security.keyRotation.title" = "ホスト鍵のローテーション";
+"dialog.security.keyRotation.message" = "サーバー '%@' が鍵ローテーションにより新しいホスト鍵を提供しています。\n\n旧鍵の種類: %@\n新鍵の種類: %@\n新しいフィンガープリント: %@\n\n保存されているホスト鍵を更新しますか？";
+"dialog.security.keyRotation.accept" = "鍵を更新";
+"dialog.security.keyRotation.reject" = "現在の鍵を保持";
+"dialog.security.sshfp.result" = "SSHFP DNS検証: %@";
+"dialog.security.sshfp.matchedTitle" = "SSHFP 検証成功";
+"dialog.security.sshfp.matchedMessage" = "'%@' のホスト鍵は DNS SSHFP レコードと一致しました。\n\n鍵の種類: %@\nフィンガープリント: %@";
+"dialog.security.sshfp.notMatchedTitle" = "SSHFP 不一致";
+"dialog.security.sshfp.notMatchedMessage" = "警告: '%@' のホスト鍵が DNS SSHFP レコードと一致しません。\n\n鍵の種類: %@\nフィンガープリント: %@";
+"dialog.security.sshfp.notFoundTitle" = "SSHFP レコードなし";
+"dialog.security.sshfp.notFoundMessage" = "'%@' の SSHFP DNS レコードが見つかりません。";
+"dialog.security.sshfp.insecureTitle" = "SSHFP 安全でない";
+"dialog.security.sshfp.insecureMessage" = "'%@' の SSHFP レコードは見つかりましたが、DNS応答がDNSSECで保護されていません。";
 
 /* About Dialog */
 "dialog.about.title" = "Tera Term Mac";
@@ -441,14 +481,38 @@
 "dialog.copyPaste.autoTextCopy" = "選択時に自動でクリップボードにコピーする";
 "dialog.copyPaste.delimiterList" = "区切り文字:";
 "dialog.copyPaste.pasteDelay" = "貼り付けの行間遅延(ミリ秒):";
+"dialog.copyPaste.disableRightClickPaste" = "右クリックでの貼り付けを無効にする";
+"dialog.copyPaste.confirmRightClickPaste" = "右クリックでの貼り付け確認";
+"dialog.copyPaste.disableMiddleClickPaste" = "中クリックでの貼り付けを無効にする";
+"dialog.copyPaste.leftClickOnlySelection" = "左クリックでのみ選択を開始する";
+"dialog.copyPaste.trimTrailingNewline" = "貼り付け時に末尾の改行を削除する";
+"dialog.copyPaste.confirmDangerousClipboard" = "危険なクリップボードの貼り付け確認";
+"dialog.copyPaste.dangerousKeywordFile" = "キーワードファイル:";
+"dialog.copyPaste.enableSelectionOnActivate" = "ウインドウアクティブ化時に文字選択を有効にする";
+"dialog.copyPaste.pasteSettings" = "貼り付け設定";
+"dialog.copyPaste.securitySettings" = "セキュリティ";
 
 /* Additional Settings - Sequence */
 "dialog.sequence.mouseEventTracking" = "マウスイベント通知要求を受け入れる";
+"dialog.sequence.disableControlKeyMouse" = "Controlキー押下中のマウスイベントを無効にする";
 "dialog.sequence.titleChanging" = "ウインドウタイトルの変更要求を受け入れる";
+"dialog.sequence.titleChangeMode" = "タイトル変更モード:";
+"dialog.sequence.titleModeOverwrite" = "上書き";
+"dialog.sequence.titleModePrepend" = "前に追加";
+"dialog.sequence.titleModeAppend" = "後に追加";
 "dialog.sequence.titleReport" = "ウインドウタイトルの報告要求";
 "dialog.sequence.windowControl" = "ウインドウ操作制御シーケンス";
+"dialog.sequence.windowInfoReport" = "ウインドウ情報報告シーケンス";
 "dialog.sequence.cursorControl" = "カーソル形状/点滅変更制御シーケンス";
 "dialog.sequence.clipboardAccess" = "リモートからのクリップボードアクセス";
+"dialog.sequence.clipboardAccessMode" = "クリップボードアクセスモード:";
+"dialog.sequence.clipOff" = "無効";
+"dialog.sequence.clipReadWrite" = "読込/書込";
+"dialog.sequence.clipReadOnly" = "読込のみ";
+"dialog.sequence.clipWriteOnly" = "書込のみ";
+"dialog.sequence.notifyClipboardAccess" = "リモートからのクリップボードアクセスを通知する";
+"dialog.sequence.acceptScrollBufferClear" = "リモートからのスクロールバッファ消去を受け入れる";
+"dialog.sequence.disablePrintSequence" = "印字開始シーケンスを無効にする";
 "dialog.sequence.beep" = "ベル:";
 "dialog.sequence.beepOff" = "無効";
 "dialog.sequence.beepSystem" = "サウンド";
@@ -483,6 +547,25 @@
 "dialog.visual.inactive" = "非アクティブ時:";
 "dialog.visual.ansiColorPalette" = "ANSIカラーパレット";
 "dialog.visual.charAttributes" = "文字属性";
+"dialog.visual.mouseCursor" = "マウスカーソル:";
+"dialog.visual.cursorArrow" = "矢印";
+"dialog.visual.cursorIBeam" = "I-Beam";
+"dialog.visual.cursorCrosshair" = "十字";
+"dialog.visual.cursorHidden" = "非表示";
+"dialog.visual.fontRenderingQuality" = "フォントの品質:";
+"dialog.visual.qualityDefault" = "デフォルト";
+"dialog.visual.qualityAntiAlias" = "アンチエイリアス";
+"dialog.visual.qualitySubpixel" = "サブピクセル (ClearType)";
+"dialog.visual.attrColorFont" = "属性別カラー / フォント";
+"dialog.visual.enableBoldColor" = "太字属性色を有効にする";
+"dialog.visual.enableBoldFont" = "太字属性フォントを有効にする";
+"dialog.visual.enableBlinkColor" = "点滅属性色を有効にする";
+"dialog.visual.enableReverseColor" = "反転属性色を有効にする";
+"dialog.visual.enableUnderlineColor" = "下線属性色を有効にする";
+"dialog.visual.enableUnderlineDecoration" = "下線属性に下線を付加する";
+"dialog.visual.enableURLColor" = "URL属性色を有効にする";
+"dialog.visual.enableURLUnderline" = "URL文字列に下線を付加する";
+"dialog.visual.enableANSIColor" = "ANSIカラーを有効にする";
 "dialog.visual.flickerlessMove" = "ウインドウ移動/リサイズ時テーマを一時的に無効にする";
 
 /* Additional Settings - Font */

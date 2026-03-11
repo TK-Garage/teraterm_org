@@ -221,6 +221,7 @@
 "OK" = "OK";
 "Cancel" = "Cancel";
 "Help" = "Help";
+"Close" = "Close";
 
 /* Paste Special Dialog */
 "dialog.pasteSpecial.title" = "Paste Special";
@@ -235,9 +236,48 @@
 "dialog.replayLog.title" = "Replay Log";
 
 /* Broadcast Panel */
+"dialog.broadcast.title" = "Broadcast Command";
 "dialog.broadcast.label" = "Type a command to send to all connected sessions:";
 "dialog.broadcast.placeholder" = "command";
 "dialog.broadcast.send" = "Send";
+"dialog.broadcast.sendToThisOnly" = "Send to this process only";
+"dialog.broadcast.sendEnter" = "Send Enter";
+"dialog.broadcast.realtime" = "Real-time";
+"dialog.broadcast.windowList" = "Target windows:";
+"dialog.broadcast.windowTitle" = "Window";
+"dialog.broadcast.bringToFront" = "Bring to Front";
+"dialog.broadcast.minimize" = "Minimize";
+"dialog.broadcast.selectAll" = "Select All";
+"dialog.broadcast.invertSelection" = "Invert Selection";
+
+/* SSH Security Dialogs */
+"dialog.security.unknownHost.title" = "Unknown Host Key";
+"dialog.security.unknownHost.message" = "The server '%@' presented a host key that is not in your known_hosts file.\n\nKey type: %@\nFingerprint: %@\n\nAre you sure you want to continue connecting?";
+"dialog.security.differentKey.title" = "Host Key Changed";
+"dialog.security.differentKey.message" = "WARNING: The host key for '%@' has changed!\n\nKey type: %@\n\nThis could indicate a man-in-the-middle attack or the server has been reconfigured.";
+"dialog.security.differentKey.warning" = "WARNING: This could be a security threat!";
+"dialog.security.differentTypeKey.title" = "Different Key Type";
+"dialog.security.differentTypeKey.message" = "The server '%@' presented a key of type '%@' instead of the stored type '%@'.\n\nNew fingerprint: %@";
+"dialog.security.storedFingerprint" = "Stored fingerprint:";
+"dialog.security.newFingerprint" = "New fingerprint:";
+"dialog.security.accept" = "Accept & Save";
+"dialog.security.acceptOnce" = "Accept Once";
+"dialog.security.reject" = "Disconnect";
+"dialog.security.keyType" = "Key type: %@";
+"dialog.security.fingerprint" = "Fingerprint: %@";
+"dialog.security.keyRotation.title" = "Host Key Rotation";
+"dialog.security.keyRotation.message" = "The server '%@' is offering a new host key via key rotation.\n\nOld key type: %@\nNew key type: %@\nNew fingerprint: %@\n\nWould you like to update the stored host key?";
+"dialog.security.keyRotation.accept" = "Update Key";
+"dialog.security.keyRotation.reject" = "Keep Current Key";
+"dialog.security.sshfp.result" = "SSHFP DNS verification: %@";
+"dialog.security.sshfp.matchedTitle" = "SSHFP Verified";
+"dialog.security.sshfp.matchedMessage" = "The host key for '%@' matches the DNS SSHFP record.\n\nKey type: %@\nFingerprint: %@";
+"dialog.security.sshfp.notMatchedTitle" = "SSHFP Mismatch";
+"dialog.security.sshfp.notMatchedMessage" = "WARNING: The host key for '%@' does NOT match the DNS SSHFP record.\n\nKey type: %@\nFingerprint: %@";
+"dialog.security.sshfp.notFoundTitle" = "SSHFP Not Found";
+"dialog.security.sshfp.notFoundMessage" = "No SSHFP DNS record found for '%@'.";
+"dialog.security.sshfp.insecureTitle" = "SSHFP Insecure";
+"dialog.security.sshfp.insecureMessage" = "SSHFP record for '%@' was found but the DNS response is not secured by DNSSEC.";
 
 /* About Dialog */
 "dialog.about.title" = "Tera Term Mac";
@@ -441,14 +481,38 @@
 "dialog.copyPaste.autoTextCopy" = "Auto-copy selection to clipboard";
 "dialog.copyPaste.delimiterList" = "Delimiter list:";
 "dialog.copyPaste.pasteDelay" = "Paste delay (ms):";
+"dialog.copyPaste.disableRightClickPaste" = "Disable right-click paste";
+"dialog.copyPaste.confirmRightClickPaste" = "Confirm right-click paste";
+"dialog.copyPaste.disableMiddleClickPaste" = "Disable middle-click paste";
+"dialog.copyPaste.leftClickOnlySelection" = "Start selection with left-click only";
+"dialog.copyPaste.trimTrailingNewline" = "Trim trailing newline on paste";
+"dialog.copyPaste.confirmDangerousClipboard" = "Confirm dangerous clipboard paste";
+"dialog.copyPaste.dangerousKeywordFile" = "Keyword file:";
+"dialog.copyPaste.enableSelectionOnActivate" = "Enable text selection on window activate";
+"dialog.copyPaste.pasteSettings" = "Paste Settings";
+"dialog.copyPaste.securitySettings" = "Security";
 
 /* Additional Settings - Sequence */
 "dialog.sequence.mouseEventTracking" = "Accept mouse event tracking";
+"dialog.sequence.disableControlKeyMouse" = "Disable mouse events while Control key pressed";
 "dialog.sequence.titleChanging" = "Accept title changing";
+"dialog.sequence.titleChangeMode" = "Title change mode:";
+"dialog.sequence.titleModeOverwrite" = "Overwrite";
+"dialog.sequence.titleModePrepend" = "Prepend";
+"dialog.sequence.titleModeAppend" = "Append";
 "dialog.sequence.titleReport" = "Title report request";
 "dialog.sequence.windowControl" = "Window control sequence";
+"dialog.sequence.windowInfoReport" = "Window information report sequence";
 "dialog.sequence.cursorControl" = "Cursor control sequence";
 "dialog.sequence.clipboardAccess" = "Clipboard access from remote";
+"dialog.sequence.clipboardAccessMode" = "Clipboard access mode:";
+"dialog.sequence.clipOff" = "Off";
+"dialog.sequence.clipReadWrite" = "Read/Write";
+"dialog.sequence.clipReadOnly" = "Read Only";
+"dialog.sequence.clipWriteOnly" = "Write Only";
+"dialog.sequence.notifyClipboardAccess" = "Notify remote clipboard access";
+"dialog.sequence.acceptScrollBufferClear" = "Accept scroll buffer clear from remote";
+"dialog.sequence.disablePrintSequence" = "Disable print start sequence";
 "dialog.sequence.beep" = "Beep:";
 "dialog.sequence.beepOff" = "Off";
 "dialog.sequence.beepSystem" = "System Sound";
@@ -483,6 +547,25 @@
 "dialog.visual.inactive" = "Inactive:";
 "dialog.visual.ansiColorPalette" = "ANSI Color Palette";
 "dialog.visual.charAttributes" = "Character Attributes";
+"dialog.visual.mouseCursor" = "Mouse cursor:";
+"dialog.visual.cursorArrow" = "Arrow";
+"dialog.visual.cursorIBeam" = "I-Beam";
+"dialog.visual.cursorCrosshair" = "Crosshair";
+"dialog.visual.cursorHidden" = "Hidden";
+"dialog.visual.fontRenderingQuality" = "Font quality:";
+"dialog.visual.qualityDefault" = "Default";
+"dialog.visual.qualityAntiAlias" = "AntiAlias";
+"dialog.visual.qualitySubpixel" = "Subpixel (ClearType)";
+"dialog.visual.attrColorFont" = "Attribute Color / Font";
+"dialog.visual.enableBoldColor" = "Enable bold attribute color";
+"dialog.visual.enableBoldFont" = "Enable bold attribute font";
+"dialog.visual.enableBlinkColor" = "Enable blink attribute color";
+"dialog.visual.enableReverseColor" = "Enable reverse attribute color";
+"dialog.visual.enableUnderlineColor" = "Enable underline attribute color";
+"dialog.visual.enableUnderlineDecoration" = "Add underline to underline attribute";
+"dialog.visual.enableURLColor" = "Enable URL attribute color";
+"dialog.visual.enableURLUnderline" = "Add underline to URL strings";
+"dialog.visual.enableANSIColor" = "Enable ANSI color";
 "dialog.visual.flickerlessMove" = "Disable theme during window move/resize";
 
 /* Additional Settings - Font */

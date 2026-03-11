@@ -360,6 +360,14 @@ final class CopyPasteTab: AdditionalSettingsTab {
     private var delimiterField: NSTextField!
     private var pasteDelayField: NSTextField!
     private var autoTextCopyCheck: NSButton!
+    private var disableRightClickPasteCheck: NSButton!
+    private var confirmRightClickPasteCheck: NSButton!
+    private var disableMiddleClickPasteCheck: NSButton!
+    private var leftClickOnlySelectionCheck: NSButton!
+    private var trimTrailingNewlineCheck: NSButton!
+    private var confirmDangerousClipboardCheck: NSButton!
+    private var dangerousKeywordField: NSTextField!
+    private var enableSelectionOnActivateCheck: NSButton!
 
     init(settings: TerminalSettings) {
         contentView.translatesAutoresizingMaskIntoConstraints = false
@@ -389,18 +397,82 @@ final class CopyPasteTab: AdditionalSettingsTab {
         delayRow.orientation = .horizontal
         delayRow.spacing = 8
 
+        // New paste settings
+        disableRightClickPasteCheck = NSView.makeCheckbox(
+            TTL("dialog.copyPaste.disableRightClickPaste"), checked: s.disableRightClickPaste)
+        confirmRightClickPasteCheck = NSView.makeCheckbox(
+            TTL("dialog.copyPaste.confirmRightClickPaste"), checked: s.confirmRightClickPaste)
+        disableMiddleClickPasteCheck = NSView.makeCheckbox(
+            TTL("dialog.copyPaste.disableMiddleClickPaste"), checked: s.disableMiddleClickPaste)
+        leftClickOnlySelectionCheck = NSView.makeCheckbox(
+            TTL("dialog.copyPaste.leftClickOnlySelection"), checked: s.leftClickOnlySelection)
+        trimTrailingNewlineCheck = NSView.makeCheckbox(
+            TTL("dialog.copyPaste.trimTrailingNewline"), checked: s.trimTrailingNewline)
+        confirmDangerousClipboardCheck = NSView.makeCheckbox(
+            TTL("dialog.copyPaste.confirmDangerousClipboard"), checked: s.confirmDangerousClipboard)
+        enableSelectionOnActivateCheck = NSView.makeCheckbox(
+            TTL("dialog.copyPaste.enableSelectionOnActivate"), checked: s.enableSelectionOnActivate)
+
+        let keywordLabel = NSView.makeLabel(TTL("dialog.copyPaste.dangerousKeywordFile"), alignment: .left)
+        dangerousKeywordField = NSView.makeTextField(value: s.dangerousKeywordFile, width: 200)
+        let keywordRow = NSStackView(views: [keywordLabel, dangerousKeywordField])
+        keywordRow.translatesAutoresizingMaskIntoConstraints = false
+        keywordRow.orientation = .horizontal
+        keywordRow.spacing = 8
+
+        // Mouse paste settings group
+        let pasteBox = NSView.makeGroupBox(title: TTL("dialog.copyPaste.pasteSettings"))
+        let pasteStack = NSStackView(views: [
+            disableRightClickPasteCheck, confirmRightClickPasteCheck,
+            disableMiddleClickPasteCheck
+        ])
+        pasteStack.translatesAutoresizingMaskIntoConstraints = false
+        pasteStack.orientation = .vertical
+        pasteStack.alignment = .leading
+        pasteStack.spacing = 4
+        let pc = pasteBox.contentView!
+        pc.addSubview(pasteStack)
+        NSLayoutConstraint.activate([
+            pasteStack.topAnchor.constraint(equalTo: pc.topAnchor, constant: 16),
+            pasteStack.leadingAnchor.constraint(equalTo: pc.leadingAnchor, constant: 12),
+            pasteStack.trailingAnchor.constraint(lessThanOrEqualTo: pc.trailingAnchor, constant: -12),
+            pasteStack.bottomAnchor.constraint(equalTo: pc.bottomAnchor, constant: -8),
+        ])
+
+        // Security group
+        let secBox = NSView.makeGroupBox(title: TTL("dialog.copyPaste.securitySettings"))
+        let secStack = NSStackView(views: [
+            confirmDangerousClipboardCheck, keywordRow
+        ])
+        secStack.translatesAutoresizingMaskIntoConstraints = false
+        secStack.orientation = .vertical
+        secStack.alignment = .leading
+        secStack.spacing = 6
+        let sc = secBox.contentView!
+        sc.addSubview(secStack)
+        NSLayoutConstraint.activate([
+            secStack.topAnchor.constraint(equalTo: sc.topAnchor, constant: 16),
+            secStack.leadingAnchor.constraint(equalTo: sc.leadingAnchor, constant: 12),
+            secStack.trailingAnchor.constraint(lessThanOrEqualTo: sc.trailingAnchor, constant: -12),
+            secStack.bottomAnchor.constraint(equalTo: sc.bottomAnchor, constant: -8),
+        ])
+
         let stack = NSStackView(views: [
             continuedLineCopyCheck, confirmPasteNewLineCheck,
-            delimRow, delayRow, autoTextCopyCheck
+            delimRow, delayRow, autoTextCopyCheck,
+            pasteBox,
+            leftClickOnlySelectionCheck, trimTrailingNewlineCheck,
+            enableSelectionOnActivateCheck,
+            secBox
         ])
         stack.translatesAutoresizingMaskIntoConstraints = false
         stack.orientation = .vertical
         stack.alignment = .leading
-        stack.spacing = 10
+        stack.spacing = 8
         contentView.addSubview(stack)
 
         NSLayoutConstraint.activate([
-            stack.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 16),
+            stack.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 12),
             stack.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 12),
             stack.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -12),
         ])
@@ -412,6 +484,14 @@ final class CopyPasteTab: AdditionalSettingsTab {
         s.delimiterList = delimiterField.stringValue
         s.pasteDelay = pasteDelayField.integerValue
         s.autoTextCopy = autoTextCopyCheck.state == .on
+        s.disableRightClickPaste = disableRightClickPasteCheck.state == .on
+        s.confirmRightClickPaste = confirmRightClickPasteCheck.state == .on
+        s.disableMiddleClickPaste = disableMiddleClickPasteCheck.state == .on
+        s.leftClickOnlySelection = leftClickOnlySelectionCheck.state == .on
+        s.trimTrailingNewline = trimTrailingNewlineCheck.state == .on
+        s.confirmDangerousClipboard = confirmDangerousClipboardCheck.state == .on
+        s.dangerousKeywordFile = dangerousKeywordField.stringValue
+        s.enableSelectionOnActivate = enableSelectionOnActivateCheck.state == .on
     }
 }
 
@@ -428,6 +508,13 @@ final class SequenceTab: AdditionalSettingsTab {
     private var cursorControlCheck: NSButton!
     private var clipboardAccessCheck: NSButton!
     private var beepPopup: NSPopUpButton!
+    private var disableControlKeyMouseCheck: NSButton!
+    private var titleChangeModePopup: NSPopUpButton!
+    private var windowInfoReportCheck: NSButton!
+    private var clipboardAccessModePopup: NSPopUpButton!
+    private var notifyClipboardAccessCheck: NSButton!
+    private var acceptScrollBufferClearCheck: NSButton!
+    private var disablePrintSequenceCheck: NSButton!
 
     init(settings: TerminalSettings) {
         contentView.translatesAutoresizingMaskIntoConstraints = false
@@ -437,16 +524,54 @@ final class SequenceTab: AdditionalSettingsTab {
     private func buildUI(_ s: TerminalSettings) {
         mouseEventCheck = NSView.makeCheckbox(
             TTL("dialog.sequence.mouseEventTracking"), checked: s.mouseTracking)
+        disableControlKeyMouseCheck = NSView.makeCheckbox(
+            TTL("dialog.sequence.disableControlKeyMouse"), checked: s.disableControlKeyMouseEvent)
         titleChangeCheck = NSView.makeCheckbox(
             TTL("dialog.sequence.titleChanging"), checked: s.titleChangeRequest)
+
+        let titleModeLabel = NSView.makeLabel(TTL("dialog.sequence.titleChangeMode"), alignment: .left)
+        titleChangeModePopup = NSView.makePopUpButton(
+            items: [TTL("dialog.sequence.titleModeOverwrite"),
+                    TTL("dialog.sequence.titleModePrepend"),
+                    TTL("dialog.sequence.titleModeAppend")],
+            width: 140)
+        titleChangeModePopup.selectItem(at: s.titleChangeMode)
+        let titleModeRow = NSStackView(views: [titleModeLabel, titleChangeModePopup])
+        titleModeRow.translatesAutoresizingMaskIntoConstraints = false
+        titleModeRow.orientation = .horizontal
+        titleModeRow.spacing = 8
+
         titleReportCheck = NSView.makeCheckbox(
             TTL("dialog.sequence.titleReport"), checked: s.titleReportRequest)
         windowControlCheck = NSView.makeCheckbox(
             TTL("dialog.sequence.windowControl"), checked: s.windowControlSequence)
+        windowInfoReportCheck = NSView.makeCheckbox(
+            TTL("dialog.sequence.windowInfoReport"), checked: s.windowInfoReportSequence)
         cursorControlCheck = NSView.makeCheckbox(
             TTL("dialog.sequence.cursorControl"), checked: s.cursorControlSequence)
+
+        // Clipboard access detail
         clipboardAccessCheck = NSView.makeCheckbox(
             TTL("dialog.sequence.clipboardAccess"), checked: s.clipboardAccessFromRemote)
+        let clipModeLabel = NSView.makeLabel(TTL("dialog.sequence.clipboardAccessMode"), alignment: .left)
+        clipboardAccessModePopup = NSView.makePopUpButton(
+            items: [TTL("dialog.sequence.clipOff"),
+                    TTL("dialog.sequence.clipReadWrite"),
+                    TTL("dialog.sequence.clipReadOnly"),
+                    TTL("dialog.sequence.clipWriteOnly")],
+            width: 160)
+        clipboardAccessModePopup.selectItem(at: s.clipboardAccessMode)
+        let clipModeRow = NSStackView(views: [clipModeLabel, clipboardAccessModePopup])
+        clipModeRow.translatesAutoresizingMaskIntoConstraints = false
+        clipModeRow.orientation = .horizontal
+        clipModeRow.spacing = 8
+
+        notifyClipboardAccessCheck = NSView.makeCheckbox(
+            TTL("dialog.sequence.notifyClipboardAccess"), checked: s.notifyClipboardAccess)
+        acceptScrollBufferClearCheck = NSView.makeCheckbox(
+            TTL("dialog.sequence.acceptScrollBufferClear"), checked: s.acceptScrollBufferClear)
+        disablePrintSequenceCheck = NSView.makeCheckbox(
+            TTL("dialog.sequence.disablePrintSequence"), checked: s.disablePrintSequence)
 
         let beepLabel = NSView.makeLabel(TTL("dialog.sequence.beep"), alignment: .left)
         beepPopup = NSView.makePopUpButton(
@@ -461,28 +586,41 @@ final class SequenceTab: AdditionalSettingsTab {
         beepRow.spacing = 8
 
         let stack = NSStackView(views: [
-            mouseEventCheck, titleChangeCheck, titleReportCheck,
-            windowControlCheck, cursorControlCheck, clipboardAccessCheck, beepRow
+            mouseEventCheck, disableControlKeyMouseCheck,
+            titleChangeCheck, titleModeRow,
+            titleReportCheck, windowControlCheck, windowInfoReportCheck,
+            cursorControlCheck,
+            clipboardAccessCheck, clipModeRow, notifyClipboardAccessCheck,
+            acceptScrollBufferClearCheck, disablePrintSequenceCheck,
+            beepRow
         ])
         stack.translatesAutoresizingMaskIntoConstraints = false
         stack.orientation = .vertical
         stack.alignment = .leading
-        stack.spacing = 10
+        stack.spacing = 8
         contentView.addSubview(stack)
 
         NSLayoutConstraint.activate([
-            stack.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 16),
+            stack.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 12),
             stack.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 12),
+            stack.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -12),
         ])
     }
 
     func apply(to s: TerminalSettings) {
         s.mouseTracking = mouseEventCheck.state == .on
+        s.disableControlKeyMouseEvent = disableControlKeyMouseCheck.state == .on
         s.titleChangeRequest = titleChangeCheck.state == .on
+        s.titleChangeMode = titleChangeModePopup.indexOfSelectedItem
         s.titleReportRequest = titleReportCheck.state == .on
         s.windowControlSequence = windowControlCheck.state == .on
+        s.windowInfoReportSequence = windowInfoReportCheck.state == .on
         s.cursorControlSequence = cursorControlCheck.state == .on
         s.clipboardAccessFromRemote = clipboardAccessCheck.state == .on
+        s.clipboardAccessMode = clipboardAccessModePopup.indexOfSelectedItem
+        s.notifyClipboardAccess = notifyClipboardAccessCheck.state == .on
+        s.acceptScrollBufferClear = acceptScrollBufferClearCheck.state == .on
+        s.disablePrintSequence = disablePrintSequenceCheck.state == .on
         if let bt = BeepType(rawValue: beepPopup.indexOfSelectedItem) {
             s.beepType = bt
         }
@@ -684,6 +822,7 @@ final class VisualTab: AdditionalSettingsTab {
     private var opacityInactiveLabel: NSTextField!
     private var mouseCursorPopup: NSPopUpButton!
     private var fontQualityPopup: NSPopUpButton!
+    private var fontRenderingQualityPopup: NSPopUpButton!
     private var flickerlessCheck: NSButton!
     private var cornerField: NSTextField!
     private var boldCheck: NSButton!
@@ -692,6 +831,16 @@ final class VisualTab: AdditionalSettingsTab {
     private var underlineCheck: NSButton!
     private var strikethroughCheck: NSButton!
     private var colorWells: [NSColorWell] = []
+    // New attribute color/font controls
+    private var enableBoldColorCheck: NSButton!
+    private var enableBoldFontCheck: NSButton!
+    private var enableBlinkColorCheck: NSButton!
+    private var enableReverseColorCheck: NSButton!
+    private var enableUnderlineColorCheck: NSButton!
+    private var enableUnderlineDecorationCheck: NSButton!
+    private var enableURLColorCheck: NSButton!
+    private var enableURLUnderlineCheck: NSButton!
+    private var enableANSIColorCheck: NSButton!
 
     init(settings: TerminalSettings) {
         contentView.translatesAutoresizingMaskIntoConstraints = false
@@ -699,6 +848,33 @@ final class VisualTab: AdditionalSettingsTab {
     }
 
     private func buildUI(_ s: TerminalSettings) {
+        // Mouse cursor
+        let cursorLabel = NSView.makeLabel(TTL("dialog.visual.mouseCursor"), alignment: .left)
+        mouseCursorPopup = NSView.makePopUpButton(
+            items: [TTL("dialog.visual.cursorArrow"),
+                    TTL("dialog.visual.cursorIBeam"),
+                    TTL("dialog.visual.cursorCrosshair"),
+                    TTL("dialog.visual.cursorHidden")],
+            width: 140)
+        mouseCursorPopup.selectItem(at: s.mouseCursorType)
+        let cursorRow = NSStackView(views: [cursorLabel, mouseCursorPopup])
+        cursorRow.translatesAutoresizingMaskIntoConstraints = false
+        cursorRow.orientation = .horizontal
+        cursorRow.spacing = 8
+
+        // Font rendering quality
+        let qualityLabel = NSView.makeLabel(TTL("dialog.visual.fontRenderingQuality"), alignment: .left)
+        fontRenderingQualityPopup = NSView.makePopUpButton(
+            items: [TTL("dialog.visual.qualityDefault"),
+                    TTL("dialog.visual.qualityAntiAlias"),
+                    TTL("dialog.visual.qualitySubpixel")],
+            width: 140)
+        fontRenderingQualityPopup.selectItem(at: s.fontRenderingQuality)
+        let qualityRow = NSStackView(views: [qualityLabel, fontRenderingQualityPopup])
+        qualityRow.translatesAutoresizingMaskIntoConstraints = false
+        qualityRow.orientation = .horizontal
+        qualityRow.spacing = 8
+
         // Opacity
         let opacityBox = NSView.makeGroupBox(title: TTL("dialog.visual.windowOpacity"))
         let activeLabel = NSView.makeLabel(TTL("dialog.visual.active"), alignment: .left)
@@ -785,9 +961,53 @@ final class VisualTab: AdditionalSettingsTab {
             attrStack.bottomAnchor.constraint(equalTo: abc.bottomAnchor, constant: -8),
         ])
 
+        // Attribute color/font settings
+        let attrColorBox = NSView.makeGroupBox(title: TTL("dialog.visual.attrColorFont"))
+        enableBoldColorCheck = NSView.makeCheckbox(
+            TTL("dialog.visual.enableBoldColor"), checked: s.enableBoldColor)
+        enableBoldFontCheck = NSView.makeCheckbox(
+            TTL("dialog.visual.enableBoldFont"), checked: s.enableBoldFont)
+        enableBlinkColorCheck = NSView.makeCheckbox(
+            TTL("dialog.visual.enableBlinkColor"), checked: s.enableBlinkColor)
+        enableReverseColorCheck = NSView.makeCheckbox(
+            TTL("dialog.visual.enableReverseColor"), checked: s.enableReverseColor)
+        enableUnderlineColorCheck = NSView.makeCheckbox(
+            TTL("dialog.visual.enableUnderlineColor"), checked: s.enableUnderlineColor)
+        enableUnderlineDecorationCheck = NSView.makeCheckbox(
+            TTL("dialog.visual.enableUnderlineDecoration"), checked: s.enableUnderlineDecoration)
+        enableURLColorCheck = NSView.makeCheckbox(
+            TTL("dialog.visual.enableURLColor"), checked: s.enableURLColor)
+        enableURLUnderlineCheck = NSView.makeCheckbox(
+            TTL("dialog.visual.enableURLUnderline"), checked: s.enableURLUnderline)
+        enableANSIColorCheck = NSView.makeCheckbox(
+            TTL("dialog.visual.enableANSIColor"), checked: s.enableANSIColor)
+
+        let acStack = NSStackView(views: [
+            enableBoldColorCheck, enableBoldFontCheck,
+            enableBlinkColorCheck, enableReverseColorCheck,
+            enableUnderlineColorCheck, enableUnderlineDecorationCheck,
+            enableURLColorCheck, enableURLUnderlineCheck,
+            enableANSIColorCheck
+        ])
+        acStack.translatesAutoresizingMaskIntoConstraints = false
+        acStack.orientation = .vertical
+        acStack.alignment = .leading
+        acStack.spacing = 4
+        let acc = attrColorBox.contentView!
+        acc.addSubview(acStack)
+        NSLayoutConstraint.activate([
+            acStack.topAnchor.constraint(equalTo: acc.topAnchor, constant: 16),
+            acStack.leadingAnchor.constraint(equalTo: acc.leadingAnchor, constant: 12),
+            acStack.trailingAnchor.constraint(lessThanOrEqualTo: acc.trailingAnchor, constant: -12),
+            acStack.bottomAnchor.constraint(equalTo: acc.bottomAnchor, constant: -8),
+        ])
+
         flickerlessCheck = NSView.makeCheckbox(TTL("dialog.visual.flickerlessMove"), checked: s.flickerlessMoveEnabled)
 
-        let stack = NSStackView(views: [opacityBox, colorBox, attrBox, flickerlessCheck])
+        let stack = NSStackView(views: [
+            cursorRow, qualityRow,
+            opacityBox, colorBox, attrBox, attrColorBox, flickerlessCheck
+        ])
         stack.translatesAutoresizingMaskIntoConstraints = false
         stack.orientation = .vertical
         stack.alignment = .leading
@@ -809,6 +1029,8 @@ final class VisualTab: AdditionalSettingsTab {
     }
 
     func apply(to s: TerminalSettings) {
+        s.mouseCursorType = mouseCursorPopup.indexOfSelectedItem
+        s.fontRenderingQuality = fontRenderingQualityPopup.indexOfSelectedItem
         s.windowOpacityActive = Int(opacityActiveSlider.doubleValue)
         s.windowOpacityInactive = Int(opacityInactiveSlider.doubleValue)
         s.flickerlessMoveEnabled = flickerlessCheck.state == .on
@@ -817,6 +1039,15 @@ final class VisualTab: AdditionalSettingsTab {
         s.attrReverse = reverseCheck.state == .on
         s.attrUnderline = underlineCheck.state == .on
         s.attrStrikethrough = strikethroughCheck.state == .on
+        s.enableBoldColor = enableBoldColorCheck.state == .on
+        s.enableBoldFont = enableBoldFontCheck.state == .on
+        s.enableBlinkColor = enableBlinkColorCheck.state == .on
+        s.enableReverseColor = enableReverseColorCheck.state == .on
+        s.enableUnderlineColor = enableUnderlineColorCheck.state == .on
+        s.enableUnderlineDecoration = enableUnderlineDecorationCheck.state == .on
+        s.enableURLColor = enableURLColorCheck.state == .on
+        s.enableURLUnderline = enableURLUnderlineCheck.state == .on
+        s.enableANSIColor = enableANSIColorCheck.state == .on
 
         for i in 0..<min(16, colorWells.count) {
             let c = colorWells[i].color

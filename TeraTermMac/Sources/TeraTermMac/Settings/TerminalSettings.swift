@@ -455,6 +455,14 @@ class TerminalSettings: Codable {
     var pasteDelay: Int = 5
     var autoTextCopy: Bool = true
     var delimiterList: String = " ;,()\"'"
+    var disableRightClickPaste: Bool = false
+    var confirmRightClickPaste: Bool = false
+    var disableMiddleClickPaste: Bool = false
+    var leftClickOnlySelection: Bool = false
+    var trimTrailingNewline: Bool = false
+    var confirmDangerousClipboard: Bool = true
+    var dangerousKeywordFile: String = ""
+    var enableSelectionOnActivate: Bool = false
 
     // Control Sequence
     var titleChangeRequest: Bool = false
@@ -462,6 +470,19 @@ class TerminalSettings: Codable {
     var windowControlSequence: Bool = true
     var cursorControlSequence: Bool = true
     var clipboardAccessFromRemote: Bool = false
+    var disableControlKeyMouseEvent: Bool = false
+    var titleChangeMode: Int = 0  // 0=overwrite, 1=prepend, 2=append
+    var windowInfoReportSequence: Bool = true
+    var clipboardAccessMode: Int = 0  // 0=off, 1=read/write, 2=read only, 3=write only
+    var notifyClipboardAccess: Bool = true
+    var acceptScrollBufferClear: Bool = false
+    var disablePrintSequence: Bool = false
+
+    // Broadcast
+    var broadcastHistory: [String] = []
+    var broadcastSendToThisOnly: Bool = false
+    var broadcastSendEnter: Bool = true
+    var broadcastRealtime: Bool = false
 
     // Debug
     var debugCharInfoPopup: Bool = false
@@ -490,6 +511,16 @@ class TerminalSettings: Codable {
     var attrReverse: Bool = true
     var attrUnderline: Bool = true
     var attrStrikethrough: Bool = false
+    var enableBoldColor: Bool = true
+    var enableBoldFont: Bool = true
+    var enableBlinkColor: Bool = true
+    var enableReverseColor: Bool = true
+    var enableUnderlineColor: Bool = true
+    var enableUnderlineDecoration: Bool = true
+    var enableURLColor: Bool = true
+    var enableURLUnderline: Bool = true
+    var enableANSIColor: Bool = true
+    var fontRenderingQuality: Int = 0  // 0=Default, 1=AntiAlias, 2=Subpixel
 
     // Plugin
     var pluginDirectories: [String] = []
