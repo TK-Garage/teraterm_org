@@ -1,0 +1,106 @@
+; ============================================================
+; Debug TTL — Reproduce "Error at line 312: Variable not initialized"
+;
+; This script isolates the strsplit/strjoin issue found in
+; comprehensive_offline_stress.ttl (lines 312-313).
+;
+; Root cause: strsplit and strjoin are called with incorrect
+; arguments.
+;
+; strsplit syntax:
+;   strsplit <source_string> <delimiter>
+;   -> result = element count
+;   -> groupmatchstr1..groupmatchstr9 = split parts
+;
+; strjoin syntax:
+;   strjoin <target_var> <delimiter> <str1> <str2> ...
+;   -> target_var = joined string
+;
+; The bug: the script passes an extra arg 'parts' to strsplit,
+; and then tries to use uninitialized 'parts' in strjoin.
+; ============================================================
+
+logfile = '/tmp/ttl_debug_line312.log'
+fileopen fh logfile 0
+filewriteln fh '=== Debug: strsplit/strjoin issue ==='
+filewriteln fh ''
+
+; --- Test 1: Reproduce the WRONG usage (commented out) ---
+; These lines mirror comprehensive_offline_stress.ttl lines 312-313.
+; Uncommenting will reproduce the error:
+;
+; strsplit 'a,b,c,d' ',' parts        ; ERROR: 'parts' is extra arg
+; strjoin parts ',' rejoined           ; ERROR: 'parts' not initialized
+;
+filewriteln fh 'Test 1: WRONG usage (skipped to avoid error)'
+
+; --- Test 2: Correct strsplit usage ---
+filewriteln fh ''
+filewriteln fh 'Test 2: Correct strsplit usage'
+
+strsplit 'a,b,c,d' ','
+sprintf2 msg '  result (count) = %d' result
+filewriteln fh msg
+sprintf2 msg '  groupmatchstr1 = "%s"' groupmatchstr1
+filewriteln fh msg
+sprintf2 msg '  groupmatchstr2 = "%s"' groupmatchstr2
+filewriteln fh msg
+sprintf2 msg '  groupmatchstr3 = "%s"' groupmatchstr3
+filewriteln fh msg
+sprintf2 msg '  groupmatchstr4 = "%s"' groupmatchstr4
+filewriteln fh msg
+
+if result = 4 then
+  filewriteln fh '  -> PASS: strsplit returned 4 elements'
+else
+  sprintf2 msg '  -> FAIL: expected 4, got %d' result
+  filewriteln fh msg
+endif
+
+if groupmatchstr1 = 'a' then
+  filewriteln fh '  -> PASS: groupmatchstr1 = "a"'
+else
+  sprintf2 msg '  -> FAIL: groupmatchstr1 = "%s"' groupmatchstr1
+  filewriteln fh msg
+endif
+
+; --- Test 3: Correct strjoin usage ---
+filewriteln fh ''
+filewriteln fh 'Test 3: Correct strjoin usage'
+
+strjoin rejoined ',' groupmatchstr1 groupmatchstr2 groupmatchstr3 groupmatchstr4
+sprintf2 msg '  rejoined = "%s"' rejoined
+filewriteln fh msg
+
+if rejoined = 'a,b,c,d' then
+  filewriteln fh '  -> PASS: round-trip strsplit/strjoin matches'
+else
+  filewriteln fh '  -> FAIL: round-trip mismatch'
+endif
+
+; --- Test 4: Verify dynamic count-based join ---
+filewriteln fh ''
+filewriteln fh 'Test 4: Split then join with result count'
+
+strsplit 'x:y:z' ':'
+sprintf2 msg '  split count = %d' result
+filewriteln fh msg
+
+; Join only the number of parts that were split
+if result = 3 then
+  strjoin rebuilt ':' groupmatchstr1 groupmatchstr2 groupmatchstr3
+  sprintf2 msg '  rebuilt = "%s"' rebuilt
+  filewriteln fh msg
+  if rebuilt = 'x:y:z' then
+    filewriteln fh '  -> PASS'
+  else
+    filewriteln fh '  -> FAIL'
+  endif
+endif
+
+; --- Summary ---
+filewriteln fh ''
+filewriteln fh '=== Debug complete ==='
+fileclose fh
+
+end

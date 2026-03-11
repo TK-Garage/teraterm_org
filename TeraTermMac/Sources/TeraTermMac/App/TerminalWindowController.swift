@@ -492,14 +492,8 @@ class TerminalWindowController: NSWindowController {
             self?.macroInterpreter = nil
         }
         interpreter.onError = { [weak self] msg, line in
-            DispatchQueue.main.async {
-                let alert = NSAlert()
-                alert.messageText = L("macro.error.title")
-                alert.informativeText = msg
-                alert.alertStyle = .warning
-                alert.addButton(withTitle: "OK")
-                if let win = self?.window { alert.beginSheetModal(for: win) }
-            }
+            // Error dialog is already shown by delegate (ttlShowError).
+            // Only perform cleanup here.
             self?.macroInterpreter = nil
         }
 

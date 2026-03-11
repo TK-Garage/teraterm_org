@@ -309,8 +309,8 @@ filewriteln fh msg
 
 ; 1-22 strsplit / strjoin
 test_num = test_num + 1
-strsplit 'a,b,c,d' ',' parts
-strjoin parts ',' rejoined
+strsplit 'a,b,c,d' ','
+strjoin rejoined ',' groupmatchstr1 groupmatchstr2 groupmatchstr3 groupmatchstr4
 if rejoined = 'a,b,c,d' then
   pass_count = pass_count + 1
   sprintf2 msg 'PASS [%d] strsplit/strjoin round-trip' test_num
