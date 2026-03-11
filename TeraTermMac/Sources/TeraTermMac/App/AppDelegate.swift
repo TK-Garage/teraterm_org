@@ -2078,6 +2078,4 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         return SerialPortSetupViewController.findSerialPorts()
     }
 }
-
-}
 #endif

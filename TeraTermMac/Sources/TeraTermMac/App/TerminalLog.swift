@@ -285,7 +285,7 @@ final class LogProgressPanel: NSPanel {
 
     private weak var observedLogger: TerminalLogger?
 
-    var isVisible: Bool { isKeyWindow || isMainWindow || super.isVisible }
+    override var isVisible: Bool { isKeyWindow || isMainWindow || super.isVisible }
 
     convenience init(logger: TerminalLogger) {
         self.init(
