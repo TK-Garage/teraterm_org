@@ -66,6 +66,7 @@ class MockTTLDelegate: TTLInterpreterDelegate {
     var lastScpRemotePath: String?
     var lastRecvFilePath: String?
     var lastRestoreSetupPath: String?
+    var lastLoadKeyMapPath: String?
     var lastCallMenuId: Int?
     var lastSerialDelayChar: Int?
     var lastSerialDelayLine: Int?
@@ -102,6 +103,9 @@ class MockTTLDelegate: TTLInterpreterDelegate {
     }
     func ttlRestoreSetup(from path: String) {
         lastRestoreSetupPath = path
+    }
+    func ttlLoadKeyMap(from path: String) {
+        lastLoadKeyMapPath = path
     }
     func ttlCallMenu(menuId: Int) {
         lastCallMenuId = menuId

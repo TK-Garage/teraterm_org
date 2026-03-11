@@ -1140,6 +1140,19 @@ extension TerminalWindowController: TTLInterpreterDelegate {
         applySettings()
     }
 
+    func ttlLoadKeyMap(from path: String) {
+        let url = URL(fileURLWithPath: path)
+        do {
+            let keyMap = try KeymapLoader.load(from: url)
+            applyKeyMap(keyMap)
+            if !keyMap.warnings.isEmpty {
+                print("KeyMap warnings: \(keyMap.warnings.joined(separator: ", "))")
+            }
+        } catch {
+            print("Failed to load keymap: \(error.localizedDescription)")
+        }
+    }
+
     func ttlCallMenu(menuId: Int) {
         // Map Tera Term menu IDs to macOS menu actions
         // Common menu IDs from the original:

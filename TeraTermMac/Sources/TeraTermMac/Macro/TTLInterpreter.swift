@@ -82,6 +82,8 @@ protocol TTLInterpreterDelegate: AnyObject {
     func ttlSetSerialDelayChar(_ ms: Int)
     /// Set serial transmit delay per line (milliseconds)
     func ttlSetSerialDelayLine(_ ms: Int)
+    /// Load keyboard mapping file (.cnf)
+    func ttlLoadKeyMap(from path: String)
 }
 
 // MARK: - TTL Interpreter
@@ -776,7 +778,8 @@ class TTLInterpreter {
         case .callMenu:     try ttlCallMenu()
         case .setSerialDelayChar: try ttlSetSerialDelayChar()
         case .setSerialDelayLine: try ttlSetSerialDelayLine()
-        case .loadKeyMap, .cygConnect:
+        case .loadKeyMap:   try ttlLoadKeyMap()
+        case .cygConnect:
             throw TTLError.notSupported
 
         default:
@@ -1453,6 +1456,13 @@ class TTLInterpreter {
         let filename = try parser.getStrExpression()
         guard !filename.isEmpty else { throw TTLError.syntax }
         delegate?.ttlRestoreSetup(from: filename)
+    }
+
+    /// loadkeymap <filename>
+    private func ttlLoadKeyMap() throws {
+        let filename = try parser.getStrExpression()
+        guard !filename.isEmpty else { throw TTLError.syntax }
+        delegate?.ttlLoadKeyMap(from: filename)
     }
 
     /// callmenu <menu_id>

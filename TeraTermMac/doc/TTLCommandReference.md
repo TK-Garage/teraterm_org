@@ -1266,6 +1266,18 @@ callmenu 50110    ; メニュー ID 50110 を実行
 restoresetup '/path/to/settings.json'
 ```
 
+### `loadkeymap`
+
+キーボード設定ファイル (`.cnf`) を読み込む。オリジナル Tera Term と同一フォーマット。
+文字コード (UTF-8 / Shift_JIS / EUC-JP / Latin-1) および改行コード (CRLF / LF / CR) を自動判定する。
+
+```ttl
+loadkeymap 'keyboard.cnf'
+loadkeymap '/path/to/IBMKEYB.CNF'
+```
+
+**備考**: `.cnf` ファイルは `[VT editor keypad]`、`[VT numeric keypad]`、`[VT function keys]`、`[X function keys]`、`[Shortcut keys]`、`[User keys]` の 6 セクションからなる INI 形式ファイル。
+
 ---
 
 ## 13. ファイル転送
@@ -1801,7 +1813,7 @@ s = "double quotes"
 | ~~`scprecv` / `scpsend`~~ | ~~SCP 転送~~ → 実装済み (§13) |
 | ~~`recvfile`~~ | ~~ファイル受信~~ → 実装済み (§13) |
 | `cygconnect` | Cygwin 接続（macOS 非対応） |
-| `loadkeymap` | キーマップ読み込み |
+| ~~`loadkeymap`~~ | ~~キーマップ読み込み~~ → 実装済み (§12) |
 | ~~`restoresetup`~~ | ~~セットアップ復元~~ → 実装済み (§12) |
 | ~~`callmenu`~~ | ~~メニュー呼び出し~~ → 実装済み (§12) |
 | ~~`setserialdelaychar` / `setserialdelayline`~~ | ~~シリアル遅延設定~~ → 実装済み (§12) |

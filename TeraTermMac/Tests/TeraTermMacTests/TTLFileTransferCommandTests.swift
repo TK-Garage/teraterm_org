@@ -246,6 +246,25 @@ final class TTLSetupMenuDelayCommandTests: XCTestCase {
         }
     }
 
+    // MARK: - loadkeymap
+
+    func testLoadKeyMap() throws {
+        try execLine("loadkeymap 'keyboard.cnf'")
+        XCTAssertEqual(delegate.lastLoadKeyMapPath, "keyboard.cnf")
+    }
+
+    func testLoadKeyMapWithFullPath() throws {
+        try execLine("loadkeymap '/path/to/IBMKEYB.CNF'")
+        XCTAssertEqual(delegate.lastLoadKeyMapPath, "/path/to/IBMKEYB.CNF")
+    }
+
+    func testLoadKeyMapEmptyFilename() {
+        XCTAssertThrowsError(try execLine("loadkeymap ''")) { error in
+            XCTAssertTrue((error as? TTLError) == .syntax,
+                "Empty filename should throw syntax error")
+        }
+    }
+
     // MARK: - callmenu
 
     func testCallMenu() throws {
@@ -347,7 +366,7 @@ final class TTLCommandDispatchTests: XCTestCase {
             "quickvanrecv", "quickvansend",
             "scprecv", "scpsend",
             "recvfile",
-            "restoresetup", "callmenu",
+            "restoresetup", "loadkeymap", "callmenu",
             "setserialdelaychar", "setserialdelayline",
         ]
 
