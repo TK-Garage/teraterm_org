@@ -49,6 +49,9 @@
 "menu.edit.clearScreen" = "画面クリア";
 "menu.edit.clearBuffer" = "バッファクリア";
 "menu.edit.selectAll" = "すべてを選択";
+"menu.edit.pasteCR" = "貼り付け<CR>";
+"menu.edit.deselect" = "選択を解除";
+"menu.edit.selectScreen" = "表示画面を選択";
 "menu.edit.editHistory" = "編集履歴…";
 
 /* Setup Menu */
@@ -83,6 +86,10 @@
 "menu.control.resetPort" = "ポートリセット";
 "menu.control.macro" = "マクロ…";
 "menu.control.replayLog" = "ログ再生…";
+"menu.control.resetRemoteTitle" = "リモートタイトルリセット";
+"menu.control.tekWindow" = "TEKウィンドウを開く";
+"menu.control.closeTekWindow" = "TEKウィンドウを閉じる";
+"menu.control.showMacroWindow" = "マクロウィンドウの表示";
 "menu.control.broadcast" = "コマンドブロードキャスト";
 
 /* Window Menu */

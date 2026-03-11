@@ -287,6 +287,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         setSymbol("doc.on.clipboard", for: pasteItem)
         let pasteSpecialItem = editMenu.addItem(withTitle: L("menu.edit.pasteSpecial"), action: #selector(pasteSpecial(_:)), keyEquivalent: "")
         setSymbol("doc.on.clipboard.fill", for: pasteSpecialItem)
+        let pasteCRItem = editMenu.addItem(withTitle: L("menu.edit.pasteCR"), action: #selector(pasteCR(_:)), keyEquivalent: "")
+        setSymbol("return", for: pasteCRItem)
         editMenu.addItem(NSMenuItem.separator())
         let clsItem = editMenu.addItem(withTitle: L("menu.edit.clearScreen"), action: #selector(clearScreen(_:)), keyEquivalent: "")
         setSymbol("rectangle.slash", for: clsItem)
@@ -295,6 +297,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         editMenu.addItem(NSMenuItem.separator())
         let selAllItem = editMenu.addItem(withTitle: L("menu.edit.selectAll"), action: #selector(NSText.selectAll(_:)), keyEquivalent: "a")
         setSymbol("selection.pin.in.out", for: selAllItem)
+        let deselectItem = editMenu.addItem(withTitle: L("menu.edit.deselect"), action: #selector(deselect(_:)), keyEquivalent: "")
+        setSymbol("xmark.rectangle", for: deselectItem)
+        let selectScreenItem = editMenu.addItem(withTitle: L("menu.edit.selectScreen"), action: #selector(selectScreen(_:)), keyEquivalent: "")
+        setSymbol("rectangle.dashed", for: selectScreenItem)
         editMenu.addItem(NSMenuItem.separator())
         let editHistoryItem = editMenu.addItem(withTitle: L("menu.edit.editHistory"), action: #selector(showEditHistory(_:)), keyEquivalent: "")
         setSymbol("clock.arrow.circlepath", for: editHistoryItem)
@@ -371,6 +377,15 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         setSymbol("stop.circle", for: stopMacroItem)
         let replayItem = controlMenu.addItem(withTitle: L("menu.control.replayLog"), action: #selector(replayLog(_:)), keyEquivalent: "")
         setSymbol("play.rectangle", for: replayItem)
+
+        controlMenu.addItem(NSMenuItem.separator())
+
+        let resetTitleItem = controlMenu.addItem(withTitle: L("menu.control.resetRemoteTitle"), action: #selector(resetRemoteTitle(_:)), keyEquivalent: "")
+        setSymbol("textformat", for: resetTitleItem)
+        let tekItem = controlMenu.addItem(withTitle: L("menu.control.tekWindow"), action: #selector(toggleTEKWindow(_:)), keyEquivalent: "")
+        setSymbol("rectangle.on.rectangle", for: tekItem)
+        let showMacroItem = controlMenu.addItem(withTitle: L("menu.control.showMacroWindow"), action: #selector(showMacroWindow(_:)), keyEquivalent: "")
+        setSymbol("text.rectangle", for: showMacroItem)
 
         controlMenu.addItem(NSMenuItem.separator())
 
@@ -679,6 +694,43 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         activeWindowController?.clearBuffer()
     }
 
+    /// Paste clipboard text with CR appended to each line (port of ID_EDIT_PASTE2)
+    @objc func pasteCR(_ sender: Any?) {
+        guard let wc = activeWindowController else { return }
+        guard let text = NSPasteboard.general.string(forType: .string) else { return }
+        // Append CR to each line, matching Windows Tera Term "Paste<CR>" behavior
+        var result = ""
+        let lines = text.components(separatedBy: .newlines)
+        for (i, line) in lines.enumerated() {
+            result += line
+            // Add CR at the end of every line (including last)
+            if i < lines.count - 1 || !line.isEmpty {
+                result += "\r"
+            }
+        }
+        wc.connectionManager.send(Data(result.utf8))
+    }
+
+    /// Cancel current selection (port of ID_EDIT_CANCELSELECTION)
+    @objc func deselect(_ sender: Any?) {
+        guard let wc = activeWindowController else { return }
+        wc.terminalEmulator.buffer.selection = BufferSelection()
+        wc.terminalView.refresh()
+    }
+
+    /// Select only the visible screen area (port of ID_EDIT_SELECTSCREEN)
+    @objc func selectScreen(_ sender: Any?) {
+        guard let wc = activeWindowController else { return }
+        let buffer = wc.terminalEmulator.buffer
+        let size = wc.terminalView.terminalSize
+        buffer.selection.isActive = true
+        buffer.selection.startX = 0
+        buffer.selection.startY = 0
+        buffer.selection.endX = size.columns
+        buffer.selection.endY = size.rows - 1
+        wc.terminalView.refresh()
+    }
+
     @objc func setupTerminal(_ sender: Any?) {
         showTerminalSetupDialog()
     }
@@ -814,6 +866,39 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
 
     @objc func stopMacro(_ sender: Any?) {
         activeWindowController?.stopMacro()
+    }
+
+    /// Reset window title to the default, clearing any remote-set title (port of ID_CONTROL_RESETTITLE)
+    @objc func resetRemoteTitle(_ sender: Any?) {
+        guard let wc = activeWindowController else { return }
+        // Reset emulator-side stored titles
+        wc.terminalEmulator.windowTitle = wc.settings.title
+        wc.terminalEmulator.iconTitle = wc.settings.title
+        // Reset the actual window title & miniwindow title
+        wc.window?.title = wc.settings.title
+        wc.window?.miniwindowTitle = wc.settings.title
+    }
+
+    /// Toggle TEK 4014 emulation window (port of ID_CONTROL_OPENTEKWIN / ID_CONTROL_CLOSETEKWIN)
+    private var tekWindowController: TEKWindowController?
+
+    @objc func toggleTEKWindow(_ sender: Any?) {
+        if let tek = tekWindowController, tek.window?.isVisible == true {
+            tek.close()
+            tekWindowController = nil
+        } else {
+            let tek = TEKWindowController(settings: settings)
+            tek.showWindow(self)
+            tekWindowController = tek
+        }
+    }
+
+    /// Show/hide the macro status panel (port of ID_CONTROL_MACROWINDOW)
+    @objc func showMacroWindow(_ sender: Any?) {
+        guard let wc = activeWindowController, let interpreter = wc.macroInterpreter else { return }
+        // Re-show the interpreter's own status panel (brings it to front)
+        let macroName = interpreter.macroFileName.isEmpty ? "Macro" : interpreter.macroFileName
+        interpreter.statusPanel.show(macroName: macroName)
     }
 
     @objc func replayLog(_ sender: Any?) {
@@ -1032,6 +1117,29 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
             return hasWindow
         case #selector(stopMacro(_:)):
             return activeWindowController?.macroInterpreter != nil
+        case #selector(showMacroWindow(_:)):
+            return activeWindowController?.macroInterpreter != nil
+
+        // Edit menu: paste with CR requires clipboard content
+        case #selector(pasteCR(_:)):
+            return NSPasteboard.general.string(forType: .string) != nil
+        // Edit menu: deselect requires active selection
+        case #selector(deselect(_:)):
+            return activeWindowController?.terminalEmulator.buffer.selection.isActive == true
+        case #selector(selectScreen(_:)):
+            return hasWindow
+
+        // Control menu: reset remote title
+        case #selector(resetRemoteTitle(_:)):
+            return hasWindow
+        // Control menu: TEK window toggle - update title based on state
+        case #selector(toggleTEKWindow(_:)):
+            if tekWindowController?.window?.isVisible == true {
+                menuItem.title = L("menu.control.closeTekWindow")
+            } else {
+                menuItem.title = L("menu.control.tekWindow")
+            }
+            return true
 
         // Log menu items: enabled only when logging is active
         case #selector(pauseLog(_:)):
@@ -1764,5 +1872,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
     private func findSerialPorts() -> [String] {
         return SerialPortSetupViewController.findSerialPorts()
     }
+}
+
 }
 #endif

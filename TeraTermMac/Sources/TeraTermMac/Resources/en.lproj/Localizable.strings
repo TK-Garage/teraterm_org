@@ -49,6 +49,9 @@
 "menu.edit.clearScreen" = "Clear Screen";
 "menu.edit.clearBuffer" = "Clear Buffer";
 "menu.edit.selectAll" = "Select All";
+"menu.edit.pasteCR" = "Paste with CR";
+"menu.edit.deselect" = "Deselect";
+"menu.edit.selectScreen" = "Select Screen";
 "menu.edit.editHistory" = "Edit History…";
 
 /* Setup Menu */
@@ -83,6 +86,10 @@
 "menu.control.resetPort" = "Reset Port";
 "menu.control.macro" = "Macro…";
 "menu.control.replayLog" = "Replay Log…";
+"menu.control.resetRemoteTitle" = "Reset Remote Title";
+"menu.control.tekWindow" = "Open TEK Window";
+"menu.control.closeTekWindow" = "Close TEK Window";
+"menu.control.showMacroWindow" = "Show Macro Window";
 "menu.control.broadcast" = "Command Broadcast";
 
 /* Window Menu */
