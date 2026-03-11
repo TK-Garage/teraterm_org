@@ -237,9 +237,10 @@ endif
 filewriteln fh msg
 
 ; 1-17 str2code / code2str
+; str2code packs up to 4 bytes big-endian: 'A' -> $41000000
 test_num = test_num + 1
 str2code 'A' code
-if code = 65 then
+if code = $41000000 then
   code2str cs code
   if cs = 'A' then
     pass_count = pass_count + 1
@@ -250,7 +251,7 @@ if code = 65 then
   endif
 else
   fail_count = fail_count + 1
-  sprintf2 msg 'FAIL [%d] str2code' test_num
+  sprintf2 msg 'FAIL [%d] str2code expected $41000000 got %d' test_num code
 endif
 filewriteln fh msg
 

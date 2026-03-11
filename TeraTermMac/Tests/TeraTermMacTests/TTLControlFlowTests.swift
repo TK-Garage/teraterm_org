@@ -806,6 +806,35 @@ final class TTLControlFlowTests: XCTestCase {
         }
     }
 
+    func testNestedIfWithUndefinedVarInSkippedBlock() {
+        // When the outer if is false, the inner "if cs = 'A' then" is skipped.
+        // Even though cs is undefined (assigned inside the skipped block),
+        // the interpreter must still recognise the inner if as block-form
+        // so that the nesting of if/else/endif is tracked correctly.
+        let completed = execSync("""
+        code = 99
+        if code = 65 then
+          cs = 'A'
+          if cs = 'A' then
+            result = 'wrong_inner_true'
+          else
+            result = 'wrong_inner_false'
+          endif
+        else
+          result = 'outer_else'
+        endif
+        end
+        """)
+        XCTAssertTrue(completed, "Nested if with undefined var in skipped block should complete")
+        let p = interpreter.parser
+        if let (_, id) = p.checkVar("result") {
+            XCTAssertEqual(p.getStrVal(id: id), "outer_else",
+                           "Should enter outer else branch, got \(p.getStrVal(id: id))")
+        } else {
+            XCTFail("result variable not found")
+        }
+    }
+
     func testEndWhileFlagSkipping() {
         var endWhileFlag = 0
 

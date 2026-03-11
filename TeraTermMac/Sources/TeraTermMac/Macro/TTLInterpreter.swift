@@ -433,7 +433,7 @@ class TTLInterpreter {
                 case .else_:
                     elseFlag -= 1
                 case .elseIf:
-                    if try checkElseIf() != 0 { elseFlag -= 1 }
+                    if let val = try? checkElseIf(), val != 0 { elseFlag -= 1 }
                 case .endIf:
                     elseFlag -= 1
                     if elseFlag == 0 { ifNest -= 1 }
@@ -801,15 +801,36 @@ class TTLInterpreter {
     private func checkIfThenForSkip() -> Bool {
         let saved = parser.linePtr
         // Try to evaluate and skip past the condition expression
-        guard let _ = try? parser.getIntExpression() else {
+        if let _ = try? parser.getIntExpression() {
+            // Now check for "then"
+            if let cmd = parser.getReservedWord(), cmd == .then {
+                return true
+            }
             parser.linePtr = saved
             return false
         }
-        // Now check for "then"
-        if let cmd = parser.getReservedWord(), cmd == .then {
-            return true
-        }
+        // Expression evaluation failed (e.g. undefined variable in skipped block).
+        // Fall back to scanning the line for a trailing "then" keyword.
         parser.linePtr = saved
+        return lineScanForThen()
+    }
+
+    /// Scan the current line (after the `if` keyword) for a trailing `then` keyword.
+    /// This is used as a fallback when expression evaluation fails during skip mode.
+    private func lineScanForThen() -> Bool {
+        let line = parser.lineBuffer
+        let trimmed = line.trimmingCharacters(in: .whitespaces)
+        // Check if the line ends with the word "then" (case-insensitive),
+        // preceded by whitespace or beginning of string
+        if trimmed.count >= 4 {
+            let suffix = String(trimmed.suffix(4)).lowercased()
+            if suffix == "then" {
+                let beforeThen = trimmed.count > 4 ? trimmed[trimmed.index(trimmed.endIndex, offsetBy: -5)] : " "
+                if trimmed.count == 4 || beforeThen.isWhitespace {
+                    return true
+                }
+            }
+        }
         return false
     }
 
