@@ -673,9 +673,11 @@ enum FileTransferDialogHelper {
 
         let protoName: String
         switch protocolType {
-        case .zmodem: protoName = "ZMODEM"
-        case .kermit: protoName = "Kermit"
-        default:      protoName = "File Transfer"
+        case .zmodem:   protoName = "ZMODEM"
+        case .kermit:   protoName = "Kermit"
+        case .bplus:    protoName = "B-Plus"
+        case .quickVAN: protoName = "Quick-VAN"
+        default:        protoName = "File Transfer"
         }
         panel.title = String(format: NSLocalizedString("dialog.multi.sendTitle",
             value: "Tera Term: %@ Send", comment: ""), protoName)
@@ -702,9 +704,11 @@ enum FileTransferDialogHelper {
 
         let protoName: String
         switch protocolType {
-        case .zmodem: protoName = "ZMODEM"
-        case .kermit: protoName = "Kermit"
-        default:      protoName = "File Transfer"
+        case .zmodem:   protoName = "ZMODEM"
+        case .kermit:   protoName = "Kermit"
+        case .bplus:    protoName = "B-Plus"
+        case .quickVAN: protoName = "Quick-VAN"
+        default:        protoName = "File Transfer"
         }
         panel.title = String(format: NSLocalizedString("dialog.multi.receiveTitle",
             value: "Tera Term: %@ Receive", comment: ""), protoName)
@@ -1096,6 +1100,136 @@ final class RecvFileDialogController: BaseSetupDialogController {
             binary: binaryCheck.state == .on,
             autoStopWaitSec: Int(autoStopField.stringValue) ?? 0
         )
+    }
+}
+
+// MARK: - YMODEM Option Panel
+
+/// Accessory view for NSOpenPanel / NSSavePanel when using YMODEM.
+///
+///  ┌─Option──────────────────────────────────────┐
+///  │ ◉ YMODEM  ○ YMODEM-G   ☑ Binary             │
+///  └─────────────────────────────────────────────┘
+///
+/// Maps to Tera Term YMODEM option (Yopt1K / YoptG / YoptSingle).
+final class YMODEMOptionAccessory: NSView {
+    let standardRadio: NSButton
+    let ymodemGRadio: NSButton
+    let binaryCheck: NSButton
+
+    var selectedProtocol: TransferProtocolType {
+        if ymodemGRadio.state == .on { return .ymodemG }
+        return .ymodem
+    }
+
+    var isBinary: Bool { binaryCheck.state == .on }
+
+    init(defaultStandard: Bool = true) {
+        standardRadio = NSView.makeRadioButton(
+            NSLocalizedString("dialog.yopt.ymodem", value: "YMODEM", comment: ""), tag: 0)
+        ymodemGRadio = NSView.makeRadioButton(
+            NSLocalizedString("dialog.yopt.ymodemG", value: "YMODEM-G", comment: ""), tag: 1)
+        binaryCheck = NSView.makeCheckbox(
+            NSLocalizedString("dialog.yopt.binary", value: "Binary", comment: ""), checked: true)
+
+        super.init(frame: NSRect(x: 0, y: 0, width: 440, height: 52))
+
+        let box = NSView.makeGroupBox(
+            title: NSLocalizedString("dialog.yopt.option", value: "Option", comment: ""))
+        addSubview(box)
+        box.translatesAutoresizingMaskIntoConstraints = false
+
+        if defaultStandard {
+            standardRadio.state = .on
+            ymodemGRadio.state = .off
+        } else {
+            standardRadio.state = .off
+            ymodemGRadio.state = .on
+        }
+
+        standardRadio.target = self
+        standardRadio.action = #selector(radioChanged(_:))
+        ymodemGRadio.target = self
+        ymodemGRadio.action = #selector(radioChanged(_:))
+
+        let row = NSStackView(views: [standardRadio, ymodemGRadio, binaryCheck])
+        row.translatesAutoresizingMaskIntoConstraints = false
+        row.orientation = .horizontal
+        row.spacing = 16
+        row.alignment = .firstBaseline
+
+        let content = box.contentView!
+        content.addSubview(row)
+
+        NSLayoutConstraint.activate([
+            box.topAnchor.constraint(equalTo: topAnchor),
+            box.leadingAnchor.constraint(equalTo: leadingAnchor),
+            box.trailingAnchor.constraint(equalTo: trailingAnchor),
+            box.bottomAnchor.constraint(equalTo: bottomAnchor),
+
+            row.topAnchor.constraint(equalTo: content.topAnchor, constant: 4),
+            row.leadingAnchor.constraint(equalTo: content.leadingAnchor, constant: 8),
+            row.trailingAnchor.constraint(lessThanOrEqualTo: content.trailingAnchor, constant: -8),
+            row.bottomAnchor.constraint(equalTo: content.bottomAnchor, constant: -4),
+        ])
+    }
+
+    required init?(coder: NSCoder) { fatalError() }
+
+    @objc private func radioChanged(_ sender: NSButton) {
+        standardRadio.state = (sender === standardRadio) ? .on : .off
+        ymodemGRadio.state = (sender === ymodemGRadio) ? .on : .off
+    }
+}
+
+// MARK: - YMODEM Dialog Helpers (in FileTransferDialogHelper extension)
+
+extension FileTransferDialogHelper {
+
+    // MARK: - YMODEM Send
+
+    /// Present a YMODEM send file open panel with YMODEM option accessory.
+    static func presentYMODEMSendPanel(
+        on window: NSWindow,
+        completion: @escaping (URL, TransferProtocolType) -> Void
+    ) {
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = true
+        panel.canChooseDirectories = false
+        panel.allowsMultipleSelection = false
+        panel.title = NSLocalizedString("dialog.ymodem.sendTitle",
+            value: "Tera Term: YMODEM Send", comment: "")
+
+        let accessory = YMODEMOptionAccessory(defaultStandard: true)
+        panel.accessoryView = accessory
+        panel.isAccessoryViewDisclosed = true
+
+        panel.beginSheetModal(for: window) { response in
+            guard response == .OK, let url = panel.url else { return }
+            completion(url, accessory.selectedProtocol)
+        }
+    }
+
+    // MARK: - YMODEM Receive
+
+    /// Present a YMODEM receive directory selection panel.
+    /// YMODEM provides filename in block 0, so user picks a directory.
+    static func presentYMODEMReceivePanel(
+        on window: NSWindow,
+        completion: @escaping (URL) -> Void
+    ) {
+        let panel = NSSavePanel()
+        panel.title = NSLocalizedString("dialog.ymodem.receiveTitle",
+            value: "Tera Term: YMODEM Receive", comment: "")
+        panel.nameFieldStringValue = "received_file"
+
+        let accessory = YMODEMOptionAccessory(defaultStandard: true)
+        panel.accessoryView = accessory
+
+        panel.beginSheetModal(for: window) { response in
+            guard response == .OK, let url = panel.url else { return }
+            completion(url)
+        }
     }
 }
 

@@ -238,6 +238,25 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         setSymbol("arrow.up.doc", for: kmSend)
         let kmRecv = transferMenu.addItem(withTitle: L("menu.file.kermitReceive"), action: #selector(kermitRecv(_:)), keyEquivalent: "")
         setSymbol("arrow.down.doc", for: kmRecv)
+        let kmGet = transferMenu.addItem(withTitle: L("menu.file.kermitGet"), action: #selector(kermitGet(_:)), keyEquivalent: "")
+        setSymbol("arrow.down.to.line", for: kmGet)
+        let kmFinish = transferMenu.addItem(withTitle: L("menu.file.kermitFinish"), action: #selector(kermitFinish(_:)), keyEquivalent: "")
+        setSymbol("stop.circle", for: kmFinish)
+        transferMenu.addItem(NSMenuItem.separator())
+        let ymSend = transferMenu.addItem(withTitle: L("menu.file.ymodemSend"), action: #selector(ymodemSend(_:)), keyEquivalent: "")
+        setSymbol("arrow.up.doc", for: ymSend)
+        let ymRecv = transferMenu.addItem(withTitle: L("menu.file.ymodemReceive"), action: #selector(ymodemRecv(_:)), keyEquivalent: "")
+        setSymbol("arrow.down.doc", for: ymRecv)
+        transferMenu.addItem(NSMenuItem.separator())
+        let bpSend = transferMenu.addItem(withTitle: L("menu.file.bplusSend"), action: #selector(bplusSend(_:)), keyEquivalent: "")
+        setSymbol("arrow.up.doc", for: bpSend)
+        let bpRecv = transferMenu.addItem(withTitle: L("menu.file.bplusReceive"), action: #selector(bplusRecv(_:)), keyEquivalent: "")
+        setSymbol("arrow.down.doc", for: bpRecv)
+        transferMenu.addItem(NSMenuItem.separator())
+        let qvSend = transferMenu.addItem(withTitle: L("menu.file.quickvanSend"), action: #selector(quickvanSend(_:)), keyEquivalent: "")
+        setSymbol("arrow.up.doc", for: qvSend)
+        let qvRecv = transferMenu.addItem(withTitle: L("menu.file.quickvanReceive"), action: #selector(quickvanRecv(_:)), keyEquivalent: "")
+        setSymbol("arrow.down.doc", for: qvRecv)
 
         fileMenu.addItem(NSMenuItem.separator())
         let scpItem = fileMenu.addItem(withTitle: L("menu.file.sshSCP"), action: #selector(showSCPDialog(_:)), keyEquivalent: "")
@@ -595,6 +614,14 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
     @objc func zmodemRecv(_ sender: Any?) { activeWindowController?.receiveFile(protocol: .zmodem) }
     @objc func kermitSend(_ sender: Any?) { activeWindowController?.sendFile(protocol: .kermit) }
     @objc func kermitRecv(_ sender: Any?) { activeWindowController?.receiveFile(protocol: .kermit) }
+    @objc func kermitGet(_ sender: Any?) { activeWindowController?.kermitGet() }
+    @objc func kermitFinish(_ sender: Any?) { activeWindowController?.kermitFinish() }
+    @objc func ymodemSend(_ sender: Any?) { activeWindowController?.sendFile(protocol: .ymodem) }
+    @objc func ymodemRecv(_ sender: Any?) { activeWindowController?.receiveFile(protocol: .ymodem) }
+    @objc func bplusSend(_ sender: Any?) { activeWindowController?.sendFile(protocol: .bplus) }
+    @objc func bplusRecv(_ sender: Any?) { activeWindowController?.receiveFile(protocol: .bplus) }
+    @objc func quickvanSend(_ sender: Any?) { activeWindowController?.sendFile(protocol: .quickVAN) }
+    @objc func quickvanRecv(_ sender: Any?) { activeWindowController?.receiveFile(protocol: .quickVAN) }
 
     @objc func doDisconnect(_ sender: Any?) {
         activeWindowController?.disconnect()

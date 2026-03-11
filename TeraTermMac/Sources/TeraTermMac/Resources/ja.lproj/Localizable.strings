@@ -26,6 +26,14 @@
 "menu.file.zmodemReceive" = "ZMODEM 受信…";
 "menu.file.kermitSend" = "Kermit 送信…";
 "menu.file.kermitReceive" = "Kermit 受信…";
+"menu.file.kermitGet" = "Kermit 取得…";
+"menu.file.kermitFinish" = "Kermit 終了";
+"menu.file.ymodemSend" = "YMODEM 送信…";
+"menu.file.ymodemReceive" = "YMODEM 受信…";
+"menu.file.bplusSend" = "B-Plus 送信…";
+"menu.file.bplusReceive" = "B-Plus 受信…";
+"menu.file.quickvanSend" = "Quick-VAN 送信…";
+"menu.file.quickvanReceive" = "Quick-VAN 受信…";
 "menu.file.sendFile" = "ファイル送信…";
 "menu.file.receiveFile" = "ファイル受信…";
 "menu.file.changeDir" = "ディレクトリ変更…";

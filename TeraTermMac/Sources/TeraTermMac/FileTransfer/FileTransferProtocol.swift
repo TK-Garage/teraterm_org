@@ -38,6 +38,17 @@ enum TransferProtocolType {
     case ymodemG
     case zmodem
     case kermit
+    case bplus
+    case quickVAN
+}
+
+// MARK: - Kermit Mode (for Get/Finish subcommands)
+
+enum KermitMode {
+    case receive
+    case send
+    case get       // Request remote server to send a file
+    case finish    // Tell remote server to exit server mode
 }
 
 // MARK: - File Transfer Delegate
@@ -2277,6 +2288,16 @@ class KermitProtocol: FileTransferProtocol {
             updateState(.completed(fileName: currentFileName, bytes: bytesTransferred))
             delegate?.transferDidComplete(fileName: currentFileName, bytes: bytesTransferred)
 
+        case .getInit:
+            handleGetACK(packet)
+
+        case .finish:
+            handleFinishACK(packet)
+            // After sending G "F" packet, wait for ACK
+            kState = .complete
+            updateState(.completed(fileName: "", bytes: 0))
+            delegate?.transferDidComplete(fileName: "", bytes: 0)
+
         default:
             break
         }
@@ -2690,10 +2711,1015 @@ class KermitProtocol: FileTransferProtocol {
         return result
     }
 
+    // MARK: - Kermit Get (request file from server)
+
+    /// Start a Kermit GET operation: send R packet with remote filename,
+    /// then transition to receive mode to accept the file.
+    func startGet(remoteFileName: String) {
+        sequence = 0
+        bytesTransferred = 0
+        receiveBuffer = Data()
+        pktNum = 0
+        pktNumOffset = 0
+        totalFileSize = 0
+        currentFileName = remoteFileName
+        checkType = 1
+        quote8 = false
+        repeatFlag = false
+        longPacketsEnabled = false
+
+        myParams = KermitParams()
+        myParams.maxl = 94
+        myParams.time = 10
+        myParams.eol = 0x0D
+        myParams.qctl = 0x23
+        myParams.qbin = 0x59
+        myParams.rept = 0x7E
+        myParams.capas = KermitProtocol.CAP_LONGPKT | KermitProtocol.CAP_FILATTR
+
+        direction = .receive
+        kState = .getInit
+        updateState(.starting)
+
+        // Send I (Initialize) packet with our parameters first
+        let initData = buildInitData()
+        let iPkt = buildPacket(seq: sequence, type: "I", data: initData)
+        lastSentPacket = iPkt
+        sendData(iPkt)
+    }
+
+    /// Handle ACK for Get-related states
+    private func handleGetACK(_ packet: Data) {
+        let dataOffset = (packet[1] == 32) ? 7 : 4
+        if packet.count > dataOffset {
+            parseSendInitData(Data(packet[dataOffset...]))
+        }
+        sequence = (sequence + 1) % 64
+
+        // After I-packet ACK, send R packet with filename
+        let nameData = Data(currentFileName.utf8)
+        let rPkt = buildPacket(seq: sequence, type: "R", data: nameData)
+        lastSentPacket = rPkt
+        sendData(rPkt)
+        kState = .receiveInit
+    }
+
+    // MARK: - Kermit Finish (tell server to exit)
+
+    /// Send a Kermit FINISH command: I-packet then G packet with "F" data.
+    func startFinish() {
+        sequence = 0
+        receiveBuffer = Data()
+        pktNum = 0
+        checkType = 1
+        quote8 = false
+        repeatFlag = false
+        longPacketsEnabled = false
+
+        myParams = KermitParams()
+        myParams.maxl = 94
+        myParams.time = 10
+        myParams.eol = 0x0D
+        myParams.qctl = 0x23
+        myParams.qbin = 0x59
+
+        kState = .finish
+        updateState(.starting)
+
+        // Send I packet first
+        let initData = buildInitData()
+        let iPkt = buildPacket(seq: sequence, type: "I", data: initData)
+        lastSentPacket = iPkt
+        sendData(iPkt)
+    }
+
+    /// Handle ACK for Finish state — send G packet with "F" (finish) subcommand.
+    private func handleFinishACK(_ packet: Data) {
+        let dataOffset = (packet[1] == 32) ? 7 : 4
+        if packet.count > dataOffset {
+            parseSendInitData(Data(packet[dataOffset...]))
+        }
+        sequence = (sequence + 1) % 64
+
+        // Send Generic command "F" (Finish)
+        let gPkt = buildPacket(seq: sequence, type: "G", data: Data([0x46])) // 'F'
+        lastSentPacket = gPkt
+        sendData(gPkt)
+    }
+
     override func cancel() {
         let msg = Data("Cancelled".utf8)
         let packet = buildPacket(seq: sequence, type: "E", data: msg)
         sendData(packet)
+        super.cancel()
+    }
+}
+
+// MARK: - B-Plus Protocol (port of bplus.c)
+//
+// DLE-based packet framing protocol with:
+//   - DLE (0x10) character as escape/frame marker
+//   - Checksum and Modified XMODEM CRC-16 modes
+//   - Sliding window block transfer
+//   - Block sizes adaptive to baud rate (1-16 * 128)
+//   - Packet types: '+' (parameters), 'T' (transfer control), 'N' (data), 'F' (failure)
+//
+// Packet format: DLE B <seq> data... DLE ETX <check>
+
+class BPlusProtocol: FileTransferProtocol {
+
+    // DLE-based framing constants
+    private static let DLE: UInt8 = 0x10
+    private static let ETX: UInt8 = 0x03
+    private static let ENQ: UInt8 = 0x05
+
+    // B-Plus states
+    private enum BPState {
+        case idle
+        case recvInit       // Waiting for initial parameter packet
+        case recvFile       // Waiting for file info (T packet)
+        case recvData       // Receiving data blocks
+        case sendInit       // Sending initial parameters
+        case sendFile       // Sending file info
+        case sendData       // Sending data blocks
+        case sendClose      // Sending close
+        case failure
+        case complete
+    }
+
+    // Packet read states
+    private enum PktReadState {
+        case getDLE
+        case dleSeen
+        case getData
+        case getCheck
+    }
+
+    private var receiveBuffer = Data()
+    private var bpState: BPState = .idle
+    private var pktReadState: PktReadState = .getDLE
+    private var pktIn = Data()
+    private var pktOut = Data()
+
+    private var pktNum: UInt8 = 0
+    private var pktNumSent: UInt8 = 0
+    private var pktNumOffset: Int = 0
+    private var maxBlockSize: Int = 16  // in 128-byte units
+    private var bytesTransferred: Int64 = 0
+    private var totalFileSize: Int64 = 0
+    private var currentFileName: String = ""
+    private var fileData = Data()
+    private var checkCalc: UInt16 = 0
+    private var useCRC: Bool = false    // false = checksum, true = CRC-16
+    private var quoted: Bool = false
+    private var retryCount = 0
+    private let maxRetries = 10
+    private var enqSent = false
+    private var getPacket = false
+    private var checkCount: Int = 0
+    private var receivedCheck: UInt16 = 0
+
+    override func start() {
+        receiveBuffer = Data()
+        fileData = Data()
+        pktNum = 0
+        pktNumSent = 0
+        pktNumOffset = 0
+        bytesTransferred = 0
+        totalFileSize = 0
+        currentFileName = ""
+        checkCalc = 0
+        useCRC = false
+        quoted = false
+        retryCount = 0
+        enqSent = false
+        getPacket = false
+        pktReadState = .getDLE
+
+        if direction == .receive {
+            bpState = .recvInit
+            updateState(.starting)
+            // B-Plus auto mode: receiver waits for DLE B
+        } else {
+            bpState = .sendInit
+            updateState(.starting)
+            // Send DLE '+' with parameters
+            sendParameterPacket()
+        }
+    }
+
+    override func processData(_ data: Data) {
+        receiveBuffer.append(data)
+        processIncoming()
+    }
+
+    // MARK: - Incoming Processing
+
+    private func processIncoming() {
+        while !receiveBuffer.isEmpty {
+            let b = receiveBuffer.removeFirst()
+
+            switch pktReadState {
+            case .getDLE:
+                if b == BPlusProtocol.DLE {
+                    pktReadState = .dleSeen
+                }
+
+            case .dleSeen:
+                if b == 0x42 { // 'B' - start of packet
+                    pktIn = Data()
+                    checkCalc = 0
+                    quoted = false
+                    pktReadState = .getData
+                } else if b == BPlusProtocol.DLE {
+                    // Stay in dleSeen
+                    continue
+                } else {
+                    pktReadState = .getDLE
+                }
+
+            case .getData:
+                if quoted {
+                    quoted = false
+                    pktIn.append(b)
+                    updateCheck(b)
+                } else if b == BPlusProtocol.DLE {
+                    // Next byte is escaped or ETX marker
+                    if !receiveBuffer.isEmpty {
+                        let nextByte = receiveBuffer.removeFirst()
+                        if nextByte == BPlusProtocol.ETX {
+                            updateCheck(BPlusProtocol.ETX)
+                            // Switch to reading check bytes
+                            checkCount = 0
+                            receivedCheck = 0
+                            pktReadState = .getCheck
+                        } else {
+                            // Escaped DLE in data
+                            pktIn.append(nextByte)
+                            updateCheck(nextByte)
+                        }
+                    } else {
+                        quoted = true
+                    }
+                } else {
+                    pktIn.append(b)
+                    updateCheck(b)
+                }
+
+            case .getCheck:
+                receivedCheck = (receivedCheck << 8) | UInt16(b)
+                checkCount += 1
+                let checkSize = useCRC ? 2 : 1
+                if checkCount >= checkSize {
+                    pktReadState = .getDLE
+                    handlePacket()
+                }
+            }
+        }
+    }
+
+    private func updateCheck(_ b: UInt8) {
+        if useCRC {
+            // Modified XMODEM CRC-16
+            checkCalc = checkCalc ^ (UInt16(b) << 8)
+            for _ in 0..<8 {
+                if checkCalc & 0x8000 != 0 {
+                    checkCalc = (checkCalc << 1) ^ 0x1021
+                } else {
+                    checkCalc = checkCalc << 1
+                }
+            }
+        } else {
+            // Standard B-Plus checksum: rotate left + add
+            var w = checkCalc << 1
+            if w > 0xFF {
+                w = (w & 0xFF) + 1
+            }
+            w = w + UInt16(b)
+            if w > 0xFF {
+                w = (w & 0xFF) + 1
+            }
+            checkCalc = w
+        }
+    }
+
+    // MARK: - Packet Handling
+
+    private func handlePacket() {
+        guard pktIn.count >= 2 else { return }
+
+        let seqChar = pktIn[0]
+        let pktType = pktIn[1]
+        let pktData = pktIn.count > 2 ? Data(pktIn[2...]) : Data()
+
+        switch Character(UnicodeScalar(pktType)) {
+        case "+":  // Parameter packet
+            handleParameterPacket(pktData)
+        case "T":  // Transfer control
+            handleTransferPacket(pktData, seq: seqChar)
+        case "N":  // Data packet
+            handleDataPacket(pktData, seq: seqChar)
+        case "F":  // Failure
+            updateState(.failed(error: "B-Plus: remote failure"))
+            bpState = .failure
+        default:
+            break
+        }
+    }
+
+    private func handleParameterPacket(_ data: Data) {
+        // Parse parameters from '+' packet
+        if data.count >= 4 {
+            // WS, WR, BS, CM
+            maxBlockSize = Int(data[2])
+            if data.count >= 5 {
+                useCRC = data[3] == 1
+            }
+        }
+        // ACK parameters
+        sendACKPacket()
+
+        if bpState == .recvInit {
+            bpState = .recvFile
+        } else if bpState == .sendInit {
+            bpState = .sendFile
+            sendFileInfo()
+        }
+    }
+
+    private func handleTransferPacket(_ data: Data, seq: UInt8) {
+        // 'T' packet: file info or control
+        if data.isEmpty {
+            sendACKPacket()
+            return
+        }
+
+        let subType = data[0]
+        let tData = data.count > 1 ? Data(data[1...]) : Data()
+
+        switch Character(UnicodeScalar(subType)) {
+        case "C": // Close (end of transfer)
+            sendACKPacket()
+            writeReceivedFile()
+            bpState = .complete
+            updateState(.completed(fileName: currentFileName, bytes: bytesTransferred))
+            delegate?.transferDidComplete(fileName: currentFileName, bytes: bytesTransferred)
+
+        case "D": // Download (file info from sender)
+            parseFileInfo(tData)
+            sendACKPacket()
+            bpState = .recvData
+            fileData = Data()
+            bytesTransferred = 0
+
+        case "U": // Upload request
+            sendACKPacket()
+            if bpState == .sendFile {
+                bpState = .sendData
+                sendNextDataBlock()
+            }
+
+        default:
+            sendACKPacket()
+        }
+    }
+
+    private func handleDataPacket(_ data: Data, seq: UInt8) {
+        if bpState == .recvData {
+            fileData.append(data)
+            bytesTransferred += Int64(data.count)
+            updateState(.inProgress(bytesTransferred: bytesTransferred,
+                                    totalBytes: totalFileSize > 0 ? totalFileSize : nil,
+                                    fileName: currentFileName))
+        }
+        sendACKPacket()
+    }
+
+    private func parseFileInfo(_ data: Data) {
+        // File info: filename\0size\0
+        if let nulIdx = data.firstIndex(of: 0) {
+            let nameData = Data(data[data.startIndex..<nulIdx])
+            currentFileName = String(data: nameData, encoding: .utf8) ?? "unknown"
+
+            let afterNul = data.index(after: nulIdx)
+            if afterNul < data.endIndex {
+                let rest = Data(data[afterNul...])
+                if let sizeNul = rest.firstIndex(of: 0) {
+                    let sizeData = Data(rest[rest.startIndex..<sizeNul])
+                    if let sizeStr = String(data: sizeData, encoding: .ascii),
+                       let size = Int64(sizeStr) {
+                        totalFileSize = size
+                    }
+                }
+            }
+        }
+    }
+
+    // MARK: - Packet Builders
+
+    private func sendParameterPacket() {
+        // Build '+' parameter packet
+        var data = Data()
+        data.append(UInt8(0x30 + (pktNum % 10)))  // seq
+        data.append(UInt8(Character("+").asciiValue!))  // type
+        data.append(1)   // WS
+        data.append(1)   // WR
+        data.append(UInt8(maxBlockSize))  // BS
+        data.append(useCRC ? 1 : 0)      // CM
+        sendBPPacket(data)
+    }
+
+    private func sendACKPacket() {
+        // Simple ACK: DLE B <seq> Y DLE ETX <check>
+        var data = Data()
+        data.append(UInt8(0x30 + (pktNum % 10)))
+        data.append(UInt8(Character("Y").asciiValue!))
+        sendBPPacket(data)
+        pktNum = (pktNum + 1) % 10
+    }
+
+    private func sendFileInfo() {
+        guard let path = filePath else { return }
+        let fileName = (path as NSString).lastPathComponent
+        currentFileName = fileName
+
+        var infoData = Data()
+        infoData.append(Data(fileName.utf8))
+        infoData.append(0)
+
+        if let attrs = try? FileManager.default.attributesOfItem(atPath: path) {
+            totalFileSize = (attrs[.size] as? Int64) ?? 0
+            let sizeStr = "\(totalFileSize)"
+            infoData.append(Data(sizeStr.utf8))
+        }
+        infoData.append(0)
+
+        var pkt = Data()
+        pkt.append(UInt8(0x30 + (pktNum % 10)))
+        pkt.append(UInt8(Character("T").asciiValue!))
+        pkt.append(UInt8(Character("D").asciiValue!))
+        pkt.append(infoData)
+        sendBPPacket(pkt)
+        pktNum = (pktNum + 1) % 10
+    }
+
+    private func sendNextDataBlock() {
+        guard let handle = fileHandle else {
+            sendClosePacket()
+            return
+        }
+
+        let blockSize = maxBlockSize * 128
+        let data = handle.readData(ofLength: blockSize)
+        if data.isEmpty {
+            sendClosePacket()
+            return
+        }
+
+        var pkt = Data()
+        pkt.append(UInt8(0x30 + (pktNum % 10)))
+        pkt.append(UInt8(Character("N").asciiValue!))
+        pkt.append(data)
+        sendBPPacket(pkt)
+        pktNum = (pktNum + 1) % 10
+
+        bytesTransferred += Int64(data.count)
+        updateState(.inProgress(bytesTransferred: bytesTransferred,
+                                totalBytes: totalFileSize > 0 ? totalFileSize : nil,
+                                fileName: currentFileName))
+    }
+
+    private func sendClosePacket() {
+        var pkt = Data()
+        pkt.append(UInt8(0x30 + (pktNum % 10)))
+        pkt.append(UInt8(Character("T").asciiValue!))
+        pkt.append(UInt8(Character("C").asciiValue!))
+        sendBPPacket(pkt)
+        bpState = .sendClose
+    }
+
+    private func sendBPPacket(_ payload: Data) {
+        var packet = Data()
+        packet.append(BPlusProtocol.DLE)
+        packet.append(0x42) // 'B'
+
+        var check: UInt16 = 0
+        for b in payload {
+            // DLE-escape data bytes that equal DLE
+            if b == BPlusProtocol.DLE {
+                packet.append(BPlusProtocol.DLE)
+            }
+            packet.append(b)
+            // Update check
+            if useCRC {
+                check = check ^ (UInt16(b) << 8)
+                for _ in 0..<8 {
+                    if check & 0x8000 != 0 {
+                        check = (check << 1) ^ 0x1021
+                    } else {
+                        check = check << 1
+                    }
+                }
+            } else {
+                var w = check << 1
+                if w > 0xFF { w = (w & 0xFF) + 1 }
+                w = w + UInt16(b)
+                if w > 0xFF { w = (w & 0xFF) + 1 }
+                check = w
+            }
+        }
+
+        packet.append(BPlusProtocol.DLE)
+        packet.append(BPlusProtocol.ETX)
+
+        // Update check with ETX
+        if useCRC {
+            check = check ^ (UInt16(BPlusProtocol.ETX) << 8)
+            for _ in 0..<8 {
+                if check & 0x8000 != 0 {
+                    check = (check << 1) ^ 0x1021
+                } else {
+                    check = check << 1
+                }
+            }
+            packet.append(UInt8(check >> 8))
+            packet.append(UInt8(check & 0xFF))
+        } else {
+            var w = check << 1
+            if w > 0xFF { w = (w & 0xFF) + 1 }
+            w = w + UInt16(BPlusProtocol.ETX)
+            if w > 0xFF { w = (w & 0xFF) + 1 }
+            packet.append(UInt8(w & 0xFF))
+        }
+
+        sendData(packet)
+    }
+
+    private func writeReceivedFile() {
+        guard !fileData.isEmpty, let path = filePath else { return }
+        let dir = (path as NSString).deletingLastPathComponent
+        let targetPath: String
+        if !currentFileName.isEmpty {
+            targetPath = (dir as NSString).appendingPathComponent(currentFileName)
+        } else {
+            targetPath = path
+        }
+        try? fileData.write(to: URL(fileURLWithPath: targetPath))
+    }
+
+    override func cancel() {
+        // Send failure packet
+        var pkt = Data()
+        pkt.append(UInt8(0x30 + (pktNum % 10)))
+        pkt.append(UInt8(Character("F").asciiValue!))
+        sendBPPacket(pkt)
+        super.cancel()
+    }
+}
+
+// MARK: - Quick-VAN Protocol (port of quickvan.c)
+//
+// 128-byte block protocol with sliding window:
+//   - SOH-framed data packets with sequence numbers
+//   - STX-framed control/response packets
+//   - Sliding window flow control (adjustable window size)
+//   - File information frame with date/time
+//   - Checksum verification
+//
+// Data packet: SOH BLK ~BLK DATA[128] CHECKSUM
+// Control packet: STX TYPE NUM DATA... CHECKSUM CR
+
+class QuickVANProtocol: FileTransferProtocol {
+
+    private static let SOH_QV: UInt8 = 0x01
+    private static let STX_QV: UInt8 = 0x02
+    private static let EOT_QV: UInt8 = 0x04
+    private static let ACK_QV: UInt8 = 0x06
+    private static let NAK_QV: UInt8 = 0x15
+    private static let CAN_QV: UInt8 = 0x18
+
+    // Control frame types (STX frames)
+    private static let SINIT: UInt8 = 0x01   // Session init
+    private static let VFILE: UInt8 = 0x02   // File info
+    private static let VDAT: UInt8 = 0x03    // Data acknowledgement
+    private static let VENQ: UInt8 = 0x04    // Enquiry
+    private static let VRPOS: UInt8 = 0x05   // Reposition
+    private static let VACK: UInt8 = 0x06    // Window ACK
+    private static let VNAK: UInt8 = 0x07    // Negative ACK
+    private static let VSTAT: UInt8 = 0x08   // Status
+
+    // Quick-VAN states
+    private enum QVState {
+        case recvInit1, recvInit2
+        case recvData, recvDataRetry
+        case recvNext, recvEOT
+        case sendInit1, sendInit2, sendInit3
+        case sendData, sendDataRetry
+        case sendNext, sendEnd
+        case cancel, close, complete
+    }
+
+    // Packet read states
+    private enum PktReadState {
+        case soh, blk, blk2, data
+        case stx, cr
+    }
+
+    private var receiveBuffer = Data()
+    private var qvState: QVState = .recvInit1
+    private var pktReadState: PktReadState = .soh
+    private var pktIn = [UInt8](repeating: 0, count: 142)
+    private var pktOut = [UInt8](repeating: 0, count: 142)
+    private var pktInCount = 0
+    private var pktInPtr = 0
+    private var pktOutCount = 0
+    private var pktOutPtr = 0
+    private var pktOutLen = 0
+
+    private var seqNum: UInt16 = 0
+    private var fileNum: UInt16 = 0
+    private var winSize: UInt16 = 4
+    private var seqSent: UInt16 = 0
+    private var winEnd: UInt16 = 0
+    private var fileEnd: Bool = false
+    private var retryCount = 10
+    private var canFlag = false
+    private var checkSum: UInt8 = 0
+
+    private var bytesTransferred: Int64 = 0
+    private var totalFileSize: Int64 = 0
+    private var currentFileName: String = ""
+    private var fileData = Data()
+    private var version: UInt16 = 1
+
+    override func start() {
+        receiveBuffer = Data()
+        fileData = Data()
+        seqNum = 0
+        fileNum = 0
+        bytesTransferred = 0
+        totalFileSize = 0
+        currentFileName = ""
+        canFlag = false
+        pktOutCount = 0
+        pktOutPtr = 0
+        retryCount = 10
+
+        if direction == .receive {
+            qvState = .recvInit1
+            pktReadState = .soh
+            updateState(.starting)
+            // Send NAK to initiate
+            sendData(Data([QuickVANProtocol.NAK_QV]))
+        } else {
+            qvState = .sendInit1
+            pktReadState = .stx
+            updateState(.starting)
+            // Send SINIT packet
+            sendSINIT()
+        }
+    }
+
+    override func processData(_ data: Data) {
+        receiveBuffer.append(data)
+        processIncoming()
+    }
+
+    // MARK: - Incoming Processing
+
+    private func processIncoming() {
+        while !receiveBuffer.isEmpty {
+            let b = receiveBuffer.removeFirst()
+
+            switch pktReadState {
+            case .soh:
+                if b == QuickVANProtocol.SOH_QV {
+                    pktInCount = 0
+                    pktInPtr = 0
+                    pktReadState = .blk
+                } else if b == QuickVANProtocol.STX_QV {
+                    pktInCount = 0
+                    pktInPtr = 0
+                    pktReadState = .stx
+                } else if b == QuickVANProtocol.EOT_QV {
+                    handleEOT()
+                } else if b == QuickVANProtocol.CAN_QV {
+                    updateState(.cancelled)
+                    qvState = .cancel
+                    return
+                }
+
+            case .blk:
+                pktIn[0] = b
+                pktReadState = .blk2
+
+            case .blk2:
+                pktIn[1] = b
+                // Verify block number complement
+                if pktIn[0] ^ pktIn[1] != 0xFF {
+                    pktReadState = .soh
+                    continue
+                }
+                pktInCount = 0
+                pktReadState = .data
+
+            case .data:
+                pktIn[2 + pktInCount] = b
+                pktInCount += 1
+                if pktInCount >= 129 { // 128 data + 1 checksum
+                    pktReadState = .soh
+                    handleDataPacket()
+                }
+
+            case .stx:
+                pktIn[pktInCount] = b
+                pktInCount += 1
+                if b == 0x0D { // CR terminates STX frame
+                    pktReadState = .soh
+                    handleControlPacket()
+                    pktInCount = 0
+                }
+                if pktInCount >= 140 {
+                    pktReadState = .soh
+                    pktInCount = 0
+                }
+
+            case .cr:
+                pktReadState = .soh
+            }
+        }
+    }
+
+    // MARK: - Packet Handlers
+
+    private func handleDataPacket() {
+        let blkNum = pktIn[0]
+        let dataSlice = Array(pktIn[2..<130])
+
+        // Verify checksum
+        var sum: UInt8 = QuickVANProtocol.SOH_QV
+        sum = sum &+ pktIn[0]
+        sum = sum &+ pktIn[1]
+        for i in 0..<128 {
+            sum = sum &+ pktIn[2 + i]
+        }
+        let expectedCheck = pktIn[130]
+        guard sum == expectedCheck else {
+            retryCount -= 1
+            if retryCount <= 0 {
+                sendData(Data([QuickVANProtocol.CAN_QV]))
+                updateState(.failed(error: "Quick-VAN: too many retries"))
+                return
+            }
+            sendData(Data([QuickVANProtocol.NAK_QV]))
+            return
+        }
+
+        if qvState == .recvData || qvState == .recvDataRetry {
+            let data = Data(dataSlice)
+            fileData.append(data)
+            bytesTransferred += 128
+            seqNum += 1
+            retryCount = 10
+
+            // Send ACK for this block
+            sendData(Data([QuickVANProtocol.ACK_QV]))
+
+            updateState(.inProgress(bytesTransferred: bytesTransferred,
+                                    totalBytes: totalFileSize > 0 ? totalFileSize : nil,
+                                    fileName: currentFileName))
+        }
+    }
+
+    private func handleControlPacket() {
+        guard pktInCount >= 3 else { return }
+
+        let frameType = pktIn[0]
+        let frameNum = pktIn[1]
+
+        switch frameType {
+        case QuickVANProtocol.SINIT:
+            handleSINIT()
+
+        case QuickVANProtocol.VFILE:
+            handleVFILE()
+
+        case QuickVANProtocol.VACK:
+            if qvState == .sendData || qvState == .sendDataRetry {
+                // Window acknowledged, send more data
+                sendNextDataBlock()
+            }
+
+        case QuickVANProtocol.VNAK:
+            retryCount -= 1
+            if retryCount <= 0 {
+                sendData(Data([QuickVANProtocol.CAN_QV]))
+                updateState(.failed(error: "Quick-VAN: too many NAKs"))
+            }
+
+        case QuickVANProtocol.VSTAT:
+            // Status response
+            break
+
+        default:
+            break
+        }
+    }
+
+    private func handleSINIT() {
+        // Parse SINIT: version, window size
+        if pktInCount >= 5 {
+            version = UInt16(pktIn[2] & 0x7F)
+            winSize = UInt16(pktIn[3] & 0x7F)
+            if winSize == 0 { winSize = 1 }
+        }
+
+        // Send SINIT response
+        sendSINITResponse()
+
+        if qvState == .recvInit1 {
+            qvState = .recvInit2
+        } else if qvState == .sendInit1 {
+            qvState = .sendInit2
+        }
+    }
+
+    private func handleVFILE() {
+        // Parse file info from VFILE frame
+        var nameBytes = Data()
+        var i = 2
+        while i < pktInCount - 2 && pktIn[i] != 0 {
+            nameBytes.append(pktIn[i])
+            i += 1
+        }
+        currentFileName = String(data: nameBytes, encoding: .utf8) ?? "unknown"
+
+        // Parse file size if available
+        i += 1
+        var sizeBytes = Data()
+        while i < pktInCount - 2 && pktIn[i] != 0 && pktIn[i] != 0x0D {
+            sizeBytes.append(pktIn[i])
+            i += 1
+        }
+        if let sizeStr = String(data: sizeBytes, encoding: .ascii),
+           let size = Int64(sizeStr) {
+            totalFileSize = size
+        }
+
+        // Send VACK
+        sendVACK()
+        qvState = .recvData
+        fileData = Data()
+        bytesTransferred = 0
+        updateState(.inProgress(bytesTransferred: 0, totalBytes: totalFileSize > 0 ? totalFileSize : nil, fileName: currentFileName))
+    }
+
+    private func handleEOT() {
+        // End of transmission
+        writeReceivedFile()
+        sendData(Data([QuickVANProtocol.ACK_QV]))
+        qvState = .complete
+        updateState(.completed(fileName: currentFileName, bytes: bytesTransferred))
+        delegate?.transferDidComplete(fileName: currentFileName, bytes: bytesTransferred)
+    }
+
+    // MARK: - Send Helpers
+
+    private func sendSINIT() {
+        var pkt = Data()
+        pkt.append(QuickVANProtocol.STX_QV)
+        pkt.append(QuickVANProtocol.SINIT)
+        pkt.append(UInt8(seqNum & 0x7F) | 0x80)
+        pkt.append(UInt8(version) | 0x80)
+        pkt.append(UInt8(winSize) | 0x80)
+
+        var sum: UInt8 = 0
+        for b in pkt { sum = sum &+ b }
+        pkt.append(sum | 0x80)
+        pkt.append(0x0D)
+
+        sendData(pkt)
+    }
+
+    private func sendSINITResponse() {
+        var pkt = Data()
+        pkt.append(QuickVANProtocol.STX_QV)
+        pkt.append(QuickVANProtocol.SINIT)
+        pkt.append(UInt8(seqNum & 0x7F) | 0x80)
+        pkt.append(UInt8(version) | 0x80)
+        pkt.append(UInt8(winSize) | 0x80)
+
+        var sum: UInt8 = 0
+        for b in pkt { sum = sum &+ b }
+        pkt.append(sum | 0x80)
+        pkt.append(0x0D)
+
+        sendData(pkt)
+    }
+
+    private func sendVFILE() {
+        guard let path = filePath else { return }
+        let fileName = (path as NSString).lastPathComponent
+        currentFileName = fileName
+
+        var pkt = Data()
+        pkt.append(QuickVANProtocol.STX_QV)
+        pkt.append(QuickVANProtocol.VFILE)
+        pkt.append(UInt8(fileNum & 0x7F) | 0x80)
+        pkt.append(Data(fileName.utf8))
+        pkt.append(0)
+
+        if let attrs = try? FileManager.default.attributesOfItem(atPath: path) {
+            totalFileSize = (attrs[.size] as? Int64) ?? 0
+            pkt.append(Data("\(totalFileSize)".utf8))
+        }
+        pkt.append(0)
+
+        var sum: UInt8 = 0
+        for b in pkt { sum = sum &+ b }
+        pkt.append(sum | 0x80)
+        pkt.append(0x0D)
+
+        sendData(pkt)
+    }
+
+    private func sendVACK() {
+        var pkt = Data()
+        pkt.append(QuickVANProtocol.STX_QV)
+        pkt.append(QuickVANProtocol.VACK)
+        pkt.append(UInt8(seqNum & 0x7F) | 0x80)
+
+        var sum: UInt8 = 0
+        for b in pkt { sum = sum &+ b }
+        pkt.append(sum | 0x80)
+        pkt.append(0x0D)
+
+        sendData(pkt)
+    }
+
+    private func sendNextDataBlock() {
+        guard let handle = fileHandle else {
+            // End of file
+            sendData(Data([QuickVANProtocol.EOT_QV]))
+            qvState = .sendEnd
+            return
+        }
+
+        let data = handle.readData(ofLength: 128)
+        if data.isEmpty {
+            sendData(Data([QuickVANProtocol.EOT_QV]))
+            qvState = .sendEnd
+            return
+        }
+
+        var paddedData = data
+        while paddedData.count < 128 {
+            paddedData.append(0x1A) // SUB padding
+        }
+
+        seqNum += 1
+        let blk = UInt8(seqNum & 0xFF)
+
+        var pkt = Data()
+        pkt.append(QuickVANProtocol.SOH_QV)
+        pkt.append(blk)
+        pkt.append(~blk)
+        pkt.append(paddedData)
+
+        // Checksum
+        var sum: UInt8 = QuickVANProtocol.SOH_QV
+        sum = sum &+ blk
+        sum = sum &+ (~blk)
+        for b in paddedData { sum = sum &+ b }
+        pkt.append(sum)
+
+        sendData(pkt)
+
+        bytesTransferred += Int64(data.count)
+        updateState(.inProgress(bytesTransferred: bytesTransferred,
+                                totalBytes: totalFileSize > 0 ? totalFileSize : nil,
+                                fileName: currentFileName))
+    }
+
+    private func writeReceivedFile() {
+        guard !fileData.isEmpty, let path = filePath else { return }
+        // Trim to actual file size if known
+        var dataToWrite = fileData
+        if totalFileSize > 0 && Int64(fileData.count) > totalFileSize {
+            dataToWrite = Data(fileData.prefix(Int(totalFileSize)))
+        }
+        let dir = (path as NSString).deletingLastPathComponent
+        let targetPath: String
+        if !currentFileName.isEmpty {
+            targetPath = (dir as NSString).appendingPathComponent(currentFileName)
+        } else {
+            targetPath = path
+        }
+        try? dataToWrite.write(to: URL(fileURLWithPath: targetPath))
+    }
+
+    override func cancel() {
+        sendData(Data([QuickVANProtocol.CAN_QV]))
         super.cancel()
     }
 }
@@ -2783,6 +3809,10 @@ class FileTransferManager {
             transfer = ZMODEMProtocol()
         case .kermit:
             transfer = KermitProtocol()
+        case .bplus:
+            transfer = BPlusProtocol()
+        case .quickVAN:
+            transfer = QuickVANProtocol()
         }
 
         transfer.direction = direction
@@ -2812,6 +3842,30 @@ class FileTransferManager {
         ym.delegate = delegate
         activeTransfer = ym
         ym.start()
+    }
+
+    /// Start a Kermit GET operation (request file from remote server).
+    func startKermitGet(remoteFileName: String, localPath: String?) {
+        let km = KermitProtocol()
+        km.direction = .receive
+        km.filePath = localPath
+        km.delegate = delegate
+
+        if let path = localPath {
+            FileManager.default.createFile(atPath: path, contents: nil)
+            km.fileHandle = FileHandle(forWritingAtPath: path)
+        }
+
+        activeTransfer = km
+        km.startGet(remoteFileName: remoteFileName)
+    }
+
+    /// Send Kermit FINISH command to tell remote server to exit server mode.
+    func startKermitFinish() {
+        let km = KermitProtocol()
+        km.delegate = delegate
+        activeTransfer = km
+        km.startFinish()
     }
 
     func processIncomingData(_ data: Data) {

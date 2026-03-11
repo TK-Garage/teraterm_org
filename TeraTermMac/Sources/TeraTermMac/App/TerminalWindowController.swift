@@ -250,6 +250,18 @@ class TerminalWindowController: NSWindowController {
             FileTransferDialogHelper.presentMultiSendPanel(on: win, protocolType: .kermit) { [weak self] url, proto in
                 self?.startTransfer(proto, direction: .send, url: url)
             }
+        case .ymodem, .ymodemG:
+            FileTransferDialogHelper.presentYMODEMSendPanel(on: win) { [weak self] url, proto in
+                self?.startTransfer(proto, direction: .send, url: url)
+            }
+        case .bplus:
+            FileTransferDialogHelper.presentMultiSendPanel(on: win, protocolType: .bplus) { [weak self] url, proto in
+                self?.startTransfer(proto, direction: .send, url: url)
+            }
+        case .quickVAN:
+            FileTransferDialogHelper.presentMultiSendPanel(on: win, protocolType: .quickVAN) { [weak self] url, proto in
+                self?.startTransfer(proto, direction: .send, url: url)
+            }
         default:
             break
         }
@@ -270,9 +282,44 @@ class TerminalWindowController: NSWindowController {
             FileTransferDialogHelper.presentMultiReceivePanel(on: win, protocolType: .kermit) { [weak self] url, proto in
                 self?.startTransfer(proto, direction: .receive, url: url)
             }
+        case .ymodem, .ymodemG:
+            FileTransferDialogHelper.presentYMODEMReceivePanel(on: win) { [weak self] url in
+                self?.startTransfer(.ymodem, direction: .receive, url: url)
+            }
+        case .bplus:
+            FileTransferDialogHelper.presentMultiReceivePanel(on: win, protocolType: .bplus) { [weak self] url, proto in
+                self?.startTransfer(proto, direction: .receive, url: url)
+            }
+        case .quickVAN:
+            FileTransferDialogHelper.presentMultiReceivePanel(on: win, protocolType: .quickVAN) { [weak self] url, proto in
+                self?.startTransfer(proto, direction: .receive, url: url)
+            }
         default:
             break
         }
+    }
+
+    func kermitGet() {
+        guard let win = window else { return }
+        FileTransferDialogHelper.presentKermitGetDialog(on: win) { [weak self] remoteFileName in
+            guard let self = self, let name = remoteFileName else { return }
+            let savePanel = NSSavePanel()
+            savePanel.nameFieldStringValue = name
+            savePanel.beginSheetModal(for: win) { response in
+                guard response == .OK, let url = savePanel.url else { return }
+                self.fileTransferManager.delegate = self
+                self.fileTransferManager.startKermitGet(remoteFileName: name, localPath: url.path)
+                self.protocolTransferPanel.onCancel = { [weak self] in
+                    self?.fileTransferManager.cancelTransfer()
+                }
+                self.protocolTransferPanel.show(fileName: name, protocolName: "Kermit Get")
+            }
+        }
+    }
+
+    func kermitFinish() {
+        fileTransferManager.delegate = self
+        fileTransferManager.startKermitFinish()
     }
 
     private func startTransfer(_ type: TransferProtocolType, direction: TransferDirection, url: URL) {
@@ -285,9 +332,12 @@ class TerminalWindowController: NSWindowController {
         case .xmodem:    protoName = "XMODEM"
         case .xmodemCRC: protoName = "XMODEM-CRC"
         case .xmodem1K:  protoName = "XMODEM-1K"
+        case .ymodem:    protoName = "YMODEM"
+        case .ymodemG:   protoName = "YMODEM-G"
         case .zmodem:    protoName = "ZMODEM"
         case .kermit:    protoName = "Kermit"
-        default:         protoName = "Transfer"
+        case .bplus:     protoName = "B-Plus"
+        case .quickVAN:  protoName = "Quick-VAN"
         }
         let fileName = url.lastPathComponent
         protocolTransferPanel.onCancel = { [weak self] in
