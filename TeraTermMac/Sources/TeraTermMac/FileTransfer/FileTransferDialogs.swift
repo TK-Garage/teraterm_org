@@ -613,6 +613,45 @@ final class KermitGetDialogController: BaseSetupDialogController {
 /// matching the original Tera Term behaviour.
 enum FileTransferDialogHelper {
 
+    // MARK: - Panel Configuration
+
+    /// Configure an NSOpenPanel to allow selection of files with any file
+    /// attribute (no content-type filtering).  This matches the original
+    /// Tera Term behaviour where every file is selectable.
+    static func configureOpenPanelForAllFileTypes(_ panel: NSOpenPanel) {
+        panel.allowedContentTypes = []
+        panel.allowsOtherFileTypes = true
+        panel.treatsFilePackagesAsDirectories = true
+    }
+
+    /// Validate that the file at *url* is readable.  If not, present an
+    /// error alert on *window* and return `false`.
+    @discardableResult
+    static func validateReadPermission(for url: URL, on window: NSWindow?) -> Bool {
+        guard FileManager.default.isReadableFile(atPath: url.path) else {
+            let alert = NSAlert()
+            alert.alertStyle = .critical
+            alert.messageText = NSLocalizedString(
+                "dialog.fileTransfer.readError.title",
+                value: "Cannot Read File",
+                comment: "Alert title when selected file lacks read permission")
+            alert.informativeText = String(
+                format: NSLocalizedString(
+                    "dialog.fileTransfer.readError.message",
+                    value: "The file \"%@\" cannot be read. Please check the file permissions.",
+                    comment: "Alert message when selected file lacks read permission"),
+                url.lastPathComponent)
+            alert.addButton(withTitle: NSLocalizedString("OK", value: "OK", comment: ""))
+            if let window = window {
+                alert.beginSheetModal(for: window, completionHandler: nil)
+            } else {
+                alert.runModal()
+            }
+            return false
+        }
+        return true
+    }
+
     // MARK: - XMODEM Send
 
     /// Present an XMODEM send file open panel with protocol option accessory.
@@ -625,6 +664,7 @@ enum FileTransferDialogHelper {
         panel.canChooseFiles = true
         panel.canChooseDirectories = false
         panel.allowsMultipleSelection = false
+        configureOpenPanelForAllFileTypes(panel)
         panel.title = NSLocalizedString("dialog.xmodem.sendTitle",
             value: "Tera Term: XMODEM Send", comment: "")
 
@@ -634,6 +674,7 @@ enum FileTransferDialogHelper {
 
         panel.beginSheetModal(for: window) { response in
             guard response == .OK, let url = panel.url else { return }
+            guard validateReadPermission(for: url, on: window) else { return }
             completion(url, accessory.selectedProtocol)
         }
     }
@@ -670,6 +711,7 @@ enum FileTransferDialogHelper {
         panel.canChooseFiles = true
         panel.canChooseDirectories = false
         panel.allowsMultipleSelection = false
+        configureOpenPanelForAllFileTypes(panel)
 
         let protoName: String
         switch protocolType {
@@ -688,6 +730,7 @@ enum FileTransferDialogHelper {
 
         panel.beginSheetModal(for: window) { response in
             guard response == .OK, let url = panel.url else { return }
+            guard self.validateReadPermission(for: url, on: window) else { return }
             completion(url, protocolType)
         }
     }
@@ -959,6 +1002,7 @@ final class SendFileDialogController: BaseSetupDialogController {
         openPanel.canChooseFiles = true
         openPanel.canChooseDirectories = false
         openPanel.allowsMultipleSelection = false
+        FileTransferDialogHelper.configureOpenPanelForAllFileTypes(openPanel)
         if openPanel.runModal() == .OK, let url = openPanel.url {
             filenameField.stringValue = url.path
         }
@@ -968,6 +1012,12 @@ final class SendFileDialogController: BaseSetupDialogController {
         let path = filenameField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !path.isEmpty else { result = nil; return }
         let url = URL(fileURLWithPath: path)
+
+        guard FileTransferDialogHelper.validateReadPermission(
+            for: url, on: view.window) else {
+            result = nil
+            return
+        }
 
         let delayType = DelayType(rawValue: delayTypePopup.indexOfSelectedItem) ?? .noDelay
 
@@ -1197,6 +1247,7 @@ extension FileTransferDialogHelper {
         panel.canChooseFiles = true
         panel.canChooseDirectories = false
         panel.allowsMultipleSelection = false
+        configureOpenPanelForAllFileTypes(panel)
         panel.title = NSLocalizedString("dialog.ymodem.sendTitle",
             value: "Tera Term: YMODEM Send", comment: "")
 
@@ -1206,6 +1257,7 @@ extension FileTransferDialogHelper {
 
         panel.beginSheetModal(for: window) { response in
             guard response == .OK, let url = panel.url else { return }
+            guard self.validateReadPermission(for: url, on: window) else { return }
             completion(url, accessory.selectedProtocol)
         }
     }
