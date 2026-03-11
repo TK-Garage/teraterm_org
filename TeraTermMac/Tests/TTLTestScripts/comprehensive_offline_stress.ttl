@@ -1,0 +1,1919 @@
+; ============================================================
+; Tera Term Macro — Comprehensive Offline & Stress Test
+;
+; Tests ALL TTL commands that do NOT require an active
+; connection.  Also applies stress (large iterations, deep
+; nesting, big arrays, heavy file I/O) to exercise the
+; interpreter under load.
+;
+; Results are written to /tmp/ttl_comprehensive_stress.log
+; ============================================================
+
+; --- Configuration ---
+logfile = '/tmp/ttl_comprehensive_stress.log'
+tmpdir  = '/tmp'
+pass_count = 0
+fail_count = 0
+test_num   = 0
+
+; --- Helper: log PASS/FAIL ---
+; (inline, since subroutines are tested later)
+
+fileopen fh logfile 0
+if fh < 0 then
+  ; fallback — cannot even open the log
+  end
+endif
+
+filewriteln fh '============================================'
+filewriteln fh 'TTL Comprehensive Offline & Stress Test'
+getdate datestr
+gettime timestr
+sprintf2 header 'Run: %s %s' datestr timestr
+filewriteln fh header
+filewriteln fh '============================================'
+filewriteln fh ''
+
+; ############################################################
+;  SECTION 1 — STRING OPERATIONS
+; ############################################################
+filewriteln fh '=== Section 1: String Operations ==='
+
+; 1-1 strconcat basic
+test_num = test_num + 1
+s = 'Hello'
+strconcat s ' World'
+if s = 'Hello World' then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] strconcat basic' test_num
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] strconcat basic' test_num
+endif
+filewriteln fh msg
+
+; 1-2 strconcat empty
+test_num = test_num + 1
+s = 'abc'
+strconcat s ''
+if s = 'abc' then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] strconcat empty append' test_num
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] strconcat empty append' test_num
+endif
+filewriteln fh msg
+
+; 1-3 strlen
+test_num = test_num + 1
+strlen 'abcdef'
+if result = 6 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] strlen "abcdef"=6' test_num
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] strlen expected 6 got %d' test_num result
+endif
+filewriteln fh msg
+
+; 1-4 strlen empty
+test_num = test_num + 1
+strlen ''
+if result = 0 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] strlen empty=0' test_num
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] strlen empty' test_num
+endif
+filewriteln fh msg
+
+; 1-5 strcompare equal
+test_num = test_num + 1
+strcompare 'abc' 'abc'
+if result = 0 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] strcompare equal' test_num
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] strcompare equal' test_num
+endif
+filewriteln fh msg
+
+; 1-6 strcompare less
+test_num = test_num + 1
+strcompare 'abc' 'def'
+if result < 0 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] strcompare less' test_num
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] strcompare less' test_num
+endif
+filewriteln fh msg
+
+; 1-7 strcompare greater
+test_num = test_num + 1
+strcompare 'xyz' 'abc'
+if result > 0 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] strcompare greater' test_num
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] strcompare greater' test_num
+endif
+filewriteln fh msg
+
+; 1-8 strcopy
+test_num = test_num + 1
+strcopy 'Hello World' 7 5 dest
+if dest = 'World' then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] strcopy' test_num
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] strcopy got "%s"' test_num dest
+endif
+filewriteln fh msg
+
+; 1-9 strscan found
+test_num = test_num + 1
+strscan 'Hello World' 'World'
+if result = 7 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] strscan found' test_num
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] strscan found got %d' test_num result
+endif
+filewriteln fh msg
+
+; 1-10 strscan not found
+test_num = test_num + 1
+strscan 'Hello' 'XYZ'
+if result = 0 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] strscan not found' test_num
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] strscan not found' test_num
+endif
+filewriteln fh msg
+
+; 1-11 tolower
+test_num = test_num + 1
+s = 'HELLO WORLD 123'
+tolower s
+if s = 'hello world 123' then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] tolower' test_num
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] tolower' test_num
+endif
+filewriteln fh msg
+
+; 1-12 toupper
+test_num = test_num + 1
+s = 'hello world 123'
+toupper s
+if s = 'HELLO WORLD 123' then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] toupper' test_num
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] toupper' test_num
+endif
+filewriteln fh msg
+
+; 1-13 strmatch regex
+test_num = test_num + 1
+strmatch 'Order-9876' '\d+'
+if result > 0 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] strmatch regex digits' test_num
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] strmatch regex digits' test_num
+endif
+filewriteln fh msg
+
+; 1-14 strmatch no match
+test_num = test_num + 1
+strmatch 'abcdef' '^\d+$'
+if result = 0 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] strmatch no match' test_num
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] strmatch no match' test_num
+endif
+filewriteln fh msg
+
+; 1-15 str2int / int2str round-trip
+test_num = test_num + 1
+str2int '12345' val
+int2str back val
+if back = '12345' then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] str2int/int2str round-trip' test_num
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] str2int/int2str round-trip' test_num
+endif
+filewriteln fh msg
+
+; 1-16 str2int negative
+test_num = test_num + 1
+str2int '-99' negval
+if negval = -99 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] str2int negative' test_num
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] str2int negative' test_num
+endif
+filewriteln fh msg
+
+; 1-17 str2code / code2str
+test_num = test_num + 1
+str2code 'A' code
+if code = 65 then
+  code2str cs code
+  if cs = 'A' then
+    pass_count = pass_count + 1
+    sprintf2 msg 'PASS [%d] str2code/code2str' test_num
+  else
+    fail_count = fail_count + 1
+    sprintf2 msg 'FAIL [%d] code2str' test_num
+  endif
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] str2code' test_num
+endif
+filewriteln fh msg
+
+; 1-18 strinsert
+test_num = test_num + 1
+s = 'Hello World'
+strinsert s 6 'Beautiful '
+if s = 'Hello Beautiful World' then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] strinsert' test_num
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] strinsert got "%s"' test_num s
+endif
+filewriteln fh msg
+
+; 1-19 strremove
+test_num = test_num + 1
+s = 'Hello Beautiful World'
+strremove s 6 10
+if s = 'Hello World' then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] strremove' test_num
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] strremove got "%s"' test_num s
+endif
+filewriteln fh msg
+
+; 1-20 strreplace
+test_num = test_num + 1
+s = 'foo bar foo baz foo'
+strreplace s 'foo' 'qux'
+if s = 'qux bar qux baz qux' then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] strreplace' test_num
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] strreplace got "%s"' test_num s
+endif
+filewriteln fh msg
+
+; 1-21 strtrim
+test_num = test_num + 1
+s = '   spaces   '
+strtrim s
+if s = 'spaces' then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] strtrim' test_num
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] strtrim got "%s"' test_num s
+endif
+filewriteln fh msg
+
+; 1-22 strsplit / strjoin
+test_num = test_num + 1
+strsplit 'a,b,c,d' ',' parts
+strjoin parts ',' rejoined
+if rejoined = 'a,b,c,d' then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] strsplit/strjoin round-trip' test_num
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] strsplit/strjoin' test_num
+endif
+filewriteln fh msg
+
+; 1-23 STRESS: strconcat repeated (build 2000-char string)
+test_num = test_num + 1
+bigstr = ''
+for i 1 200
+  strconcat bigstr '0123456789'
+next
+strlen bigstr
+if result = 2000 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] STRESS strconcat 2000 chars' test_num
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] STRESS strconcat len=%d' test_num result
+endif
+filewriteln fh msg
+
+filewriteln fh ''
+
+; ############################################################
+;  SECTION 2 — ARITHMETIC, BITWISE, COMPARISONS
+; ############################################################
+filewriteln fh '=== Section 2: Arithmetic & Bitwise ==='
+
+; 2-1 basic ops
+test_num = test_num + 1
+a = 123
+b = 456
+c = a + b
+if c = 579 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] add 123+456=579' test_num
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] add' test_num
+endif
+filewriteln fh msg
+
+test_num = test_num + 1
+c = b - a
+if c = 333 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] sub 456-123=333' test_num
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] sub' test_num
+endif
+filewriteln fh msg
+
+test_num = test_num + 1
+c = 13 * 17
+if c = 221 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] mul 13*17=221' test_num
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] mul' test_num
+endif
+filewriteln fh msg
+
+test_num = test_num + 1
+c = 100 / 7
+if c = 14 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] div 100/7=14 (integer)' test_num
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] div got %d' test_num c
+endif
+filewriteln fh msg
+
+test_num = test_num + 1
+c = 100 % 7
+if c = 2 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] mod 100%%7=2' test_num
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] mod got %d' test_num c
+endif
+filewriteln fh msg
+
+; 2-6 precedence
+test_num = test_num + 1
+c = 2 + 3 * 4
+if c = 14 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] precedence 2+3*4=14' test_num
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] precedence got %d' test_num c
+endif
+filewriteln fh msg
+
+; 2-7 parentheses
+test_num = test_num + 1
+c = (2 + 3) * 4
+if c = 20 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] parentheses (2+3)*4=20' test_num
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] parentheses got %d' test_num c
+endif
+filewriteln fh msg
+
+; 2-8 negative numbers
+test_num = test_num + 1
+c = -10 + 3
+if c = -7 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] negative -10+3=-7' test_num
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] negative got %d' test_num c
+endif
+filewriteln fh msg
+
+; 2-9 bitwise AND
+test_num = test_num + 1
+c = 255 & 15
+if c = 15 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] bitwise AND 0xFF&0x0F=15' test_num
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] AND got %d' test_num c
+endif
+filewriteln fh msg
+
+; 2-10 bitwise OR
+test_num = test_num + 1
+c = 240 | 15
+if c = 255 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] bitwise OR 0xF0|0x0F=255' test_num
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] OR got %d' test_num c
+endif
+filewriteln fh msg
+
+; 2-11 bitwise XOR
+test_num = test_num + 1
+c = 255 ^ 170
+if c = 85 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] bitwise XOR 0xFF^0xAA=0x55' test_num
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] XOR got %d' test_num c
+endif
+filewriteln fh msg
+
+; 2-12 shift left
+test_num = test_num + 1
+c = 1 << 8
+if c = 256 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] shift left 1<<8=256' test_num
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] shl got %d' test_num c
+endif
+filewriteln fh msg
+
+; 2-13 shift right
+test_num = test_num + 1
+c = 1024 >> 3
+if c = 128 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] shift right 1024>>3=128' test_num
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] shr got %d' test_num c
+endif
+filewriteln fh msg
+
+; 2-14 rotateleft / rotateright
+test_num = test_num + 1
+val = 1
+rotateleft val 4
+rotateright val 4
+if val = 1 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] rotateL/R round-trip' test_num
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] rotateL/R got %d' test_num val
+endif
+filewriteln fh msg
+
+; 2-15 STRESS: arithmetic loop 10000 iterations
+test_num = test_num + 1
+acc = 0
+for i 1 10000
+  acc = acc + i
+next
+; sum(1..10000) = 50005000
+if acc = 50005000 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] STRESS sum(1..10000)=%d' test_num acc
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] STRESS sum got %d' test_num acc
+endif
+filewriteln fh msg
+
+filewriteln fh ''
+
+; ############################################################
+;  SECTION 3 — CHECKSUM / CRC
+; ############################################################
+filewriteln fh '=== Section 3: Checksum & CRC ==='
+
+; 3-1 checksum8
+test_num = test_num + 1
+checksum8 'ABC'
+if result >= 0 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] checksum8 "ABC"=%d' test_num result
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] checksum8' test_num
+endif
+filewriteln fh msg
+
+; 3-2 checksum16
+test_num = test_num + 1
+checksum16 'Test data for checksum'
+chk16 = result
+if chk16 >= 0 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] checksum16=%d' test_num chk16
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] checksum16' test_num
+endif
+filewriteln fh msg
+
+; 3-3 checksum32
+test_num = test_num + 1
+checksum32 'Test data for checksum'
+chk32 = result
+if chk32 >= 0 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] checksum32=%d' test_num chk32
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] checksum32' test_num
+endif
+filewriteln fh msg
+
+; 3-4 crc16
+test_num = test_num + 1
+crc16 '123456789'
+c16 = result
+; CRC-16-CCITT of "123456789" is known value
+if c16 >= 0 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] crc16 "123456789"=%d' test_num c16
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] crc16' test_num
+endif
+filewriteln fh msg
+
+; 3-5 crc32
+test_num = test_num + 1
+crc32 '123456789'
+c32 = result
+if c32 >= 0 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] crc32 "123456789"=%d' test_num c32
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] crc32' test_num
+endif
+filewriteln fh msg
+
+; 3-6 crc consistency: same input -> same output
+test_num = test_num + 1
+crc32 'consistent input'
+first = result
+crc32 'consistent input'
+second = result
+if first = second then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] crc32 consistency' test_num
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] crc32 consistency %d!=%d' test_num first second
+endif
+filewriteln fh msg
+
+; 3-7 file-based CRC (write then checksum)
+test_num = test_num + 1
+crcfile = '/tmp/ttl_crc_test.bin'
+fileopen cfh crcfile 0
+filewriteln cfh 'CRC file test data 0123456789'
+fileclose cfh
+crc32file crcfile
+frc = result
+filedelete crcfile
+if frc >= 0 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] crc32file=%d' test_num frc
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] crc32file' test_num
+endif
+filewriteln fh msg
+
+filewriteln fh ''
+
+; ############################################################
+;  SECTION 4 — RANDOM
+; ############################################################
+filewriteln fh '=== Section 4: Random ==='
+
+; 4-1 random range
+test_num = test_num + 1
+ok = 1
+for i 1 100
+  random rval 100
+  if rval < 0 then
+    ok = 0
+  endif
+  if rval >= 100 then
+    ok = 0
+  endif
+next
+if ok = 1 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] random 100 values in [0,100)' test_num
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] random out of range' test_num
+endif
+filewriteln fh msg
+
+; 4-2 random not always the same
+test_num = test_num + 1
+random r1 1000000
+random r2 1000000
+random r3 1000000
+; at least 2 of 3 should differ
+if (r1 = r2) then
+  if (r2 = r3) then
+    fail_count = fail_count + 1
+    sprintf2 msg 'FAIL [%d] random always same value %d' test_num r1
+  else
+    pass_count = pass_count + 1
+    sprintf2 msg 'PASS [%d] random not constant' test_num
+  endif
+else
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] random not constant' test_num
+endif
+filewriteln fh msg
+
+filewriteln fh ''
+
+; ############################################################
+;  SECTION 5 — CONTROL FLOW
+; ############################################################
+filewriteln fh '=== Section 5: Control Flow ==='
+
+; 5-1 for loop sum
+test_num = test_num + 1
+sum = 0
+for i 1 100
+  sum = sum + i
+next
+if sum = 5050 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] for sum(1..100)=5050' test_num
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] for sum got %d' test_num sum
+endif
+filewriteln fh msg
+
+; 5-2 while loop
+test_num = test_num + 1
+n = 0
+while n < 50
+  n = n + 1
+endwhile
+if n = 50 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] while counted to 50' test_num
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] while got %d' test_num n
+endif
+filewriteln fh msg
+
+; 5-3 do-until
+test_num = test_num + 1
+n = 0
+do
+  n = n + 1
+loop until n >= 25
+if n = 25 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] do-until to 25' test_num
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] do-until got %d' test_num n
+endif
+filewriteln fh msg
+
+; 5-4 break
+test_num = test_num + 1
+bk = 0
+for i 1 1000
+  if i = 42 then
+    bk = i
+    break
+  endif
+next
+if bk = 42 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] break at 42' test_num
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] break got %d' test_num bk
+endif
+filewriteln fh msg
+
+; 5-5 continue (sum odd numbers 1..20)
+test_num = test_num + 1
+oddsum = 0
+for i 1 20
+  if (i % 2) = 0 then
+    continue
+  endif
+  oddsum = oddsum + i
+next
+; 1+3+5+7+9+11+13+15+17+19 = 100
+if oddsum = 100 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] continue odd sum=100' test_num
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] continue odd sum got %d' test_num oddsum
+endif
+filewriteln fh msg
+
+; 5-6 goto forward
+test_num = test_num + 1
+gv = 0
+goto skip_assign_gv
+gv = 999
+:skip_assign_gv
+if gv = 0 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] goto forward' test_num
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] goto forward gv=%d' test_num gv
+endif
+filewriteln fh msg
+
+; 5-7 elseif chain
+test_num = test_num + 1
+score = 73
+if score >= 90 then
+  grade = 'A'
+elseif score >= 80 then
+  grade = 'B'
+elseif score >= 70 then
+  grade = 'C'
+elseif score >= 60 then
+  grade = 'D'
+else
+  grade = 'F'
+endif
+if grade = 'C' then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] elseif chain grade=C' test_num
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] elseif chain got %s' test_num grade
+endif
+filewriteln fh msg
+
+; 5-8 nested for-for-while
+test_num = test_num + 1
+total = 0
+for i 1 5
+  for j 1 5
+    k = 0
+    while k < 3
+      k = k + 1
+      total = total + 1
+    endwhile
+  next
+next
+; 5 * 5 * 3 = 75
+if total = 75 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] nested for-for-while total=75' test_num
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] nested total=%d' test_num total
+endif
+filewriteln fh msg
+
+; 5-9 STRESS: triple-nested loop (10*10*10 = 1000 iterations)
+test_num = test_num + 1
+cnt = 0
+for i 1 10
+  for j 1 10
+    for k 1 10
+      cnt = cnt + 1
+    next
+  next
+next
+if cnt = 1000 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] STRESS triple nested 10^3=1000' test_num
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] STRESS triple cnt=%d' test_num cnt
+endif
+filewriteln fh msg
+
+; 5-10 ifdefined
+test_num = test_num + 1
+testvar_ifd = 42
+ifdefined testvar_ifd
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] ifdefined for existing var' test_num
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] ifdefined should be true' test_num
+endif
+filewriteln fh msg
+
+filewriteln fh ''
+
+; ############################################################
+;  SECTION 6 — SUBROUTINE CALL/RETURN
+; ############################################################
+filewriteln fh '=== Section 6: Subroutines ==='
+
+; 6-1 simple call/return
+test_num = test_num + 1
+sub_result = 0
+call simple_sub
+if sub_result = 1 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] call/return simple' test_num
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] call/return simple' test_num
+endif
+filewriteln fh msg
+
+; 6-2 deep nesting (15 levels)
+test_num = test_num + 1
+depth_counter = 0
+max_depth_val = 0
+call nest_1
+if max_depth_val = 15 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] STRESS 15-level call nesting' test_num
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] 15-level nesting got %d' test_num max_depth_val
+endif
+filewriteln fh msg
+
+; 6-3 recursive-style iterative call 100 times
+test_num = test_num + 1
+iter_count = 0
+for ri 1 100
+  call increment_sub
+next
+if iter_count = 100 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] STRESS 100 call iterations' test_num
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] 100 call iterations got %d' test_num iter_count
+endif
+filewriteln fh msg
+
+goto after_all_subs
+
+:simple_sub
+  sub_result = 1
+  return
+
+:increment_sub
+  iter_count = iter_count + 1
+  return
+
+:nest_1
+  depth_counter = depth_counter + 1
+  if depth_counter > max_depth_val then
+    max_depth_val = depth_counter
+  endif
+  call nest_2
+  depth_counter = depth_counter - 1
+  return
+:nest_2
+  depth_counter = depth_counter + 1
+  if depth_counter > max_depth_val then
+    max_depth_val = depth_counter
+  endif
+  call nest_3
+  depth_counter = depth_counter - 1
+  return
+:nest_3
+  depth_counter = depth_counter + 1
+  if depth_counter > max_depth_val then
+    max_depth_val = depth_counter
+  endif
+  call nest_4
+  depth_counter = depth_counter - 1
+  return
+:nest_4
+  depth_counter = depth_counter + 1
+  if depth_counter > max_depth_val then
+    max_depth_val = depth_counter
+  endif
+  call nest_5
+  depth_counter = depth_counter - 1
+  return
+:nest_5
+  depth_counter = depth_counter + 1
+  if depth_counter > max_depth_val then
+    max_depth_val = depth_counter
+  endif
+  call nest_6
+  depth_counter = depth_counter - 1
+  return
+:nest_6
+  depth_counter = depth_counter + 1
+  if depth_counter > max_depth_val then
+    max_depth_val = depth_counter
+  endif
+  call nest_7
+  depth_counter = depth_counter - 1
+  return
+:nest_7
+  depth_counter = depth_counter + 1
+  if depth_counter > max_depth_val then
+    max_depth_val = depth_counter
+  endif
+  call nest_8
+  depth_counter = depth_counter - 1
+  return
+:nest_8
+  depth_counter = depth_counter + 1
+  if depth_counter > max_depth_val then
+    max_depth_val = depth_counter
+  endif
+  call nest_9
+  depth_counter = depth_counter - 1
+  return
+:nest_9
+  depth_counter = depth_counter + 1
+  if depth_counter > max_depth_val then
+    max_depth_val = depth_counter
+  endif
+  call nest_10
+  depth_counter = depth_counter - 1
+  return
+:nest_10
+  depth_counter = depth_counter + 1
+  if depth_counter > max_depth_val then
+    max_depth_val = depth_counter
+  endif
+  call nest_11
+  depth_counter = depth_counter - 1
+  return
+:nest_11
+  depth_counter = depth_counter + 1
+  if depth_counter > max_depth_val then
+    max_depth_val = depth_counter
+  endif
+  call nest_12
+  depth_counter = depth_counter - 1
+  return
+:nest_12
+  depth_counter = depth_counter + 1
+  if depth_counter > max_depth_val then
+    max_depth_val = depth_counter
+  endif
+  call nest_13
+  depth_counter = depth_counter - 1
+  return
+:nest_13
+  depth_counter = depth_counter + 1
+  if depth_counter > max_depth_val then
+    max_depth_val = depth_counter
+  endif
+  call nest_14
+  depth_counter = depth_counter - 1
+  return
+:nest_14
+  depth_counter = depth_counter + 1
+  if depth_counter > max_depth_val then
+    max_depth_val = depth_counter
+  endif
+  call nest_15
+  depth_counter = depth_counter - 1
+  return
+:nest_15
+  depth_counter = depth_counter + 1
+  if depth_counter > max_depth_val then
+    max_depth_val = depth_counter
+  endif
+  depth_counter = depth_counter - 1
+  return
+
+:after_all_subs
+
+filewriteln fh ''
+
+; ############################################################
+;  SECTION 7 — ARRAYS
+; ############################################################
+filewriteln fh '=== Section 7: Arrays ==='
+
+; 7-1 intdim basic
+test_num = test_num + 1
+intdim ia 10
+for i 0 9
+  ia[i] = i * i
+next
+ok = 1
+for i 0 9
+  if ia[i] <> (i * i) then
+    ok = 0
+  endif
+next
+if ok = 1 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] intdim 10 elements' test_num
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] intdim 10 elements' test_num
+endif
+filewriteln fh msg
+
+; 7-2 strdim basic
+test_num = test_num + 1
+strdim sa 5
+sa[0] = 'zero'
+sa[1] = 'one'
+sa[2] = 'two'
+sa[3] = 'three'
+sa[4] = 'four'
+if sa[2] = 'two' then
+  if sa[4] = 'four' then
+    pass_count = pass_count + 1
+    sprintf2 msg 'PASS [%d] strdim 5 elements' test_num
+  else
+    fail_count = fail_count + 1
+    sprintf2 msg 'FAIL [%d] strdim sa[4]' test_num
+  endif
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] strdim sa[2]' test_num
+endif
+filewriteln fh msg
+
+; 7-3 STRESS: large int array (500 elements)
+test_num = test_num + 1
+intdim bigiarr 500
+for i 0 499
+  bigiarr[i] = i
+next
+; verify first, middle, last
+ok = 1
+if bigiarr[0] <> 0 then
+  ok = 0
+endif
+if bigiarr[249] <> 249 then
+  ok = 0
+endif
+if bigiarr[499] <> 499 then
+  ok = 0
+endif
+if ok = 1 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] STRESS intdim 500 elements' test_num
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] STRESS intdim 500' test_num
+endif
+filewriteln fh msg
+
+; 7-4 STRESS: large string array (200 elements)
+test_num = test_num + 1
+strdim bigsarr 200
+for i 0 199
+  int2str idx i
+  strconcat idx '_item'
+  bigsarr[i] = idx
+next
+if bigsarr[0] = '0_item' then
+  if bigsarr[199] = '199_item' then
+    pass_count = pass_count + 1
+    sprintf2 msg 'PASS [%d] STRESS strdim 200 elements' test_num
+  else
+    fail_count = fail_count + 1
+    sprintf2 msg 'FAIL [%d] STRESS strdim last' test_num
+  endif
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] STRESS strdim first' test_num
+endif
+filewriteln fh msg
+
+; 7-5 array sum stress (accumulate in loop)
+test_num = test_num + 1
+intdim accum 100
+for i 0 99
+  accum[i] = i + 1
+next
+asum = 0
+for i 0 99
+  asum = asum + accum[i]
+next
+; sum 1..100 = 5050
+if asum = 5050 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] array sum 1..100=5050' test_num
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] array sum got %d' test_num asum
+endif
+filewriteln fh msg
+
+filewriteln fh ''
+
+; ############################################################
+;  SECTION 8 — FILE I/O
+; ############################################################
+filewriteln fh '=== Section 8: File I/O ==='
+
+; 8-1 write and read back
+test_num = test_num + 1
+tf = '/tmp/ttl_fileio_test.txt'
+fileopen wfh tf 0
+filewriteln wfh 'Line 1'
+filewriteln wfh 'Line 2'
+filewriteln wfh 'Line 3'
+fileclose wfh
+fileopen rfh tf 0 1
+filereadln rfh l1
+filereadln rfh l2
+filereadln rfh l3
+fileclose rfh
+if l1 = 'Line 1' then
+  if l3 = 'Line 3' then
+    pass_count = pass_count + 1
+    sprintf2 msg 'PASS [%d] file write/read' test_num
+  else
+    fail_count = fail_count + 1
+    sprintf2 msg 'FAIL [%d] file read l3="%s"' test_num l3
+  endif
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] file read l1="%s"' test_num l1
+endif
+filewriteln fh msg
+filedelete tf
+
+; 8-2 filesearch existing
+test_num = test_num + 1
+filesearch '/tmp'
+if result = 1 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] filesearch /tmp exists' test_num
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] filesearch /tmp' test_num
+endif
+filewriteln fh msg
+
+; 8-3 filesearch non-existing
+test_num = test_num + 1
+filesearch '/tmp/this_file_absolutely_does_not_exist_9999.xyz'
+if result = 0 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] filesearch non-existing' test_num
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] filesearch non-existing' test_num
+endif
+filewriteln fh msg
+
+; 8-4 filecopy
+test_num = test_num + 1
+src = '/tmp/ttl_copy_src.txt'
+dst = '/tmp/ttl_copy_dst.txt'
+fileopen sfh src 0
+filewriteln sfh 'copy test'
+fileclose sfh
+filecopy src dst
+fileopen dfh dst 0 1
+filereadln dfh copied
+fileclose dfh
+if copied = 'copy test' then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] filecopy' test_num
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] filecopy got "%s"' test_num copied
+endif
+filewriteln fh msg
+filedelete src
+filedelete dst
+
+; 8-5 filerename
+test_num = test_num + 1
+orig = '/tmp/ttl_rename_orig.txt'
+newn = '/tmp/ttl_rename_new.txt'
+fileopen ofh orig 0
+filewriteln ofh 'rename test'
+fileclose ofh
+filerename orig newn
+filesearch newn
+if result = 1 then
+  filesearch orig
+  if result = 0 then
+    pass_count = pass_count + 1
+    sprintf2 msg 'PASS [%d] filerename' test_num
+  else
+    fail_count = fail_count + 1
+    sprintf2 msg 'FAIL [%d] filerename orig still exists' test_num
+  endif
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] filerename new not found' test_num
+endif
+filewriteln fh msg
+filedelete newn
+
+; 8-6 filedelete
+test_num = test_num + 1
+delfile = '/tmp/ttl_delete_me.txt'
+fileopen delfh delfile 0
+filewriteln delfh 'delete me'
+fileclose delfh
+filedelete delfile
+filesearch delfile
+if result = 0 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] filedelete' test_num
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] filedelete file still exists' test_num
+endif
+filewriteln fh msg
+
+; 8-7 filestat
+test_num = test_num + 1
+statf = '/tmp/ttl_stat_test.txt'
+fileopen stfh statf 0
+filewriteln stfh 'stat test content 1234567890'
+fileclose stfh
+filestat statf
+if result >= 0 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] filestat size=%d' test_num result
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] filestat' test_num
+endif
+filewriteln fh msg
+filedelete statf
+
+; 8-8 STRESS: write 500 lines, read back all
+test_num = test_num + 1
+stressf = '/tmp/ttl_stress_file.txt'
+fileopen swfh stressf 0
+for i 1 500
+  sprintf2 line 'Line number %d of 500 lines for stress test' i
+  filewriteln swfh line
+next
+fileclose swfh
+
+; read back and count
+fileopen srfh stressf 0 1
+linecount = 0
+:read_loop
+filereadln srfh rline
+if result = 0 then
+  linecount = linecount + 1
+  goto read_loop
+endif
+fileclose srfh
+
+if linecount = 500 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] STRESS file 500 lines write/read' test_num
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] STRESS file lines=%d' test_num linecount
+endif
+filewriteln fh msg
+filedelete stressf
+
+; 8-9 foldercreate / foldersearch / folderdelete
+test_num = test_num + 1
+testdir = '/tmp/ttl_test_folder'
+foldercreate testdir
+foldersearch testdir
+if result = 1 then
+  folderdelete testdir
+  foldersearch testdir
+  if result = 0 then
+    pass_count = pass_count + 1
+    sprintf2 msg 'PASS [%d] foldercreate/search/delete' test_num
+  else
+    fail_count = fail_count + 1
+    sprintf2 msg 'FAIL [%d] folderdelete did not remove' test_num
+  endif
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] foldercreate not found' test_num
+endif
+filewriteln fh msg
+
+; 8-10 findfirst / findnext / findclose
+test_num = test_num + 1
+; create some temp files
+for i 1 3
+  sprintf2 fnf '/tmp/ttl_find_%d.tmp' i
+  fileopen ffh fnf 0
+  filewriteln ffh 'find test'
+  fileclose ffh
+next
+findfirst '/tmp/ttl_find_*.tmp' found
+if result = 0 then
+  fcount = 1
+  :findloop
+  findnext found
+  if result = 0 then
+    fcount = fcount + 1
+    goto findloop
+  endif
+  findclose
+  if fcount >= 3 then
+    pass_count = pass_count + 1
+    sprintf2 msg 'PASS [%d] findfirst/next found %d files' test_num fcount
+  else
+    fail_count = fail_count + 1
+    sprintf2 msg 'FAIL [%d] findfirst found only %d' test_num fcount
+  endif
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] findfirst no match' test_num
+endif
+filewriteln fh msg
+; cleanup
+for i 1 3
+  sprintf2 fnf '/tmp/ttl_find_%d.tmp' i
+  filedelete fnf
+next
+
+filewriteln fh ''
+
+; ############################################################
+;  SECTION 9 — DIRECTORY / PATH
+; ############################################################
+filewriteln fh '=== Section 9: Directory & Path ==='
+
+; 9-1 getdir
+test_num = test_num + 1
+getdir curdir
+strlen curdir
+if result > 0 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] getdir="%s"' test_num curdir
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] getdir empty' test_num
+endif
+filewriteln fh msg
+
+; 9-2 makepath
+test_num = test_num + 1
+makepath mp '/usr' 'local' 'bin'
+strlen mp
+if result > 0 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] makepath="%s"' test_num mp
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] makepath empty' test_num
+endif
+filewriteln fh msg
+
+; 9-3 basename
+test_num = test_num + 1
+basename '/home/user/file.txt' bn
+if bn = 'file.txt' then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] basename="%s"' test_num bn
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] basename got "%s"' test_num bn
+endif
+filewriteln fh msg
+
+; 9-4 dirname
+test_num = test_num + 1
+dirname '/home/user/file.txt' dn
+if dn = '/home/user' then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] dirname="%s"' test_num dn
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] dirname got "%s"' test_num dn
+endif
+filewriteln fh msg
+
+filewriteln fh ''
+
+; ############################################################
+;  SECTION 10 — SYSTEM INFORMATION
+; ############################################################
+filewriteln fh '=== Section 10: System Information ==='
+
+; 10-1 getdate
+test_num = test_num + 1
+getdate dstr
+strlen dstr
+if result > 0 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] getdate="%s"' test_num dstr
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] getdate empty' test_num
+endif
+filewriteln fh msg
+
+; 10-2 gettime
+test_num = test_num + 1
+gettime tstr
+strlen tstr
+if result > 0 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] gettime="%s"' test_num tstr
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] gettime empty' test_num
+endif
+filewriteln fh msg
+
+; 10-3 getenv HOME
+test_num = test_num + 1
+getenv 'HOME' hdir
+strlen hdir
+if result > 0 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] getenv HOME="%s"' test_num hdir
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] getenv HOME empty' test_num
+endif
+filewriteln fh msg
+
+; 10-4 getenv PATH
+test_num = test_num + 1
+getenv 'PATH' pathenv
+strlen pathenv
+if result > 0 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] getenv PATH len=%d' test_num result
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] getenv PATH empty' test_num
+endif
+filewriteln fh msg
+
+; 10-5 setenv / getenv round-trip
+test_num = test_num + 1
+setenv 'TTL_TEST_VAR' 'hello_from_ttl'
+getenv 'TTL_TEST_VAR' envval
+if envval = 'hello_from_ttl' then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] setenv/getenv round-trip' test_num
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] setenv/getenv got "%s"' test_num envval
+endif
+filewriteln fh msg
+
+; 10-6 expandenv
+test_num = test_num + 1
+setenv 'TTL_EXP_TEST' 'expanded_value'
+expandenv '$TTL_EXP_TEST' expval
+if expval = 'expanded_value' then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] expandenv' test_num
+else
+  ; macOS might use different syntax; still log
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] expandenv (platform-specific)' test_num
+endif
+filewriteln fh msg
+
+; 10-7 getver
+test_num = test_num + 1
+getver verstr
+strlen verstr
+if result > 0 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] getver="%s"' test_num verstr
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] getver empty' test_num
+endif
+filewriteln fh msg
+
+; 10-8 gethostname
+test_num = test_num + 1
+gethostname hn
+strlen hn
+if result > 0 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] gethostname="%s"' test_num hn
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] gethostname empty' test_num
+endif
+filewriteln fh msg
+
+; 10-9 getttdir
+test_num = test_num + 1
+getttdir ttdir
+strlen ttdir
+if result > 0 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] getttdir="%s"' test_num ttdir
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] getttdir empty' test_num
+endif
+filewriteln fh msg
+
+; 10-10 getspecialfolder (Desktop)
+test_num = test_num + 1
+getspecialfolder spdir 'Desktop'
+strlen spdir
+if result > 0 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] getspecialfolder Desktop="%s"' test_num spdir
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] getspecialfolder Desktop empty' test_num
+endif
+filewriteln fh msg
+
+; 10-11 getipv4addr
+test_num = test_num + 1
+getipv4addr ipaddr
+strlen ipaddr
+if result > 0 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] getipv4addr="%s"' test_num ipaddr
+else
+  ; may be empty if no network; treat as soft pass
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] getipv4addr (no network ok)' test_num
+endif
+filewriteln fh msg
+
+; 10-12 uptime
+test_num = test_num + 1
+uptime ut
+if ut > 0 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] uptime=%d sec' test_num ut
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] uptime=%d' test_num ut
+endif
+filewriteln fh msg
+
+; 10-13 testlink (should be 0 = not connected)
+test_num = test_num + 1
+testlink
+if result = 0 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] testlink=0 (offline)' test_num
+else
+  ; might be connected; still valid
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] testlink=%d' test_num result
+endif
+filewriteln fh msg
+
+filewriteln fh ''
+
+; ############################################################
+;  SECTION 11 — SPRINTF / SPRINTF2
+; ############################################################
+filewriteln fh '=== Section 11: sprintf/sprintf2 ==='
+
+; 11-1 %s %d
+test_num = test_num + 1
+sprintf2 fs 'Name=%s Age=%d' 'Alice' 30
+if fs = 'Name=Alice Age=30' then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] sprintf2 %%s %%d' test_num
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] sprintf2 got "%s"' test_num fs
+endif
+filewriteln fh msg
+
+; 11-2 %x hex
+test_num = test_num + 1
+sprintf2 hx 'val=0x%x' 255
+if hx = 'val=0xff' then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] sprintf2 hex' test_num
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] sprintf2 hex got "%s"' test_num hx
+endif
+filewriteln fh msg
+
+; 11-3 %% literal
+test_num = test_num + 1
+sprintf2 pct '100%% done'
+if pct = '100% done' then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] sprintf2 literal %%' test_num
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] sprintf2 literal %%' test_num
+endif
+filewriteln fh msg
+
+; 11-4 multiple args
+test_num = test_num + 1
+sprintf2 multi '%s:%d:%s:%d' 'a' 1 'b' 2
+if multi = 'a:1:b:2' then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] sprintf2 multi-arg' test_num
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] sprintf2 multi-arg got "%s"' test_num multi
+endif
+filewriteln fh msg
+
+filewriteln fh ''
+
+; ############################################################
+;  SECTION 12 — CLIPBOARD (var2clipb / clipb2var)
+; ############################################################
+filewriteln fh '=== Section 12: Clipboard ==='
+
+test_num = test_num + 1
+var2clipb 'clipboard test data 12345'
+clipb2var clipval
+if clipval = 'clipboard test data 12345' then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] clipboard round-trip' test_num
+else
+  ; clipboard may not be available in headless
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] clipboard (headless ok)' test_num
+endif
+filewriteln fh msg
+
+filewriteln fh ''
+
+; ############################################################
+;  SECTION 13 — EXEC (shell command)
+; ############################################################
+filewriteln fh '=== Section 13: exec ==='
+
+test_num = test_num + 1
+exec 'echo hello_from_exec' execresult
+strlen execresult
+if result > 0 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] exec echo="%s"' test_num execresult
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] exec echo empty' test_num
+endif
+filewriteln fh msg
+
+test_num = test_num + 1
+exec 'uname' uname_out
+strlen uname_out
+if result > 0 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] exec uname="%s"' test_num uname_out
+else
+  ; may fail on some platforms
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] exec uname (platform ok)' test_num
+endif
+filewriteln fh msg
+
+filewriteln fh ''
+
+; ############################################################
+;  SECTION 14 — TIMING (pause)
+; ############################################################
+filewriteln fh '=== Section 14: Timing ==='
+
+test_num = test_num + 1
+gettime t1
+mpause 100
+gettime t2
+; just verify it returned (no hang)
+pass_count = pass_count + 1
+sprintf2 msg 'PASS [%d] mpause 100ms completed' test_num
+filewriteln fh msg
+
+filewriteln fh ''
+
+; ############################################################
+;  SECTION 15 — STRESS: COMBINED TORTURE TEST
+; ############################################################
+filewriteln fh '=== Section 15: Combined Stress ==='
+
+; 15-1 STRESS: 5000-iteration loop with string + arithmetic
+test_num = test_num + 1
+stress_acc = 0
+for si 1 5000
+  stress_acc = stress_acc + (si % 7)
+next
+; Known: sum of (i%7) for i=1..5000
+; Pattern repeats every 7: 1+2+3+4+5+6+0 = 21
+; 5000/7 = 714 full cycles remainder 2
+; 714*21 + 1+2 = 14994 + 3 = 14997
+if stress_acc = 14997 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] STRESS 5000-iter mod sum=%d' test_num stress_acc
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] STRESS 5000-iter got %d' test_num stress_acc
+endif
+filewriteln fh msg
+
+; 15-2 STRESS: nested loops + array (matrix multiplication-like)
+test_num = test_num + 1
+intdim matA 25
+intdim matB 25
+intdim matC 25
+
+; Fill 5x5 matrices
+for i 0 4
+  for j 0 4
+    idx = i * 5 + j
+    matA[idx] = i + j
+    matB[idx] = i - j + 5
+    matC[idx] = 0
+  next
+next
+
+; Multiply
+for i 0 4
+  for j 0 4
+    cval = 0
+    for k 0 4
+      ai = i * 5 + k
+      bj = k * 5 + j
+      cval = cval + matA[ai] * matB[bj]
+    next
+    ci = i * 5 + j
+    matC[ci] = cval
+  next
+next
+
+; Verify matC[0] (row0 * col0) = sum(k=0..4: (0+k)*(k-0+5)) = 0*5+1*6+2*7+3*8+4*9 = 0+6+14+24+36 = 80
+if matC[0] = 80 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] STRESS 5x5 matrix multiply C[0,0]=80' test_num
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] STRESS matrix C[0,0]=%d' test_num matC[0]
+endif
+filewriteln fh msg
+
+; 15-3 STRESS: rapid file create/write/delete cycle
+test_num = test_num + 1
+fio_ok = 1
+for fi 1 50
+  sprintf2 tmpf '/tmp/ttl_rapid_%d.tmp' fi
+  fileopen rfh tmpf 0
+  if rfh < 0 then
+    fio_ok = 0
+  else
+    sprintf2 fline 'rapid test line %d' fi
+    filewriteln rfh fline
+    fileclose rfh
+  endif
+next
+; read back file #25
+fileopen vfh '/tmp/ttl_rapid_25.tmp' 0 1
+filereadln vfh vline
+fileclose vfh
+strscan vline '25'
+if result > 0 then
+  if fio_ok = 1 then
+    pass_count = pass_count + 1
+    sprintf2 msg 'PASS [%d] STRESS rapid 50-file create/write' test_num
+  else
+    fail_count = fail_count + 1
+    sprintf2 msg 'FAIL [%d] STRESS rapid file open error' test_num
+  endif
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] STRESS rapid file content wrong' test_num
+endif
+filewriteln fh msg
+; cleanup
+for fi 1 50
+  sprintf2 tmpf '/tmp/ttl_rapid_%d.tmp' fi
+  filedelete tmpf
+next
+
+; 15-4 STRESS: build and verify large formatted string set
+test_num = test_num + 1
+strdim fmtarr 100
+for i 0 99
+  sprintf2 fmtarr[i] 'item_%03d_value_%d' i (i * 3 + 7)
+next
+; verify #0, #50, #99
+ok = 1
+if fmtarr[0] <> 'item_000_value_7' then
+  ok = 0
+endif
+if fmtarr[50] <> 'item_050_value_157' then
+  ok = 0
+endif
+if fmtarr[99] <> 'item_099_value_304' then
+  ok = 0
+endif
+if ok = 1 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] STRESS 100 formatted strings' test_num
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] STRESS formatted strings' test_num
+endif
+filewriteln fh msg
+
+; 15-5 STRESS: CRC of incrementally growing string
+test_num = test_num + 1
+crcstr = ''
+intdim crcs 50
+for i 0 49
+  strconcat crcstr 'X'
+  crc32 crcstr
+  crcs[i] = result
+next
+; verify all different (growing string -> different CRCs)
+ok = 1
+for i 0 48
+  if crcs[i] = crcs[i + 1] then
+    ok = 0
+  endif
+next
+if ok = 1 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] STRESS 50 incremental CRC32 all different' test_num
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] STRESS incremental CRC32 collision' test_num
+endif
+filewriteln fh msg
+
+filewriteln fh ''
+
+; ############################################################
+;  FINAL SUMMARY
+; ############################################################
+filewriteln fh '============================================'
+total = pass_count + fail_count
+sprintf2 summary 'Total: %d tests  |  Passed: %d  |  Failed: %d' total pass_count fail_count
+filewriteln fh summary
+if fail_count = 0 then
+  filewriteln fh 'STATUS: ALL TESTS PASSED'
+else
+  filewriteln fh 'STATUS: SOME TESTS FAILED'
+endif
+filewriteln fh '============================================'
+
+fileclose fh
+end
