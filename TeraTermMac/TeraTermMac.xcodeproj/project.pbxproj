@@ -61,6 +61,7 @@
 		BB0001000000000000000034 /* FileTransferSelfTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0001000000000000000037 /* FileTransferSelfTests.swift */; };
 		BB0001000000000000000035 /* FileTransferTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0001000000000000000038 /* FileTransferTests.swift */; };
 		BB0001000000000000000036 /* SettingsApplicationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0001000000000000000039 /* SettingsApplicationTests.swift */; };
+		BB0001000000000000000037 /* SSHSetupDialogs.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000100000000000000003A /* SSHSetupDialogs.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -130,6 +131,7 @@
 		AA0001000000000000000037 /* FileTransferSelfTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileTransferSelfTests.swift; sourceTree = "<group>"; };
 		AA0001000000000000000038 /* FileTransferTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileTransferTests.swift; sourceTree = "<group>"; };
 		AA0001000000000000000039 /* SettingsApplicationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsApplicationTests.swift; sourceTree = "<group>"; };
+		AA000100000000000000003A /* SSHSetupDialogs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SSHSetupDialogs.swift; sourceTree = "<group>"; };
 		DD0001000000000000000004 /* TeraTermMac.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TeraTermMac.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		DD0001000000000000000005 /* TeraTermMacTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TeraTermMacTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -265,6 +267,7 @@
 				AA0001000000000000000032 /* SnapshotGenerator.swift */,
 				AA0001000000000000000033 /* AdditionalSettingsController.swift */,
 				AA0001000000000000000034 /* NSView+DebugSnapshot.swift */,
+				AA000100000000000000003A /* SSHSetupDialogs.swift */,
 			);
 			path = Settings;
 			sourceTree = "<group>";
@@ -470,6 +473,7 @@
 				BB000100000000000000002F /* SnapshotGenerator.swift in Sources */,
 				BB0001000000000000000030 /* AdditionalSettingsController.swift in Sources */,
 				BB0001000000000000000031 /* NSView+DebugSnapshot.swift in Sources */,
+				BB0001000000000000000037 /* SSHSetupDialogs.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
