@@ -1629,12 +1629,34 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
             placeholder: L("dialog.keyboardSetup.answerbackPlaceholder"),
             width: DialogLayout.wideFieldWidth)
 
-        // ── NSGridView: 4 rows x 2 columns (label | control) ──
+        // ── Keyboard Type (Terminal ID) ──
+        let kbTypeLabel = NSView.makeLabel(L("dialog.keyboardSetup.keyboardType"))
+        let kbTypePopup = NSView.makePopUpButton(
+            items: TerminalID.allCases.map { $0.displayName },
+            width: kbPopupWidth)
+        if let idx = TerminalID.allCases.firstIndex(of: settings.terminalID) {
+            kbTypePopup.selectItem(at: idx)
+        }
+
+        // ── Disable Application Keypad ──
+        let disableAppKPLabel = NSView.makeLabel(L("dialog.keyboardSetup.disableAppKeypad"))
+        let disableAppKPCheck = NSButton(checkboxWithTitle: L("dialog.keyboardSetup.disableAppKeypadOption"), target: nil, action: nil)
+        disableAppKPCheck.state = settings.disableAppKeypad ? .on : .off
+
+        // ── Disable Application Cursor ──
+        let disableAppCurLabel = NSView.makeLabel(L("dialog.keyboardSetup.disableAppCursor"))
+        let disableAppCurCheck = NSButton(checkboxWithTitle: L("dialog.keyboardSetup.disableAppCursorOption"), target: nil, action: nil)
+        disableAppCurCheck.state = settings.disableAppCursor ? .on : .off
+
+        // ── NSGridView: 7 rows x 2 columns (label | control) ──
         let grid = NSGridView(views: [
+            [kbTypeLabel, kbTypePopup],
             [bsLabel,   bsPopup],
             [delLabel,  delPopup],
             [metaLabel, metaPopup],
             [ansLabel,  ansField],
+            [disableAppKPLabel, disableAppKPCheck],
+            [disableAppCurLabel, disableAppCurCheck],
         ])
         grid.translatesAutoresizingMaskIntoConstraints = false
         grid.rowSpacing = 12  // 24pt row height with controls
@@ -1666,6 +1688,13 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         alert.addButton(withTitle: L("dialog.keyboardSetup.cancel"))
 
         if alert.runModal() == .alertFirstButtonReturn {
+            // Keyboard type (Terminal ID)
+            let allIDs = TerminalID.allCases
+            let selectedIdx = kbTypePopup.indexOfSelectedItem
+            if selectedIdx >= 0 && selectedIdx < allIDs.count {
+                settings.terminalID = allIDs[allIDs.index(allIDs.startIndex, offsetBy: selectedIdx)]
+            }
+
             settings.bsKey = bsPopup.indexOfSelectedItem == 0 ? 8 : 127
             switch delPopup.indexOfSelectedItem {
             case 0: settings.deleteKey = 127
@@ -1674,6 +1703,11 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
             }
             settings.metaKey = metaPopup.indexOfSelectedItem
             settings.answerback = ansField.stringValue
+            settings.disableAppKeypad = disableAppKPCheck.state == .on
+            settings.disableAppCursor = disableAppCurCheck.state == .on
+
+            // Apply terminal ID to emulator
+            activeWindowController?.terminalEmulator.terminalID = settings.terminalID
 
             activeWindowController?.applySettings()
         }

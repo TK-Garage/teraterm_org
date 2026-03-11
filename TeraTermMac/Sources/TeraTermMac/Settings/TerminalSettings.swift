@@ -413,6 +413,8 @@ class TerminalSettings: Codable {
     var bsKey: Int = 8  // 8=BS, 127=DEL
     var deleteKey: Int = 127
     var metaKey: Int = 0  // 0=off, 1=on
+    var disableAppKeypad: Bool = false   // Disable application keypad mode (DECKPAM)
+    var disableAppCursor: Bool = false   // Disable application cursor key mode (DECCKM)
 
     // Beep
     var beepType: BeepType = .system

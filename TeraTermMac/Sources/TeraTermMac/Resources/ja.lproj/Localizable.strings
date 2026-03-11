@@ -164,6 +164,11 @@
 "dialog.keyboardSetup.metaOn" = "オン (ESC送信)";
 "dialog.keyboardSetup.answerback" = "応答文字列:";
 "dialog.keyboardSetup.answerbackPlaceholder" = "ENQ応答";
+"dialog.keyboardSetup.keyboardType" = "キーボード種類:";
+"dialog.keyboardSetup.disableAppKeypad" = "アプリケーションキーパッド:";
+"dialog.keyboardSetup.disableAppKeypadOption" = "アプリケーションキーパッドモードを無効化";
+"dialog.keyboardSetup.disableAppCursor" = "アプリケーションカーソル:";
+"dialog.keyboardSetup.disableAppCursorOption" = "アプリケーションカーソルモードを無効化";
 "dialog.keyboardSetup.ok" = "OK";
 "dialog.keyboardSetup.cancel" = "キャンセル";
 

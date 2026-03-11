@@ -164,6 +164,11 @@
 "dialog.keyboardSetup.metaOn" = "On (Send ESC)";
 "dialog.keyboardSetup.answerback" = "Answerback:";
 "dialog.keyboardSetup.answerbackPlaceholder" = "ENQ response";
+"dialog.keyboardSetup.keyboardType" = "Keyboard Type:";
+"dialog.keyboardSetup.disableAppKeypad" = "Application Keypad:";
+"dialog.keyboardSetup.disableAppKeypadOption" = "Disable application keypad mode";
+"dialog.keyboardSetup.disableAppCursor" = "Application Cursor:";
+"dialog.keyboardSetup.disableAppCursorOption" = "Disable application cursor mode";
 "dialog.keyboardSetup.ok" = "OK";
 "dialog.keyboardSetup.cancel" = "Cancel";
 

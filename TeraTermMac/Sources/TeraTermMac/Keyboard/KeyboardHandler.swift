@@ -159,7 +159,7 @@ class KeyboardHandler {
     private func cursorKeySequence(_ key: String, mods: TerminalKeyEvent.KeyModifiers) -> Data {
         let modifier = xTermModifier(mods)
 
-        if modes.cursorKeyMode && mods.isEmpty {
+        if modes.cursorKeyMode && !settings.disableAppCursor && mods.isEmpty {
             // Application cursor mode: ESC O <key>
             return Data("\u{1B}O\(key)".utf8)
         }
@@ -219,7 +219,7 @@ class KeyboardHandler {
     // MARK: - Keypad Keys
 
     private func keypadKey(_ key: String, mods: TerminalKeyEvent.KeyModifiers) -> Data {
-        if modes.applicationKeypad && mods.isEmpty {
+        if modes.applicationKeypad && !settings.disableAppKeypad && mods.isEmpty {
             // Application keypad mode: ESC O <char>
             let kpChar: String
             switch key {
