@@ -63,6 +63,7 @@
 "menu.setup.serialPort" = "Serial Port…";
 "menu.setup.tcpip" = "TCP/IP…";
 "menu.setup.additionalSettings" = "Additional Settings…";
+"menu.setup.loadKeymap" = "Load Key Map…";
 "menu.setup.saveSetup" = "Save Setup…";
 "menu.setup.restoreSetup" = "Restore Setup…";
 
@@ -176,6 +177,14 @@
 "dialog.keyboardSetup.disableAppCursorOption" = "Disable application cursor mode";
 "dialog.keyboardSetup.ok" = "OK";
 "dialog.keyboardSetup.cancel" = "Cancel";
+
+/* Load Keymap Dialog */
+"dialog.loadKeymap.title" = "Load Key Map";
+"dialog.loadKeymap.message" = "Select a keyboard setup file (.cnf)";
+"dialog.loadKeymap.success" = "Key map loaded successfully.";
+"dialog.loadKeymap.successDetail" = "%d key mappings and %d user keys loaded.";
+"dialog.loadKeymap.warning" = "Key map loaded with warnings:";
+"dialog.loadKeymap.error" = "Failed to load key map";
 
 /* Serial Port Dialog */
 "dialog.serialPort.title" = "Serial Port Setup";

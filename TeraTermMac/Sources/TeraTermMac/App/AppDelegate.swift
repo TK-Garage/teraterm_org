@@ -343,6 +343,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         let additionalItem = setupMenu.addItem(withTitle: L("menu.setup.additionalSettings"), action: #selector(setupAdditional(_:)), keyEquivalent: "")
         setSymbol("slider.horizontal.3", for: additionalItem)
         setupMenu.addItem(NSMenuItem.separator())
+        let loadKeymapItem = setupMenu.addItem(withTitle: L("menu.setup.loadKeymap"), action: #selector(loadKeymap(_:)), keyEquivalent: "")
+        setSymbol("doc.text", for: loadKeymapItem)
         let saveItem = setupMenu.addItem(withTitle: L("menu.setup.saveSetup"), action: #selector(saveSetup(_:)), keyEquivalent: "")
         setSymbol("square.and.arrow.down", for: saveItem)
         let restoreItem = setupMenu.addItem(withTitle: L("menu.setup.restoreSetup"), action: #selector(restoreSetup(_:)), keyEquivalent: "")
@@ -939,6 +941,57 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
                 wc.settings = self.settings
                 wc.applySettings()
             }
+        }
+    }
+
+    @objc func loadKeymap(_ sender: Any?) {
+        guard let win = activeWindowController?.window ?? NSApp.keyWindow else { return }
+        let panel = NSOpenPanel()
+        let cnfType = UTType(filenameExtension: "cnf") ?? .plainText
+        panel.allowedContentTypes = [cnfType, .plainText]
+        panel.title = L("dialog.loadKeymap.title")
+        panel.message = L("dialog.loadKeymap.message")
+        panel.beginSheetModal(for: win) { [weak self] response in
+            guard response == .OK, let url = panel.url else { return }
+            self?.performLoadKeymap(from: url, parentWindow: win)
+        }
+    }
+
+    private func performLoadKeymap(from url: URL, parentWindow: NSWindow) {
+        do {
+            let keyMap = try KeymapLoader.load(from: url)
+
+            // Count assigned mappings
+            let assignedCount = keyMap.map.filter { $0 != 0xFFFF }.count
+            let userKeyCount = keyMap.userKeys.count
+
+            if keyMap.warnings.isEmpty {
+                let alert = NSAlert()
+                alert.alertStyle = .informational
+                alert.messageText = L("dialog.loadKeymap.success")
+                alert.informativeText = String(
+                    format: L("dialog.loadKeymap.successDetail"),
+                    assignedCount, userKeyCount
+                )
+                alert.beginSheetModal(for: parentWindow)
+            } else {
+                let alert = NSAlert()
+                alert.alertStyle = .warning
+                alert.messageText = L("dialog.loadKeymap.warning")
+                alert.informativeText = keyMap.warnings.joined(separator: "\n")
+                alert.beginSheetModal(for: parentWindow)
+            }
+
+            // Notify the active window controller about the loaded keymap
+            if let wc = activeWindowController {
+                wc.applyKeyMap(keyMap)
+            }
+        } catch {
+            let alert = NSAlert()
+            alert.alertStyle = .critical
+            alert.messageText = L("dialog.loadKeymap.error")
+            alert.informativeText = error.localizedDescription
+            alert.beginSheetModal(for: parentWindow)
         }
     }
 

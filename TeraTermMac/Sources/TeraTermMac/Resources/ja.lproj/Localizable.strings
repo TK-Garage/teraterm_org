@@ -63,6 +63,7 @@
 "menu.setup.serialPort" = "シリアルポート…";
 "menu.setup.tcpip" = "TCP/IP…";
 "menu.setup.additionalSettings" = "その他の設定…";
+"menu.setup.loadKeymap" = "キーマップ読み込み…";
 "menu.setup.saveSetup" = "設定の保存…";
 "menu.setup.restoreSetup" = "設定の復元…";
 
@@ -176,6 +177,14 @@
 "dialog.keyboardSetup.disableAppCursorOption" = "アプリケーションカーソルモードを無効化";
 "dialog.keyboardSetup.ok" = "OK";
 "dialog.keyboardSetup.cancel" = "キャンセル";
+
+/* キーマップ読み込みダイアログ */
+"dialog.loadKeymap.title" = "キーマップの読み込み";
+"dialog.loadKeymap.message" = "キーボード設定ファイル (.cnf) を選択してください";
+"dialog.loadKeymap.success" = "キーマップを読み込みました。";
+"dialog.loadKeymap.successDetail" = "%d個のキーマッピングと%d個のユーザーキーを読み込みました。";
+"dialog.loadKeymap.warning" = "キーマップの読み込みで警告があります:";
+"dialog.loadKeymap.error" = "キーマップの読み込みに失敗しました";
 
 /* Serial Port Dialog */
 "dialog.serialPort.title" = "シリアルポートの設定";

@@ -412,6 +412,21 @@ class TerminalWindowController: NSWindowController {
         }
     }
 
+    /// Apply a loaded keymap (.cnf) to the keyboard handler.
+    func applyKeyMap(_ keyMap: KeyMap) {
+        // Apply user-defined keys from the keymap
+        for entry in keyMap.userKeys {
+            let decoded = KeymapLoader.decodeUserKeyValue(entry.value)
+            if let str = String(data: decoded, encoding: .utf8) {
+                keyboardHandler.setUserDefinedKey(
+                    keyCode: UInt16(entry.pcKeyCode),
+                    modifiers: [],
+                    value: str
+                )
+            }
+        }
+    }
+
     // MARK: - Terminal Actions
 
     func resetTerminal() {
