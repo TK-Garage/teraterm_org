@@ -62,6 +62,26 @@ protocol TTLInterpreterDelegate: AnyObject {
     func ttlSetDtr(_ on: Int)
     /// Set RTS signal
     func ttlSetRts(_ on: Int)
+    /// Start file transfer protocol (XMODEM, YMODEM, ZMODEM, B-Plus, Quick-VAN, Kermit)
+    func ttlStartFileTransfer(protocol type: TransferProtocolType, direction: TransferDirection, filePath: String, completion: @escaping (Bool) -> Void)
+    /// Start Kermit GET (request file from remote server)
+    func ttlKermitGet(remoteFileName: String, localPath: String, completion: @escaping (Bool) -> Void)
+    /// Send Kermit FINISH command
+    func ttlKermitFinish(completion: @escaping (Bool) -> Void)
+    /// SCP send
+    func ttlScpSend(localPath: String, remotePath: String, completion: @escaping (Bool) -> Void)
+    /// SCP receive
+    func ttlScpRecv(remotePath: String, localPath: String, completion: @escaping (Bool) -> Void)
+    /// Receive file (raw data receive to file with auto-stop)
+    func ttlRecvFile(filePath: String, binary: Bool, autoStopSec: Int, completion: @escaping (Bool) -> Void)
+    /// Restore settings from file
+    func ttlRestoreSetup(from path: String)
+    /// Call a menu item by ID
+    func ttlCallMenu(menuId: Int)
+    /// Set serial transmit delay per character (milliseconds)
+    func ttlSetSerialDelayChar(_ ms: Int)
+    /// Set serial transmit delay per line (milliseconds)
+    func ttlSetSerialDelayLine(_ ms: Int)
 }
 
 // MARK: - TTL Interpreter
@@ -731,18 +751,32 @@ class TTLInterpreter {
         case .sendlnMulticast:   try ttlSendMulticast(crlf: true)
         case .setMulticastName:  try ttlSetMulticastName()
 
-        // File transfer (stubs)
-        case .xmodemRecv, .xmodemSend, .ymodemRecv, .ymodemSend,
-             .zmodemRecv, .zmodemSend, .bplusRecv, .bplusSend,
-             .kmtFinish, .kmtGet, .kmtRecv, .kmtSend,
-             .quickVANRecv, .quickVANSend, .scpRecv, .scpSend,
-             .recvFile:
-            throw TTLError.notSupported
+        // File transfer commands
+        case .xmodemRecv:    try ttlXmodemRecv()
+        case .xmodemSend:    try ttlXmodemSend()
+        case .ymodemRecv:    try ttlProtocolRecv(protocol: .ymodem)
+        case .ymodemSend:    try ttlProtocolSendFile(protocol: .ymodem)
+        case .zmodemRecv:    try ttlProtocolRecv(protocol: .zmodem)
+        case .zmodemSend:    try ttlZmodemSend()
+        case .bplusRecv:     try ttlProtocolRecv(protocol: .bplus)
+        case .bplusSend:     try ttlProtocolSendFile(protocol: .bplus)
+        case .kmtRecv:       try ttlProtocolRecv(protocol: .kermit)
+        case .kmtSend:       try ttlProtocolSendFile(protocol: .kermit)
+        case .kmtGet:        try ttlKermitGet()
+        case .kmtFinish:     try ttlKermitFinish()
+        case .quickVANRecv:  try ttlProtocolRecv(protocol: .quickVAN)
+        case .quickVANSend:  try ttlProtocolSendFile(protocol: .quickVAN)
+        case .scpRecv:       try ttlScpRecv()
+        case .scpSend:       try ttlScpSend()
+        case .recvFile:      try ttlRecvFile()
 
         // Others
         case .then:         break  // handled by if
-        case .loadKeyMap, .restoreSetup, .cygConnect,
-             .callMenu, .setSerialDelayChar, .setSerialDelayLine:
+        case .restoreSetup: try ttlRestoreSetup()
+        case .callMenu:     try ttlCallMenu()
+        case .setSerialDelayChar: try ttlSetSerialDelayChar()
+        case .setSerialDelayLine: try ttlSetSerialDelayLine()
+        case .loadKeyMap, .cygConnect:
             throw TTLError.notSupported
 
         default:
@@ -1226,6 +1260,220 @@ class TTLInterpreter {
     private func ttlFlushRecv() throws {
         delegate?.ttlFlushReceiveBuffer()
         receiveBuffer = ""
+    }
+
+    // MARK: - File Transfer Protocol Commands
+
+    /// xmodemrecv <filename> <binary> <option>
+    /// option: 1=checksum, 2=CRC, 3=1K
+    private func ttlXmodemRecv() throws {
+        guard delegate?.ttlIsConnected() == true else { throw TTLError.linkFirst }
+        let filename = try parser.getStrExpression()
+        let binFlag = try parser.getIntExpression()
+        let xOption = try parser.getIntExpression()
+        guard !filename.isEmpty else { throw TTLError.syntax }
+
+        let proto: TransferProtocolType
+        switch xOption {
+        case 2: proto = .xmodemCRC
+        case 3: proto = .xmodemCRC  // 1K CRC maps to CRC for receive
+        default: proto = .xmodem    // checksum
+        }
+
+        _ = binFlag  // binary flag stored for reference
+        parser.status = .run
+        delegate?.ttlStartFileTransfer(protocol: proto, direction: .receive, filePath: filename) { [weak self] success in
+            self?.parser.setResult(success ? 0 : 1)
+            self?.parser.status = .run
+            self?.scheduleExec()
+        }
+        parser.status = .sleep
+    }
+
+    /// xmodemsend <filename> <option>
+    /// option: 2=CRC, 3=1K
+    private func ttlXmodemSend() throws {
+        guard delegate?.ttlIsConnected() == true else { throw TTLError.linkFirst }
+        let filename = try parser.getStrExpression()
+        let xOption = try parser.getIntExpression()
+        guard !filename.isEmpty else { throw TTLError.syntax }
+
+        let proto: TransferProtocolType
+        switch xOption {
+        case 3: proto = .xmodem1K
+        default: proto = .xmodemCRC
+        }
+
+        delegate?.ttlStartFileTransfer(protocol: proto, direction: .send, filePath: filename) { [weak self] success in
+            self?.parser.setResult(success ? 0 : 1)
+            self?.parser.status = .run
+            self?.scheduleExec()
+        }
+        parser.status = .sleep
+    }
+
+    /// zmodemsend <filename> <binary>
+    private func ttlZmodemSend() throws {
+        guard delegate?.ttlIsConnected() == true else { throw TTLError.linkFirst }
+        let filename = try parser.getStrExpression()
+        let _ = try parser.getIntExpression()  // binary flag
+        guard !filename.isEmpty else { throw TTLError.syntax }
+
+        delegate?.ttlStartFileTransfer(protocol: .zmodem, direction: .send, filePath: filename) { [weak self] success in
+            self?.parser.setResult(success ? 0 : 1)
+            self?.parser.status = .run
+            self?.scheduleExec()
+        }
+        parser.status = .sleep
+    }
+
+    /// Generic protocol receive (no arguments): zmodemrecv, ymodemrecv, bplusrecv, kmtrecv, quickvanrecv
+    private func ttlProtocolRecv(protocol type: TransferProtocolType) throws {
+        guard delegate?.ttlIsConnected() == true else { throw TTLError.linkFirst }
+
+        // Use a default receive path in the current directory
+        let defaultPath = FileManager.default.currentDirectoryPath
+        delegate?.ttlStartFileTransfer(protocol: type, direction: .receive, filePath: defaultPath) { [weak self] success in
+            self?.parser.setResult(success ? 0 : 1)
+            self?.parser.status = .run
+            self?.scheduleExec()
+        }
+        parser.status = .sleep
+    }
+
+    /// Generic protocol send with filename argument: ymodemsend, bplussend, kmtsend, quickvansend
+    private func ttlProtocolSendFile(protocol type: TransferProtocolType) throws {
+        guard delegate?.ttlIsConnected() == true else { throw TTLError.linkFirst }
+        let filename = try parser.getStrExpression()
+        guard !filename.isEmpty else { throw TTLError.syntax }
+
+        delegate?.ttlStartFileTransfer(protocol: type, direction: .send, filePath: filename) { [weak self] success in
+            self?.parser.setResult(success ? 0 : 1)
+            self?.parser.status = .run
+            self?.scheduleExec()
+        }
+        parser.status = .sleep
+    }
+
+    /// kmtget <remote_filename>
+    private func ttlKermitGet() throws {
+        guard delegate?.ttlIsConnected() == true else { throw TTLError.linkFirst }
+        let remoteFileName = try parser.getStrExpression()
+        guard !remoteFileName.isEmpty else { throw TTLError.syntax }
+
+        let localPath = FileManager.default.currentDirectoryPath + "/" + remoteFileName
+        delegate?.ttlKermitGet(remoteFileName: remoteFileName, localPath: localPath) { [weak self] success in
+            self?.parser.setResult(success ? 0 : 1)
+            self?.parser.status = .run
+            self?.scheduleExec()
+        }
+        parser.status = .sleep
+    }
+
+    /// kmtfinish (no arguments)
+    private func ttlKermitFinish() throws {
+        guard delegate?.ttlIsConnected() == true else { throw TTLError.linkFirst }
+
+        delegate?.ttlKermitFinish { [weak self] success in
+            self?.parser.setResult(success ? 0 : 1)
+            self?.parser.status = .run
+            self?.scheduleExec()
+        }
+        parser.status = .sleep
+    }
+
+    /// scpsend <local_file> [<remote_path>]
+    private func ttlScpSend() throws {
+        guard delegate?.ttlIsConnected() == true else { throw TTLError.linkFirst }
+        let localPath = try parser.getStrExpression()
+        guard !localPath.isEmpty else { throw TTLError.syntax }
+
+        // Optional remote path
+        var remotePath = ""
+        if let str = try? parser.getStrExpression() {
+            remotePath = str
+        }
+        if remotePath.isEmpty {
+            remotePath = URL(fileURLWithPath: localPath).lastPathComponent
+        }
+
+        delegate?.ttlScpSend(localPath: localPath, remotePath: remotePath) { [weak self] success in
+            self?.parser.setResult(success ? 0 : 1)
+            self?.parser.status = .run
+            self?.scheduleExec()
+        }
+        parser.status = .sleep
+    }
+
+    /// scprecv <remote_file> [<local_path>]
+    private func ttlScpRecv() throws {
+        guard delegate?.ttlIsConnected() == true else { throw TTLError.linkFirst }
+        let remotePath = try parser.getStrExpression()
+        guard !remotePath.isEmpty else { throw TTLError.syntax }
+
+        // Optional local path
+        var localPath = ""
+        if let str = try? parser.getStrExpression() {
+            localPath = str
+        }
+        if localPath.isEmpty {
+            let fileName = URL(fileURLWithPath: remotePath).lastPathComponent
+            localPath = FileManager.default.currentDirectoryPath + "/" + fileName
+        }
+
+        delegate?.ttlScpRecv(remotePath: remotePath, localPath: localPath) { [weak self] success in
+            self?.parser.setResult(success ? 0 : 1)
+            self?.parser.status = .run
+            self?.scheduleExec()
+        }
+        parser.status = .sleep
+    }
+
+    /// recvfile <filename> <binary> <autostop_wait_sec>
+    private func ttlRecvFile() throws {
+        guard delegate?.ttlIsConnected() == true else { throw TTLError.linkFirst }
+        let filename = try parser.getStrExpression()
+        let _ = try parser.getIntExpression()  // binary (always forced to 1 per original)
+        let autoStopWaitTime = try parser.getIntExpression()
+        guard !filename.isEmpty else { throw TTLError.syntax }
+
+        let autoStop = max(0, autoStopWaitTime)
+        delegate?.ttlRecvFile(filePath: filename, binary: true, autoStopSec: autoStop) { [weak self] success in
+            self?.parser.setResult(success ? 0 : 1)
+            self?.parser.status = .run
+            self?.scheduleExec()
+        }
+        parser.status = .sleep
+    }
+
+    // MARK: - Setup / Menu / Serial Delay Commands
+
+    /// restoresetup <filename>
+    private func ttlRestoreSetup() throws {
+        let filename = try parser.getStrExpression()
+        guard !filename.isEmpty else { throw TTLError.syntax }
+        delegate?.ttlRestoreSetup(from: filename)
+    }
+
+    /// callmenu <menu_id>
+    private func ttlCallMenu() throws {
+        guard delegate?.ttlIsConnected() == true else { throw TTLError.linkFirst }
+        let menuId = try parser.getIntExpression()
+        delegate?.ttlCallMenu(menuId: menuId)
+    }
+
+    /// setserialdelaychar <delay_ms>
+    private func ttlSetSerialDelayChar() throws {
+        guard delegate?.ttlIsConnected() == true else { throw TTLError.linkFirst }
+        let delay = try parser.getIntExpression()
+        delegate?.ttlSetSerialDelayChar(delay)
+    }
+
+    /// setserialdelayline <delay_ms>
+    private func ttlSetSerialDelayLine() throws {
+        guard delegate?.ttlIsConnected() == true else { throw TTLError.linkFirst }
+        let delay = try parser.getIntExpression()
+        delegate?.ttlSetSerialDelayLine(delay)
     }
 
     // MARK: - Wait Commands

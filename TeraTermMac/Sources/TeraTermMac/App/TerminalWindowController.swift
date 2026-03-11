@@ -41,6 +41,13 @@ class TerminalWindowController: NSWindowController {
     private var useTelnet: Bool = false
     private var isConnected: Bool = false
 
+    // Macro file transfer state
+    var macroTransferCompletion: ((Bool) -> Void)?
+    var macroRecvFileHandle: FileHandle?
+    var macroRecvAutoStopSec: Int = 0
+    var macroRecvLastDataTime: Date?
+    var macroRecvTimer: Timer?
+
     // MARK: - Initialization
 
     init(settings: TerminalSettings = TerminalSettings()) {
@@ -660,6 +667,13 @@ extension TerminalWindowController: ConnectionDelegate {
     func connectionDidReceiveData(_ data: Data) {
         logger.logData(data)
 
+        // Macro recvfile: write incoming data directly to file
+        if let handle = macroRecvFileHandle {
+            handle.write(data)
+            macroRecvLastDataTime = Date()
+            return
+        }
+
         if useTelnet {
             let terminalData = telnetProtocol.processIncoming(data)
             if !terminalData.isEmpty {
@@ -855,10 +869,14 @@ extension TerminalWindowController: FileTransferDelegate {
 
     func transferDidComplete(fileName: String, bytes: Int64) {
         updateWindowTitle()
+        macroTransferCompletion?(true)
+        macroTransferCompletion = nil
     }
 
     func transferDidFail(error: String) {
         updateWindowTitle()
+        macroTransferCompletion?(false)
+        macroTransferCompletion = nil
     }
 }
 
@@ -997,6 +1015,143 @@ extension TerminalWindowController: TTLInterpreterDelegate {
 
     func ttlSetRts(_ on: Int) {
         // RTS signal
+    }
+
+    func ttlStartFileTransfer(protocol type: TransferProtocolType, direction: TransferDirection, filePath: String, completion: @escaping (Bool) -> Void) {
+        fileTransferManager.delegate = self
+        fileTransferManager.startTransfer(protocol: type, direction: direction, filePath: filePath)
+
+        // Show progress panel
+        let protoName: String
+        switch type {
+        case .xmodem:    protoName = "XMODEM"
+        case .xmodemCRC: protoName = "XMODEM-CRC"
+        case .xmodem1K:  protoName = "XMODEM-1K"
+        case .ymodem:    protoName = "YMODEM"
+        case .ymodemG:   protoName = "YMODEM-G"
+        case .zmodem:    protoName = "ZMODEM"
+        case .kermit:    protoName = "Kermit"
+        case .bplus:     protoName = "B-Plus"
+        case .quickVAN:  protoName = "Quick-VAN"
+        }
+        let fileName = URL(fileURLWithPath: filePath).lastPathComponent
+        protocolTransferPanel.onCancel = { [weak self] in
+            self?.fileTransferManager.cancelTransfer()
+            completion(false)
+        }
+        protocolTransferPanel.show(fileName: fileName, protocolName: protoName)
+
+        // Store completion for when transfer finishes
+        macroTransferCompletion = completion
+    }
+
+    func ttlKermitGet(remoteFileName: String, localPath: String, completion: @escaping (Bool) -> Void) {
+        fileTransferManager.delegate = self
+        fileTransferManager.startKermitGet(remoteFileName: remoteFileName, localPath: localPath)
+        protocolTransferPanel.onCancel = { [weak self] in
+            self?.fileTransferManager.cancelTransfer()
+            completion(false)
+        }
+        protocolTransferPanel.show(fileName: remoteFileName, protocolName: "Kermit Get")
+        macroTransferCompletion = completion
+    }
+
+    func ttlKermitFinish(completion: @escaping (Bool) -> Void) {
+        fileTransferManager.delegate = self
+        fileTransferManager.startKermitFinish()
+        macroTransferCompletion = completion
+    }
+
+    func ttlScpSend(localPath: String, remotePath: String, completion: @escaping (Bool) -> Void) {
+        guard let ssh = connectionManager.currentConnection as? SSHConnection else {
+            completion(false)
+            return
+        }
+        SCPDialogController.executeSCP(
+            send: true, localPath: localPath, remotePath: remotePath,
+            host: ssh.host, port: ssh.port, username: ssh.username
+        ) { success, _ in
+            DispatchQueue.main.async { completion(success) }
+        }
+    }
+
+    func ttlScpRecv(remotePath: String, localPath: String, completion: @escaping (Bool) -> Void) {
+        guard let ssh = connectionManager.currentConnection as? SSHConnection else {
+            completion(false)
+            return
+        }
+        SCPDialogController.executeSCP(
+            send: false, localPath: localPath, remotePath: remotePath,
+            host: ssh.host, port: ssh.port, username: ssh.username
+        ) { success, _ in
+            DispatchQueue.main.async { completion(success) }
+        }
+    }
+
+    func ttlRecvFile(filePath: String, binary: Bool, autoStopSec: Int, completion: @escaping (Bool) -> Void) {
+        // Open file for writing received data
+        FileManager.default.createFile(atPath: filePath, contents: nil)
+        guard let handle = FileHandle(forWritingAtPath: filePath) else {
+            completion(false)
+            return
+        }
+
+        // Start receiving data to file
+        macroRecvFileHandle = handle
+        macroRecvAutoStopSec = autoStopSec
+        macroRecvLastDataTime = Date()
+        macroTransferCompletion = completion
+
+        // Schedule auto-stop check timer
+        if autoStopSec > 0 {
+            macroRecvTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] timer in
+                guard let self = self else { timer.invalidate(); return }
+                if let lastTime = self.macroRecvLastDataTime,
+                   Date().timeIntervalSince(lastTime) >= Double(self.macroRecvAutoStopSec) {
+                    timer.invalidate()
+                    self.macroRecvFileHandle?.closeFile()
+                    self.macroRecvFileHandle = nil
+                    self.macroRecvTimer = nil
+                    self.macroTransferCompletion?(true)
+                    self.macroTransferCompletion = nil
+                }
+            }
+        }
+    }
+
+    func ttlRestoreSetup(from path: String) {
+        let url = URL(fileURLWithPath: path)
+        settings = TerminalSettings.load(from: url)
+        applySettings()
+    }
+
+    func ttlCallMenu(menuId: Int) {
+        // Map Tera Term menu IDs to macOS menu actions
+        // Common menu IDs from the original:
+        // 50110=New Connection, 50210=Copy, 50220=Paste, etc.
+        // Dispatch via NSApp menu structure by tag
+        DispatchQueue.main.async {
+            if let mainMenu = NSApp.mainMenu {
+                for item in mainMenu.items {
+                    if let submenu = item.submenu {
+                        for subItem in submenu.items {
+                            if subItem.tag == menuId, let action = subItem.action {
+                                NSApp.sendAction(action, to: subItem.target, from: nil)
+                                return
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    func ttlSetSerialDelayChar(_ ms: Int) {
+        settings.serialDelayPerChar = ms
+    }
+
+    func ttlSetSerialDelayLine(_ ms: Int) {
+        settings.serialDelayPerLine = ms
     }
 }
 #endif

@@ -57,6 +57,61 @@ class MockTTLDelegate: TTLInterpreterDelegate {
     func ttlSetFlowCtrl(_ mode: Int) {}
     func ttlSetDtr(_ on: Int) {}
     func ttlSetRts(_ on: Int) {}
+
+    // File transfer / macro command delegate stubs
+    var lastTransferProtocol: TransferProtocolType?
+    var lastTransferDirection: TransferDirection?
+    var lastTransferFilePath: String?
+    var lastScpLocalPath: String?
+    var lastScpRemotePath: String?
+    var lastRecvFilePath: String?
+    var lastRestoreSetupPath: String?
+    var lastCallMenuId: Int?
+    var lastSerialDelayChar: Int?
+    var lastSerialDelayLine: Int?
+    var transferCompletionResult: Bool = true
+
+    func ttlStartFileTransfer(protocol type: TransferProtocolType, direction: TransferDirection, filePath: String, completion: @escaping (Bool) -> Void) {
+        lastTransferProtocol = type
+        lastTransferDirection = direction
+        lastTransferFilePath = filePath
+        DispatchQueue.main.async { completion(self.transferCompletionResult) }
+    }
+    func ttlKermitGet(remoteFileName: String, localPath: String, completion: @escaping (Bool) -> Void) {
+        lastTransferProtocol = .kermit
+        lastTransferFilePath = remoteFileName
+        DispatchQueue.main.async { completion(self.transferCompletionResult) }
+    }
+    func ttlKermitFinish(completion: @escaping (Bool) -> Void) {
+        lastTransferProtocol = .kermit
+        DispatchQueue.main.async { completion(self.transferCompletionResult) }
+    }
+    func ttlScpSend(localPath: String, remotePath: String, completion: @escaping (Bool) -> Void) {
+        lastScpLocalPath = localPath
+        lastScpRemotePath = remotePath
+        DispatchQueue.main.async { completion(self.transferCompletionResult) }
+    }
+    func ttlScpRecv(remotePath: String, localPath: String, completion: @escaping (Bool) -> Void) {
+        lastScpLocalPath = localPath
+        lastScpRemotePath = remotePath
+        DispatchQueue.main.async { completion(self.transferCompletionResult) }
+    }
+    func ttlRecvFile(filePath: String, binary: Bool, autoStopSec: Int, completion: @escaping (Bool) -> Void) {
+        lastRecvFilePath = filePath
+        DispatchQueue.main.async { completion(self.transferCompletionResult) }
+    }
+    func ttlRestoreSetup(from path: String) {
+        lastRestoreSetupPath = path
+    }
+    func ttlCallMenu(menuId: Int) {
+        lastCallMenuId = menuId
+    }
+    func ttlSetSerialDelayChar(_ ms: Int) {
+        lastSerialDelayChar = ms
+    }
+    func ttlSetSerialDelayLine(_ ms: Int) {
+        lastSerialDelayLine = ms
+    }
 }
 
 // MARK: - String Command Tests

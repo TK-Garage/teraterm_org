@@ -19,18 +19,19 @@ Tera Term Mac で利用可能な TTL マクロコマンドの一覧です。
 10. [ダイアログ](#10-ダイアログ)
 11. [システム／環境](#11-システム環境)
 12. [ターミナル操作](#12-ターミナル操作)
-13. [クリップボード](#13-クリップボード)
-14. [パス操作](#14-パス操作)
-15. [ログ](#15-ログ)
-16. [外部コマンド実行](#16-外部コマンド実行)
-17. [ビット演算](#17-ビット演算)
-18. [チェックサム / CRC](#18-チェックサム--crc)
-19. [パスワード (Keychain)](#19-パスワード-keychain)
-20. [ブロードキャスト / マルチキャスト](#20-ブロードキャスト--マルチキャスト)
-21. [その他](#21-その他)
-22. [システム変数](#22-システム変数)
-23. [式と演算子](#23-式と演算子)
-24. [未実装コマンド](#24-未実装コマンド)
+13. [ファイル転送](#13-ファイル転送)
+14. [クリップボード](#14-クリップボード)
+15. [パス操作](#15-パス操作)
+16. [ログ](#16-ログ)
+17. [外部コマンド実行](#17-外部コマンド実行)
+18. [ビット演算](#18-ビット演算)
+19. [チェックサム / CRC](#19-チェックサム--crc)
+20. [パスワード (Keychain)](#20-パスワード-keychain)
+21. [ブロードキャスト / マルチキャスト](#21-ブロードキャスト--マルチキャスト)
+22. [その他](#22-その他)
+23. [システム変数](#23-システム変数)
+24. [式と演算子](#24-式と演算子)
+25. [未実装コマンド](#25-未実装コマンド)
 
 ---
 
@@ -1233,9 +1234,227 @@ setdtr 1    ; DTR ON
 setrts 0    ; RTS OFF
 ```
 
+### `setserialdelaychar`
+
+シリアルポート送信時の文字間遅延をミリ秒で設定。
+
+```ttl
+setserialdelaychar 10    ; 文字毎に 10ms の遅延
+```
+
+### `setserialdelayline`
+
+シリアルポート送信時の行間遅延をミリ秒で設定。
+
+```ttl
+setserialdelayline 100    ; 行毎に 100ms の遅延
+```
+
+### `callmenu`
+
+メニューコマンドを ID で呼び出す。
+
+```ttl
+callmenu 50110    ; メニュー ID 50110 を実行
+```
+
+### `restoresetup`
+
+設定ファイルからターミナル設定を復元する。
+
+```ttl
+restoresetup '/path/to/settings.json'
+```
+
 ---
 
-## 13. クリップボード
+## 13. ファイル転送
+
+### `xmodemrecv`
+
+XMODEM プロトコルでファイルを受信。
+
+```ttl
+xmodemrecv filename binary_flag option
+; option: 1=Checksum, 2=CRC, 3=1K
+xmodemrecv '/tmp/recv.dat' 1 2
+```
+
+**result**: 0 = 成功、1 = 失敗
+
+### `xmodemsend`
+
+XMODEM プロトコルでファイルを送信。
+
+```ttl
+xmodemsend filename option
+; option: 2=CRC, 3=1K
+xmodemsend '/tmp/send.dat' 3
+```
+
+**result**: 0 = 成功、1 = 失敗
+
+### `ymodemrecv`
+
+YMODEM プロトコルでファイルを受信。引数なし。
+
+```ttl
+ymodemrecv
+```
+
+**result**: 0 = 成功、1 = 失敗
+
+### `ymodemsend`
+
+YMODEM プロトコルでファイルを送信。
+
+```ttl
+ymodemsend '/tmp/file.bin'
+```
+
+**result**: 0 = 成功、1 = 失敗
+
+### `zmodemrecv`
+
+ZMODEM プロトコルでファイルを受信。引数なし。
+
+```ttl
+zmodemrecv
+```
+
+**result**: 0 = 成功、1 = 失敗
+
+### `zmodemsend`
+
+ZMODEM プロトコルでファイルを送信。
+
+```ttl
+zmodemsend filename binary_flag
+zmodemsend '/tmp/file.bin' 1
+```
+
+**result**: 0 = 成功、1 = 失敗
+
+### `bplusrecv`
+
+B Plus プロトコルでファイルを受信。引数なし。
+
+```ttl
+bplusrecv
+```
+
+**result**: 0 = 成功、1 = 失敗
+
+### `bplussend`
+
+B Plus プロトコルでファイルを送信。
+
+```ttl
+bplussend '/tmp/file.bin'
+```
+
+**result**: 0 = 成功、1 = 失敗
+
+### `kmtrecv`
+
+Kermit プロトコルでファイルを受信。引数なし。
+
+```ttl
+kmtrecv
+```
+
+**result**: 0 = 成功、1 = 失敗
+
+### `kmtsend`
+
+Kermit プロトコルでファイルを送信。
+
+```ttl
+kmtsend '/tmp/file.bin'
+```
+
+**result**: 0 = 成功、1 = 失敗
+
+### `kmtget`
+
+リモート Kermit サーバーにファイル送信を要求。
+
+```ttl
+kmtget 'remote_file.txt'
+```
+
+**result**: 0 = 成功、1 = 失敗
+
+### `kmtfinish`
+
+リモート Kermit サーバーにサーバーモード終了を指示。引数なし。
+
+```ttl
+kmtfinish
+```
+
+**result**: 0 = 成功、1 = 失敗
+
+### `quickvanrecv`
+
+Quick VAN プロトコルでファイルを受信。引数なし。
+
+```ttl
+quickvanrecv
+```
+
+**result**: 0 = 成功、1 = 失敗
+
+### `quickvansend`
+
+Quick VAN プロトコルでファイルを送信。
+
+```ttl
+quickvansend '/tmp/file.bin'
+```
+
+**result**: 0 = 成功、1 = 失敗
+
+### `scpsend`
+
+SCP でファイルをリモートに送信。SSH 接続が必要。
+
+```ttl
+scpsend local_path [remote_path]
+scpsend '/tmp/sample.txt' 'doc/sample.txt'
+scpsend '/tmp/sample.txt'    ; リモートはファイル名のみ
+```
+
+**result**: 0 = 成功、1 = 失敗
+
+### `scprecv`
+
+SCP でリモートからファイルを受信。SSH 接続が必要。
+
+```ttl
+scprecv remote_path [local_path]
+scprecv 'src/foo.txt' '/tmp/foo.txt'
+scprecv 'src/foo.txt'    ; ローカルはカレントディレクトリ＋ファイル名
+```
+
+**result**: 0 = 成功、1 = 失敗
+
+### `recvfile`
+
+接続から受信したデータを直接ファイルに保存。自動停止機能付き。
+
+```ttl
+recvfile filename binary_flag autostop_seconds
+recvfile '/tmp/received.dat' 1 5
+; binary: 常に 1 (バイナリモード固定)
+; autostop_seconds: 指定秒間データなしで自動停止 (0=無限)
+```
+
+**result**: 0 = 成功、1 = 失敗
+
+---
+
+## 14. クリップボード
 
 ### `clipb2var`
 
@@ -1255,7 +1474,7 @@ var2clipb 'copied text'
 
 ---
 
-## 14. パス操作
+## 15. パス操作
 
 ### `makepath`
 
@@ -1294,7 +1513,7 @@ changedir '/tmp'
 
 ---
 
-## 15. ログ
+## 16. ログ
 
 ### `logopen`
 
@@ -1335,7 +1554,7 @@ logautoclosemode 1
 
 ---
 
-## 16. 外部コマンド実行
+## 17. 外部コマンド実行
 
 ### `exec`
 
@@ -1368,7 +1587,7 @@ setexitcode 0
 
 ---
 
-## 17. ビット演算
+## 18. ビット演算
 
 ### `rotateleft` / `rotateright`
 
@@ -1386,7 +1605,7 @@ rotateright val 1
 
 ---
 
-## 18. チェックサム / CRC
+## 19. チェックサム / CRC
 
 ### 文字列版
 
@@ -1415,7 +1634,7 @@ crc32file result '/tmp/data.bin'
 
 ---
 
-## 19. パスワード (Keychain)
+## 20. パスワード (Keychain)
 
 > macOS 版ではスタブ実装です。
 
@@ -1446,7 +1665,7 @@ ispassword 'myserver'
 
 ---
 
-## 20. ブロードキャスト / マルチキャスト
+## 21. ブロードキャスト / マルチキャスト
 
 > 複数セッションへの同時送信（スタブ実装）。
 
@@ -1460,7 +1679,7 @@ setmulticastname 'group1'
 
 ---
 
-## 21. その他
+## 22. その他
 
 ### `beep`
 
@@ -1488,7 +1707,7 @@ regexoption 0    ; デフォルト
 
 ---
 
-## 22. システム変数
+## 23. システム変数
 
 マクロ実行時に自動的に作成されるシステム変数：
 
@@ -1504,7 +1723,7 @@ regexoption 0    ; デフォルト
 
 ---
 
-## 23. 式と演算子
+## 24. 式と演算子
 
 TTL では変数代入や条件式で以下の演算子が使えます。
 
@@ -1567,22 +1786,22 @@ s = "double quotes"
 
 ---
 
-## 24. 未実装コマンド
+## 25. 未実装コマンド
 
 以下は予約語として認識されますが、macOS 版では未実装（`notSupported` エラー）です。
 
 | コマンド | 説明 |
 |----------|------|
-| `bplusrecv` / `bplussend` | B Plus プロトコル転送 |
-| `xmodemrecv` / `xmodemsend` | XMODEM 転送 |
-| `ymodemrecv` / `ymodemsend` | YMODEM 転送 |
-| `zmodemrecv` / `zmodemsend` | ZMODEM 転送 |
-| `kmtrecv` / `kmtsend` / `kmtget` / `kmtfinish` | Kermit 転送 |
-| `quickvanrecv` / `quickvansend` | Quick VAN 転送 |
-| `scprecv` / `scpsend` | SCP 転送 |
-| `recvfile` | ファイル受信 |
-| `cygconnect` | Cygwin 接続 |
+| ~~`bplusrecv` / `bplussend`~~ | ~~B Plus プロトコル転送~~ → 実装済み (§13) |
+| ~~`xmodemrecv` / `xmodemsend`~~ | ~~XMODEM 転送~~ → 実装済み (§13) |
+| ~~`ymodemrecv` / `ymodemsend`~~ | ~~YMODEM 転送~~ → 実装済み (§13) |
+| ~~`zmodemrecv` / `zmodemsend`~~ | ~~ZMODEM 転送~~ → 実装済み (§13) |
+| ~~`kmtrecv` / `kmtsend` / `kmtget` / `kmtfinish`~~ | ~~Kermit 転送~~ → 実装済み (§13) |
+| ~~`quickvanrecv` / `quickvansend`~~ | ~~Quick VAN 転送~~ → 実装済み (§13) |
+| ~~`scprecv` / `scpsend`~~ | ~~SCP 転送~~ → 実装済み (§13) |
+| ~~`recvfile`~~ | ~~ファイル受信~~ → 実装済み (§13) |
+| `cygconnect` | Cygwin 接続（macOS 非対応） |
 | `loadkeymap` | キーマップ読み込み |
-| `restoresetup` | セットアップ復元 |
-| `callmenu` | メニュー呼び出し |
-| `setserialdelaychar` / `setserialdelayline` | シリアル遅延設定 |
+| ~~`restoresetup`~~ | ~~セットアップ復元~~ → 実装済み (§12) |
+| ~~`callmenu`~~ | ~~メニュー呼び出し~~ → 実装済み (§12) |
+| ~~`setserialdelaychar` / `setserialdelayline`~~ | ~~シリアル遅延設定~~ → 実装済み (§12) |

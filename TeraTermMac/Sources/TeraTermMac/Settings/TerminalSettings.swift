@@ -447,6 +447,10 @@ class TerminalSettings: Codable {
     var zmodemDataLen: Int = 1024
     var zmodemWindowSize: Int = 32767
 
+    // Serial Transmit Delay (milliseconds)
+    var serialDelayPerChar: Int = 0
+    var serialDelayPerLine: Int = 0
+
     // Mouse
     var mouseTracking: Bool = true
     var mouseWheelScrollLines: Int = 3
