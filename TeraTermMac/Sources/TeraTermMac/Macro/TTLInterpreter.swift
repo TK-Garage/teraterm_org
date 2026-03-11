@@ -781,9 +781,6 @@ class TTLInterpreter {
         case .loadKeyMap:   try ttlLoadKeyMap()
         case .cygConnect:
             throw TTLError.notSupported
-
-        default:
-            throw TTLError.notSupported
         }
     }
 

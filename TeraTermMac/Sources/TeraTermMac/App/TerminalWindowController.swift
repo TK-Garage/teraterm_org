@@ -269,8 +269,6 @@ class TerminalWindowController: NSWindowController {
             FileTransferDialogHelper.presentMultiSendPanel(on: win, protocolType: .quickVAN) { [weak self] url, proto in
                 self?.startTransfer(proto, direction: .send, url: url)
             }
-        default:
-            break
         }
     }
 
@@ -301,8 +299,6 @@ class TerminalWindowController: NSWindowController {
             FileTransferDialogHelper.presentMultiReceivePanel(on: win, protocolType: .quickVAN) { [weak self] url, proto in
                 self?.startTransfer(proto, direction: .receive, url: url)
             }
-        default:
-            break
         }
     }
 

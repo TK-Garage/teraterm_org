@@ -3453,7 +3453,7 @@ class QuickVANProtocol: FileTransferProtocol {
     // MARK: - Packet Handlers
 
     private func handleDataPacket() {
-        let blkNum = pktIn[0]
+        _ = pktIn[0]  // blkNum
         let dataSlice = Array(pktIn[2..<130])
 
         // Verify checksum
@@ -3495,7 +3495,7 @@ class QuickVANProtocol: FileTransferProtocol {
         guard pktInCount >= 3 else { return }
 
         let frameType = pktIn[0]
-        let frameNum = pktIn[1]
+        _ = pktIn[1]  // frameNum
 
         switch frameType {
         case QuickVANProtocol.SINIT:
