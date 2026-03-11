@@ -836,3 +836,97 @@
 "validation.truncation.warning" = "テキストの切り詰めを検出しました";
 "validation.layout.overflow" = "レイアウトのオーバーフローを検出しました";
 "validation.language.mismatch" = "言語の不一致を検出しました";
+
+/* その他の設定 - 全般 (新規項目) */
+"dialog.general.connectingTimeout" = "接続タイムアウト (秒, 0=無制限):";
+"dialog.general.clearScreenOnClose" = "接続終了時に画面をクリアする";
+"dialog.general.saveWindowPosition" = "ウインドウ位置を保存する";
+"dialog.general.backWrap" = "バックラップを有効にする";
+"dialog.general.vtCompatTab" = "VT互換タブ";
+
+/* その他の設定 - エンコーディング (新規項目) */
+"dialog.coding.emojiOverride" = "絵文字幅を上書きする";
+"dialog.coding.fallbackCP932" = "未定義文字にCP932フォールバックを使用する";
+
+/* その他の設定 - コピーと貼り付け (新規項目) */
+"dialog.copyPaste.mouseSelectDelay" = "選択開始遅延 (ミリ秒):";
+
+/* その他の設定 - 制御シーケンス (新規項目) */
+"dialog.sequence.accept8BitCtrl" = "8ビット制御コードを受け入れる";
+"dialog.sequence.send8BitCtrl" = "8ビット制御シーケンスを送信する";
+"dialog.sequence.alternateScreen" = "代替スクリーンバッファを有効にする";
+"dialog.sequence.bracketedPaste" = "ブラケットペーストモードを有効にする";
+"dialog.sequence.bracketedControlOnly" = "ブラケットペースト制御のみ";
+"dialog.sequence.allowWrongSequence" = "不正なエスケープシーケンスを許可する";
+"dialog.sequence.maxOSCBuffer" = "OSCバッファ最大サイズ:";
+"dialog.sequence.enableLineMode" = "ラインモードを有効にする";
+
+/* その他の設定 - マウス (新規項目) */
+"dialog.mouse.translateWheelToCursor" = "代替画面でホイールをカーソルキーに変換する";
+"dialog.mouse.disableWheelToCursorByCtrl" = "Ctrl押下時にホイール変換を無効にする";
+
+/* その他の設定 - ログ (新規項目) */
+"dialog.log.timestampFormat" = "タイムスタンプ形式:";
+
+/* その他の設定 - 表示 (新規項目) */
+"dialog.visual.killFocusCursor" = "フォーカス喪失時にポリゴンカーソルを表示する";
+"dialog.visual.pcBoldColor" = "PC式太字カラーマッピング";
+"dialog.visual.windowExtended" = "ウインドウ拡張設定";
+"dialog.visual.attrColorSettings" = "属性色設定";
+"dialog.visual.colorNormal" = "通常:";
+"dialog.visual.colorBold" = "太字:";
+"dialog.visual.colorBlink" = "点滅:";
+"dialog.visual.colorReverse" = "反転:";
+"dialog.visual.colorURL" = "URL:";
+"dialog.visual.colorUnderline" = "下線:";
+"dialog.visual.enableBoldDisplay" = "太字テキストの描画を有効にする";
+"dialog.visual.hideWindowFrame" = "フレームなしのウインドウ表示";
+"dialog.visual.aixtermColors" = "aixterm 16色モード";
+"dialog.visual.xterm256Colors" = "xterm 256色モード";
+"dialog.visual.useStandardBGColor" = "標準背景色を常に使用する";
+
+/* その他の設定 - フォント (新規項目) */
+"dialog.font.resizeFontToFit" = "描画幅に合わせてフォントサイズを変更する";
+
+/* その他の設定 - スクロール (新規項目) */
+"dialog.general.scrollThreshold" = "スクロール閾値:";
+"dialog.general.scrollClearScreen" = "スクロール時に画面をクリアする";
+
+/* その他の設定 - シリアル (新規項目) */
+"dialog.general.clearBuffOnOpen" = "ポートオープン時にバッファをクリアする";
+"dialog.general.autoReconnect" = "シリアルポート自動再接続";
+
+/* その他の設定 - ビープ (新規項目) */
+"dialog.general.beepOverUsedCount" = "ビープ過多検知回数:";
+"dialog.general.beepOverUsedTime" = "ビープ過多検知時間 (秒):";
+"dialog.general.beepSuppressTime" = "ビープ抑制時間 (秒):";
+
+/* その他の設定 - ブロードキャスト (新規項目) */
+"dialog.general.maxBroadcastHistory" = "ブロードキャスト履歴の最大数:";
+
+/* その他の設定 - デバッグ (新規項目) */
+"dialog.debug.debugModes" = "デバッグモード:";
+
+/* その他の設定 - URL (新規項目) */
+"dialog.mouse.joinSplitURL" = "行をまたがるURLを結合する";
+"dialog.mouse.joinSplitURLIgnoreEOL" = "行末無視文字:";
+
+/* その他の設定 - ファイル転送 (新規項目) */
+"dialog.general.zmodemAuto" = "ZMODEM自動受信";
+"dialog.general.confirmDragDrop" = "ファイルのドラッグ＆ドロップ確認";
+"dialog.general.autoFileRename" = "ファイル競合時に自動リネーム";
+
+/* テーマタブ (新規項目) */
+"dialog.theme.bgImage" = "背景画像";
+"dialog.theme.bgImagePath" = "画像パス:";
+"dialog.theme.browse" = "参照…";
+"dialog.theme.alphaNormal" = "通常テキスト:";
+"dialog.theme.alphaReverse" = "反転テキスト:";
+"dialog.theme.alphaOther" = "その他:";
+"dialog.theme.colorEditor" = "テーマカラーエディタ";
+"dialog.theme.foreground" = "前景色:";
+"dialog.theme.background" = "背景色:";
+"dialog.theme.cursor" = "カーソル:";
+"dialog.theme.url" = "URL:";
+"dialog.theme.selFg" = "選択前景色:";
+"dialog.theme.selBg" = "選択背景色:";

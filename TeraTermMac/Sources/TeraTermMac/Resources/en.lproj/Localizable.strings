@@ -836,3 +836,97 @@
 "validation.truncation.warning" = "Text truncation detected";
 "validation.layout.overflow" = "Layout overflow detected";
 "validation.language.mismatch" = "Language mismatch detected";
+
+/* Additional Settings - General (new items) */
+"dialog.general.connectingTimeout" = "Connecting timeout (sec, 0=infinite):";
+"dialog.general.clearScreenOnClose" = "Clear screen on close connection";
+"dialog.general.saveWindowPosition" = "Save window position";
+"dialog.general.backWrap" = "Enable back-wrap";
+"dialog.general.vtCompatTab" = "VT compatible tab";
+
+/* Additional Settings - Coding (new items) */
+"dialog.coding.emojiOverride" = "Override emoji width";
+"dialog.coding.fallbackCP932" = "Fallback to CP932 for undefined characters";
+
+/* Additional Settings - Copy and Paste (new items) */
+"dialog.copyPaste.mouseSelectDelay" = "Selection start delay (ms):";
+
+/* Additional Settings - Sequence (new items) */
+"dialog.sequence.accept8BitCtrl" = "Accept 8-bit control codes";
+"dialog.sequence.send8BitCtrl" = "Send 8-bit control sequences";
+"dialog.sequence.alternateScreen" = "Enable alternate screen buffer";
+"dialog.sequence.bracketedPaste" = "Enable bracketed paste mode";
+"dialog.sequence.bracketedControlOnly" = "Bracketed paste control only";
+"dialog.sequence.allowWrongSequence" = "Allow wrong escape sequences";
+"dialog.sequence.maxOSCBuffer" = "Max OSC buffer size:";
+"dialog.sequence.enableLineMode" = "Enable line mode";
+
+/* Additional Settings - Mouse (new items) */
+"dialog.mouse.translateWheelToCursor" = "Translate wheel to cursor keys in alt screen";
+"dialog.mouse.disableWheelToCursorByCtrl" = "Disable wheel-to-cursor by Ctrl";
+
+/* Additional Settings - Log (new items) */
+"dialog.log.timestampFormat" = "Timestamp format:";
+
+/* Additional Settings - Visual (new items) */
+"dialog.visual.killFocusCursor" = "Show hollow cursor when window loses focus";
+"dialog.visual.pcBoldColor" = "PC-style bold color mapping";
+"dialog.visual.windowExtended" = "Window Extended Settings";
+"dialog.visual.attrColorSettings" = "Attribute Color Settings";
+"dialog.visual.colorNormal" = "Normal:";
+"dialog.visual.colorBold" = "Bold:";
+"dialog.visual.colorBlink" = "Blink:";
+"dialog.visual.colorReverse" = "Reverse:";
+"dialog.visual.colorURL" = "URL:";
+"dialog.visual.colorUnderline" = "Underline:";
+"dialog.visual.enableBoldDisplay" = "Enable bold text rendering";
+"dialog.visual.hideWindowFrame" = "Frameless window display";
+"dialog.visual.aixtermColors" = "aixterm 16 color mode";
+"dialog.visual.xterm256Colors" = "xterm 256 color mode";
+"dialog.visual.useStandardBGColor" = "Always use standard background color";
+
+/* Additional Settings - Font (new items) */
+"dialog.font.resizeFontToFit" = "Resize font to fit drawing width";
+
+/* Additional Settings - Scroll (new items) */
+"dialog.general.scrollThreshold" = "Scroll threshold:";
+"dialog.general.scrollClearScreen" = "Clear screen on scroll";
+
+/* Additional Settings - Serial (new items) */
+"dialog.general.clearBuffOnOpen" = "Clear buffer on port open";
+"dialog.general.autoReconnect" = "Auto-reconnect serial port";
+
+/* Additional Settings - Beep (new items) */
+"dialog.general.beepOverUsedCount" = "Beep overuse count:";
+"dialog.general.beepOverUsedTime" = "Beep overuse time (sec):";
+"dialog.general.beepSuppressTime" = "Beep suppress time (sec):";
+
+/* Additional Settings - Broadcast (new items) */
+"dialog.general.maxBroadcastHistory" = "Max broadcast history:";
+
+/* Additional Settings - Debug (new items) */
+"dialog.debug.debugModes" = "Debug modes:";
+
+/* Additional Settings - URL (new items) */
+"dialog.mouse.joinSplitURL" = "Join split URLs across lines";
+"dialog.mouse.joinSplitURLIgnoreEOL" = "EOL char to ignore:";
+
+/* Additional Settings - File Transfer (new items) */
+"dialog.general.zmodemAuto" = "ZMODEM auto-receive";
+"dialog.general.confirmDragDrop" = "Confirm file drag and drop";
+"dialog.general.autoFileRename" = "Auto-rename files on conflict";
+
+/* Theme tab (new items) */
+"dialog.theme.bgImage" = "Background Image";
+"dialog.theme.bgImagePath" = "Image path:";
+"dialog.theme.browse" = "Browse…";
+"dialog.theme.alphaNormal" = "Normal text:";
+"dialog.theme.alphaReverse" = "Reverse text:";
+"dialog.theme.alphaOther" = "Other:";
+"dialog.theme.colorEditor" = "Theme Color Editor";
+"dialog.theme.foreground" = "Foreground:";
+"dialog.theme.background" = "Background:";
+"dialog.theme.cursor" = "Cursor:";
+"dialog.theme.url" = "URL:";
+"dialog.theme.selFg" = "Selection FG:";
+"dialog.theme.selBg" = "Selection BG:";

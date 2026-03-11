@@ -367,6 +367,8 @@ class TerminalSettings: Codable {
     var terminalHeight: Int = 24
     var autoWinResize: Bool = false
     var termIsWin: Bool = true
+    var terminalSpeed: String = "38400"           // Terminal speed for Telnet/SSH negotiation
+    var killFocusCursor: Bool = true              // Show polygon cursor when window loses focus
 
     // Character Handling
     var encoding: CharacterEncoding = .utf8
@@ -386,6 +388,8 @@ class TerminalSettings: Codable {
     var enableScrollBuffer: Bool = true
     var scrollBufferSize: Int = 10000
     var scrollBufferMax: Int = 500000
+    var scrollThreshold: Int = 12                 // Scroll threshold lines
+    var scrollWindowClearScreen: Bool = true       // Clear screen on scroll
 
     // Display
     var fontName: String = "Menlo"
@@ -395,6 +399,7 @@ class TerminalSettings: Codable {
     // Unicode
     var unicodeAmbiguousWidth: Int = 1  // 1=narrow, 2=wide
     var unicodeEmojiWidth: Int = 2
+    var unicodeEmojiOverride: Bool = false         // Override emoji width
 
     // Window
     var title: String = "Tera Term"
@@ -408,6 +413,7 @@ class TerminalSettings: Codable {
     var hostname: String = ""
     var telnet: Bool = true
     var protocolFamily: ProtocolFamily = .auto_
+    var connectingTimeout: Int = 0                // Connection timeout (0=infinite)
     var hostHistory: [String] = []
     var sshVersion: SSHVersion = .ssh2
     var sshAuthMethod: SSHAuthMethod = .password
@@ -424,6 +430,8 @@ class TerminalSettings: Codable {
     var parity: Parity = .none
     var stopBits: Int = 1
     var flowControl: FlowControl = .none
+    var clearComBuffOnOpen: Bool = true            // Clear buffer on port open
+    var autoComPortReconnect: Bool = true          // Auto-reconnect serial port
 
     // Keyboard
     var bsKey: Int = 8  // 8=BS, 127=DEL
@@ -434,6 +442,9 @@ class TerminalSettings: Codable {
 
     // Beep
     var beepType: BeepType = .system
+    var beepOverUsedCount: Int = 5                // Beep overuse detection count
+    var beepOverUsedTime: Int = 2                 // Beep overuse detection time (seconds)
+    var beepSuppressTime: Int = 5                 // Beep suppression time (seconds)
 
     // Log
     var logAutoStart: Bool = false
@@ -441,11 +452,15 @@ class TerminalSettings: Codable {
     var logDefaultName: String = "teraterm.log"
     var logTimestamp: Bool = false
     var logPlainText: Bool = true
+    var logTimestampFormat: String = "%Y-%m-%d %H:%M:%S.%N"  // Timestamp format
 
     // File Transfer
     var xmodemOption: Int = 1  // 1=checksum, 2=CRC, 3=1K
     var zmodemDataLen: Int = 1024
     var zmodemWindowSize: Int = 32767
+    var zmodemAutoReceive: Bool = false            // ZMODEM auto-receive
+    var confirmFileDragAndDrop: Bool = true        // Confirm file drag and drop
+    var autoFileRename: Bool = false               // Auto-rename files on conflict
 
     // Serial Transmit Delay (milliseconds)
     var serialDelayPerChar: Int = 0
@@ -454,6 +469,8 @@ class TerminalSettings: Codable {
     // Mouse
     var mouseTracking: Bool = true
     var mouseWheelScrollLines: Int = 3
+    var translateWheelToCursor: Bool = true        // Translate wheel to cursor keys
+    var disableWheelToCursorByCtrl: Bool = true    // Disable wheel-to-cursor by Ctrl
 
     // Misc
     var confirmOnDisconnect: Bool = true
@@ -461,6 +478,11 @@ class TerminalSettings: Codable {
     var clipboardConfirmPaste: Bool = true
     var autoScrollOnOutput: Bool = true
     var clearOnResize: Bool = false
+    var clearScreenOnCloseConnection: Bool = false // Clear screen on disconnect
+    var backWrap: Bool = false                     // Back wrap
+    var vtCompatTab: Bool = false                  // VT compatible tab
+    var fallbackToCP932: Bool = false              // CP932 fallback
+    var saveVTWinPos: Bool = false                 // Save VT window position
     var cursorChangeIME: Bool = true
     var notifySound: Bool = true
 
@@ -483,6 +505,7 @@ class TerminalSettings: Codable {
     var confirmDangerousClipboard: Bool = true
     var dangerousKeywordFile: String = ""
     var enableSelectionOnActivate: Bool = false
+    var mouseSelectStartDelay: Int = 0            // Mouse selection start delay (ms)
 
     // Control Sequence
     var titleChangeRequest: Bool = false
@@ -497,15 +520,25 @@ class TerminalSettings: Codable {
     var notifyClipboardAccess: Bool = true
     var acceptScrollBufferClear: Bool = false
     var disablePrintSequence: Bool = false
+    var accept8BitCtrl: Bool = true               // Accept 8-bit control codes
+    var send8BitCtrl: Bool = false                // Send 8-bit control sequences
+    var alternateScreenBuffer: Bool = true         // Alternate screen buffer support
+    var bracketedPasteMode: Bool = true            // Bracketed paste mode
+    var bracketedControlOnly: Bool = false         // Bracketed control only
+    var allowWrongSequence: Bool = false           // Allow wrong escape sequences
+    var maxOSCBufferSize: Int = 4096              // Max OSC buffer size
+    var enableLineMode: Bool = true               // Enable line mode
 
     // Broadcast
     var broadcastHistory: [String] = []
     var broadcastSendToThisOnly: Bool = false
     var broadcastSendEnter: Bool = true
     var broadcastRealtime: Bool = false
+    var maxBroadcastHistory: Int = 99             // Maximum broadcast history entries
 
     // Debug
     var debugCharInfoPopup: Bool = false
+    var debugModes: String = "all"                // Debug mode type
 
     // Font additional
     var vtFontProportional: Bool = false
@@ -531,6 +564,7 @@ class TerminalSettings: Codable {
     var attrReverse: Bool = true
     var attrUnderline: Bool = true
     var attrStrikethrough: Bool = false
+    var pcBoldColor: Bool = false                  // PC-style bold color mapping
     var enableBoldColor: Bool = true
     var enableBoldFont: Bool = true
     var enableBlinkColor: Bool = true
@@ -539,6 +573,8 @@ class TerminalSettings: Codable {
     var enableUnderlineDecoration: Bool = true
     var enableURLColor: Bool = true
     var enableURLUnderline: Bool = true
+    var joinSplitURL: Bool = false                // Join split URLs across lines
+    var joinSplitURLIgnoreEOLChar: String = "\\\\"  // EOL char to ignore when joining URLs
     var enableANSIColor: Bool = true
     var fontRenderingQuality: Int = 0  // 0=Default, 1=AntiAlias, 2=Subpixel
 

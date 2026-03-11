@@ -196,6 +196,23 @@ final class GeneralTab: AdditionalSettingsTab {
     private var titleFormatSessionCheck: NSButton!
     private var notifySoundCheck: NSButton!
     private var fileTransferField: NSTextField!
+    // New settings
+    private var connectingTimeoutField: NSTextField!
+    private var clearScreenOnCloseCheck: NSButton!
+    private var saveWindowPositionCheck: NSButton!
+    private var backWrapCheck: NSButton!
+    private var vtCompatTabCheck: NSButton!
+    private var scrollThresholdField: NSTextField!
+    private var scrollClearScreenCheck: NSButton!
+    private var clearBuffOnOpenCheck: NSButton!
+    private var autoReconnectCheck: NSButton!
+    private var beepOverUsedCountField: NSTextField!
+    private var beepOverUsedTimeField: NSTextField!
+    private var beepSuppressTimeField: NSTextField!
+    private var maxBroadcastHistoryField: NSTextField!
+    private var zmodemAutoCheck: NSButton!
+    private var confirmDragDropCheck: NSButton!
+    private var autoFileRenameCheck: NSButton!
 
     init(settings: TerminalSettings) {
         contentView.translatesAutoresizingMaskIntoConstraints = false
@@ -245,9 +262,80 @@ final class GeneralTab: AdditionalSettingsTab {
         ftRow.orientation = .horizontal
         ftRow.spacing = 8
 
+        // Connection timeout
+        let timeoutLabel = NSView.makeLabel(TTL("dialog.general.connectingTimeout"), alignment: .left)
+        connectingTimeoutField = NSView.makeNumberField(value: s.connectingTimeout, width: 60)
+        let timeoutRow = NSStackView(views: [timeoutLabel, connectingTimeoutField])
+        timeoutRow.translatesAutoresizingMaskIntoConstraints = false
+        timeoutRow.orientation = .horizontal
+        timeoutRow.spacing = 8
+
+        // Misc checkboxes
+        clearScreenOnCloseCheck = NSView.makeCheckbox(TTL("dialog.general.clearScreenOnClose"), checked: s.clearScreenOnCloseConnection)
+        saveWindowPositionCheck = NSView.makeCheckbox(TTL("dialog.general.saveWindowPosition"), checked: s.saveVTWinPos)
+        backWrapCheck = NSView.makeCheckbox(TTL("dialog.general.backWrap"), checked: s.backWrap)
+        vtCompatTabCheck = NSView.makeCheckbox(TTL("dialog.general.vtCompatTab"), checked: s.vtCompatTab)
+
+        // Scroll settings
+        let scrollThresholdLabel = NSView.makeLabel(TTL("dialog.general.scrollThreshold"), alignment: .left)
+        scrollThresholdField = NSView.makeNumberField(value: s.scrollThreshold, width: 60)
+        let scrollThresholdRow = NSStackView(views: [scrollThresholdLabel, scrollThresholdField])
+        scrollThresholdRow.translatesAutoresizingMaskIntoConstraints = false
+        scrollThresholdRow.orientation = .horizontal
+        scrollThresholdRow.spacing = 8
+        scrollClearScreenCheck = NSView.makeCheckbox(TTL("dialog.general.scrollClearScreen"), checked: s.scrollWindowClearScreen)
+
+        // Serial settings
+        clearBuffOnOpenCheck = NSView.makeCheckbox(TTL("dialog.general.clearBuffOnOpen"), checked: s.clearComBuffOnOpen)
+        autoReconnectCheck = NSView.makeCheckbox(TTL("dialog.general.autoReconnect"), checked: s.autoComPortReconnect)
+
+        // Beep overuse settings
+        let beepBox = NSView.makeGroupBox(title: TTL("dialog.sequence.beep"))
+        let beepCountLabel = NSView.makeLabel(TTL("dialog.general.beepOverUsedCount"), alignment: .left)
+        beepOverUsedCountField = NSView.makeNumberField(value: s.beepOverUsedCount, width: 50)
+        let beepTimeLabel = NSView.makeLabel(TTL("dialog.general.beepOverUsedTime"), alignment: .left)
+        beepOverUsedTimeField = NSView.makeNumberField(value: s.beepOverUsedTime, width: 50)
+        let beepSuppressLabel = NSView.makeLabel(TTL("dialog.general.beepSuppressTime"), alignment: .left)
+        beepSuppressTimeField = NSView.makeNumberField(value: s.beepSuppressTime, width: 50)
+        let beepGrid = NSGridView(views: [
+            [beepCountLabel, beepOverUsedCountField],
+            [beepTimeLabel, beepOverUsedTimeField],
+            [beepSuppressLabel, beepSuppressTimeField],
+        ])
+        beepGrid.translatesAutoresizingMaskIntoConstraints = false
+        beepGrid.rowSpacing = 6
+        beepGrid.columnSpacing = 8
+        let bbc = beepBox.contentView!
+        bbc.addSubview(beepGrid)
+        NSLayoutConstraint.activate([
+            beepGrid.topAnchor.constraint(equalTo: bbc.topAnchor, constant: 16),
+            beepGrid.leadingAnchor.constraint(equalTo: bbc.leadingAnchor, constant: 12),
+            beepGrid.trailingAnchor.constraint(lessThanOrEqualTo: bbc.trailingAnchor, constant: -12),
+            beepGrid.bottomAnchor.constraint(equalTo: bbc.bottomAnchor, constant: -8),
+        ])
+
+        // Broadcast history
+        let maxBCLabel = NSView.makeLabel(TTL("dialog.general.maxBroadcastHistory"), alignment: .left)
+        maxBroadcastHistoryField = NSView.makeNumberField(value: s.maxBroadcastHistory, width: 60)
+        let maxBCRow = NSStackView(views: [maxBCLabel, maxBroadcastHistoryField])
+        maxBCRow.translatesAutoresizingMaskIntoConstraints = false
+        maxBCRow.orientation = .horizontal
+        maxBCRow.spacing = 8
+
+        // File transfer
+        zmodemAutoCheck = NSView.makeCheckbox(TTL("dialog.general.zmodemAuto"), checked: s.zmodemAutoReceive)
+        confirmDragDropCheck = NSView.makeCheckbox(TTL("dialog.general.confirmDragDrop"), checked: s.confirmFileDragAndDrop)
+        autoFileRenameCheck = NSView.makeCheckbox(TTL("dialog.general.autoFileRename"), checked: s.autoFileRename)
+
         let stack = NSStackView(views: [
             sendBreakCheck, broadcastCheck, autoScrollCheck, clearOnResizeCheck,
-            cursorIMECheck, portRow, titleBox, notifySoundCheck, ftRow
+            cursorIMECheck, portRow, titleBox, notifySoundCheck, ftRow,
+            timeoutRow, clearScreenOnCloseCheck, saveWindowPositionCheck,
+            backWrapCheck, vtCompatTabCheck,
+            scrollThresholdRow, scrollClearScreenCheck,
+            clearBuffOnOpenCheck, autoReconnectCheck,
+            beepBox, maxBCRow,
+            zmodemAutoCheck, confirmDragDropCheck, autoFileRenameCheck
         ])
         stack.translatesAutoresizingMaskIntoConstraints = false
         stack.orientation = .vertical
@@ -272,6 +360,23 @@ final class GeneralTab: AdditionalSettingsTab {
         s.titleFormatSession = titleFormatSessionCheck.state == .on
         s.notifySound = notifySoundCheck.state == .on
         s.fileTransferFolder = fileTransferField.stringValue
+        // New settings
+        s.connectingTimeout = connectingTimeoutField.integerValue
+        s.clearScreenOnCloseConnection = clearScreenOnCloseCheck.state == .on
+        s.saveVTWinPos = saveWindowPositionCheck.state == .on
+        s.backWrap = backWrapCheck.state == .on
+        s.vtCompatTab = vtCompatTabCheck.state == .on
+        s.scrollThreshold = scrollThresholdField.integerValue
+        s.scrollWindowClearScreen = scrollClearScreenCheck.state == .on
+        s.clearComBuffOnOpen = clearBuffOnOpenCheck.state == .on
+        s.autoComPortReconnect = autoReconnectCheck.state == .on
+        s.beepOverUsedCount = beepOverUsedCountField.integerValue
+        s.beepOverUsedTime = beepOverUsedTimeField.integerValue
+        s.beepSuppressTime = beepSuppressTimeField.integerValue
+        s.maxBroadcastHistory = maxBroadcastHistoryField.integerValue
+        s.zmodemAutoReceive = zmodemAutoCheck.state == .on
+        s.confirmFileDragAndDrop = confirmDragDropCheck.state == .on
+        s.autoFileRename = autoFileRenameCheck.state == .on
     }
 }
 
@@ -285,6 +390,8 @@ final class CodingTab: AdditionalSettingsTab {
     private var sendEncodingPopup: NSPopUpButton!
     private var ambiguousWidthPopup: NSPopUpButton!
     private var emojiWidthPopup: NSPopUpButton!
+    private var emojiOverrideCheck: NSButton!
+    private var fallbackCP932Check: NSButton!
 
     private let encodingItems = ["UTF-8", "Shift_JIS", "EUC-JP", "ISO-2022-JP"]
 
@@ -316,6 +423,11 @@ final class CodingTab: AdditionalSettingsTab {
         emojiWidthPopup = NSView.makePopUpButton(items: ["1 (Narrow)", "2 (Wide)"], width: 120)
         emojiWidthPopup.selectItem(at: s.unicodeEmojiWidth == 2 ? 1 : 0)
 
+        emojiOverrideCheck = NSView.makeCheckbox(
+            TTL("dialog.coding.emojiOverride"), checked: s.unicodeEmojiOverride)
+        fallbackCP932Check = NSView.makeCheckbox(
+            TTL("dialog.coding.fallbackCP932"), checked: s.fallbackToCP932)
+
         let grid = NSGridView(views: [
             [recvLabel, recvEncodingPopup],
             [sendLabel, sendEncodingPopup],
@@ -329,9 +441,16 @@ final class CodingTab: AdditionalSettingsTab {
         grid.column(at: 1).xPlacement = .leading
         contentView.addSubview(grid)
 
+        contentView.addSubview(emojiOverrideCheck)
+        contentView.addSubview(fallbackCP932Check)
+
         NSLayoutConstraint.activate([
             grid.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 16),
             grid.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 12),
+            emojiOverrideCheck.topAnchor.constraint(equalTo: grid.bottomAnchor, constant: 12),
+            emojiOverrideCheck.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 12),
+            fallbackCP932Check.topAnchor.constraint(equalTo: emojiOverrideCheck.bottomAnchor, constant: 6),
+            fallbackCP932Check.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 12),
         ])
     }
 
@@ -347,6 +466,8 @@ final class CodingTab: AdditionalSettingsTab {
         }
         s.unicodeAmbiguousWidth = ambiguousWidthPopup.indexOfSelectedItem == 1 ? 2 : 1
         s.unicodeEmojiWidth = emojiWidthPopup.indexOfSelectedItem == 1 ? 2 : 1
+        s.unicodeEmojiOverride = emojiOverrideCheck.state == .on
+        s.fallbackToCP932 = fallbackCP932Check.state == .on
     }
 }
 
@@ -369,6 +490,7 @@ final class CopyPasteTab: AdditionalSettingsTab {
     private var confirmDangerousClipboardCheck: NSButton!
     private var dangerousKeywordField: NSTextField!
     private var enableSelectionOnActivateCheck: NSButton!
+    private var mouseSelectDelayField: NSTextField!
 
     init(settings: TerminalSettings) {
         contentView.translatesAutoresizingMaskIntoConstraints = false
@@ -458,12 +580,20 @@ final class CopyPasteTab: AdditionalSettingsTab {
             secStack.bottomAnchor.constraint(equalTo: sc.bottomAnchor, constant: -8),
         ])
 
+        let mouseDelayLabel = NSView.makeLabel(TTL("dialog.copyPaste.mouseSelectDelay"), alignment: .left)
+        mouseSelectDelayField = NSView.makeNumberField(value: s.mouseSelectStartDelay, width: 60)
+        let mouseDelayMs = NSView.makeLabel("ms", alignment: .left)
+        let mouseDelayRow = NSStackView(views: [mouseDelayLabel, mouseSelectDelayField, mouseDelayMs])
+        mouseDelayRow.translatesAutoresizingMaskIntoConstraints = false
+        mouseDelayRow.orientation = .horizontal
+        mouseDelayRow.spacing = 8
+
         let stack = NSStackView(views: [
             continuedLineCopyCheck, confirmPasteNewLineCheck,
             delimRow, delayRow, autoTextCopyCheck,
             pasteBox,
             leftClickOnlySelectionCheck, trimTrailingNewlineCheck,
-            enableSelectionOnActivateCheck,
+            enableSelectionOnActivateCheck, mouseDelayRow,
             secBox
         ])
         stack.translatesAutoresizingMaskIntoConstraints = false
@@ -493,6 +623,7 @@ final class CopyPasteTab: AdditionalSettingsTab {
         s.confirmDangerousClipboard = confirmDangerousClipboardCheck.state == .on
         s.dangerousKeywordFile = dangerousKeywordField.stringValue
         s.enableSelectionOnActivate = enableSelectionOnActivateCheck.state == .on
+        s.mouseSelectStartDelay = mouseSelectDelayField.integerValue
     }
 }
 
@@ -516,6 +647,15 @@ final class SequenceTab: AdditionalSettingsTab {
     private var notifyClipboardAccessCheck: NSButton!
     private var acceptScrollBufferClearCheck: NSButton!
     private var disablePrintSequenceCheck: NSButton!
+    // New controls
+    private var accept8BitCtrlCheck: NSButton!
+    private var send8BitCtrlCheck: NSButton!
+    private var alternateScreenCheck: NSButton!
+    private var bracketedPasteCheck: NSButton!
+    private var bracketedControlOnlyCheck: NSButton!
+    private var allowWrongSequenceCheck: NSButton!
+    private var maxOSCBufferField: NSTextField!
+    private var enableLineModeCheck: NSButton!
 
     init(settings: TerminalSettings) {
         contentView.translatesAutoresizingMaskIntoConstraints = false
@@ -586,6 +726,29 @@ final class SequenceTab: AdditionalSettingsTab {
         beepRow.orientation = .horizontal
         beepRow.spacing = 8
 
+        // New control sequence settings
+        accept8BitCtrlCheck = NSView.makeCheckbox(
+            TTL("dialog.sequence.accept8BitCtrl"), checked: s.accept8BitCtrl)
+        send8BitCtrlCheck = NSView.makeCheckbox(
+            TTL("dialog.sequence.send8BitCtrl"), checked: s.send8BitCtrl)
+        alternateScreenCheck = NSView.makeCheckbox(
+            TTL("dialog.sequence.alternateScreen"), checked: s.alternateScreenBuffer)
+        bracketedPasteCheck = NSView.makeCheckbox(
+            TTL("dialog.sequence.bracketedPaste"), checked: s.bracketedPasteMode)
+        bracketedControlOnlyCheck = NSView.makeCheckbox(
+            TTL("dialog.sequence.bracketedControlOnly"), checked: s.bracketedControlOnly)
+        allowWrongSequenceCheck = NSView.makeCheckbox(
+            TTL("dialog.sequence.allowWrongSequence"), checked: s.allowWrongSequence)
+        enableLineModeCheck = NSView.makeCheckbox(
+            TTL("dialog.sequence.enableLineMode"), checked: s.enableLineMode)
+
+        let oscLabel = NSView.makeLabel(TTL("dialog.sequence.maxOSCBuffer"), alignment: .left)
+        maxOSCBufferField = NSView.makeNumberField(value: s.maxOSCBufferSize, width: 80)
+        let oscRow = NSStackView(views: [oscLabel, maxOSCBufferField])
+        oscRow.translatesAutoresizingMaskIntoConstraints = false
+        oscRow.orientation = .horizontal
+        oscRow.spacing = 8
+
         let stack = NSStackView(views: [
             mouseEventCheck, disableControlKeyMouseCheck,
             titleChangeCheck, titleModeRow,
@@ -593,7 +756,10 @@ final class SequenceTab: AdditionalSettingsTab {
             cursorControlCheck,
             clipboardAccessCheck, clipModeRow, notifyClipboardAccessCheck,
             acceptScrollBufferClearCheck, disablePrintSequenceCheck,
-            beepRow
+            beepRow,
+            accept8BitCtrlCheck, send8BitCtrlCheck,
+            alternateScreenCheck, bracketedPasteCheck, bracketedControlOnlyCheck,
+            allowWrongSequenceCheck, enableLineModeCheck, oscRow
         ])
         stack.translatesAutoresizingMaskIntoConstraints = false
         stack.orientation = .vertical
@@ -625,6 +791,15 @@ final class SequenceTab: AdditionalSettingsTab {
         if let bt = BeepType(rawValue: beepPopup.indexOfSelectedItem) {
             s.beepType = bt
         }
+        // New settings
+        s.accept8BitCtrl = accept8BitCtrlCheck.state == .on
+        s.send8BitCtrl = send8BitCtrlCheck.state == .on
+        s.alternateScreenBuffer = alternateScreenCheck.state == .on
+        s.bracketedPasteMode = bracketedPasteCheck.state == .on
+        s.bracketedControlOnly = bracketedControlOnlyCheck.state == .on
+        s.allowWrongSequence = allowWrongSequenceCheck.state == .on
+        s.enableLineMode = enableLineModeCheck.state == .on
+        s.maxOSCBufferSize = maxOSCBufferField.integerValue
     }
 }
 
@@ -636,6 +811,10 @@ final class MouseTab: AdditionalSettingsTab {
 
     private var clickableURLCheck: NSButton!
     private var wheelScrollField: NSTextField!
+    private var translateWheelCheck: NSButton!
+    private var disableWheelByCtrlCheck: NSButton!
+    private var joinSplitURLCheck: NSButton!
+    private var joinSplitURLEOLField: NSTextField!
 
     init(settings: TerminalSettings) {
         contentView.translatesAutoresizingMaskIntoConstraints = false
@@ -655,7 +834,25 @@ final class MouseTab: AdditionalSettingsTab {
         wheelRow.orientation = .horizontal
         wheelRow.spacing = 8
 
-        let stack = NSStackView(views: [clickableURLCheck, wheelRow])
+        translateWheelCheck = NSView.makeCheckbox(
+            TTL("dialog.mouse.translateWheelToCursor"), checked: s.translateWheelToCursor)
+        disableWheelByCtrlCheck = NSView.makeCheckbox(
+            TTL("dialog.mouse.disableWheelToCursorByCtrl"), checked: s.disableWheelToCursorByCtrl)
+
+        joinSplitURLCheck = NSView.makeCheckbox(
+            TTL("dialog.mouse.joinSplitURL"), checked: s.joinSplitURL)
+        let eolLabel = NSView.makeLabel(TTL("dialog.mouse.joinSplitURLIgnoreEOL"), alignment: .left)
+        joinSplitURLEOLField = NSView.makeTextField(value: s.joinSplitURLIgnoreEOLChar, width: 60)
+        let eolRow = NSStackView(views: [eolLabel, joinSplitURLEOLField])
+        eolRow.translatesAutoresizingMaskIntoConstraints = false
+        eolRow.orientation = .horizontal
+        eolRow.spacing = 8
+
+        let stack = NSStackView(views: [
+            clickableURLCheck, wheelRow,
+            translateWheelCheck, disableWheelByCtrlCheck,
+            joinSplitURLCheck, eolRow
+        ])
         stack.translatesAutoresizingMaskIntoConstraints = false
         stack.orientation = .vertical
         stack.alignment = .leading
@@ -670,6 +867,10 @@ final class MouseTab: AdditionalSettingsTab {
 
     func apply(to s: TerminalSettings) {
         s.mouseWheelScrollLines = max(1, wheelScrollField.integerValue)
+        s.translateWheelToCursor = translateWheelCheck.state == .on
+        s.disableWheelToCursorByCtrl = disableWheelByCtrlCheck.state == .on
+        s.joinSplitURL = joinSplitURLCheck.state == .on
+        s.joinSplitURLIgnoreEOLChar = joinSplitURLEOLField.stringValue
     }
 }
 
@@ -695,6 +896,7 @@ final class LogTab: AdditionalSettingsTab {
     private var rotateStepField: NSTextField!
     private var bomCheck: NSButton!
     private var timestampTypePopup: NSPopUpButton!
+    private var timestampFormatField: NSTextField!
 
     init(settings: TerminalSettings) {
         contentView.translatesAutoresizingMaskIntoConstraints = false
@@ -792,9 +994,17 @@ final class LogTab: AdditionalSettingsTab {
         tsTypeRow.orientation = .horizontal
         tsTypeRow.spacing = 8
 
+        // Timestamp format
+        let tsFormatLabel = NSView.makeLabel(TTL("dialog.log.timestampFormat"), alignment: .left)
+        timestampFormatField = NSView.makeTextField(value: s.logTimestampFormat, width: 200)
+        let tsFormatRow = NSStackView(views: [tsFormatLabel, timestampFormatField])
+        tsFormatRow.translatesAutoresizingMaskIntoConstraints = false
+        tsFormatRow.orientation = .horizontal
+        tsFormatRow.spacing = 8
+
         let stack = NSStackView(views: [
             editorRow, argsRow, nameRow, pathRow, autoStartCheck, optionsBox,
-            bomCheck, tsTypeRow, rotateBox
+            bomCheck, tsTypeRow, tsFormatRow, rotateBox
         ])
         stack.translatesAutoresizingMaskIntoConstraints = false
         stack.orientation = .vertical
@@ -826,6 +1036,7 @@ final class LogTab: AdditionalSettingsTab {
         s.logRotateStep = rotateStepField.integerValue
         s.logBOM = bomCheck.state == .on
         s.logTimestampType = timestampTypePopup.indexOfSelectedItem
+        s.logTimestampFormat = timestampFormatField.stringValue
     }
 }
 
@@ -860,6 +1071,8 @@ final class VisualTab: AdditionalSettingsTab {
     private var enableURLColorCheck: NSButton!
     private var enableURLUnderlineCheck: NSButton!
     private var enableANSIColorCheck: NSButton!
+    private var killFocusCursorCheck: NSButton!
+    private var pcBoldColorCheck: NSButton!
 
     // Window extended settings
     private var enableBoldDisplayCheck: NSButton!
@@ -1036,6 +1249,8 @@ final class VisualTab: AdditionalSettingsTab {
         ])
 
         flickerlessCheck = NSView.makeCheckbox(TTL("dialog.visual.flickerlessMove"), checked: s.flickerlessMoveEnabled)
+        killFocusCursorCheck = NSView.makeCheckbox(TTL("dialog.visual.killFocusCursor"), checked: s.killFocusCursor)
+        pcBoldColorCheck = NSView.makeCheckbox(TTL("dialog.visual.pcBoldColor"), checked: s.pcBoldColor)
 
         // ── Window Extended Settings Group Box ──
         let winExtBox = NSView.makeGroupBox(title: TTL("dialog.visual.windowExtended"))
@@ -1104,7 +1319,8 @@ final class VisualTab: AdditionalSettingsTab {
         let stack = NSStackView(views: [
             cursorRow, qualityRow,
             opacityBox, colorBox, attrBox, attrColorBox,
-            winExtBox, attrColorSettingsBox, flickerlessCheck
+            winExtBox, attrColorSettingsBox, flickerlessCheck,
+            killFocusCursorCheck, pcBoldColorCheck
         ])
         stack.translatesAutoresizingMaskIntoConstraints = false
         stack.orientation = .vertical
@@ -1182,6 +1398,8 @@ final class VisualTab: AdditionalSettingsTab {
         s.attrColorReverse = extractColor(attrColorReverseWell)
         s.attrColorURL = extractColor(attrColorURLWell)
         s.attrColorUnderline = extractColor(attrColorUnderlineWell)
+        s.killFocusCursor = killFocusCursorCheck.state == .on
+        s.pcBoldColor = pcBoldColorCheck.state == .on
     }
 }
 
@@ -1753,6 +1971,7 @@ final class DebugTab: AdditionalSettingsTab {
     let contentView = NSView()
 
     private var charInfoCheck: NSButton!
+    private var debugModesPopup: NSPopUpButton!
 
     init(settings: TerminalSettings) {
         contentView.translatesAutoresizingMaskIntoConstraints = false
@@ -1762,7 +1981,16 @@ final class DebugTab: AdditionalSettingsTab {
     private func buildUI(_ s: TerminalSettings) {
         charInfoCheck = NSView.makeCheckbox(TTL("dialog.debug.charInfoPopup"), checked: s.debugCharInfoPopup)
 
-        let stack = NSStackView(views: [charInfoCheck])
+        let modesLabel = NSView.makeLabel(TTL("dialog.debug.debugModes"), alignment: .left)
+        debugModesPopup = NSView.makePopUpButton(
+            items: ["all", "none", "normal", "hex", "noout"],
+            selected: s.debugModes, width: 120)
+        let modesRow = NSStackView(views: [modesLabel, debugModesPopup])
+        modesRow.translatesAutoresizingMaskIntoConstraints = false
+        modesRow.orientation = .horizontal
+        modesRow.spacing = 8
+
+        let stack = NSStackView(views: [charInfoCheck, modesRow])
         stack.translatesAutoresizingMaskIntoConstraints = false
         stack.orientation = .vertical
         stack.alignment = .leading
@@ -1777,6 +2005,7 @@ final class DebugTab: AdditionalSettingsTab {
 
     func apply(to s: TerminalSettings) {
         s.debugCharInfoPopup = charInfoCheck.state == .on
+        s.debugModes = debugModesPopup.titleOfSelectedItem ?? "all"
     }
 }
 

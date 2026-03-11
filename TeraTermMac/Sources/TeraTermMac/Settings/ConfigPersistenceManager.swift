@@ -83,6 +83,59 @@ struct TeraTermConfig {
     // Misc
     var answerback: String = ""
     var confirmOnDisconnect: Bool = true
+
+    // Terminal extended
+    var terminalSpeed: String = "38400"
+    var killFocusCursor: Bool = true
+    // Scroll extended
+    var scrollThreshold: Int = 12
+    var scrollWindowClearScreen: Bool = true
+    // Beep extended
+    var beepOverUsedCount: Int = 5
+    var beepOverUsedTime: Int = 2
+    var beepSuppressTime: Int = 5
+    // Connection
+    var connectingTimeout: Int = 0
+    // Serial extended
+    var clearComBuffOnOpen: Bool = true
+    var autoComPortReconnect: Bool = true
+    // Log extended
+    var logTimestampFormat: String = "%Y-%m-%d %H:%M:%S.%N"
+    // Control Sequences
+    var accept8BitCtrl: Bool = true
+    var send8BitCtrl: Bool = false
+    var alternateScreenBuffer: Bool = true
+    var bracketedPasteMode: Bool = true
+    var bracketedControlOnly: Bool = false
+    var allowWrongSequence: Bool = false
+    var maxOSCBufferSize: Int = 4096
+    var enableLineMode: Bool = true
+    // Copy/Paste
+    var mouseSelectStartDelay: Int = 0
+    // Mouse
+    var translateWheelToCursor: Bool = true
+    var disableWheelToCursorByCtrl: Bool = true
+    // Broadcast
+    var maxBroadcastHistory: Int = 99
+    // Debug
+    var debugModes: String = "all"
+    // URL
+    var joinSplitURL: Bool = false
+    var joinSplitURLIgnoreEOLChar: String = "\\\\"
+    // Unicode
+    var unicodeEmojiOverride: Bool = false
+    // Color
+    var pcBoldColor: Bool = false
+    // File Transfer
+    var zmodemAutoReceive: Bool = false
+    var confirmFileDragAndDrop: Bool = true
+    var autoFileRename: Bool = false
+    // Misc
+    var clearScreenOnCloseConnection: Bool = false
+    var backWrap: Bool = false
+    var vtCompatTab: Bool = false
+    var fallbackToCP932: Bool = false
+    var saveVTWinPos: Bool = false
 }
 
 // MARK: - ConfigPersistenceManager
@@ -296,6 +349,58 @@ final class ConfigPersistenceManager {
             (key: "MouseTracking",  value: config.mouseTracking ? "on" : "off"),
             // Misc
             (key: "ConfirmOnDisconnect", value: config.confirmOnDisconnect ? "on" : "off"),
+            // Terminal extended
+            (key: "TerminalSpeed", value: config.terminalSpeed),
+            (key: "KillFocusCursor", value: config.killFocusCursor ? "on" : "off"),
+            // Scroll extended
+            (key: "ScrollThreshold", value: String(config.scrollThreshold)),
+            (key: "ScrollWindowClearScreen", value: config.scrollWindowClearScreen ? "on" : "off"),
+            // Beep extended
+            (key: "BeepOverUsedCount", value: String(config.beepOverUsedCount)),
+            (key: "BeepOverUsedTime", value: String(config.beepOverUsedTime)),
+            (key: "BeepSuppressTime", value: String(config.beepSuppressTime)),
+            // Connection
+            (key: "ConnectingTimeout", value: String(config.connectingTimeout)),
+            // Serial extended
+            (key: "ClearComBuffOnOpen", value: config.clearComBuffOnOpen ? "on" : "off"),
+            (key: "AutoComPortReconnect", value: config.autoComPortReconnect ? "on" : "off"),
+            // Log extended
+            (key: "LogTimestampFormat", value: config.logTimestampFormat),
+            // Control sequences
+            (key: "Accept8BitCtrl", value: config.accept8BitCtrl ? "on" : "off"),
+            (key: "Send8BitCtrl", value: config.send8BitCtrl ? "on" : "off"),
+            (key: "AlternateScreenBuffer", value: config.alternateScreenBuffer ? "on" : "off"),
+            (key: "BracketedSupport", value: config.bracketedPasteMode ? "on" : "off"),
+            (key: "BracketedControlOnly", value: config.bracketedControlOnly ? "on" : "off"),
+            (key: "AllowWrongSequence", value: config.allowWrongSequence ? "on" : "off"),
+            (key: "MaxOSCBufferSize", value: String(config.maxOSCBufferSize)),
+            (key: "EnableLineMode", value: config.enableLineMode ? "on" : "off"),
+            // Copy/Paste
+            (key: "MouseSelectStartDelay", value: String(config.mouseSelectStartDelay)),
+            // Mouse
+            (key: "TranslateWheelToCursor", value: config.translateWheelToCursor ? "on" : "off"),
+            (key: "DisableWheelToCursorByCtrl", value: config.disableWheelToCursorByCtrl ? "on" : "off"),
+            // Broadcast
+            (key: "MaxBroadcatHistory", value: String(config.maxBroadcastHistory)),
+            // Debug
+            (key: "DebugModes", value: config.debugModes),
+            // URL
+            (key: "JoinSplitURL", value: config.joinSplitURL ? "on" : "off"),
+            (key: "JoinSplitURLIgnoreEOLChar", value: config.joinSplitURLIgnoreEOLChar),
+            // Unicode
+            (key: "UnicodeEmojiOverride", value: config.unicodeEmojiOverride ? "on" : "off"),
+            // Color
+            (key: "PcBoldColor", value: config.pcBoldColor ? "on" : "off"),
+            // File Transfer
+            (key: "ZmodemAuto", value: config.zmodemAutoReceive ? "on" : "off"),
+            (key: "ConfirmFileDragAndDrop", value: config.confirmFileDragAndDrop ? "on" : "off"),
+            (key: "AutoFileRename", value: config.autoFileRename ? "on" : "off"),
+            // Misc
+            (key: "ClearScreenOnCloseConnection", value: config.clearScreenOnCloseConnection ? "on" : "off"),
+            (key: "BackWrap", value: config.backWrap ? "on" : "off"),
+            (key: "VTCompatTab", value: config.vtCompatTab ? "on" : "off"),
+            (key: "FallbackToCP932", value: config.fallbackToCP932 ? "on" : "off"),
+            (key: "SaveVTWinPos", value: config.saveVTWinPos ? "on" : "off"),
         ]))
 
         // [TCP/IP]
@@ -376,6 +481,59 @@ final class ConfigPersistenceManager {
 
         // Misc
         if let v = get(main, "ConfirmOnDisconnect") { c.confirmOnDisconnect = (v == "on") }
+
+        // Terminal extended
+        if let v = get(main, "TerminalSpeed") { c.terminalSpeed = v }
+        if let v = get(main, "KillFocusCursor") { c.killFocusCursor = (v == "on") }
+        // Scroll extended
+        if let v = get(main, "ScrollThreshold"), let n = Int(v) { c.scrollThreshold = n }
+        if let v = get(main, "ScrollWindowClearScreen") { c.scrollWindowClearScreen = (v == "on") }
+        // Beep extended
+        if let v = get(main, "BeepOverUsedCount"), let n = Int(v) { c.beepOverUsedCount = n }
+        if let v = get(main, "BeepOverUsedTime"), let n = Int(v) { c.beepOverUsedTime = n }
+        if let v = get(main, "BeepSuppressTime"), let n = Int(v) { c.beepSuppressTime = n }
+        // Connection
+        if let v = get(main, "ConnectingTimeout"), let n = Int(v) { c.connectingTimeout = n }
+        // Serial extended
+        if let v = get(main, "ClearComBuffOnOpen") { c.clearComBuffOnOpen = (v == "on") }
+        if let v = get(main, "AutoComPortReconnect") { c.autoComPortReconnect = (v == "on") }
+        // Log extended
+        if let v = get(main, "LogTimestampFormat") { c.logTimestampFormat = v }
+        // Control sequences
+        if let v = get(main, "Accept8BitCtrl") { c.accept8BitCtrl = (v == "on") }
+        if let v = get(main, "Send8BitCtrl") { c.send8BitCtrl = (v == "on") }
+        if let v = get(main, "AlternateScreenBuffer") { c.alternateScreenBuffer = (v == "on") }
+        if let v = get(main, "BracketedSupport") { c.bracketedPasteMode = (v == "on") }
+        if let v = get(main, "BracketedControlOnly") { c.bracketedControlOnly = (v == "on") }
+        if let v = get(main, "AllowWrongSequence") { c.allowWrongSequence = (v == "on") }
+        if let v = get(main, "MaxOSCBufferSize"), let n = Int(v) { c.maxOSCBufferSize = n }
+        if let v = get(main, "EnableLineMode") { c.enableLineMode = (v == "on") }
+        // Copy/Paste
+        if let v = get(main, "MouseSelectStartDelay"), let n = Int(v) { c.mouseSelectStartDelay = n }
+        // Mouse
+        if let v = get(main, "TranslateWheelToCursor") { c.translateWheelToCursor = (v == "on") }
+        if let v = get(main, "DisableWheelToCursorByCtrl") { c.disableWheelToCursorByCtrl = (v == "on") }
+        // Broadcast
+        if let v = get(main, "MaxBroadcatHistory"), let n = Int(v) { c.maxBroadcastHistory = n }
+        // Debug
+        if let v = get(main, "DebugModes") { c.debugModes = v }
+        // URL
+        if let v = get(main, "JoinSplitURL") { c.joinSplitURL = (v == "on") }
+        if let v = get(main, "JoinSplitURLIgnoreEOLChar") { c.joinSplitURLIgnoreEOLChar = v }
+        // Unicode
+        if let v = get(main, "UnicodeEmojiOverride") { c.unicodeEmojiOverride = (v == "on") }
+        // Color
+        if let v = get(main, "PcBoldColor") { c.pcBoldColor = (v == "on") }
+        // File Transfer
+        if let v = get(main, "ZmodemAuto") { c.zmodemAutoReceive = (v == "on") }
+        if let v = get(main, "ConfirmFileDragAndDrop") { c.confirmFileDragAndDrop = (v == "on") }
+        if let v = get(main, "AutoFileRename") { c.autoFileRename = (v == "on") }
+        // Misc
+        if let v = get(main, "ClearScreenOnCloseConnection") { c.clearScreenOnCloseConnection = (v == "on") }
+        if let v = get(main, "BackWrap") { c.backWrap = (v == "on") }
+        if let v = get(main, "VTCompatTab") { c.vtCompatTab = (v == "on") }
+        if let v = get(main, "FallbackToCP932") { c.fallbackToCP932 = (v == "on") }
+        if let v = get(main, "SaveVTWinPos") { c.saveVTWinPos = (v == "on") }
 
         // [TCP/IP]
         if let v = get("TCP/IP", "HostName")             { c.hostName = v }
