@@ -121,6 +121,8 @@
 "dialog.connection.ipVersion" = "IP version:";
 "dialog.connection.serial" = "Serial";
 "dialog.connection.serialPort" = "Port:";
+"dialog.connection.localShell" = "Local Shell";
+"dialog.connection.shellPath" = "Shell:";
 "dialog.connection.ok" = "OK";
 "dialog.connection.cancel" = "Cancel";
 
@@ -472,6 +474,7 @@
 "tab.theme" = "Theme";
 "tab.ui" = "UI";
 "tab.plugin" = "Plugin";
+"tab.localShell" = "Local Shell";
 "tab.debug" = "Debug";
 
 /* Additional Settings - General */
@@ -620,6 +623,13 @@
 "dialog.plugin.setupDirectories" = "Plugin setup directories:";
 "dialog.plugin.add" = "Add…";
 "dialog.plugin.remove" = "Remove";
+
+/* Additional Settings - Local Shell (port of Cygwin tab) */
+"dialog.localShell.shellPath" = "Shell path:";
+"dialog.localShell.loginShell" = "Login shell";
+"dialog.localShell.homeChdir" = "cd to HOME";
+"dialog.localShell.env1" = "ENV 1:";
+"dialog.localShell.env2" = "ENV 2:";
 
 /* Additional Settings - Debug */
 "dialog.debug.charInfoPopup" = "Show character info popup";

@@ -5,15 +5,15 @@
  *
  * Ported to Swift/macOS
  *
- * Additional Settings — tabbed dialog containing 13 setting pages
- * (all Tera Term 5.6 tab sheets except Cygwin).
+ * Additional Settings — tabbed dialog containing 14 setting pages
+ * (all Tera Term 5.6 tab sheets; Cygwin tab ported as Local Shell).
  *
  * Tab sheets ported:
  *   IDD_TABSHEET_GENERAL, IDD_TABSHEET_CODING, IDD_TABSHEET_COPYPASTE,
  *   IDD_TABSHEET_SEQUENCE, IDD_TABSHEET_MOUSE, IDD_TABSHEET_LOG,
  *   IDD_TABSHEET_VISUAL, IDD_TABSHEET_FONT, IDD_TABSHEET_TEKFONT,
  *   IDD_TABSHEET_THEME, IDD_TABSHEET_UI, IDD_TABSHEET_PLUGIN,
- *   IDD_TABSHEET_DEBUG
+ *   IDD_TABSHEET_DEBUG, IDD_TABSHEET_CYGWIN (as Local Shell)
  */
 
 #if canImport(AppKit)
@@ -86,6 +86,7 @@ final class AdditionalSettingsController: NSObject {
             ThemeTab(settings: settings),
             UITab(settings: settings),
             PluginTab(settings: settings),
+            LocalShellTab(settings: settings),
             DebugTab(settings: settings),
         ]
 
@@ -1962,6 +1963,96 @@ extension PluginTab: NSTableViewDataSource {
     func tableView(_ tableView: NSTableView, objectValueFor tableColumn: NSTableColumn?, row: Int) -> Any? {
         guard row >= 0 && row < directories.count else { return nil }
         return directories[row]
+    }
+}
+
+// MARK: - Local Shell Tab (port of IDD_TABSHEET_CYGWIN)
+
+final class LocalShellTab: AdditionalSettingsTab {
+    let tabTitle = TTL("tab.localShell")
+    let contentView = NSView()
+
+    private var shellPathField: NSTextField!
+    private var termEnvField: NSTextField!
+    private var loginShellCheck: NSButton!
+    private var homeChdirCheck: NSButton!
+    private var env1Field: NSTextField!
+    private var env2Field: NSTextField!
+
+    init(settings: TerminalSettings) {
+        contentView.translatesAutoresizingMaskIntoConstraints = false
+        buildUI(settings)
+    }
+
+    private func buildUI(_ s: TerminalSettings) {
+        // Shell path
+        let pathLabel = NSView.makeLabel(TTL("dialog.localShell.shellPath"), alignment: .right)
+        pathLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
+        let defaultShell = ProcessInfo.processInfo.environment["SHELL"] ?? "/bin/zsh"
+        shellPathField = NSView.makeTextField(s.localShellPath.isEmpty ? defaultShell : s.localShellPath)
+        shellPathField.placeholderString = defaultShell
+        shellPathField.widthAnchor.constraint(greaterThanOrEqualToConstant: 200).isActive = true
+
+        // TERM environment
+        let termLabel = NSView.makeLabel("TERM", alignment: .right)
+        termLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
+        termEnvField = NSView.makeTextField(s.localShellTermEnv)
+        termEnvField.widthAnchor.constraint(greaterThanOrEqualToConstant: 160).isActive = true
+
+        // Options
+        loginShellCheck = NSView.makeCheckbox(TTL("dialog.localShell.loginShell"), checked: s.localShellLoginShell)
+        homeChdirCheck = NSView.makeCheckbox(TTL("dialog.localShell.homeChdir"), checked: s.localShellHomeChdir)
+
+        let optionRow = NSStackView(views: [loginShellCheck, homeChdirCheck])
+        optionRow.translatesAutoresizingMaskIntoConstraints = false
+        optionRow.orientation = .horizontal
+        optionRow.spacing = 16
+
+        // Custom environment variables
+        let env1Label = NSView.makeLabel(TTL("dialog.localShell.env1"), alignment: .right)
+        env1Label.setContentCompressionResistancePriority(.required, for: .horizontal)
+        env1Field = NSView.makeTextField(s.localShellEnv1)
+        env1Field.placeholderString = "KEY=VALUE"
+        env1Field.widthAnchor.constraint(greaterThanOrEqualToConstant: 200).isActive = true
+
+        let env2Label = NSView.makeLabel(TTL("dialog.localShell.env2"), alignment: .right)
+        env2Label.setContentCompressionResistancePriority(.required, for: .horizontal)
+        env2Field = NSView.makeTextField(s.localShellEnv2)
+        env2Field.placeholderString = "KEY=VALUE"
+        env2Field.widthAnchor.constraint(greaterThanOrEqualToConstant: 200).isActive = true
+
+        // Layout with NSGridView for 2-column form
+        let grid = NSGridView(views: [
+            [pathLabel, shellPathField],
+            [termLabel, termEnvField],
+            [NSGridCell.emptyContentView, optionRow],
+            [env1Label, env1Field],
+            [env2Label, env2Field],
+        ])
+        grid.translatesAutoresizingMaskIntoConstraints = false
+        grid.rowSpacing = DialogLayout.rowSpacing
+        grid.columnSpacing = DialogLayout.labelTrailing
+        grid.column(at: 0).xPlacement = .trailing
+        grid.column(at: 1).xPlacement = .leading
+
+        contentView.addSubview(grid)
+
+        NSLayoutConstraint.activate([
+            grid.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 16),
+            grid.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 12),
+            grid.trailingAnchor.constraint(lessThanOrEqualTo: contentView.trailingAnchor, constant: -12),
+        ])
+    }
+
+    func apply(to s: TerminalSettings) {
+        let defaultShell = ProcessInfo.processInfo.environment["SHELL"] ?? "/bin/zsh"
+        let path = shellPathField.stringValue
+        s.localShellPath = (path == defaultShell) ? "" : path
+        s.localShellTermEnv = termEnvField.stringValue.isEmpty ? "xterm-256color" : termEnvField.stringValue
+        s.localShellLoginShell = loginShellCheck.state == .on
+        s.localShellHomeChdir = homeChdirCheck.state == .on
+        s.localShellEnv1 = env1Field.stringValue
+        s.localShellEnv2 = env2Field.stringValue
     }
 }
 

@@ -26,15 +26,17 @@ private func L(_ key: String) -> String {
 private class ConnectionDialogHelper: NSObject {
     var tcpControls: [NSControl] = []
     var serialControls: [NSControl] = []
+    var localShellControls: [NSControl] = []
     weak var tcpPortField: NSTextField?
     weak var sshVersionLabel: NSTextField?
     weak var sshVersionPopup: NSPopUpButton?
 
-    /// TCP/IP vs Serial radio (tag 0=TCP, 1=Serial)
+    /// TCP/IP(tag=0) vs Serial(tag=1) vs Local Shell(tag=2)
     @objc func connectionTypeChanged(_ sender: NSButton) {
-        let isTCP = sender.tag == 0
-        for ctrl in tcpControls { ctrl.isEnabled = isTCP }
-        for ctrl in serialControls { ctrl.isEnabled = !isTCP }
+        let tag = sender.tag
+        for ctrl in tcpControls { ctrl.isEnabled = (tag == 0) }
+        for ctrl in serialControls { ctrl.isEnabled = (tag == 1) }
+        for ctrl in localShellControls { ctrl.isEnabled = (tag == 2) }
     }
 
     /// Service radio: Telnet(tag=0) / SSH(tag=1) / Other(tag=2)
@@ -1390,7 +1392,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         let tcpRadio = NSView.makeRadioButton(L("dialog.connection.tcpip"), tag: 0)
         tcpRadio.target = helper
         tcpRadio.action = #selector(ConnectionDialogHelper.connectionTypeChanged(_:))
-        tcpRadio.state = (settings.portType != .serial) ? .on : .off
+        tcpRadio.state = (settings.portType == .tcpip || settings.portType == .file || settings.portType == .namedPipe) ? .on : .off
 
         let hostLabel = NSView.makeLabel(L("dialog.connection.host"))
 
@@ -1601,7 +1603,47 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
 
         helper.serialControls = [serialPortLabel, serialPortPopup]
 
-        // ── Main vertical stack: [tcpBox] - 12 - [serialBox] ──
+        // ── Local Shell Group Box (macOS port of Cygwin) ──
+        let shellBox = NSBox()
+        shellBox.translatesAutoresizingMaskIntoConstraints = false
+        shellBox.titlePosition = .noTitle
+        accessoryView.addSubview(shellBox)
+
+        let shellContent = NSView()
+        shellContent.translatesAutoresizingMaskIntoConstraints = false
+
+        let shellRadio = NSView.makeRadioButton(L("dialog.connection.localShell"), tag: 2)
+        shellRadio.target = helper
+        shellRadio.action = #selector(ConnectionDialogHelper.connectionTypeChanged(_:))
+        shellRadio.state = (settings.portType == .localShell) ? .on : .off
+
+        let shellPathLabel = NSView.makeLabel(L("dialog.connection.shellPath"))
+        let defaultShell = ProcessInfo.processInfo.environment["SHELL"] ?? "/bin/zsh"
+        let shellPathField = NSView.makeTextField(
+            settings.localShellPath.isEmpty ? defaultShell : settings.localShellPath)
+        shellPathField.placeholderString = defaultShell
+        shellPathField.widthAnchor.constraint(greaterThanOrEqualToConstant: 200).isActive = true
+        shellPathField.setContentHuggingPriority(.defaultLow, for: .horizontal)
+
+        let shellRow = NSStackView(views: [shellRadio, shellPathLabel, shellPathField])
+        shellRow.translatesAutoresizingMaskIntoConstraints = false
+        shellRow.orientation = .horizontal
+        shellRow.spacing = DialogLayout.labelTrailing
+        shellRow.alignment = .firstBaseline
+
+        shellContent.addSubview(shellRow)
+        NSLayoutConstraint.activate([
+            shellRow.topAnchor.constraint(equalTo: shellContent.topAnchor, constant: innerM),
+            shellRow.leadingAnchor.constraint(equalTo: shellContent.leadingAnchor, constant: innerM),
+            shellRow.trailingAnchor.constraint(equalTo: shellContent.trailingAnchor, constant: -innerM),
+            shellRow.bottomAnchor.constraint(equalTo: shellContent.bottomAnchor, constant: -innerM),
+        ])
+
+        shellBox.contentView = shellContent
+
+        helper.localShellControls = [shellPathLabel, shellPathField]
+
+        // ── Main vertical stack: [tcpBox] - 12 - [serialBox] - 12 - [shellBox] ──
         NSLayoutConstraint.activate([
             tcpBox.topAnchor.constraint(equalTo: accessoryView.topAnchor),
             tcpBox.leadingAnchor.constraint(equalTo: accessoryView.leadingAnchor),
@@ -1610,17 +1652,25 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
             serialBox.topAnchor.constraint(equalTo: tcpBox.bottomAnchor, constant: DialogLayout.innerMargin),
             serialBox.leadingAnchor.constraint(equalTo: accessoryView.leadingAnchor),
             serialBox.trailingAnchor.constraint(equalTo: accessoryView.trailingAnchor),
-            serialBox.bottomAnchor.constraint(equalTo: accessoryView.bottomAnchor),
+
+            shellBox.topAnchor.constraint(equalTo: serialBox.bottomAnchor, constant: DialogLayout.innerMargin),
+            shellBox.leadingAnchor.constraint(equalTo: accessoryView.leadingAnchor),
+            shellBox.trailingAnchor.constraint(equalTo: accessoryView.trailingAnchor),
+            shellBox.bottomAnchor.constraint(equalTo: accessoryView.bottomAnchor),
 
             accessoryView.widthAnchor.constraint(greaterThanOrEqualToConstant: 520),
         ])
 
         // Apply initial enable/disable state
-        if settings.portType == .serial {
-            for ctrl in helper.tcpControls { ctrl.isEnabled = false }
-        } else {
-            for ctrl in helper.serialControls { ctrl.isEnabled = false }
+        let activeTag: Int
+        switch settings.portType {
+        case .serial: activeTag = 1
+        case .localShell: activeTag = 2
+        default: activeTag = 0
         }
+        for ctrl in helper.tcpControls { ctrl.isEnabled = (activeTag == 0) }
+        for ctrl in helper.serialControls { ctrl.isEnabled = (activeTag == 1) }
+        for ctrl in helper.localShellControls { ctrl.isEnabled = (activeTag == 2) }
 
         // If no serial ports available, disable Serial radio
         if serialPorts.isEmpty {
@@ -1644,7 +1694,15 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
                 wc.disconnect()
             }
 
-            if serialRadio.state == .on {
+            if shellRadio.state == .on {
+                // Local Shell connection
+                let path = shellPathField.stringValue
+                if !path.isEmpty && path != defaultShell {
+                    settings.localShellPath = path
+                }
+                settings.portType = .localShell
+                wc.connectLocalShell()
+            } else if serialRadio.state == .on {
                 if let port = serialPortPopup.selectedItem?.title, !port.starts(with: "(") {
                     settings.serialPort = port
                     settings.portType = .serial

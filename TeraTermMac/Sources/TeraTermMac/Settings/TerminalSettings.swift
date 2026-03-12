@@ -196,6 +196,7 @@ enum PortType: Int, Codable {
     case serial = 1
     case file = 2
     case namedPipe = 3
+    case localShell = 4
 }
 
 // MARK: - Service Type (port of IDC_HOSTTELNET / IDC_HOSTSSH / IDC_HOSTOTHER)
@@ -432,6 +433,14 @@ class TerminalSettings: Codable {
     var flowControl: FlowControl = .none
     var clearComBuffOnOpen: Bool = true            // Clear buffer on port open
     var autoComPortReconnect: Bool = true          // Auto-reconnect serial port
+
+    // Local Shell (macOS port of Cygwin tab)
+    var localShellPath: String = ""                // Empty = use $SHELL or /bin/zsh
+    var localShellLoginShell: Bool = true          // Launch as login shell (-l)
+    var localShellHomeChdir: Bool = true           // chdir to $HOME on launch
+    var localShellTermEnv: String = "xterm-256color" // TERM environment variable
+    var localShellEnv1: String = ""                // Custom environment variable 1 (KEY=VALUE)
+    var localShellEnv2: String = ""                // Custom environment variable 2 (KEY=VALUE)
 
     // Keyboard
     var bsKey: Int = 8  // 8=BS, 127=DEL

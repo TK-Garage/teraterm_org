@@ -123,14 +123,46 @@ class ConnectionManager {
                 stopBits: settings.stopBits,
                 flowControl: settings.flowControl
             ))
+        case .localShell:
+            connectLocalShell()
         case .file, .namedPipe:
             break
         }
     }
 
     func connectLocalShell() {
-        let shell = ProcessInfo.processInfo.environment["SHELL"] ?? "/bin/zsh"
-        connect(type: .localShell(command: shell, arguments: ["-l"], environment: [:]))
+        let shellPath: String
+        if settings.localShellPath.isEmpty {
+            shellPath = ProcessInfo.processInfo.environment["SHELL"] ?? "/bin/zsh"
+        } else {
+            shellPath = settings.localShellPath
+        }
+
+        var args: [String] = []
+        if settings.localShellLoginShell {
+            args.append("-l")
+        }
+
+        var env: [String: String] = [:]
+        env["TERM"] = settings.localShellTermEnv
+
+        // Parse custom environment variables (KEY=VALUE format)
+        for envStr in [settings.localShellEnv1, settings.localShellEnv2] {
+            if !envStr.isEmpty, let eqIdx = envStr.firstIndex(of: "=") {
+                let key = String(envStr[envStr.startIndex..<eqIdx])
+                let value = String(envStr[envStr.index(after: eqIdx)...])
+                if !key.isEmpty {
+                    env[key] = value
+                }
+            }
+        }
+
+        // chdir to HOME
+        if settings.localShellHomeChdir {
+            env["__TERATERM_HOME_CHDIR"] = "1"
+        }
+
+        connect(type: .localShell(command: shellPath, arguments: args, environment: env))
     }
 
     // MARK: - Disconnect
@@ -788,17 +820,31 @@ class LocalShellConnection: Connection {
 
         if pid == 0 {
             // Child process
+            // chdir to HOME if requested
+            var shouldChdir = false
+
             // Set environment
             for (key, value) in environment {
-                setenv(key, value, 1)
+                if key == "__TERATERM_HOME_CHDIR" {
+                    shouldChdir = true
+                } else {
+                    setenv(key, value, 1)
+                }
             }
 
-            // Set TERM
-            setenv("TERM", "xterm-256color", 1)
+            // Set TERM if not already set by environment
+            if environment["TERM"] == nil {
+                setenv("TERM", "xterm-256color", 1)
+            }
 
             // Set LANG for UTF-8
             if getenv("LANG") == nil {
                 setenv("LANG", "en_US.UTF-8", 1)
+            }
+
+            // chdir to HOME
+            if shouldChdir, let home = getenv("HOME") {
+                _ = chdir(home)
             }
 
             // Execute shell

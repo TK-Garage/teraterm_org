@@ -121,6 +121,8 @@
 "dialog.connection.ipVersion" = "IPバージョン:";
 "dialog.connection.serial" = "シリアル";
 "dialog.connection.serialPort" = "ポート:";
+"dialog.connection.localShell" = "ローカルシェル";
+"dialog.connection.shellPath" = "シェル:";
 "dialog.connection.ok" = "OK";
 "dialog.connection.cancel" = "キャンセル";
 
@@ -472,6 +474,7 @@
 "tab.theme" = "テーマ";
 "tab.ui" = "UI";
 "tab.plugin" = "プラグイン";
+"tab.localShell" = "ローカルシェル";
 "tab.debug" = "デバッグ";
 
 /* Additional Settings - General */
@@ -620,6 +623,13 @@
 "dialog.plugin.setupDirectories" = "プラグイン設定ディレクトリ:";
 "dialog.plugin.add" = "追加…";
 "dialog.plugin.remove" = "削除";
+
+/* Additional Settings - Local Shell (Cygwinタブのポート) */
+"dialog.localShell.shellPath" = "シェルパス:";
+"dialog.localShell.loginShell" = "ログインシェル";
+"dialog.localShell.homeChdir" = "HOMEに移動";
+"dialog.localShell.env1" = "環境変数1:";
+"dialog.localShell.env2" = "環境変数2:";
 
 /* Additional Settings - Debug */
 "dialog.debug.charInfoPopup" = "文字情報ポップアップを表示する";

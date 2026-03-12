@@ -92,7 +92,8 @@ final class SnapshotGenerator {
             ("18_Tab_Theme", ThemeTab(settings: settings)),
             ("19_Tab_UI", UITab(settings: settings)),
             ("20_Tab_Plugin", PluginTab(settings: settings)),
-            ("21_Tab_Debug", DebugTab(settings: settings)),
+            ("21_Tab_LocalShell", LocalShellTab(settings: settings)),
+            ("22_Tab_Debug", DebugTab(settings: settings)),
         ]
         for (name, tab) in tabClasses {
             allSpecs.append(Spec(name: name, viewBuilder: {
