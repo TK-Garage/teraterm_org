@@ -874,17 +874,17 @@ else
 endif
 filewriteln fh msg
 
-; 6-2 deep nesting (15 levels)
+; 6-2 deep nesting (10 levels — max call stack depth)
 test_num = test_num + 1
 depth_counter = 0
 max_depth_val = 0
 call nest_1
-if max_depth_val = 15 then
+if max_depth_val = 10 then
   pass_count = pass_count + 1
-  sprintf2 msg 'PASS [%d] STRESS 15-level call nesting' test_num
+  sprintf2 msg 'PASS [%d] STRESS 10-level call nesting' test_num
 else
   fail_count = fail_count + 1
-  sprintf2 msg 'FAIL [%d] 15-level nesting got %d' test_num max_depth_val
+  sprintf2 msg 'FAIL [%d] 10-level nesting got %d' test_num max_depth_val
 endif
 filewriteln fh msg
 
@@ -986,46 +986,6 @@ goto after_all_subs
   depth_counter = depth_counter - 1
   return
 :nest_10
-  depth_counter = depth_counter + 1
-  if depth_counter > max_depth_val then
-    max_depth_val = depth_counter
-  endif
-  call nest_11
-  depth_counter = depth_counter - 1
-  return
-:nest_11
-  depth_counter = depth_counter + 1
-  if depth_counter > max_depth_val then
-    max_depth_val = depth_counter
-  endif
-  call nest_12
-  depth_counter = depth_counter - 1
-  return
-:nest_12
-  depth_counter = depth_counter + 1
-  if depth_counter > max_depth_val then
-    max_depth_val = depth_counter
-  endif
-  call nest_13
-  depth_counter = depth_counter - 1
-  return
-:nest_13
-  depth_counter = depth_counter + 1
-  if depth_counter > max_depth_val then
-    max_depth_val = depth_counter
-  endif
-  call nest_14
-  depth_counter = depth_counter - 1
-  return
-:nest_14
-  depth_counter = depth_counter + 1
-  if depth_counter > max_depth_val then
-    max_depth_val = depth_counter
-  endif
-  call nest_15
-  depth_counter = depth_counter - 1
-  return
-:nest_15
   depth_counter = depth_counter + 1
   if depth_counter > max_depth_val then
     max_depth_val = depth_counter
