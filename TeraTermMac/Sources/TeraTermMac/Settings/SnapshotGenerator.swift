@@ -12,7 +12,7 @@
  *   SnapshotGenerator.generateAll()                // Original 3 views
  *   generateAllValidationSnapshots()                // ALL dialogs, both languages
  *
- * Output goes to ~/Desktop/TT_UI_Preview/
+ * Output goes to TeraTermMac/Screenshots/ (or ~/Desktop/Screenshots/)
  */
 
 #if canImport(AppKit)

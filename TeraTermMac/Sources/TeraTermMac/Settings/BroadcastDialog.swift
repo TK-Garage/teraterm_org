@@ -139,19 +139,17 @@ final class BroadcastDialogController: NSObject {
         }
         windowListView.menu = contextMenu
 
-        // Buttons
-        let sendButton = NSView.makePushButton(TTL("dialog.broadcast.send"), keyEquivalent: "\r")
-        sendButton.target = self
-        sendButton.action = #selector(sendAction(_:))
-
-        let closeButton = NSView.makePushButton(TTL("Close"), keyEquivalent: "\u{1b}")
-        closeButton.target = self
-        closeButton.action = #selector(closeAction(_:))
-
-        let buttonRow = NSStackView(views: [closeButton, sendButton])
-        buttonRow.translatesAutoresizingMaskIntoConstraints = false
-        buttonRow.orientation = .horizontal
-        buttonRow.spacing = 8
+        // HIG button bar: [Close] --- [Send]
+        let buttonBar = DialogButtonBar.build(
+            config: DialogButtonBar.Configuration(
+                okTitle: "dialog.broadcast.send",
+                cancelTitle: "Close",
+                showHelp: false
+            ),
+            okTarget: self, okAction: #selector(sendAction(_:)),
+            cancelTarget: self, cancelAction: #selector(closeAction(_:))
+        )
+        let buttonRow = buttonBar.bar
 
         // Layout
         let optionRow = NSStackView(views: [sendToThisOnlyCheck, sendEnterCheck, realtimeCheck])

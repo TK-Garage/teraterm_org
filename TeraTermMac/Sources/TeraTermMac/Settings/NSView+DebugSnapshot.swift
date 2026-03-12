@@ -22,13 +22,14 @@ extension NSView {
     ///     e.g. `"01_NewConnection"`.  The resulting file will be named
     ///     `<name>_<yyyyMMdd>.png`.
     ///   - outputDir: Optional output directory URL.  When `nil` (default),
-    ///     falls back to the project `img/` directory (detected via Bundle)
-    ///     or `~/Desktop/TT_UI_Preview/`.
+    ///     falls back to the project `Screenshots/` directory (detected via
+    ///     Bundle) or `~/Desktop/TT_UI_Preview/`.
+    ///   - retinaScale: Render scale factor.  Defaults to 2 for Retina @2x.
     ///
     /// The method forces a full Auto Layout pass, draws a 2pt red border
     /// around the view bounds, then uses `cacheDisplay(in:to:)` for
     /// offscreen rendering — no window needs to be on-screen.
-    func saveToDebugPNG(name: String, outputDir: URL? = nil) {
+    func saveToDebugPNG(name: String, outputDir: URL? = nil, retinaScale: Int = 2) {
         // 1. Force layout to settle
         layoutSubtreeIfNeeded()
 
@@ -38,11 +39,13 @@ extension NSView {
             return
         }
 
-        // 2. Render into a bitmap
+        let scale = max(1, retinaScale)
+
+        // 2. Render into a bitmap at Retina resolution
         guard let bitmapRep = NSBitmapImageRep(
             bitmapDataPlanes: nil,
-            pixelsWide: Int(bounds.width),
-            pixelsHigh: Int(bounds.height),
+            pixelsWide: Int(bounds.width) * scale,
+            pixelsHigh: Int(bounds.height) * scale,
             bitsPerSample: 8,
             samplesPerPixel: 4,
             hasAlpha: true,
@@ -54,6 +57,9 @@ extension NSView {
             NSLog("[DebugSnapshot] Failed to create bitmap for \(name)")
             return
         }
+
+        // Set the logical size so the bitmap represents @2x content
+        bitmapRep.size = bounds.size
 
         cacheDisplay(in: bounds, to: bitmapRep)
 
@@ -84,19 +90,19 @@ extension NSView {
         if let dir = outputDir {
             desktopURL = dir
         } else {
-            // Try TeraTermMac/img/ directory first
+            // Try TeraTermMac/Screenshots/ directory first
             let bundlePath = Bundle.main.bundlePath
-            let projectImg = URL(fileURLWithPath: bundlePath)
+            let projectScreenshots = URL(fileURLWithPath: bundlePath)
                 .deletingLastPathComponent()  // .build/debug
                 .deletingLastPathComponent()  // .build
                 .deletingLastPathComponent()  // TeraTermMac
-                .appendingPathComponent("img")
-            if FileManager.default.isWritableFile(atPath: projectImg.deletingLastPathComponent().path) {
-                desktopURL = projectImg
+                .appendingPathComponent("Screenshots")
+            if FileManager.default.isWritableFile(atPath: projectScreenshots.deletingLastPathComponent().path) {
+                desktopURL = projectScreenshots
             } else {
                 desktopURL = FileManager.default.homeDirectoryForCurrentUser
                     .appendingPathComponent("Desktop")
-                    .appendingPathComponent("TT_UI_Preview")
+                    .appendingPathComponent("Screenshots")
             }
         }
 

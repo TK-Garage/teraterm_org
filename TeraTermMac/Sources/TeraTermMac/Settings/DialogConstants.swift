@@ -21,7 +21,7 @@ enum DialogLayout {
     static let innerMargin: CGFloat = 12
 
     // Standard control sizes
-    static let buttonWidth: CGFloat = 80
+    static let buttonWidth: CGFloat = 72
     static let buttonHeight: CGFloat = 24
     static let buttonSpacing: CGFloat = 8
     static let textFieldHeight: CGFloat = 22
@@ -283,6 +283,122 @@ extension NSView {
     }
 }
 
+// MARK: - Standard macOS Help Button
+
+extension NSView {
+    /// Create a standard macOS help button (circled "?" icon).
+    /// Uses `.helpButton` bezel style per macOS HIG.
+    static func makeHelpButton() -> NSButton {
+        let button = NSButton()
+        button.translatesAutoresizingMaskIntoConstraints = false
+        button.bezelStyle = .helpButton
+        button.title = ""
+        return button
+    }
+}
+
+// MARK: - HIG-Compliant Dialog Button Bar
+
+/// Creates an NSStackView-based button bar following macOS HIG:
+///   [Destructive] --- spacer --- [Help(?)] [Cancel] [OK/Connect/Apply]
+///
+/// - Cancel is placed to the left of the primary action
+/// - OK/Connect/Apply is rightmost
+/// - Help button uses standard macOS circled "?" style
+/// - Destructive buttons are isolated on the left
+/// - Button spacing: 8pt within groups, 12pt between groups
+enum DialogButtonBar {
+
+    struct Configuration {
+        var okTitle: String = "OK"
+        var cancelTitle: String = "Cancel"
+        var showHelp: Bool = true
+        var destructiveTitle: String? = nil
+        /// Minimum 72pt per macOS HIG; auto-expands for localized text.
+        var minButtonWidth: CGFloat = DialogLayout.buttonWidth
+    }
+
+    /// Build a horizontal button bar.
+    ///
+    /// - Parameters:
+    ///   - config: Button titles and visibility options.
+    ///   - okTarget: Target for the OK button action.
+    ///   - okAction: Selector for the OK button.
+    ///   - cancelTarget: Target for the Cancel button action.
+    ///   - cancelAction: Selector for the Cancel button.
+    ///   - helpTarget: Target for the Help button action.
+    ///   - helpAction: Selector for the Help button.
+    ///   - destructiveTarget: Target for the destructive button action.
+    ///   - destructiveAction: Selector for the destructive button.
+    /// - Returns: A tuple of (barView, okButton, cancelButton, helpButton, destructiveButton).
+    static func build(
+        config: Configuration = Configuration(),
+        okTarget: AnyObject? = nil, okAction: Selector? = nil,
+        cancelTarget: AnyObject? = nil, cancelAction: Selector? = nil,
+        helpTarget: AnyObject? = nil, helpAction: Selector? = nil,
+        destructiveTarget: AnyObject? = nil, destructiveAction: Selector? = nil
+    ) -> (bar: NSStackView, ok: NSButton, cancel: NSButton, help: NSButton?, destructive: NSButton?) {
+
+        // Primary action button (rightmost) — default button (Enter key)
+        let okButton = NSView.makePushButton(TTL(config.okTitle), keyEquivalent: "\r")
+        okButton.target = okTarget
+        okButton.action = okAction
+        okButton.setAccessibilityLabel(TTL(config.okTitle))
+
+        // Cancel button — Escape key
+        let cancelButton = NSView.makePushButton(TTL(config.cancelTitle), keyEquivalent: "\u{1b}")
+        cancelButton.target = cancelTarget
+        cancelButton.action = cancelAction
+        cancelButton.setAccessibilityLabel(TTL(config.cancelTitle))
+
+        // Right group: [Cancel] [OK]  (8pt spacing)
+        let rightGroup = NSStackView(views: [cancelButton, okButton])
+        rightGroup.translatesAutoresizingMaskIntoConstraints = false
+        rightGroup.orientation = .horizontal
+        rightGroup.spacing = DialogLayout.buttonSpacing
+        rightGroup.distribution = .fill
+
+        // Help button — standard macOS "?" circle
+        var helpButton: NSButton? = nil
+        if config.showHelp {
+            let hb = NSView.makeHelpButton()
+            hb.target = helpTarget
+            hb.action = helpAction
+            hb.setAccessibilityLabel(TTL("Help"))
+            helpButton = hb
+            rightGroup.insertArrangedSubview(hb, at: 0)
+        }
+
+        // Destructive button (left-isolated)
+        var destructiveButton: NSButton? = nil
+        var leftViews: [NSView] = []
+        if let destructiveTitle = config.destructiveTitle {
+            let db = NSView.makePushButton(TTL(destructiveTitle))
+            db.target = destructiveTarget
+            db.action = destructiveAction
+            db.setAccessibilityLabel(TTL(destructiveTitle))
+            destructiveButton = db
+            leftViews.append(db)
+        }
+
+        // Spacer between left and right groups
+        let spacer = NSView()
+        spacer.translatesAutoresizingMaskIntoConstraints = false
+        spacer.setContentHuggingPriority(.defaultLow - 1, for: .horizontal)
+
+        // Full bar: [Destructive?] --- spacer --- [Help(?)] [Cancel] [OK]
+        let allViews: [NSView] = leftViews + [spacer, rightGroup]
+        let bar = NSStackView(views: allViews)
+        bar.translatesAutoresizingMaskIntoConstraints = false
+        bar.orientation = .horizontal
+        bar.spacing = DialogLayout.buttonSpacing
+        bar.distribution = .fill
+        bar.alignment = .centerY
+
+        return (bar, okButton, cancelButton, helpButton, destructiveButton)
+    }
+}
+
 // MARK: - Base Dialog ViewController
 
 class BaseSetupDialogController: NSViewController {
@@ -373,22 +489,18 @@ class BaseSetupDialogController: NSViewController {
         wc.isActive = true
         contentWidthConstraint = wc
 
-        // Footer buttons: [Help] ---- [Cancel] [OK]
-        okButton = NSView.makePushButton(TTL("OK"), keyEquivalent: "\r")
-        okButton.target = self
-        okButton.action = #selector(okAction(_:))
+        // Footer button bar — HIG: [Help(?)] --- [Cancel] [OK]
+        let buttonBar = DialogButtonBar.build(
+            okTarget: self, okAction: #selector(okAction(_:)),
+            cancelTarget: self, cancelAction: #selector(cancelAction(_:)),
+            helpTarget: self, helpAction: #selector(helpAction(_:))
+        )
+        okButton = buttonBar.ok
+        cancelButton = buttonBar.cancel
+        helpButton = buttonBar.help ?? NSView.makeHelpButton()
 
-        cancelButton = NSView.makePushButton(TTL("Cancel"), keyEquivalent: "\u{1b}")
-        cancelButton.target = self
-        cancelButton.action = #selector(cancelAction(_:))
-
-        helpButton = NSView.makePushButton(TTL("Help"))
-        helpButton.target = self
-        helpButton.action = #selector(helpAction(_:))
-
-        container.addSubview(okButton)
-        container.addSubview(cancelButton)
-        container.addSubview(helpButton)
+        let footerBar = buttonBar.bar
+        container.addSubview(footerBar)
 
         // Separator line
         let separator = NSBox()
@@ -397,7 +509,6 @@ class BaseSetupDialogController: NSViewController {
         container.addSubview(separator)
 
         let m = DialogLayout.margin
-        let bs = DialogLayout.buttonSpacing
 
         NSLayoutConstraint.activate([
             // Content area
@@ -410,16 +521,11 @@ class BaseSetupDialogController: NSViewController {
             separator.leadingAnchor.constraint(equalTo: container.leadingAnchor),
             separator.trailingAnchor.constraint(equalTo: container.trailingAnchor),
 
-            // Buttons row
-            okButton.topAnchor.constraint(equalTo: separator.bottomAnchor, constant: m * 0.75),
-            okButton.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -m),
-            okButton.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -m * 0.75),
-
-            cancelButton.centerYAnchor.constraint(equalTo: okButton.centerYAnchor),
-            cancelButton.trailingAnchor.constraint(equalTo: okButton.leadingAnchor, constant: -bs),
-
-            helpButton.centerYAnchor.constraint(equalTo: okButton.centerYAnchor),
-            helpButton.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: m),
+            // Button bar
+            footerBar.topAnchor.constraint(equalTo: separator.bottomAnchor, constant: m * 0.75),
+            footerBar.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: m),
+            footerBar.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -m),
+            footerBar.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -m * 0.75),
         ])
 
         self.view = container

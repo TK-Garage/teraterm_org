@@ -97,25 +97,18 @@ final class AdditionalSettingsController: NSObject {
             tv.addTabViewItem(item)
         }
 
-        // Buttons
-        let okButton = NSView.makePushButton(TTL("OK"), keyEquivalent: "\r")
-        okButton.target = self
-        okButton.action = #selector(okAction(_:))
-
-        let cancelButton = NSView.makePushButton(TTL("Cancel"), keyEquivalent: "\u{1b}")
-        cancelButton.target = self
-        cancelButton.action = #selector(cancelAction(_:))
-
-        let helpButton = NSView.makePushButton(TTL("Help"))
-        helpButton.target = self
-        helpButton.action = #selector(helpAction(_:))
+        // HIG button bar: [Help(?)] --- [Cancel] [OK]
+        let buttonBar = DialogButtonBar.build(
+            okTarget: self, okAction: #selector(okAction(_:)),
+            cancelTarget: self, cancelAction: #selector(cancelAction(_:)),
+            helpTarget: self, helpAction: #selector(helpAction(_:))
+        )
+        let footerBar = buttonBar.bar
 
         let container = NSView()
         container.translatesAutoresizingMaskIntoConstraints = false
         container.addSubview(tv)
-        container.addSubview(okButton)
-        container.addSubview(cancelButton)
-        container.addSubview(helpButton)
+        container.addSubview(footerBar)
 
         let m: CGFloat = 16
         NSLayoutConstraint.activate([
@@ -123,15 +116,10 @@ final class AdditionalSettingsController: NSObject {
             tv.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: m),
             tv.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -m),
 
-            okButton.topAnchor.constraint(equalTo: tv.bottomAnchor, constant: m),
-            okButton.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -m),
-            okButton.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -m),
-
-            cancelButton.centerYAnchor.constraint(equalTo: okButton.centerYAnchor),
-            cancelButton.trailingAnchor.constraint(equalTo: okButton.leadingAnchor, constant: -8),
-
-            helpButton.centerYAnchor.constraint(equalTo: okButton.centerYAnchor),
-            helpButton.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: m),
+            footerBar.topAnchor.constraint(equalTo: tv.bottomAnchor, constant: m),
+            footerBar.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: m),
+            footerBar.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -m),
+            footerBar.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -m),
 
             tv.widthAnchor.constraint(greaterThanOrEqualToConstant: 540),
             tv.heightAnchor.constraint(greaterThanOrEqualToConstant: 420),
