@@ -845,6 +845,7 @@ filewriteln fh msg
 test_num = test_num + 1
 testvar_ifd = 42
 ifdefined testvar_ifd
+if result then
   pass_count = pass_count + 1
   sprintf2 msg 'PASS [%d] ifdefined for existing var' test_num
 else
