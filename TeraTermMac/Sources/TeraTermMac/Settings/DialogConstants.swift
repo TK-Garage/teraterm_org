@@ -195,6 +195,94 @@ extension NSView {
     }
 }
 
+// MARK: - Form Layout Helpers
+
+extension NSView {
+
+    /// Create a horizontal form row: right-aligned label + control.
+    ///
+    /// The label's compression resistance is raised so it never truncates,
+    /// while the control is allowed to stretch.  Both views are aligned
+    /// on `.firstBaseline` so text lines up even when font sizes differ
+    /// slightly (e.g. label vs popup button).
+    ///
+    /// - Parameters:
+    ///   - label: The label text (will be localized with `TTL()`).
+    ///   - control: Any NSView to place next to the label.
+    /// - Returns: A horizontal `NSStackView` containing the pair.
+    static func createFormRow(label text: String, control: NSView) -> NSStackView {
+        let label = NSView.makeLabel(TTL(text), alignment: .right)
+        label.setContentCompressionResistancePriority(.required, for: .horizontal)
+        label.setContentHuggingPriority(.defaultHigh, for: .horizontal)
+        control.translatesAutoresizingMaskIntoConstraints = false
+
+        let row = NSStackView(views: [label, control])
+        row.translatesAutoresizingMaskIntoConstraints = false
+        row.orientation = .horizontal
+        row.spacing = DialogLayout.labelTrailing
+        row.alignment = .firstBaseline
+        row.distribution = .fill
+        return row
+    }
+
+    /// Create a horizontal form row from a pre-made label + control.
+    static func createFormRow(labelView: NSTextField, control: NSView) -> NSStackView {
+        labelView.setContentCompressionResistancePriority(.required, for: .horizontal)
+        labelView.setContentHuggingPriority(.defaultHigh, for: .horizontal)
+        control.translatesAutoresizingMaskIntoConstraints = false
+
+        let row = NSStackView(views: [labelView, control])
+        row.translatesAutoresizingMaskIntoConstraints = false
+        row.orientation = .horizontal
+        row.spacing = DialogLayout.labelTrailing
+        row.alignment = .firstBaseline
+        row.distribution = .fill
+        return row
+    }
+
+    /// Create a vertical stack view with standard row spacing,
+    /// suitable for stacking multiple form rows.
+    static func createVerticalStack(
+        spacing: CGFloat = DialogLayout.rowSpacing,
+        alignment: NSLayoutConstraint.Attribute = .leading
+    ) -> NSStackView {
+        let stack = NSStackView()
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        stack.orientation = .vertical
+        stack.alignment = alignment
+        stack.spacing = spacing
+        stack.distribution = .fill
+        return stack
+    }
+
+    /// Create a 2-column NSGridView from label-control pairs.
+    ///
+    /// Labels are right-aligned, controls left-aligned, with consistent
+    /// spacing.  Use this when multiple rows need vertically aligned
+    /// columns (e.g. settings forms where labels line up).
+    ///
+    /// - Parameter rows: Array of `(labelKey, control)` pairs.
+    /// - Returns: A configured `NSGridView`.
+    static func createFormGrid(rows: [(String, NSView)]) -> NSGridView {
+        let gridRows: [[NSView]] = rows.map { (labelKey, control) in
+            let label = NSView.makeLabel(TTL(labelKey), alignment: .right)
+            label.setContentCompressionResistancePriority(.required, for: .horizontal)
+            control.translatesAutoresizingMaskIntoConstraints = false
+            return [label, control]
+        }
+        let grid = NSGridView(views: gridRows)
+        grid.translatesAutoresizingMaskIntoConstraints = false
+        grid.rowSpacing = DialogLayout.rowSpacing
+        grid.columnSpacing = DialogLayout.labelTrailing
+        grid.column(at: 0).xPlacement = .trailing
+        grid.column(at: 1).xPlacement = .leading
+        for i in 0..<grid.numberOfRows {
+            grid.row(at: i).rowAlignment = .firstBaseline
+        }
+        return grid
+    }
+}
+
 // MARK: - Base Dialog ViewController
 
 class BaseSetupDialogController: NSViewController {
@@ -209,12 +297,81 @@ class BaseSetupDialogController: NSViewController {
     /// The content area above the buttons. Subclasses add controls here.
     let contentArea = NSView()
 
+    /// Vertical stack view that fills the content area.
+    /// Subclasses can call `addRow(label:view:)` or add views directly.
+    private(set) var contentStackView: NSStackView!
+
+    /// Minimum width for the dialog content area (auto-expands if labels
+    /// are longer in another language).
+    var minimumContentWidth: CGFloat = 400
+    private var contentWidthConstraint: NSLayoutConstraint?
+
+    // MARK: - Convenience: Add Form Row
+
+    /// Add a labelled form row to the content stack.
+    ///
+    /// The label is right-aligned with max compression resistance so it
+    /// never truncates.  The control stretches to fill remaining width.
+    /// This is the primary API for subclasses building form-style dialogs.
+    ///
+    /// - Parameters:
+    ///   - labelKey: Localization key (passed through `TTL()`).
+    ///   - view: The control placed next to the label.
+    func addRow(label labelKey: String, view control: NSView) {
+        let row = NSView.createFormRow(label: labelKey, control: control)
+        row.widthAnchor.constraint(equalTo: contentStackView.widthAnchor).isActive = true
+        contentStackView.addArrangedSubview(row)
+    }
+
+    /// Add a pre-built view (e.g. a checkbox, group box, separator) that
+    /// spans the full width of the content area.
+    func addFullWidthView(_ view: NSView) {
+        view.translatesAutoresizingMaskIntoConstraints = false
+        contentStackView.addArrangedSubview(view)
+        view.widthAnchor.constraint(equalTo: contentStackView.widthAnchor).isActive = true
+    }
+
+    /// Add a vertical section gap.
+    func addSectionSpacing() {
+        let spacer = NSView()
+        spacer.translatesAutoresizingMaskIntoConstraints = false
+        spacer.heightAnchor.constraint(equalToConstant: DialogLayout.sectionSpacing - DialogLayout.rowSpacing).isActive = true
+        contentStackView.addArrangedSubview(spacer)
+    }
+
+    /// Add a 2-column grid form from label-control pairs (for aligned columns).
+    func addFormGrid(rows: [(String, NSView)]) {
+        let grid = NSView.createFormGrid(rows: rows)
+        contentStackView.addArrangedSubview(grid)
+    }
+
+    // MARK: - View Lifecycle
+
     override func loadView() {
         let container = NSView()
         container.translatesAutoresizingMaskIntoConstraints = false
 
         contentArea.translatesAutoresizingMaskIntoConstraints = false
         container.addSubview(contentArea)
+
+        // Build the content stack view inside the content area
+        contentStackView = NSView.createVerticalStack(
+            spacing: DialogLayout.rowSpacing,
+            alignment: .leading
+        )
+        contentArea.addSubview(contentStackView)
+        NSLayoutConstraint.activate([
+            contentStackView.topAnchor.constraint(equalTo: contentArea.topAnchor),
+            contentStackView.leadingAnchor.constraint(equalTo: contentArea.leadingAnchor),
+            contentStackView.trailingAnchor.constraint(equalTo: contentArea.trailingAnchor),
+            contentStackView.bottomAnchor.constraint(equalTo: contentArea.bottomAnchor),
+        ])
+
+        // Minimum width — expands automatically if labels are wider
+        let wc = contentArea.widthAnchor.constraint(greaterThanOrEqualToConstant: minimumContentWidth)
+        wc.priority = .defaultHigh
+        wc.isActive = true
+        contentWidthConstraint = wc
 
         // Footer buttons: [Help] ---- [Cancel] [OK]
         okButton = NSView.makePushButton(TTL("OK"), keyEquivalent: "\r")

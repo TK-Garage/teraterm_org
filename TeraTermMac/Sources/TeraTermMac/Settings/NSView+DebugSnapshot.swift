@@ -57,14 +57,19 @@ extension NSView {
 
         cacheDisplay(in: bounds, to: bitmapRep)
 
-        // 3. Draw 2pt red boundary overlay
+        // 3. Draw 2pt red boundary overlay + optional sub-control borders
         NSGraphicsContext.saveGraphicsState()
         if let ctx = NSGraphicsContext(bitmapImageRep: bitmapRep) {
             NSGraphicsContext.current = ctx
+
+            // Outer red border
             NSColor.red.setStroke()
             let borderPath = NSBezierPath(rect: bounds.insetBy(dx: 1, dy: 1))
             borderPath.lineWidth = 2
             borderPath.stroke()
+
+            // Draw sub-control boundaries for debugging
+            drawSubviewBorders(in: self, rootView: self, ctx: ctx)
         }
         NSGraphicsContext.restoreGraphicsState()
 
@@ -117,6 +122,40 @@ extension NSView {
         } catch {
             NSLog("[DebugSnapshot] Write failed: \(error)")
         }
+    }
+
+    /// Recursively draw thin borders around each direct subview.
+    /// Uses alternating blue/green colours so nested levels are distinct.
+    private func drawSubviewBorders(in view: NSView, rootView: NSView, ctx: NSGraphicsContext, depth: Int = 0) {
+        let colors: [NSColor] = [
+            NSColor.blue.withAlphaComponent(0.4),
+            NSColor.green.withAlphaComponent(0.4),
+            NSColor.orange.withAlphaComponent(0.4),
+            NSColor.purple.withAlphaComponent(0.4),
+        ]
+        let color = colors[depth % colors.count]
+
+        for sub in view.subviews {
+            let rect = sub.convert(sub.bounds, to: rootView)
+            guard rect.width > 0 && rect.height > 0 else { continue }
+
+            color.setStroke()
+            let path = NSBezierPath(rect: rect.insetBy(dx: 0.5, dy: 0.5))
+            path.lineWidth = 0.5
+            path.stroke()
+
+            // Recurse into children (limit depth to avoid noise)
+            if depth < 3 {
+                drawSubviewBorders(in: sub, rootView: rootView, ctx: ctx, depth: depth + 1)
+            }
+        }
+    }
+
+    /// Capture the view as a PNG to a specific file path.
+    /// Useful in automated tests where the output location is known.
+    func captureScreenToPNG(fileName: String, directory: URL? = nil) {
+        let dir = directory ?? FileManager.default.temporaryDirectory
+        saveToDebugPNG(name: fileName, outputDir: dir)
     }
 }
 #endif
