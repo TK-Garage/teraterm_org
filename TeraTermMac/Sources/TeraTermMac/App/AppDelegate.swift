@@ -1620,7 +1620,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         let shellPathLabel = NSView.makeLabel(L("dialog.connection.shellPath"))
         let defaultShell = ProcessInfo.processInfo.environment["SHELL"] ?? "/bin/zsh"
         let shellPathField = NSView.makeTextField(
-            settings.localShellPath.isEmpty ? defaultShell : settings.localShellPath)
+            value: settings.localShellPath.isEmpty ? defaultShell : settings.localShellPath)
         shellPathField.placeholderString = defaultShell
         shellPathField.widthAnchor.constraint(greaterThanOrEqualToConstant: 200).isActive = true
         shellPathField.setContentHuggingPriority(.defaultLow, for: .horizontal)
