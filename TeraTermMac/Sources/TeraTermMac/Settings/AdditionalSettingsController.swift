@@ -1989,14 +1989,14 @@ final class LocalShellTab: AdditionalSettingsTab {
         let pathLabel = NSView.makeLabel(TTL("dialog.localShell.shellPath"), alignment: .right)
         pathLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
         let defaultShell = ProcessInfo.processInfo.environment["SHELL"] ?? "/bin/zsh"
-        shellPathField = NSView.makeTextField(s.localShellPath.isEmpty ? defaultShell : s.localShellPath)
+        shellPathField = NSView.makeTextField(value: s.localShellPath.isEmpty ? defaultShell : s.localShellPath)
         shellPathField.placeholderString = defaultShell
         shellPathField.widthAnchor.constraint(greaterThanOrEqualToConstant: 200).isActive = true
 
         // TERM environment
         let termLabel = NSView.makeLabel("TERM", alignment: .right)
         termLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
-        termEnvField = NSView.makeTextField(s.localShellTermEnv)
+        termEnvField = NSView.makeTextField(value: s.localShellTermEnv)
         termEnvField.widthAnchor.constraint(greaterThanOrEqualToConstant: 160).isActive = true
 
         // Options
@@ -2011,13 +2011,13 @@ final class LocalShellTab: AdditionalSettingsTab {
         // Custom environment variables
         let env1Label = NSView.makeLabel(TTL("dialog.localShell.env1"), alignment: .right)
         env1Label.setContentCompressionResistancePriority(.required, for: .horizontal)
-        env1Field = NSView.makeTextField(s.localShellEnv1)
+        env1Field = NSView.makeTextField(value: s.localShellEnv1)
         env1Field.placeholderString = "KEY=VALUE"
         env1Field.widthAnchor.constraint(greaterThanOrEqualToConstant: 200).isActive = true
 
         let env2Label = NSView.makeLabel(TTL("dialog.localShell.env2"), alignment: .right)
         env2Label.setContentCompressionResistancePriority(.required, for: .horizontal)
-        env2Field = NSView.makeTextField(s.localShellEnv2)
+        env2Field = NSView.makeTextField(value: s.localShellEnv2)
         env2Field.placeholderString = "KEY=VALUE"
         env2Field.widthAnchor.constraint(greaterThanOrEqualToConstant: 200).isActive = true
 

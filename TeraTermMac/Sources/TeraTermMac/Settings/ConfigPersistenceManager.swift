@@ -811,11 +811,13 @@ final class ConfigPersistenceManager {
         var sections: [INISerializer.Section] = []
 
         // ── [Tera Term] ──────────────────────────────────────
-        sections.append(.init(name: Self.mainSection, pairs: [
-            // Meta
+        // Build pairs in smaller chunks to help the Swift type-checker.
+        typealias P = (key: String, value: String)
+
+        // Meta & Terminal Emulation
+        var mainPairs: [P] = [
             (key: Self.versionKey,     value: config.version),
             (key: "Port",              value: config.port),
-            // Terminal Emulation
             (key: "TerminalID",        value: config.terminalID),
             (key: "TerminalWidth",     value: String(config.terminalWidth)),
             (key: "TerminalHeight",    value: String(config.terminalHeight)),
@@ -825,33 +827,30 @@ final class ConfigPersistenceManager {
             (key: "Answerback",        value: config.answerback),
             (key: "TerminalUID",       value: config.terminalUID),
             (key: "TerminalSpeed",     value: config.terminalSpeed),
-            // New-line
             (key: "CRReceive",         value: String(config.crReceive)),
             (key: "CRSend",            value: String(config.crSend)),
-            // Character Encoding
             (key: "Encoding",          value: config.encoding),
             (key: "KanjiSend",         value: config.sendEncoding),
             (key: "KatakanaReceive",   value: config.katakanaReceive),
             (key: "KatakanaSend",      value: config.katakanaSend),
             (key: "KanjiIn",           value: config.kanjiIn),
             (key: "KanjiOut",          value: config.kanjiOut),
-            // Local Echo
             (key: "LocalEcho",         value: onOff(config.localEcho)),
-            // Cursor
+        ]
+
+        // Cursor, Window, Scroll, Color
+        mainPairs += [
             (key: "CursorShape",       value: String(config.cursorShape)),
             (key: "CursorBlink",       value: onOff(config.cursorBlink)),
             (key: "KillFocusCursor",   value: onOff(config.killFocusCursor)),
-            // Window Display
             (key: "Title",             value: config.title),
             (key: "TitleFormat",       value: String(config.titleFormat)),
             (key: "SaveVTWinPos",      value: onOff(config.saveVTWinPos)),
-            // Scroll
             (key: "EnableScrollBuffer",    value: onOff(config.enableScrollBuffer)),
             (key: "ScrollBuffSize",        value: String(config.scrollBufferSize)),
             (key: "MaxBuffSize",           value: String(config.scrollBufferMax)),
             (key: "ScrollThreshold",       value: String(config.scrollThreshold)),
             (key: "ScrollWindowClearScreen", value: onOff(config.scrollWindowClearScreen)),
-            // Color
             (key: "VTColor",           value: config.vtColor),
             (key: "VTBoldColor",       value: config.vtBoldColor),
             (key: "VTBlinkColor",      value: config.vtBlinkColor),
@@ -871,7 +870,10 @@ final class ConfigPersistenceManager {
             (key: "UseTextColor",      value: onOff(config.useTextColor)),
             (key: "UseNormalBGColor",  value: onOff(config.useStandardBGColor)),
             (key: "TEKColorEmulation", value: onOff(config.tekColorEmulation)),
-            // Font
+        ]
+
+        // Font, Keyboard, Beep
+        mainPairs += [
             (key: "FontName",          value: config.fontName),
             (key: "FontSize",          value: String(config.fontSize)),
             (key: "TEKFont",           value: config.tekFont),
@@ -886,7 +888,6 @@ final class ConfigPersistenceManager {
             (key: "DlgFont",           value: config.dialogFont),
             (key: "VTDrawAPI",         value: config.drawingAPI),
             (key: "VTDrawACP",         value: String(config.codePage)),
-            // Keyboard
             (key: "BSKey",             value: String(config.bsKey)),
             (key: "DeleteKey",         value: String(config.deleteKey)),
             (key: "MetaKey",           value: String(config.metaKey)),
@@ -896,7 +897,6 @@ final class ConfigPersistenceManager {
             (key: "StrictKeyMapping",  value: onOff(config.strictKeyMapping)),
             (key: "RussKeyb",          value: config.russKeyb),
             (key: "IMERelatedCursor",  value: onOff(config.cursorChangeIME)),
-            // Beep
             (key: "Beep",              value: String(config.beep)),
             (key: "BeepOnConnect",     value: onOff(config.beepOnConnect)),
             (key: "BeepOverUsedCount", value: String(config.beepOverUsedCount)),
@@ -904,7 +904,10 @@ final class ConfigPersistenceManager {
             (key: "BeepSuppressTime",  value: String(config.beepSuppressTime)),
             (key: "BeepVBellWait",     value: String(config.beepVBellWait)),
             (key: "NotifySound",       value: onOff(config.notifySound)),
-            // Connection
+        ]
+
+        // Connection, Serial
+        mainPairs += [
             (key: "Telnet",            value: onOff(config.telnet)),
             (key: "TCPPort",           value: String(config.tcpPort)),
             (key: "TelPort",           value: String(config.telPort)),
@@ -918,7 +921,6 @@ final class ConfigPersistenceManager {
             (key: "TCPLocalEcho",      value: onOff(config.tcpLocalEcho)),
             (key: "TCPCRSend",         value: config.tcpCRSend),
             (key: "DisableTCPEchoCR",  value: onOff(config.disableTCPEchoCR)),
-            // Serial
             (key: "DelayPerChar",      value: String(config.serialDelayPerChar)),
             (key: "DelayPerLine",      value: String(config.serialDelayPerLine)),
             (key: "ClearComBuffOnOpen", value: onOff(config.clearComBuffOnOpen)),
@@ -928,7 +930,10 @@ final class ConfigPersistenceManager {
             (key: "AutoComPortReconnectDelayIllegal",  value: String(config.autoComPortReconnectDelayIllegal)),
             (key: "AutoComPortReconnectRetryInterval", value: String(config.autoComPortReconnectRetryInterval)),
             (key: "AutoComPortReconnectRetryCount",    value: String(config.autoComPortReconnectRetryCount)),
-            // Log
+        ]
+
+        // Log
+        mainPairs += [
             (key: "LogAutoStart",      value: onOff(config.logAutoStart)),
             (key: "LogDefaultName",    value: config.logDefaultName),
             (key: "LogDefaultPath",    value: config.logDefaultPath),
@@ -948,7 +953,10 @@ final class ConfigPersistenceManager {
             (key: "ViewlogEditor",     value: config.logViewEditor),
             (key: "ViewlogEditorArg",  value: config.logEditorArguments),
             (key: "LogBOM",            value: onOff(config.logBOM)),
-            // File Transfer
+        ]
+
+        // File Transfer, Timeouts
+        mainPairs += [
             (key: "TransBin",          value: onOff(config.transBin)),
             (key: "XmodemOpt",         value: config.xmodemOption),
             (key: "XmodemBin",         value: onOff(config.xmodemBin)),
@@ -965,11 +973,13 @@ final class ConfigPersistenceManager {
             (key: "FTHideDialog",      value: onOff(config.ftHideDialog)),
             (key: "AutoFileRename",    value: onOff(config.autoFileRename)),
             (key: "ConfirmFileDragAndDrop", value: onOff(config.confirmFileDragAndDrop)),
-            // XMODEM/YMODEM/ZMODEM Timeouts
             (key: "XmodemTimeouts",    value: config.xmodemTimeouts),
             (key: "YmodemTimeouts",    value: config.ymodemTimeouts),
             (key: "ZmodemTimeouts",    value: config.zmodemTimeouts),
-            // Control Sequences
+        ]
+
+        // Control Sequences
+        mainPairs += [
             (key: "Accept8BitCtrl",    value: onOff(config.accept8BitCtrl)),
             (key: "AllowWrongSequence", value: onOff(config.allowWrongSequence)),
             (key: "AcceptTitleChangeRequest", value: config.titleChangeRequest),
@@ -990,7 +1000,10 @@ final class ConfigPersistenceManager {
             (key: "ISO2022ShiftFunction", value: config.iso2022ShiftFunction),
             (key: "MaxOSCBufferSize",  value: String(config.maxOSCBufferSize)),
             (key: "Send8BitCtrl",      value: onOff(config.send8BitCtrl)),
-            // Copy & Paste
+        ]
+
+        // Copy & Paste, Mouse, Opacity, Broadcast, Debug, URL, Unicode
+        mainPairs += [
             (key: "AutoTextCopy",      value: onOff(config.autoTextCopy)),
             (key: "EnableContinuedLineCopy", value: onOff(config.continuedLineCopy)),
             (key: "SelectOnlyByLButton", value: onOff(config.leftClickOnlySelection)),
@@ -1006,62 +1019,52 @@ final class ConfigPersistenceManager {
             (key: "DelimList",         value: config.delimiterList),
             (key: "DelimDBCS",         value: onOff(config.delimDBCS)),
             (key: "MouseSelectStartDelay", value: String(config.mouseSelectStartDelay)),
-            // Mouse
             (key: "MouseEventTracking", value: onOff(config.mouseTracking)),
             (key: "MouseWheelScrollLine", value: String(config.mouseWheelScrollLines)),
             (key: "MouseCursor",       value: config.mouseCursorType),
             (key: "TranslateWheelToCursor", value: onOff(config.translateWheelToCursor)),
             (key: "DisableMouseTrackingByCtrl", value: onOff(config.disableControlKeyMouseEvent)),
             (key: "DisableWheelToCursorByCtrl", value: onOff(config.disableWheelToCursorByCtrl)),
-            // Window Opacity
             (key: "AlphaBlend",        value: String(config.windowOpacityInactive)),
             (key: "AlphaBlendActive",  value: String(config.windowOpacityActive)),
-            // Broadcast
             (key: "BroadcastCommandHistory", value: onOff(config.broadcastHistory)),
             (key: "AcceptBroadcast",   value: onOff(config.acceptBroadcast)),
             (key: "MaxBroadcatHistory", value: String(config.maxBroadcastHistory)),
-            // Debug
             (key: "Debug",             value: onOff(config.debugCharInfoPopup)),
             (key: "DebugModes",        value: config.debugModes),
-            // URL
             (key: "EnableClickableUrl", value: onOff(config.enableClickableUrl)),
             (key: "JoinSplitURL",      value: onOff(config.joinSplitURL)),
             (key: "JoinSplitURLIgnoreEOLChar", value: config.joinSplitURLIgnoreEOLChar),
-            // Unicode
             (key: "UnicodeAmbiguousWidth", value: String(config.unicodeAmbiguousWidth)),
             (key: "UnicodeEmojiOverride", value: onOff(config.unicodeEmojiOverride)),
             (key: "UnicodeEmojiWidth", value: String(config.unicodeEmojiWidth)),
             (key: "UnicodeToDecSpMapping", value: String(config.unicodeToDecSpMapping)),
             (key: "DecSpMappingDir",   value: String(config.decSpMappingDir)),
-            // Sendfile
+        ]
+
+        // Sendfile, Receivefile, Language, Protocol Logs, Kermit, B-Plus, Quick-VAN, Special Options, TEK
+        mainPairs += [
             (key: "SendfileDelayType", value: config.sendfileDelayType),
             (key: "SendfileDelayTick", value: String(config.sendfileDelayTick)),
             (key: "SendfileSize",      value: String(config.sendfileSize)),
             (key: "SendfileSequential", value: onOff(config.sendfileSequential)),
             (key: "SendfileSkipOptionDialog", value: onOff(config.sendfileSkipOptionDialog)),
-            // Receivefile
             (key: "FileReceiveFilter", value: config.fileReceiveFilter),
             (key: "ReceivefileSkipOptionDialog", value: onOff(config.receivefileSkipOptionDialog)),
             (key: "ReceivefileAutoStopWaitTime", value: String(config.receivefileAutoStopWaitTime)),
-            // UI Language
             (key: "UILanguageFile",    value: config.language),
-            // Protocol Logs
             (key: "TelLog",            value: onOff(config.telLog)),
             (key: "XmodemLog",         value: onOff(config.xmodemLog)),
             (key: "YmodemLog",         value: onOff(config.ymodemLog)),
             (key: "ZmodemLog",         value: onOff(config.zmodemLog)),
-            // Kermit
             (key: "KmtLog",            value: onOff(config.kmtLog)),
             (key: "KmtLongPacket",     value: onOff(config.kmtLongPacket)),
             (key: "KmtFileAttr",       value: onOff(config.kmtFileAttr)),
-            // B-Plus
             (key: "BPAuto",            value: onOff(config.bpAuto)),
             (key: "BPEscCtl",          value: onOff(config.bpEscCtl)),
             (key: "BPLog",             value: onOff(config.bpLog)),
-            // Quick-VAN
             (key: "QVLog",             value: onOff(config.qvLog)),
             (key: "QVWinSize",         value: String(config.qvWinSize)),
-            // Other Special Options
             (key: "AutoWinSwitch",     value: onOff(config.autoWinSwitch)),
             (key: "CtrlInKanji",       value: onOff(config.ctrlInKanji)),
             (key: "FixedJIS",          value: onOff(config.fixedJIS)),
@@ -1084,10 +1087,11 @@ final class ConfigPersistenceManager {
             (key: "BracketedSupport",  value: onOff(config.bracketedPasteMode)),
             (key: "BracketedControlOnly", value: onOff(config.bracketedControlOnly)),
             (key: "AutoWrap",          value: onOff(config.autoWrap)),
-            // TEK
             (key: "TEKPos",            value: config.tekPos),
             (key: "TEKPPI",            value: config.tekPPI),
-        ]))
+        ]
+
+        sections.append(.init(name: Self.mainSection, pairs: mainPairs))
 
         // ── [TCP/IP] ─────────────────────────────────────────
         sections.append(.init(name: "TCP/IP", pairs: [
