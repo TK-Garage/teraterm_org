@@ -16,7 +16,7 @@ import AppKit
 // MARK: - Display Mode
 
 /// Controls how TTL dialogs are presented.
-enum TTLDialogDisplayMode {
+enum TTLDialogDisplayMode: Equatable {
     /// Show as application-modal dialog (default, matches Windows Tera Term)
     case modal
     /// Show as sheet attached to the parent window

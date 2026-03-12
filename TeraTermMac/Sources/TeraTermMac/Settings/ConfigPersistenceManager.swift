@@ -386,7 +386,7 @@ struct TeraTermConfig {
 /// - Creates the app-specific directory on first use.
 /// - Checks format version; deletes and recreates stale files.
 /// - Provides atomic writes to prevent corruption.
-final class ConfigPersistenceManager {
+class ConfigPersistenceManager {
 
     // MARK: - Constants
 

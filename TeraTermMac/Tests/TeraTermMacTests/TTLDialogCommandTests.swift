@@ -414,8 +414,6 @@ final class TTLDialogCommandTests: XCTestCase {
     }
 }
 
-// MARK: - TTLDialogDisplayMode Equatable (for tests)
-
-extension TTLDialogDisplayMode: Equatable {}
+// TTLDialogDisplayMode Equatable conformance is declared in the main module.
 
 #endif

@@ -23,6 +23,7 @@
 
 #if canImport(AppKit)
 import AppKit
+import XCTest
 @testable import TeraTermMac
 
 // MARK: - Gallery Item Definition
