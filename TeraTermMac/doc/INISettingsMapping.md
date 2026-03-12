@@ -27,7 +27,7 @@ INI ファイル保存先: `~/Library/Application Support/com.teraterm.mac/TERAT
 | TerminalID | string | "" | 端末ID (VT100/VT220/etc.) | o | terminalID |
 | Answerback | string | "" | ENQ 応答文字列 (Hex エンコード) | o | answerback |
 | TermType | string | "xterm" | Telnet/SSH 端末タイプ | o | termType |
-| TerminalUID | string | "FFFFFFFF" | 端末ユニークID (8桁Hex) | x | - |
+| TerminalUID | string | "FFFFFFFF" | 端末ユニークID (8桁Hex) | o | TeraTermConfig.terminalUID |
 | TerminalSpeed | string | "38400" | 端末速度 (Telnet/SSH用) | o | terminalSpeed |
 
 ### 改行設定
@@ -43,10 +43,10 @@ INI ファイル保存先: `~/Library/Application Support/com.teraterm.mac/TERAT
 |---------|---|------------|------|---------|--------------|
 | KanjiReceive | string | "" | 受信漢字コード (UTF-8/SJIS/EUC/JIS等) | o | encoding |
 | KanjiSend | string | "" | 送信漢字コード | o | sendEncoding |
-| KatakanaReceive | string | "8" | 受信カタカナ ("7"=7bit/"8"=8bit) | x | - |
-| KatakanaSend | string | "8" | 送信カタカナ | x | - |
-| KanjiIn | string | "B" | JIS KanjiIn designator ("@"/"B") | x | - |
-| KanjiOut | string | "J" | JIS KanjiOut designator ("J"/"B"/"H") | x | - |
+| KatakanaReceive | string | "8" | 受信カタカナ ("7"=7bit/"8"=8bit) | o | TeraTermConfig.katakanaReceive |
+| KatakanaSend | string | "8" | 送信カタカナ | o | TeraTermConfig.katakanaSend |
+| KanjiIn | string | "B" | JIS KanjiIn designator ("@"/"B") | o | TeraTermConfig.kanjiIn |
+| KanjiOut | string | "J" | JIS KanjiOut designator ("J"/"B"/"H") | o | TeraTermConfig.kanjiOut |
 
 ### ローカルエコー
 
@@ -71,7 +71,7 @@ INI ファイル保存先: `~/Library/Application Support/com.teraterm.mac/TERAT
 | HideTitle | on/off | off | タイトルバー非表示 | x | - |
 | PopupMenu | on/off | off | ポップアップメニュー有効 | x | - |
 | VTPos | string | "-2147483648,-2147483648" | VTウィンドウ位置 "x,y" | x | - |
-| TEKPos | string | "-2147483648,-2147483648" | TEKウィンドウ位置 "x,y" | x | - |
+| TEKPos | string | "-2147483648,-2147483648" | TEKウィンドウ位置 "x,y" | o | TeraTermConfig.tekPos |
 | SaveVTWinPos | on/off | off | VTウィンドウ位置を保存 | o | saveVTWinPos |
 
 ### スクロール
@@ -94,7 +94,7 @@ INI ファイル保存先: `~/Library/Application Support/com.teraterm.mac/TERAT
 | VTReverseColor | string | "255,255,255,0,0,0" | 反転色/背景色 | o | attrColorReverse |
 | VTUnderlineColor | string | "255,0,255,255,255,255" | 下線色/背景色 | o | attrColorUnderline |
 | URLColor | string | "0,255,0,255,255,255" | URL色/背景色 | o | attrColorURL / urlColor |
-| TEKColor | string | "0,0,0,255,255,255" | TEK文字色/背景色 | x | - |
+| TEKColor | string | "0,0,0,255,255,255" | TEK文字色/背景色 | o | TeraTermConfig.tekColor |
 | ANSIColor | string | (16色定義) | ANSI 16色パレット "id,r,g,b,..." | o | colorTheme.ansiColors |
 | EnableBoldAttrColor | on/off | on | 太字属性色有効 | o | enableBoldColor |
 | EnableBlinkAttrColor | on/off | on | 点滅属性色有効 | o | enableBlinkColor |
@@ -104,9 +104,9 @@ INI ファイル保存先: `~/Library/Application Support/com.teraterm.mac/TERAT
 | PcBoldColor | on/off | off | PC式太字カラーマッピング | o | pcBoldColor |
 | Aixterm16Color | on/off | off | aixterm 16色モード | o | enableAixtermColors |
 | Xterm256Color | on/off | on | xterm 256色モード | o | enableXterm256Colors |
-| UseTextColor | on/off | off | テキスト色をANSIカラーに使用 | x | - |
+| UseTextColor | on/off | off | テキスト色をANSIカラーに使用 | o | TeraTermConfig.useTextColor |
 | UseNormalBGColor | on/off | off | 標準背景色を常に使用 | o | useStandardBGColor |
-| TEKColorEmulation | on/off | off | TEKカラーエミュレーション | x | - |
+| TEKColorEmulation | on/off | off | TEKカラーエミュレーション | o | TeraTermConfig.tekColorEmulation |
 
 ### フォント
 
@@ -134,11 +134,11 @@ INI ファイル保存先: `~/Library/Application Support/com.teraterm.mac/TERAT
 | BSKey | string | "BS" | BSキー送信 ("BS"/"DEL") | o | bsKey |
 | DeleteKey | on/off | off | Deleteキー有効 | o | deleteKey |
 | MetaKey | string | "off" | Metaキー ("off"/"on"/"left"/"right") | o | metaKey |
-| Meta8Bit | string | "off" | Meta 8bit設定 ("off"/"raw"/"text") | x | - |
+| Meta8Bit | string | "off" | Meta 8bit設定 ("off"/"raw"/"text") | o | TeraTermConfig.meta8Bit |
 | DisableAppKeypad | on/off | off | アプリケーションキーパッド無効 | o | disableAppKeypad |
 | DisableAppCursor | on/off | off | アプリケーションカーソル無効 | o | disableAppCursor |
-| StrictKeyMapping | on/off | off | 厳密キーマッピング | x | - |
-| RussKeyb | string | "" | ロシア語キーボード | x | - |
+| StrictKeyMapping | on/off | off | 厳密キーマッピング | o | TeraTermConfig.strictKeyMapping |
+| RussKeyb | string | "" | ロシア語キーボード | o | TeraTermConfig.russKeyb |
 | IME | on/off | on | IME有効 (Windows専用) | x | - |
 | IMEInline | on/off | on | IMEインライン入力 (Windows専用) | x | - |
 | IMERelatedCursor | on/off | off | IME連動カーソル変更 | o | cursorChangeIME |
@@ -152,7 +152,7 @@ INI ファイル保存先: `~/Library/Application Support/com.teraterm.mac/TERAT
 | BeepOverUsedCount | int | 5 | ビープ過多検知回数 | o | beepOverUsedCount |
 | BeepOverUsedTime | int | 2 | ビープ過多検知時間 (秒) | o | beepOverUsedTime |
 | BeepSuppressTime | int | 5 | ビープ抑制時間 (秒) | o | beepSuppressTime |
-| BeepVBellWait | int | 10 | ビジュアルベル待機時間 (ms) | x | - |
+| BeepVBellWait | int | 10 | ビジュアルベル待機時間 (ms) | o | TeraTermConfig.beepVBellWait |
 | NotifySound | on/off | on | 通知音有効 | o | notifySound |
 
 ### 接続 (TCP/IP)
@@ -161,17 +161,17 @@ INI ファイル保存先: `~/Library/Application Support/com.teraterm.mac/TERAT
 |---------|---|------------|------|---------|--------------|
 | Telnet | on/off | on | Telnet有効 | o | telnet |
 | TCPPort | int | 23 | TCPポート番号 | o | tcpPort / defaultPort |
-| TelPort | int | 23 | Telnetポート番号 | x | - |
+| TelPort | int | 23 | Telnetポート番号 | o | TeraTermConfig.telPort |
 | AutoWinClose | on/off | on | 切断時自動ウィンドウ閉じ | o | autoWindowClose |
 | HistoryList | on/off | off | 接続履歴リスト | o | hostHistory |
 | ConnectingTimeout | int | 0 | 接続タイムアウト (秒, 0=無限) | o | connectingTimeout |
-| TelAutoDetect | on/off | on | Telnet自動検出 | x | - |
-| TelBin | on/off | off | Telnetバイナリフラグ | x | - |
-| TelEcho | on/off | off | Telnetエコーフラグ | x | - |
+| TelAutoDetect | on/off | on | Telnet自動検出 | o | TeraTermConfig.telAutoDetect |
+| TelBin | on/off | off | Telnetバイナリフラグ | o | TeraTermConfig.telBin |
+| TelEcho | on/off | off | Telnetエコーフラグ | o | TeraTermConfig.telEcho |
 | TelKeepAliveInterval | int | 300 | Telnetキープアライブ間隔 (秒) | o | tcpKeepAliveInterval |
-| TCPLocalEcho | on/off | off | 非Telnetローカルエコー | x | - |
-| TCPCRSend | string | "" | 非Telnet改行送信 ("CR"/"CRLF"/"") | x | - |
-| DisableTCPEchoCR | - | FALSE | TCPLocalEcho/TCPCRSend無効 | x | - |
+| TCPLocalEcho | on/off | off | 非Telnetローカルエコー | o | TeraTermConfig.tcpLocalEcho |
+| TCPCRSend | string | "" | 非Telnet改行送信 ("CR"/"CRLF"/"") | o | TeraTermConfig.tcpCRSend |
+| DisableTCPEchoCR | - | FALSE | TCPLocalEcho/TCPCRSend無効 | o | TeraTermConfig.disableTCPEchoCR |
 | HostDialogOnStartup | on/off | on | 起動時接続ダイアログ表示 | x | - |
 
 ### シリアルポート
@@ -188,12 +188,12 @@ INI ファイル保存先: `~/Library/Application Support/com.teraterm.mac/TERAT
 | DelayPerLine | int | 0 | 行遅延 (ms) | o | serialDelayPerLine |
 | MaxComPort | int | 256 | 最大COMポート番号 | x | - |
 | ClearComBuffOnOpen | on/off | on | ポートオープン時バッファクリア | o | clearComBuffOnOpen |
-| WaitCom | on/off | off | COMポート接続待ち | x | - |
+| WaitCom | on/off | off | COMポート接続待ち | o | TeraTermConfig.waitCom |
 | AutoComPortReconnect | on/off | on | シリアルポート自動再接続 | o | autoComPortReconnect |
-| AutoComPortReconnectDelayNormal | int | 500 | 自動再接続遅延 (ms) | x | - |
-| AutoComPortReconnectDelayIllegal | int | 2000 | 異常時再接続遅延 (ms) | x | - |
-| AutoComPortReconnectRetryInterval | int | 1000 | 再接続リトライ間隔 (ms) | x | - |
-| AutoComPortReconnectRetryCount | int | 3 | 再接続リトライ回数 | x | - |
+| AutoComPortReconnectDelayNormal | int | 500 | 自動再接続遅延 (ms) | o | TeraTermConfig.autoComPortReconnectDelayNormal |
+| AutoComPortReconnectDelayIllegal | int | 2000 | 異常時再接続遅延 (ms) | o | TeraTermConfig.autoComPortReconnectDelayIllegal |
+| AutoComPortReconnectRetryInterval | int | 1000 | 再接続リトライ間隔 (ms) | o | TeraTermConfig.autoComPortReconnectRetryInterval |
+| AutoComPortReconnectRetryCount | int | 3 | 再接続リトライ回数 | o | TeraTermConfig.autoComPortReconnectRetryCount |
 | FlowCtrlRTS | int | -1 | RTS フロー制御詳細設定 | x | - |
 | FlowCtrlDTR | int | -1 | DTR フロー制御詳細設定 | x | - |
 
@@ -214,9 +214,9 @@ INI ファイル保存先: `~/Library/Application Support/com.teraterm.mac/TERAT
 | LogIncludeScreenBuffer | on/off | off | 画面バッファ含む | o | logIncludeScreenBuffer |
 | LogRotate | int | 0 | ログローテーションモード | o | logRotateEnabled |
 | LogRotateSize | int | 0 | ローテーションサイズ | o | logRotateSize |
-| LogRotateSizeType | int | 0 | ローテーションサイズ種別 | x | - |
+| LogRotateSizeType | int | 0 | ローテーションサイズ種別 | o | TeraTermConfig.logRotateSizeType |
 | LogRotateStep | int | 0 | ローテーションステップ | o | logRotateStep |
-| DeferredLogWriteMode | on/off | on | 遅延ログ書込みモード | x | - |
+| DeferredLogWriteMode | on/off | on | 遅延ログ書込みモード | o | TeraTermConfig.deferredLogWriteMode |
 | LogLockExclusive | on/off | on | ログファイル排他ロック | x | - |
 | ViewlogEditor | string | "notepad.exe" | ログビューアエディタ | o | logViewEditor |
 | ViewlogEditorArg | string | NULL | ログビューア引数 | o | logEditorArguments |
@@ -226,20 +226,20 @@ INI ファイル保存先: `~/Library/Application Support/com.teraterm.mac/TERAT
 
 | INI キー | 型 | デフォルト値 | 説明 | Mac 対応 | Mac プロパティ |
 |---------|---|------------|------|---------|--------------|
-| TransBin | on/off | off | バイナリ転送フラグ | x | - |
+| TransBin | on/off | off | バイナリ転送フラグ | o | TeraTermConfig.transBin |
 | XmodemOpt | string | "checksum" | XMODEM方式 ("checksum"/"crc"/"1k"/"1ksum") | o | xmodemOption |
-| XmodemBin | on/off | on | XMODEMバイナリ | x | - |
-| XModemRcvCommand | string | "" | XMODEM受信コマンド | x | - |
-| YModemRcvCommand | string | "rb" | YMODEM受信コマンド | x | - |
+| XmodemBin | on/off | on | XMODEMバイナリ | o | TeraTermConfig.xmodemBin |
+| XModemRcvCommand | string | "" | XMODEM受信コマンド | o | TeraTermConfig.xModemRcvCommand |
+| YModemRcvCommand | string | "rb" | YMODEM受信コマンド | o | TeraTermConfig.yModemRcvCommand |
 | ZmodemDataLen | int | 1024 | ZMODEMデータ長 | o | zmodemDataLen |
 | ZmodemWinSize | int | 32767 | ZMODEMウィンドウサイズ | o | zmodemWindowSize |
-| ZModemRcvCommand | string | "rz" | ZMODEM受信コマンド | x | - |
+| ZModemRcvCommand | string | "rz" | ZMODEM受信コマンド | o | TeraTermConfig.zModemRcvCommand |
 | ZmodemAuto | on/off | off | ZMODEM自動起動 | o | zmodemAutoReceive |
-| ZmodemEscCtl | on/off | off | ZMODEM ESCCTLフラグ | x | - |
+| ZmodemEscCtl | on/off | off | ZMODEM ESCCTLフラグ | o | TeraTermConfig.zmodemEscCtl |
 | FileDir | string | "" | ファイル転送ディレクトリ | o | fileTransferFolder |
-| FileSendFilter | string | "" | ファイル送信フィルタ | x | - |
-| ScpSendDir | string | "" | SCP送信先ディレクトリ | x | - |
-| FTHideDialog | on/off | off | ファイル転送ダイアログ非表示 | x | - |
+| FileSendFilter | string | "" | ファイル送信フィルタ | o | TeraTermConfig.fileSendFilter |
+| ScpSendDir | string | "" | SCP送信先ディレクトリ | o | TeraTermConfig.scpSendDir |
+| FTHideDialog | on/off | off | ファイル転送ダイアログ非表示 | o | TeraTermConfig.ftHideDialog |
 | AutoFileRename | on/off | off | ファイル自動リネーム | o | autoFileRename |
 | ConfirmFileDragAndDrop | on/off | on | D&Dファイル送信確認 | o | confirmFileDragAndDrop |
 
@@ -247,9 +247,9 @@ INI ファイル保存先: `~/Library/Application Support/com.teraterm.mac/TERAT
 
 | INI キー | 型 | デフォルト値 | 説明 | Mac 対応 |
 |---------|---|------------|------|---------|
-| XmodemTimeouts | string | "10,3,10,20,60" | XMODEMタイムアウト (init,initCRC,short,long,vlong) | x |
-| YmodemTimeouts | string | "10,3,10,20,60" | YMODEMタイムアウト | x |
-| ZmodemTimeouts | string | "10,0,10,3" | ZMODEMタイムアウト (normal,tcpip,init,fin) | x |
+| XmodemTimeouts | string | "10,3,10,20,60" | XMODEMタイムアウト (init,initCRC,short,long,vlong) | o | TeraTermConfig.xmodemTimeouts |
+| YmodemTimeouts | string | "10,3,10,20,60" | YMODEMタイムアウト | o | TeraTermConfig.ymodemTimeouts |
+| ZmodemTimeouts | string | "10,0,10,3" | ZMODEMタイムアウト (normal,tcpip,init,fin) | o | TeraTermConfig.zmodemTimeouts |
 
 ### 制御シーケンス
 
@@ -267,12 +267,12 @@ INI ファイル保存先: `~/Library/Application Support/com.teraterm.mac/TERAT
 | ClearScrollBufferFromRemote | on/off | on | リモートスクロールバッファクリア | o | acceptScrollBufferClear |
 | ClearOnResize | on/off | off | リサイズ時画面クリア | o | clearOnResize |
 | AlternateScreenBuffer | on/off | on | 代替スクリーンバッファ | o | alternateScreenBuffer |
-| EnableStatusLine | on/off | on | ステータスライン有効 | x | - |
+| EnableStatusLine | on/off | on | ステータスライン有効 | o | TeraTermConfig.enableStatusLine |
 | EnableLineMode | on/off | on | ラインモード有効 | o | enableLineMode |
 | PrinterCtrlSequence | on/off | off | プリンタ制御シーケンス受付 | o | disablePrintSequence (反転) |
-| UseInvalidDECRQSSResponse | on/off | off | 無効DECRPSS (テスト用) | x | - |
-| TabStopModifySequence | string | "on" | タブストップ変更シーケンス | x | - |
-| ISO2022ShiftFunction | string | "on" | ISO2022シフト機能 | x | - |
+| UseInvalidDECRQSSResponse | on/off | off | 無効DECRPSS (テスト用) | o | TeraTermConfig.useInvalidDECRQSSResponse |
+| TabStopModifySequence | string | "on" | タブストップ変更シーケンス | o | TeraTermConfig.tabStopModifySequence |
+| ISO2022ShiftFunction | string | "on" | ISO2022シフト機能 | o | TeraTermConfig.iso2022ShiftFunction |
 | MaxOSCBufferSize | int | 4096 | OSCバッファ最大サイズ | o | maxOSCBufferSize |
 | Send8BitCtrl | on/off | off | 8bit制御シーケンス送信 | o | send8BitCtrl |
 
@@ -294,7 +294,7 @@ INI ファイル保存先: `~/Library/Application Support/com.teraterm.mac/TERAT
 | PasteDelayPerLine | int | 10 | ペースト行遅延 (ms, 0-5000) | o | pasteDelay (default: 5) |
 | PasteDialogSize | string | "330,220" | ペースト確認ダイアログサイズ "w,h" | x | - |
 | DelimList | string | (Hex encoded) | ダブルクリック区切り文字 | o | delimiterList |
-| DelimDBCS | on/off | on | DBCS文字を区切りとみなす | x | - |
+| DelimDBCS | on/off | on | DBCS文字を区切りとみなす | o | TeraTermConfig.delimDBCS |
 | MouseSelectStartDelay | int | 0 | マウス選択開始遅延 (ms) | o | mouseSelectStartDelay |
 
 ### マウス
@@ -370,67 +370,67 @@ INI ファイル保存先: `~/Library/Application Support/com.teraterm.mac/TERAT
 | PrnMargin | string | "50,50,50,50" | 印刷マージン "左,右,上,下" | x |
 | PrnConvFF | on/off | off | FFをNLに変換 | x |
 | VTPPI | string | "0,0" | VT印刷PPI | x |
-| TEKPPI | string | "0,0" | TEK印刷PPI | x |
+| TEKPPI | string | "0,0" | TEK印刷PPI | o | TeraTermConfig.tekPPI |
 
 ### Kermit
 
 | INI キー | 型 | デフォルト値 | 説明 | Mac 対応 |
 |---------|---|------------|------|---------|
-| KmtLog | on/off | off | Kermitログ | x |
-| KmtLongPacket | on/off | off | Kermit長パケット | x |
-| KmtFileAttr | on/off | off | Kermitファイル属性 | x |
+| KmtLog | on/off | off | Kermitログ | o | TeraTermConfig.kmtLog |
+| KmtLongPacket | on/off | off | Kermit長パケット | o | TeraTermConfig.kmtLongPacket |
+| KmtFileAttr | on/off | off | Kermitファイル属性 | o | TeraTermConfig.kmtFileAttr |
 
 ### B-Plus
 
 | INI キー | 型 | デフォルト値 | 説明 | Mac 対応 |
 |---------|---|------------|------|---------|
-| BPAuto | on/off | off | B-Plus自動起動 | x |
-| BPEscCtl | on/off | off | B-Plus ESCCTLフラグ | x |
-| BPLog | on/off | off | B-Plusログ | x |
+| BPAuto | on/off | off | B-Plus自動起動 | o | TeraTermConfig.bpAuto |
+| BPEscCtl | on/off | off | B-Plus ESCCTLフラグ | o | TeraTermConfig.bpEscCtl |
+| BPLog | on/off | off | B-Plusログ | o | TeraTermConfig.bpLog |
 
 ### Quick-VAN
 
 | INI キー | 型 | デフォルト値 | 説明 | Mac 対応 |
 |---------|---|------------|------|---------|
-| QVLog | on/off | off | Quick-VANログ | x |
-| QVWinSize | int | 8 | Quick-VANウィンドウサイズ | x |
+| QVLog | on/off | off | Quick-VANログ | o | TeraTermConfig.qvLog |
+| QVWinSize | int | 8 | Quick-VANウィンドウサイズ | o | TeraTermConfig.qvWinSize |
 
 ### プロトコル制御ログ
 
 | INI キー | 型 | デフォルト値 | 説明 | Mac 対応 |
 |---------|---|------------|------|---------|
-| TelLog | on/off | off | Telnetログ | x |
-| XmodemLog | on/off | off | XMODEMログ | x |
-| YmodemLog | on/off | off | YMODEMログ | x |
-| ZmodemLog | on/off | off | ZMODEMログ | x |
+| TelLog | on/off | off | Telnetログ | o | TeraTermConfig.telLog |
+| XmodemLog | on/off | off | XMODEMログ | o | TeraTermConfig.xmodemLog |
+| YmodemLog | on/off | off | YMODEMログ | o | TeraTermConfig.ymodemLog |
+| ZmodemLog | on/off | off | ZMODEMログ | o | TeraTermConfig.zmodemLog |
 
 ### その他特殊オプション
 
 | INI キー | 型 | デフォルト値 | 説明 | Mac 対応 | Mac プロパティ |
 |---------|---|------------|------|---------|--------------|
-| AutoWinSwitch | on/off | off | VT/TEK自動切り替え | x | - |
-| CtrlInKanji | on/off | on | 漢字中の制御コード | x | - |
-| FixedJIS | on/off | off | 固定JIS | x | - |
+| AutoWinSwitch | on/off | off | VT/TEK自動切り替え | o | TeraTermConfig.autoWinSwitch |
+| CtrlInKanji | on/off | on | 漢字中の制御コード | o | TeraTermConfig.ctrlInKanji |
+| FixedJIS | on/off | off | 固定JIS | o | TeraTermConfig.fixedJIS |
 | BackWrap | on/off | off | バックラップ | o | backWrap |
-| AutoInvoke | on/off | off | 自動インボーク | x | - |
+| AutoInvoke | on/off | off | 自動インボーク | o | TeraTermConfig.autoInvoke |
 | ConfirmDisconnect | on/off | on | 切断確認 | o | confirmOnDisconnect |
 | VTCompatTab | on/off | off | VT互換タブ | o | vtCompatTab |
 | VTIcon | string | "Default" | VTウィンドウアイコン | x | - |
-| TEKIcon | string | "Default" | TEKウィンドウアイコン | x | - |
-| TEKGINMouseCode | int | 32 | TEK GINマウスキーコード | x | - |
-| SendBreakTime | int | 1000 | Breakシグナル時間 (ms) | x | - |
+| TEKIcon | string | "Default" | TEKウィンドウアイコン | o | TeraTermConfig.tekIcon |
+| TEKGINMouseCode | int | 32 | TEK GINマウスキーコード | o | TeraTermConfig.tekGINMouseCode |
+| SendBreakTime | int | 1000 | Breakシグナル時間 (ms) | o | TeraTermConfig.sendBreakTime |
 | MaximizedBugTweak | int | 2 | 最大化バグ回避 (Windows専用) | x | - |
 | DuplicateSession | - | - | セッション複製 (Windows専用) | x | - |
-| Wait4allMacroCommand | on/off | off | 全マクロコマンド待ち | x | - |
+| Wait4allMacroCommand | on/off | off | 全マクロコマンド待ち | o | TeraTermConfig.wait4allMacroCommand |
 | ClearScreenOnCloseConnection | on/off | off | 接続終了時画面クリア | o | clearScreenOnCloseConnection |
-| FileSendHighSpeedMode | on/off | on | 高速ファイル送信 | x | - |
+| FileSendHighSpeedMode | on/off | on | 高速ファイル送信 | o | TeraTermConfig.fileSendHighSpeedMode |
 | FallbackToCP932 | on/off | off | CP932フォールバック | o | fallbackToCP932 |
-| StartupMacro | string | "" | 起動時マクロファイル | x | - |
-| AutoScrollOnlyInBottomLine | on/off | off | 最終行のみ自動スクロール | x | - |
+| StartupMacro | string | "" | 起動時マクロファイル | o | TeraTermConfig.startupMacro |
+| AutoScrollOnlyInBottomLine | on/off | off | 最終行のみ自動スクロール | o | TeraTermConfig.autoScrollOnlyInBottomLine |
 | JumpList | on/off | on | ジャンプリスト (Windows専用) | x | - |
-| LockTUID | on/off | on | 端末UID固定 | x | - |
+| LockTUID | on/off | on | 端末UID固定 | o | TeraTermConfig.lockTUID |
 | WindowCornerDontround | on/off | off | ウィンドウ角丸め禁止 | o | cornerRounding |
-| IniAutoBackup | on/off | on | INI自動バックアップ | x | - |
+| IniAutoBackup | on/off | on | INI自動バックアップ | o | TeraTermConfig.iniAutoBackup |
 | BracketedSupport | on/off | on | Bracketed paste mode対応 | o | bracketedPasteMode |
 | BracketedControlOnly | on/off | off | Bracketedモード制御のみ | o | bracketedControlOnly |
 
@@ -441,26 +441,26 @@ INI ファイル保存先: `~/Library/Application Support/com.teraterm.mac/TERAT
 | UnicodeAmbiguousWidth | int | 0 (=auto) | 曖昧幅 (1=半角, 2=全角, 0=自動) | o | unicodeAmbiguousWidth |
 | UnicodeEmojiOverride | on/off | off | 絵文字幅オーバーライド | o | unicodeEmojiOverride |
 | UnicodeEmojiWidth | int | 0 (=auto) | 絵文字幅 (1=半角, 2=全角) | o | unicodeEmojiWidth |
-| UnicodeToDecSpMapping | int | 3 | Unicode→DEC特殊文字マッピング | x | - |
-| DecSpMappingDir | int | 2 | DEC特殊マッピング方向 | x | - |
+| UnicodeToDecSpMapping | int | 3 | Unicode→DEC特殊文字マッピング | o | TeraTermConfig.unicodeToDecSpMapping |
+| DecSpMappingDir | int | 2 | DEC特殊マッピング方向 | o | TeraTermConfig.decSpMappingDir |
 
 ### Sendfile設定
 
 | INI キー | 型 | デフォルト値 | 説明 | Mac 対応 |
 |---------|---|------------|------|---------|
-| SendfileDelayType | string | "NoDelay" | 送信遅延種別 ("NoDelay"/"PerChar"/"PerLine"/"PerSendSize") | x |
-| SendfileDelayTick | int | 0 | 送信遅延Tick | x |
-| SendfileSize | int | 4096 | 送信サイズ | x |
-| SendfileSequential | on/off | off | 順次送信 | x |
-| SendfileSkipOptionDialog | on/off | off | オプションダイアログスキップ | x |
+| SendfileDelayType | string | "NoDelay" | 送信遅延種別 ("NoDelay"/"PerChar"/"PerLine"/"PerSendSize") | o | TeraTermConfig.sendfileDelayType |
+| SendfileDelayTick | int | 0 | 送信遅延Tick | o | TeraTermConfig.sendfileDelayTick |
+| SendfileSize | int | 4096 | 送信サイズ | o | TeraTermConfig.sendfileSize |
+| SendfileSequential | on/off | off | 順次送信 | o | TeraTermConfig.sendfileSequential |
+| SendfileSkipOptionDialog | on/off | off | オプションダイアログスキップ | o | TeraTermConfig.sendfileSkipOptionDialog |
 
 ### Receivefile設定
 
 | INI キー | 型 | デフォルト値 | 説明 | Mac 対応 |
 |---------|---|------------|------|---------|
-| FileReceiveFilter | string | "" | 受信ファイルフィルタ | x |
-| ReceivefileSkipOptionDialog | on/off | off | オプションダイアログスキップ | x |
-| ReceivefileAutoStopWaitTime | int | 5 | 自動停止待機時間 (秒) | x |
+| FileReceiveFilter | string | "" | 受信ファイルフィルタ | o | TeraTermConfig.fileReceiveFilter |
+| ReceivefileSkipOptionDialog | on/off | off | オプションダイアログスキップ | o | TeraTermConfig.receivefileSkipOptionDialog |
+| ReceivefileAutoStopWaitTime | int | 5 | 自動停止待機時間 (秒) | o | TeraTermConfig.receivefileAutoStopWaitTime |
 
 ### UI言語
 
@@ -542,43 +542,44 @@ SSH 関連設定。オリジナルは TTSSH プラグインが管理するため
 | カテゴリ | オリジナル項目数 | Mac対応数 | 未対応数 |
 |---------|---------------|----------|---------|
 | バージョン・メタ | 2 | 2 | 0 |
-| 端末エミュレーション | 8 | 7 | 1 |
+| 端末エミュレーション | 8 | 8 | 0 |
 | 改行 | 2 | 2 | 0 |
-| 文字コード | 6 | 2 | 4 |
+| 文字コード | 6 | 6 | 0 |
 | ローカルエコー | 1 | 1 | 0 |
 | カーソル | 3 | 3 | 0 |
-| ウィンドウ表示 | 7 | 3 | 4 |
+| ウィンドウ表示 | 7 | 4 | 3 |
 | スクロール | 5 | 5 | 0 |
-| 色設定 | 19 | 16 | 3 |
+| 色設定 | 19 | 19 | 0 |
 | フォント | 14 | 13 | 1 |
-| キーボード | 11 | 6 | 5 |
-| ビープ | 7 | 6 | 1 |
-| 接続 (TCP/IP) | 14 | 6 | 8 |
-| シリアルポート | 18 | 10 | 8 |
-| ログ | 20 | 17 | 3 |
-| ファイル転送 | 16 | 7 | 9 |
-| 制御シーケンス | 20 | 16 | 4 |
-| コピー＆ペースト | 16 | 14 | 2 |
+| キーボード | 11 | 9 | 2 |
+| ビープ | 7 | 7 | 0 |
+| 接続 (TCP/IP) | 14 | 13 | 1 |
+| シリアルポート | 18 | 15 | 3 |
+| ログ | 20 | 19 | 1 |
+| ファイル転送 | 16 | 16 | 0 |
+| XMODEM/YMODEM/ZMODEMタイムアウト | 3 | 3 | 0 |
+| 制御シーケンス | 20 | 20 | 0 |
+| コピー＆ペースト | 16 | 15 | 1 |
 | マウス | 6 | 6 | 0 |
 | 透過度 | 2 | 2 | 0 |
 | ブロードキャスト | 3 | 3 | 0 |
 | デバッグ | 2 | 2 | 0 |
 | URL | 5 | 3 | 2 |
-| Unicode | 5 | 3 | 2 |
+| Unicode | 5 | 5 | 0 |
 | メニュー制御 | 10 | 0 | 10 |
 | プリンタ | 6 | 0 | 6 |
-| Kermit | 3 | 0 | 3 |
-| B-Plus | 3 | 0 | 3 |
-| Quick-VAN | 2 | 0 | 2 |
-| プロトコルログ | 4 | 0 | 4 |
-| その他特殊 | 25 | 8 | 17 |
-| Sendfile/Receivefile | 8 | 0 | 8 |
+| Kermit | 3 | 3 | 0 |
+| B-Plus | 3 | 3 | 0 |
+| Quick-VAN | 2 | 2 | 0 |
+| プロトコルログ | 4 | 4 | 0 |
+| その他特殊 | 25 | 20 | 5 |
+| Sendfile/Receivefile | 8 | 8 | 0 |
 | UI言語 | 1 | 1 | 0 |
 | [BG] テーマ | 6 | 5 | 1 |
 | [TTSSH] SSH | 22 | 22 | 0 |
 | [Proxy] | 5 | 5 | 0 |
 | [Experimental] | 1 | 0 | 1 |
-| **合計** | **約312** | **約196** | **約116** |
+| **合計** | **約312** | **約278** | **約34** |
 
 ### 凡例
 

@@ -308,6 +308,883 @@ final class ConfigPersistenceManagerTests: XCTestCase {
     }
 }
 
+// MARK: - Extended Round-Trip Tests
+
+final class ExtendedConfigRoundTripTests: XCTestCase {
+
+    let mgr = ConfigPersistenceManager()
+
+    /// Helper: modify, encode, decode, and return decoded config.
+    private func roundTrip(_ modify: (inout TeraTermConfig) -> Void) -> TeraTermConfig {
+        var config = TeraTermConfig()
+        modify(&config)
+        let sections = mgr.encode(config)
+        return mgr.decode(sections: sections)
+    }
+
+    // MARK: - Terminal Emulation
+
+    func testTerminalEmulationRoundTrip() {
+        let d = roundTrip { c in
+            c.terminalID = "VT100"
+            c.terminalWidth = 132
+            c.terminalHeight = 48
+            c.termIsWin = true
+            c.autoWinResize = true
+            c.termType = "vt100"
+            c.answerback = "HELLO"
+            c.terminalUID = "AABBCCDD"
+            c.terminalSpeed = "115200"
+        }
+        XCTAssertEqual(d.terminalID, "VT100")
+        XCTAssertEqual(d.terminalWidth, 132)
+        XCTAssertEqual(d.terminalHeight, 48)
+        XCTAssertTrue(d.termIsWin)
+        XCTAssertTrue(d.autoWinResize)
+        XCTAssertEqual(d.termType, "vt100")
+        XCTAssertEqual(d.answerback, "HELLO")
+        XCTAssertEqual(d.terminalUID, "AABBCCDD")
+        XCTAssertEqual(d.terminalSpeed, "115200")
+    }
+
+    // MARK: - New-line & Encoding
+
+    func testNewLineAndEncodingRoundTrip() {
+        let d = roundTrip { c in
+            c.crReceive = 2
+            c.crSend = 1
+            c.encoding = "SJIS"
+            c.sendEncoding = "EUC"
+            c.katakanaReceive = "7"
+            c.katakanaSend = "7"
+            c.kanjiIn = "@"
+            c.kanjiOut = "B"
+        }
+        XCTAssertEqual(d.crReceive, 2)
+        XCTAssertEqual(d.crSend, 1)
+        XCTAssertEqual(d.encoding, "SJIS")
+        XCTAssertEqual(d.sendEncoding, "EUC")
+        XCTAssertEqual(d.katakanaReceive, "7")
+        XCTAssertEqual(d.katakanaSend, "7")
+        XCTAssertEqual(d.kanjiIn, "@")
+        XCTAssertEqual(d.kanjiOut, "B")
+    }
+
+    // MARK: - Cursor & Window
+
+    func testCursorAndWindowRoundTrip() {
+        let d = roundTrip { c in
+            c.cursorShape = 2
+            c.cursorBlink = false
+            c.killFocusCursor = false
+            c.title = "My Terminal"
+            c.titleFormat = 5
+            c.saveVTWinPos = true
+        }
+        XCTAssertEqual(d.cursorShape, 2)
+        XCTAssertFalse(d.cursorBlink)
+        XCTAssertFalse(d.killFocusCursor)
+        XCTAssertEqual(d.title, "My Terminal")
+        XCTAssertEqual(d.titleFormat, 5)
+        XCTAssertTrue(d.saveVTWinPos)
+    }
+
+    // MARK: - Scroll
+
+    func testScrollRoundTrip() {
+        let d = roundTrip { c in
+            c.enableScrollBuffer = false
+            c.scrollBufferSize = 50000
+            c.scrollBufferMax = 1000000
+            c.scrollThreshold = 24
+            c.scrollWindowClearScreen = false
+        }
+        XCTAssertFalse(d.enableScrollBuffer)
+        XCTAssertEqual(d.scrollBufferSize, 50000)
+        XCTAssertEqual(d.scrollBufferMax, 1000000)
+        XCTAssertEqual(d.scrollThreshold, 24)
+        XCTAssertFalse(d.scrollWindowClearScreen)
+    }
+
+    // MARK: - Color
+
+    func testColorRoundTrip() {
+        let d = roundTrip { c in
+            c.vtColor = "0,0,0,255,255,255"
+            c.vtBoldColor = "255,0,0,0,0,0"
+            c.vtBlinkColor = "0,255,0,0,0,0"
+            c.vtReverseColor = "0,0,255,255,255,255"
+            c.vtUnderlineColor = "128,128,128,0,0,0"
+            c.urlColor = "0,128,255,255,255,255"
+            c.tekColor = "255,255,0,0,0,0"
+            c.ansiColor = "0,0,0,1,1,1"
+            c.enableBoldColor = false
+            c.enableBlinkColor = false
+            c.enableReverseColor = true
+            c.enableURLColor = false
+            c.enableANSIColor = false
+            c.pcBoldColor = true
+            c.enableAixtermColors = true
+            c.enableXterm256Colors = false
+            c.useTextColor = true
+            c.useStandardBGColor = true
+            c.tekColorEmulation = true
+        }
+        XCTAssertEqual(d.vtColor, "0,0,0,255,255,255")
+        XCTAssertEqual(d.vtBoldColor, "255,0,0,0,0,0")
+        XCTAssertEqual(d.vtBlinkColor, "0,255,0,0,0,0")
+        XCTAssertEqual(d.vtReverseColor, "0,0,255,255,255,255")
+        XCTAssertEqual(d.vtUnderlineColor, "128,128,128,0,0,0")
+        XCTAssertEqual(d.urlColor, "0,128,255,255,255,255")
+        XCTAssertEqual(d.tekColor, "255,255,0,0,0,0")
+        XCTAssertEqual(d.ansiColor, "0,0,0,1,1,1")
+        XCTAssertFalse(d.enableBoldColor)
+        XCTAssertFalse(d.enableBlinkColor)
+        XCTAssertTrue(d.enableReverseColor)
+        XCTAssertFalse(d.enableURLColor)
+        XCTAssertFalse(d.enableANSIColor)
+        XCTAssertTrue(d.pcBoldColor)
+        XCTAssertTrue(d.enableAixtermColors)
+        XCTAssertFalse(d.enableXterm256Colors)
+        XCTAssertTrue(d.useTextColor)
+        XCTAssertTrue(d.useStandardBGColor)
+        XCTAssertTrue(d.tekColorEmulation)
+    }
+
+    // MARK: - Font
+
+    func testFontRoundTrip() {
+        let d = roundTrip { c in
+            c.fontName = "SF Mono"
+            c.fontSize = 12
+            c.tekFont = "Courier,0,-13,0"
+            c.enableBoldFont = false
+            c.enableURLUnderline = false
+            c.enableUnderlineDecoration = false
+            c.enableUnderlineColor = false
+            c.vtFontSpace = "1,2,3,4"
+            c.fontQuality = "cleartype"
+            c.fontScaling = true
+            c.drawingResizedFont = false
+            c.dialogFont = "Helvetica,12,0"
+            c.drawingAPI = "DirectWrite"
+            c.codePage = 65001
+        }
+        XCTAssertEqual(d.fontName, "SF Mono")
+        XCTAssertEqual(d.fontSize, 12)
+        XCTAssertEqual(d.tekFont, "Courier,0,-13,0")
+        XCTAssertFalse(d.enableBoldFont)
+        XCTAssertFalse(d.enableURLUnderline)
+        XCTAssertFalse(d.enableUnderlineDecoration)
+        XCTAssertFalse(d.enableUnderlineColor)
+        XCTAssertEqual(d.vtFontSpace, "1,2,3,4")
+        XCTAssertEqual(d.fontQuality, "cleartype")
+        XCTAssertTrue(d.fontScaling)
+        XCTAssertFalse(d.drawingResizedFont)
+        XCTAssertEqual(d.dialogFont, "Helvetica,12,0")
+        XCTAssertEqual(d.drawingAPI, "DirectWrite")
+        XCTAssertEqual(d.codePage, 65001)
+    }
+
+    // MARK: - Keyboard
+
+    func testKeyboardRoundTrip() {
+        let d = roundTrip { c in
+            c.bsKey = 127
+            c.deleteKey = 8
+            c.metaKey = 2
+            c.meta8Bit = "raw"
+            c.disableAppKeypad = true
+            c.disableAppCursor = true
+            c.strictKeyMapping = true
+            c.russKeyb = "jcuken"
+            c.cursorChangeIME = true
+        }
+        XCTAssertEqual(d.bsKey, 127)
+        XCTAssertEqual(d.deleteKey, 8)
+        XCTAssertEqual(d.metaKey, 2)
+        XCTAssertEqual(d.meta8Bit, "raw")
+        XCTAssertTrue(d.disableAppKeypad)
+        XCTAssertTrue(d.disableAppCursor)
+        XCTAssertTrue(d.strictKeyMapping)
+        XCTAssertEqual(d.russKeyb, "jcuken")
+        XCTAssertTrue(d.cursorChangeIME)
+    }
+
+    // MARK: - Beep
+
+    func testBeepRoundTrip() {
+        let d = roundTrip { c in
+            c.beep = 2
+            c.beepOnConnect = true
+            c.beepOverUsedCount = 10
+            c.beepOverUsedTime = 5
+            c.beepSuppressTime = 10
+            c.beepVBellWait = 20
+            c.notifySound = false
+        }
+        XCTAssertEqual(d.beep, 2)
+        XCTAssertTrue(d.beepOnConnect)
+        XCTAssertEqual(d.beepOverUsedCount, 10)
+        XCTAssertEqual(d.beepOverUsedTime, 5)
+        XCTAssertEqual(d.beepSuppressTime, 10)
+        XCTAssertEqual(d.beepVBellWait, 20)
+        XCTAssertFalse(d.notifySound)
+    }
+
+    // MARK: - Connection
+
+    func testConnectionRoundTrip() {
+        let d = roundTrip { c in
+            c.telnet = false
+            c.tcpPort = 22
+            c.telPort = 2323
+            c.autoWindowClose = false
+            c.hostHistory = true
+            c.connectingTimeout = 30
+            c.telAutoDetect = false
+            c.telBin = true
+            c.telEcho = true
+            c.tcpKeepAliveInterval = 60
+            c.tcpLocalEcho = true
+            c.tcpCRSend = "CR"
+            c.disableTCPEchoCR = true
+        }
+        XCTAssertFalse(d.telnet)
+        XCTAssertEqual(d.tcpPort, 22)
+        XCTAssertEqual(d.telPort, 2323)
+        XCTAssertFalse(d.autoWindowClose)
+        XCTAssertTrue(d.hostHistory)
+        XCTAssertEqual(d.connectingTimeout, 30)
+        XCTAssertFalse(d.telAutoDetect)
+        XCTAssertTrue(d.telBin)
+        XCTAssertTrue(d.telEcho)
+        XCTAssertEqual(d.tcpKeepAliveInterval, 60)
+        XCTAssertTrue(d.tcpLocalEcho)
+        XCTAssertEqual(d.tcpCRSend, "CR")
+        XCTAssertTrue(d.disableTCPEchoCR)
+    }
+
+    // MARK: - Serial
+
+    func testSerialRoundTrip() {
+        let d = roundTrip { c in
+            c.serialPort = "/dev/cu.usbserial"
+            c.baudRate = 115200
+            c.dataBits = 7
+            c.parity = 1
+            c.stopBits = 2
+            c.flowControl = 2
+            c.serialDelayPerChar = 5
+            c.serialDelayPerLine = 100
+            c.clearComBuffOnOpen = false
+            c.waitCom = true
+            c.autoComPortReconnect = false
+            c.autoComPortReconnectDelayNormal = 1000
+            c.autoComPortReconnectDelayIllegal = 5000
+            c.autoComPortReconnectRetryInterval = 2000
+            c.autoComPortReconnectRetryCount = 5
+        }
+        XCTAssertEqual(d.serialPort, "/dev/cu.usbserial")
+        XCTAssertEqual(d.baudRate, 115200)
+        XCTAssertEqual(d.dataBits, 7)
+        XCTAssertEqual(d.parity, 1)
+        XCTAssertEqual(d.stopBits, 2)
+        XCTAssertEqual(d.flowControl, 2)
+        XCTAssertEqual(d.serialDelayPerChar, 5)
+        XCTAssertEqual(d.serialDelayPerLine, 100)
+        XCTAssertFalse(d.clearComBuffOnOpen)
+        XCTAssertTrue(d.waitCom)
+        XCTAssertFalse(d.autoComPortReconnect)
+        XCTAssertEqual(d.autoComPortReconnectDelayNormal, 1000)
+        XCTAssertEqual(d.autoComPortReconnectDelayIllegal, 5000)
+        XCTAssertEqual(d.autoComPortReconnectRetryInterval, 2000)
+        XCTAssertEqual(d.autoComPortReconnectRetryCount, 5)
+    }
+
+    // MARK: - Log
+
+    func testLogRoundTrip() {
+        let d = roundTrip { c in
+            c.logAutoStart = true
+            c.logDefaultName = "session.log"
+            c.logDefaultPath = "/tmp/logs"
+            c.logTimestamp = true
+            c.logTimestampFormat = "%H:%M:%S"
+            c.logTimestampType = "UTC"
+            c.logPlainText = false
+            c.logBinary = true
+            c.logAppend = true
+            c.logHideDialog = true
+            c.logIncludeScreenBuffer = true
+            c.logRotateEnabled = 1
+            c.logRotateSize = 1048576
+            c.logRotateSizeType = 2
+            c.logRotateStep = 5
+            c.deferredLogWriteMode = false
+            c.logViewEditor = "/usr/bin/vi"
+            c.logEditorArguments = "-R"
+            c.logBOM = true
+        }
+        XCTAssertTrue(d.logAutoStart)
+        XCTAssertEqual(d.logDefaultName, "session.log")
+        XCTAssertEqual(d.logDefaultPath, "/tmp/logs")
+        XCTAssertTrue(d.logTimestamp)
+        XCTAssertEqual(d.logTimestampFormat, "%H:%M:%S")
+        XCTAssertEqual(d.logTimestampType, "UTC")
+        XCTAssertFalse(d.logPlainText)
+        XCTAssertTrue(d.logBinary)
+        XCTAssertTrue(d.logAppend)
+        XCTAssertTrue(d.logHideDialog)
+        XCTAssertTrue(d.logIncludeScreenBuffer)
+        XCTAssertEqual(d.logRotateEnabled, 1)
+        XCTAssertEqual(d.logRotateSize, 1048576)
+        XCTAssertEqual(d.logRotateSizeType, 2)
+        XCTAssertEqual(d.logRotateStep, 5)
+        XCTAssertFalse(d.deferredLogWriteMode)
+        XCTAssertEqual(d.logViewEditor, "/usr/bin/vi")
+        XCTAssertEqual(d.logEditorArguments, "-R")
+        XCTAssertTrue(d.logBOM)
+    }
+
+    // MARK: - File Transfer
+
+    func testFileTransferRoundTrip() {
+        let d = roundTrip { c in
+            c.transBin = true
+            c.xmodemOption = "crc"
+            c.xmodemBin = false
+            c.xModemRcvCommand = "rx"
+            c.yModemRcvCommand = "rb -y"
+            c.zmodemDataLen = 2048
+            c.zmodemWindowSize = 65535
+            c.zModemRcvCommand = "rz -y"
+            c.zmodemAutoReceive = true
+            c.zmodemEscCtl = true
+            c.fileTransferFolder = "/home/user/downloads"
+            c.fileSendFilter = "*.txt"
+            c.scpSendDir = "/remote/dir"
+            c.ftHideDialog = true
+            c.autoFileRename = true
+            c.confirmFileDragAndDrop = false
+        }
+        XCTAssertTrue(d.transBin)
+        XCTAssertEqual(d.xmodemOption, "crc")
+        XCTAssertFalse(d.xmodemBin)
+        XCTAssertEqual(d.xModemRcvCommand, "rx")
+        XCTAssertEqual(d.yModemRcvCommand, "rb -y")
+        XCTAssertEqual(d.zmodemDataLen, 2048)
+        XCTAssertEqual(d.zmodemWindowSize, 65535)
+        XCTAssertEqual(d.zModemRcvCommand, "rz -y")
+        XCTAssertTrue(d.zmodemAutoReceive)
+        XCTAssertTrue(d.zmodemEscCtl)
+        XCTAssertEqual(d.fileTransferFolder, "/home/user/downloads")
+        XCTAssertEqual(d.fileSendFilter, "*.txt")
+        XCTAssertEqual(d.scpSendDir, "/remote/dir")
+        XCTAssertTrue(d.ftHideDialog)
+        XCTAssertTrue(d.autoFileRename)
+        XCTAssertFalse(d.confirmFileDragAndDrop)
+    }
+
+    // MARK: - Control Sequences
+
+    func testControlSequencesRoundTrip() {
+        let d = roundTrip { c in
+            c.accept8BitCtrl = false
+            c.allowWrongSequence = true
+            c.titleChangeRequest = "ahead"
+            c.windowControlSequence = false
+            c.cursorControlSequence = true
+            c.windowInfoReportSequence = false
+            c.titleReportRequest = "accept"
+            c.clipboardAccessFromRemote = "on"
+            c.notifyClipboardAccess = false
+            c.acceptScrollBufferClear = false
+            c.clearOnResize = true
+            c.alternateScreenBuffer = false
+            c.enableStatusLine = false
+            c.enableLineMode = false
+            c.disablePrintSequence = true
+            c.useInvalidDECRQSSResponse = true
+            c.tabStopModifySequence = "off"
+            c.iso2022ShiftFunction = "off"
+            c.maxOSCBufferSize = 8192
+            c.send8BitCtrl = true
+        }
+        XCTAssertFalse(d.accept8BitCtrl)
+        XCTAssertTrue(d.allowWrongSequence)
+        XCTAssertEqual(d.titleChangeRequest, "ahead")
+        XCTAssertFalse(d.windowControlSequence)
+        XCTAssertTrue(d.cursorControlSequence)
+        XCTAssertFalse(d.windowInfoReportSequence)
+        XCTAssertEqual(d.titleReportRequest, "accept")
+        XCTAssertEqual(d.clipboardAccessFromRemote, "on")
+        XCTAssertFalse(d.notifyClipboardAccess)
+        XCTAssertFalse(d.acceptScrollBufferClear)
+        XCTAssertTrue(d.clearOnResize)
+        XCTAssertFalse(d.alternateScreenBuffer)
+        XCTAssertFalse(d.enableStatusLine)
+        XCTAssertFalse(d.enableLineMode)
+        XCTAssertTrue(d.disablePrintSequence)
+        XCTAssertTrue(d.useInvalidDECRQSSResponse)
+        XCTAssertEqual(d.tabStopModifySequence, "off")
+        XCTAssertEqual(d.iso2022ShiftFunction, "off")
+        XCTAssertEqual(d.maxOSCBufferSize, 8192)
+        XCTAssertTrue(d.send8BitCtrl)
+    }
+
+    // MARK: - Copy & Paste
+
+    func testCopyPasteRoundTrip() {
+        let d = roundTrip { c in
+            c.autoTextCopy = false
+            c.continuedLineCopy = false
+            c.leftClickOnlySelection = false
+            c.enableSelectionOnActivate = false
+            c.disableRightClickPaste = true
+            c.disableMiddleClickPaste = false
+            c.confirmRightClickPaste = true
+            c.clipboardConfirmPaste = false
+            c.confirmPasteNewLine = false
+            c.dangerousKeywordFile = "/etc/dangerous.txt"
+            c.trimTrailingNewline = true
+            c.pasteDelay = 50
+            c.delimiterList = "$20$09"
+            c.delimDBCS = false
+            c.mouseSelectStartDelay = 100
+        }
+        XCTAssertFalse(d.autoTextCopy)
+        XCTAssertFalse(d.continuedLineCopy)
+        XCTAssertFalse(d.leftClickOnlySelection)
+        XCTAssertFalse(d.enableSelectionOnActivate)
+        XCTAssertTrue(d.disableRightClickPaste)
+        XCTAssertFalse(d.disableMiddleClickPaste)
+        XCTAssertTrue(d.confirmRightClickPaste)
+        XCTAssertFalse(d.clipboardConfirmPaste)
+        XCTAssertFalse(d.confirmPasteNewLine)
+        XCTAssertEqual(d.dangerousKeywordFile, "/etc/dangerous.txt")
+        XCTAssertTrue(d.trimTrailingNewline)
+        XCTAssertEqual(d.pasteDelay, 50)
+        XCTAssertEqual(d.delimiterList, "$20$09")
+        XCTAssertFalse(d.delimDBCS)
+        XCTAssertEqual(d.mouseSelectStartDelay, 100)
+    }
+
+    // MARK: - Mouse
+
+    func testMouseRoundTrip() {
+        let d = roundTrip { c in
+            c.mouseTracking = false
+            c.mouseWheelScrollLines = 5
+            c.mouseCursorType = "ARROW"
+            c.translateWheelToCursor = false
+            c.disableControlKeyMouseEvent = false
+            c.disableWheelToCursorByCtrl = false
+        }
+        XCTAssertFalse(d.mouseTracking)
+        XCTAssertEqual(d.mouseWheelScrollLines, 5)
+        XCTAssertEqual(d.mouseCursorType, "ARROW")
+        XCTAssertFalse(d.translateWheelToCursor)
+        XCTAssertFalse(d.disableControlKeyMouseEvent)
+        XCTAssertFalse(d.disableWheelToCursorByCtrl)
+    }
+
+    // MARK: - Window Opacity & Broadcast
+
+    func testOpacityAndBroadcastRoundTrip() {
+        let d = roundTrip { c in
+            c.windowOpacityInactive = 200
+            c.windowOpacityActive = 230
+            c.broadcastHistory = true
+            c.acceptBroadcast = false
+            c.maxBroadcastHistory = 50
+        }
+        XCTAssertEqual(d.windowOpacityInactive, 200)
+        XCTAssertEqual(d.windowOpacityActive, 230)
+        XCTAssertTrue(d.broadcastHistory)
+        XCTAssertFalse(d.acceptBroadcast)
+        XCTAssertEqual(d.maxBroadcastHistory, 50)
+    }
+
+    // MARK: - Debug & URL & Unicode
+
+    func testDebugURLUnicodeRoundTrip() {
+        let d = roundTrip { c in
+            c.debugCharInfoPopup = true
+            c.debugModes = "hex"
+            c.enableClickableUrl = true
+            c.joinSplitURL = true
+            c.joinSplitURLIgnoreEOLChar = "/"
+            c.unicodeAmbiguousWidth = 2
+            c.unicodeEmojiOverride = true
+            c.unicodeEmojiWidth = 2
+            c.unicodeToDecSpMapping = 1
+            c.decSpMappingDir = 0
+        }
+        XCTAssertTrue(d.debugCharInfoPopup)
+        XCTAssertEqual(d.debugModes, "hex")
+        XCTAssertTrue(d.enableClickableUrl)
+        XCTAssertTrue(d.joinSplitURL)
+        XCTAssertEqual(d.joinSplitURLIgnoreEOLChar, "/")
+        XCTAssertEqual(d.unicodeAmbiguousWidth, 2)
+        XCTAssertTrue(d.unicodeEmojiOverride)
+        XCTAssertEqual(d.unicodeEmojiWidth, 2)
+        XCTAssertEqual(d.unicodeToDecSpMapping, 1)
+        XCTAssertEqual(d.decSpMappingDir, 0)
+    }
+
+    // MARK: - Sendfile & Receivefile
+
+    func testSendfileReceivefileRoundTrip() {
+        let d = roundTrip { c in
+            c.sendfileDelayType = "PerChar"
+            c.sendfileDelayTick = 100
+            c.sendfileSize = 8192
+            c.sendfileSequential = true
+            c.sendfileSkipOptionDialog = true
+            c.fileReceiveFilter = "*.bin"
+            c.receivefileSkipOptionDialog = true
+            c.receivefileAutoStopWaitTime = 10
+        }
+        XCTAssertEqual(d.sendfileDelayType, "PerChar")
+        XCTAssertEqual(d.sendfileDelayTick, 100)
+        XCTAssertEqual(d.sendfileSize, 8192)
+        XCTAssertTrue(d.sendfileSequential)
+        XCTAssertTrue(d.sendfileSkipOptionDialog)
+        XCTAssertEqual(d.fileReceiveFilter, "*.bin")
+        XCTAssertTrue(d.receivefileSkipOptionDialog)
+        XCTAssertEqual(d.receivefileAutoStopWaitTime, 10)
+    }
+
+    // MARK: - Protocol Logs & Legacy Protocols
+
+    func testProtocolLogsRoundTrip() {
+        let d = roundTrip { c in
+            c.telLog = true
+            c.xmodemLog = true
+            c.ymodemLog = true
+            c.zmodemLog = true
+            c.kmtLog = true
+            c.kmtLongPacket = true
+            c.kmtFileAttr = true
+            c.bpAuto = true
+            c.bpEscCtl = true
+            c.bpLog = true
+            c.qvLog = true
+            c.qvWinSize = 16
+        }
+        XCTAssertTrue(d.telLog)
+        XCTAssertTrue(d.xmodemLog)
+        XCTAssertTrue(d.ymodemLog)
+        XCTAssertTrue(d.zmodemLog)
+        XCTAssertTrue(d.kmtLog)
+        XCTAssertTrue(d.kmtLongPacket)
+        XCTAssertTrue(d.kmtFileAttr)
+        XCTAssertTrue(d.bpAuto)
+        XCTAssertTrue(d.bpEscCtl)
+        XCTAssertTrue(d.bpLog)
+        XCTAssertTrue(d.qvLog)
+        XCTAssertEqual(d.qvWinSize, 16)
+    }
+
+    // MARK: - Other Special Options
+
+    func testSpecialOptionsRoundTrip() {
+        let d = roundTrip { c in
+            c.autoWinSwitch = true
+            c.ctrlInKanji = false
+            c.fixedJIS = true
+            c.backWrap = true
+            c.autoInvoke = true
+            c.confirmOnDisconnect = false
+            c.vtCompatTab = true
+            c.tekIcon = "Custom"
+            c.tekGINMouseCode = 64
+            c.sendBreakTime = 500
+            c.wait4allMacroCommand = true
+            c.clearScreenOnCloseConnection = true
+            c.fileSendHighSpeedMode = false
+            c.fallbackToCP932 = true
+            c.startupMacro = "startup.ttl"
+            c.autoScrollOnlyInBottomLine = true
+            c.lockTUID = false
+            c.cornerRounding = true
+            c.iniAutoBackup = false
+            c.bracketedPasteMode = false
+            c.bracketedControlOnly = true
+            c.port = "serial"
+            c.language = "ja"
+        }
+        XCTAssertTrue(d.autoWinSwitch)
+        XCTAssertFalse(d.ctrlInKanji)
+        XCTAssertTrue(d.fixedJIS)
+        XCTAssertTrue(d.backWrap)
+        XCTAssertTrue(d.autoInvoke)
+        XCTAssertFalse(d.confirmOnDisconnect)
+        XCTAssertTrue(d.vtCompatTab)
+        XCTAssertEqual(d.tekIcon, "Custom")
+        XCTAssertEqual(d.tekGINMouseCode, 64)
+        XCTAssertEqual(d.sendBreakTime, 500)
+        XCTAssertTrue(d.wait4allMacroCommand)
+        XCTAssertTrue(d.clearScreenOnCloseConnection)
+        XCTAssertFalse(d.fileSendHighSpeedMode)
+        XCTAssertTrue(d.fallbackToCP932)
+        XCTAssertEqual(d.startupMacro, "startup.ttl")
+        XCTAssertTrue(d.autoScrollOnlyInBottomLine)
+        XCTAssertFalse(d.lockTUID)
+        XCTAssertTrue(d.cornerRounding)
+        XCTAssertFalse(d.iniAutoBackup)
+        XCTAssertFalse(d.bracketedPasteMode)
+        XCTAssertTrue(d.bracketedControlOnly)
+        XCTAssertEqual(d.port, "serial")
+        XCTAssertEqual(d.language, "ja")
+    }
+
+    // MARK: - Timeouts
+
+    func testTimeoutsRoundTrip() {
+        let d = roundTrip { c in
+            c.xmodemTimeouts = "15,5,15,30,90"
+            c.ymodemTimeouts = "15,5,15,30,90"
+            c.zmodemTimeouts = "15,0,15,5"
+        }
+        XCTAssertEqual(d.xmodemTimeouts, "15,5,15,30,90")
+        XCTAssertEqual(d.ymodemTimeouts, "15,5,15,30,90")
+        XCTAssertEqual(d.zmodemTimeouts, "15,0,15,5")
+    }
+
+    // MARK: - TEK
+
+    func testTEKRoundTrip() {
+        let d = roundTrip { c in
+            c.tekPos = "100,200"
+            c.tekPPI = "96,96"
+        }
+        XCTAssertEqual(d.tekPos, "100,200")
+        XCTAssertEqual(d.tekPPI, "96,96")
+    }
+
+    // MARK: - [BG] Section
+
+    func testBGSectionRoundTrip() {
+        let d = roundTrip { c in
+            c.bgEnable = 1
+            c.bgThemeFile = "/path/to/theme.ini"
+            c.bgSPIPath = "/path/to/spi"
+            c.bgFastSizeMove = 1
+            c.bgNoFrame = 1
+        }
+        XCTAssertEqual(d.bgEnable, 1)
+        XCTAssertEqual(d.bgThemeFile, "/path/to/theme.ini")
+        XCTAssertEqual(d.bgSPIPath, "/path/to/spi")
+        XCTAssertEqual(d.bgFastSizeMove, 1)
+        XCTAssertEqual(d.bgNoFrame, 1)
+    }
+
+    // MARK: - [TTSSH] Section
+
+    func testTTSSHSectionRoundTrip() {
+        let d = roundTrip { c in
+            c.sshVersion = 2
+            c.sshDefaultAuthMethod = 3
+            c.sshDefaultUserName = "testuser"
+            c.sshDefaultUserNameMode = 1
+            c.sshDefaultForwarding = "L8080:localhost:80"
+            c.sshHeartBeat = 30
+            c.sshForwardAgent = true
+            c.sshConfirmForwardAgent = false
+            c.sshNotifyForwardAgent = true
+            c.sshVerifyHostKeyDNS = true
+            c.sshKnownHostsFile = "~/.ssh/known_hosts"
+            c.sshKnownHostsReadOnlyFile = "/etc/ssh/known_hosts"
+            c.sshHostKeyRotation = 1
+            c.sshLogLevel = 3
+            c.sshCompressionLevel = 6
+            c.sshXForwarding = true
+            c.sshCheckAuthBeforeLogin = true
+            c.sshCipherOrder = "aes256-ctr,aes128-ctr"
+            c.sshKexOrder = "curve25519-sha256"
+            c.sshHostKeyOrder = "ssh-ed25519,rsa-sha2-512"
+            c.sshMACOrder = "hmac-sha2-256"
+            c.sshCompOrder = "zlib@openssh.com,none"
+        }
+        XCTAssertEqual(d.sshVersion, 2)
+        XCTAssertEqual(d.sshDefaultAuthMethod, 3)
+        XCTAssertEqual(d.sshDefaultUserName, "testuser")
+        XCTAssertEqual(d.sshDefaultUserNameMode, 1)
+        XCTAssertEqual(d.sshDefaultForwarding, "L8080:localhost:80")
+        XCTAssertEqual(d.sshHeartBeat, 30)
+        XCTAssertTrue(d.sshForwardAgent)
+        XCTAssertFalse(d.sshConfirmForwardAgent)
+        XCTAssertTrue(d.sshNotifyForwardAgent)
+        XCTAssertTrue(d.sshVerifyHostKeyDNS)
+        XCTAssertEqual(d.sshKnownHostsFile, "~/.ssh/known_hosts")
+        XCTAssertEqual(d.sshKnownHostsReadOnlyFile, "/etc/ssh/known_hosts")
+        XCTAssertEqual(d.sshHostKeyRotation, 1)
+        XCTAssertEqual(d.sshLogLevel, 3)
+        XCTAssertEqual(d.sshCompressionLevel, 6)
+        XCTAssertTrue(d.sshXForwarding)
+        XCTAssertTrue(d.sshCheckAuthBeforeLogin)
+        XCTAssertEqual(d.sshCipherOrder, "aes256-ctr,aes128-ctr")
+        XCTAssertEqual(d.sshKexOrder, "curve25519-sha256")
+        XCTAssertEqual(d.sshHostKeyOrder, "ssh-ed25519,rsa-sha2-512")
+        XCTAssertEqual(d.sshMACOrder, "hmac-sha2-256")
+        XCTAssertEqual(d.sshCompOrder, "zlib@openssh.com,none")
+    }
+
+    // MARK: - [Proxy] Section
+
+    func testProxySectionRoundTrip() {
+        let d = roundTrip { c in
+            c.proxyType = 1
+            c.proxyHost = "proxy.example.com"
+            c.proxyPort = 8080
+            c.proxyUser = "proxyuser"
+            c.proxyPass = "proxypass123"
+        }
+        XCTAssertEqual(d.proxyType, 1)
+        XCTAssertEqual(d.proxyHost, "proxy.example.com")
+        XCTAssertEqual(d.proxyPort, 8080)
+        XCTAssertEqual(d.proxyUser, "proxyuser")
+        XCTAssertEqual(d.proxyPass, "proxypass123")
+    }
+
+    // MARK: - Default Values
+
+    func testDefaultValues() {
+        let c = TeraTermConfig()
+
+        // Terminal
+        XCTAssertEqual(c.terminalID, "VT220")
+        XCTAssertEqual(c.terminalWidth, 80)
+        XCTAssertEqual(c.terminalHeight, 24)
+        XCTAssertFalse(c.termIsWin)
+        XCTAssertFalse(c.autoWinResize)
+        XCTAssertEqual(c.termType, "xterm")
+        XCTAssertEqual(c.terminalSpeed, "38400")
+
+        // Encoding
+        XCTAssertEqual(c.encoding, "UTF-8")
+        XCTAssertEqual(c.katakanaReceive, "8")
+
+        // Cursor
+        XCTAssertEqual(c.cursorShape, 0)
+        XCTAssertTrue(c.cursorBlink)
+
+        // Scroll
+        XCTAssertTrue(c.enableScrollBuffer)
+        XCTAssertEqual(c.scrollBufferSize, 10000)
+        XCTAssertEqual(c.scrollBufferMax, 500000)
+
+        // Color
+        XCTAssertTrue(c.enableBoldColor)
+        XCTAssertTrue(c.enableANSIColor)
+        XCTAssertTrue(c.enableXterm256Colors)
+        XCTAssertFalse(c.enableAixtermColors)
+
+        // Font
+        XCTAssertEqual(c.fontName, "Menlo")
+        XCTAssertEqual(c.fontSize, 14)
+        XCTAssertTrue(c.enableBoldFont)
+
+        // Keyboard
+        XCTAssertFalse(c.disableAppKeypad)
+        XCTAssertFalse(c.disableAppCursor)
+
+        // Beep
+        XCTAssertEqual(c.beep, 1)
+        XCTAssertFalse(c.beepOnConnect)
+        XCTAssertTrue(c.notifySound)
+
+        // Connection
+        XCTAssertTrue(c.telnet)
+        XCTAssertEqual(c.tcpPort, 23)
+        XCTAssertTrue(c.autoWindowClose)
+        XCTAssertEqual(c.tcpKeepAliveInterval, 300)
+
+        // Log
+        XCTAssertFalse(c.logAutoStart)
+        XCTAssertTrue(c.logPlainText)
+        XCTAssertEqual(c.logViewEditor, "open")
+
+        // Copy & Paste
+        XCTAssertTrue(c.autoTextCopy)
+        XCTAssertTrue(c.continuedLineCopy)
+        XCTAssertTrue(c.clipboardConfirmPaste)
+        XCTAssertEqual(c.pasteDelay, 5)
+
+        // Mouse
+        XCTAssertTrue(c.mouseTracking)
+        XCTAssertEqual(c.mouseWheelScrollLines, 3)
+
+        // SSH
+        XCTAssertEqual(c.sshVersion, 2)
+        XCTAssertEqual(c.sshHeartBeat, 60)
+        XCTAssertFalse(c.sshForwardAgent)
+
+        // Proxy
+        XCTAssertEqual(c.proxyType, 0)
+
+        // Misc
+        XCTAssertTrue(c.confirmOnDisconnect)
+        XCTAssertTrue(c.bracketedPasteMode)
+        XCTAssertFalse(c.bracketedControlOnly)
+    }
+
+    // MARK: - PrinterCtrlSequence Inversion
+
+    func testPrinterCtrlSequenceInversion() {
+        // PrinterCtrlSequence=on means disablePrintSequence=false
+        let d1 = roundTrip { c in
+            c.disablePrintSequence = false
+        }
+        XCTAssertFalse(d1.disablePrintSequence)
+
+        // PrinterCtrlSequence=off means disablePrintSequence=true
+        let d2 = roundTrip { c in
+            c.disablePrintSequence = true
+        }
+        XCTAssertTrue(d2.disablePrintSequence)
+    }
+
+    // MARK: - Full Encode Contains All Sections
+
+    func testEncodeContainsAllSections() {
+        let config = TeraTermConfig()
+        let sections = mgr.encode(config)
+        let sectionNames = sections.map { $0.name }
+
+        XCTAssertTrue(sectionNames.contains("Tera Term"))
+        XCTAssertTrue(sectionNames.contains("TCP/IP"))
+        XCTAssertTrue(sectionNames.contains("Serial"))
+        XCTAssertTrue(sectionNames.contains("BG"))
+        XCTAssertTrue(sectionNames.contains("TTSSH"))
+        XCTAssertTrue(sectionNames.contains("Proxy"))
+    }
+
+    // MARK: - INI Text Round-Trip
+
+    func testSerializeDeserializeFullConfig() {
+        var config = TeraTermConfig()
+        config.sshVersion = 2
+        config.sshDefaultUserName = "admin"
+        config.proxyHost = "proxy.local"
+        config.bgEnable = 1
+        config.bgThemeFile = "ocean.ini"
+
+        let sections = mgr.encode(config)
+        let text = INISerializer.serialize(sections, lineEnding: .lf)
+        let (parsed, _) = INISerializer.parse(text)
+        let decoded = mgr.decode(sections: parsed)
+
+        XCTAssertEqual(decoded.sshVersion, 2)
+        XCTAssertEqual(decoded.sshDefaultUserName, "admin")
+        XCTAssertEqual(decoded.proxyHost, "proxy.local")
+        XCTAssertEqual(decoded.bgEnable, 1)
+        XCTAssertEqual(decoded.bgThemeFile, "ocean.ini")
+    }
+}
+
 // MARK: - Testable Subclass
 
 /// Overrides the directory to a temp location for isolated testing.
