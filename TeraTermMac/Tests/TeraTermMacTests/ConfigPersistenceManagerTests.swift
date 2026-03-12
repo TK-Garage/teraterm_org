@@ -308,6 +308,289 @@ final class ConfigPersistenceManagerTests: XCTestCase {
     }
 }
 
+// MARK: - Unknown / Invalid Key Filtering Tests
+
+final class UnknownKeyFilteringTests: XCTestCase {
+
+    let mgr = ConfigPersistenceManager()
+
+    // MARK: - Unknown keys from original Tera Term (Windows) are skipped
+
+    func testFilterRemovesUnknownKeysFromMainSection() {
+        let ini = """
+        [Tera Term]
+        Version=5.6
+        FontName=Menlo
+        VTFont=,0,-13,128
+        CygwinDirectory=C:\\cygwin
+        ClickableUrlBrowser=1
+        FontSize=14
+        """
+        let (sections, _) = INISerializer.parse(ini)
+        let (filtered, skipped) = mgr.filterUnknownKeys(sections)
+
+        // Known keys preserved
+        XCTAssertEqual(INISerializer.getValue(from: filtered, section: "Tera Term", key: "Version"), "5.6")
+        XCTAssertEqual(INISerializer.getValue(from: filtered, section: "Tera Term", key: "FontName"), "Menlo")
+        XCTAssertEqual(INISerializer.getValue(from: filtered, section: "Tera Term", key: "FontSize"), "14")
+
+        // Unknown keys removed
+        XCTAssertNil(INISerializer.getValue(from: filtered, section: "Tera Term", key: "VTFont"))
+        XCTAssertNil(INISerializer.getValue(from: filtered, section: "Tera Term", key: "CygwinDirectory"))
+        XCTAssertNil(INISerializer.getValue(from: filtered, section: "Tera Term", key: "ClickableUrlBrowser"))
+
+        // Skipped entries reported
+        XCTAssertEqual(skipped.count, 3)
+        XCTAssertTrue(skipped.contains(where: { $0.key == "VTFont" }))
+        XCTAssertTrue(skipped.contains(where: { $0.key == "CygwinDirectory" }))
+        XCTAssertTrue(skipped.contains(where: { $0.key == "ClickableUrlBrowser" }))
+    }
+
+    func testFilterRemovesUnknownKeysFromTTSSHSection() {
+        let ini = """
+        [TTSSH]
+        SSHVersion=2
+        DefaultUserName=admin
+        WindowsSpecificSSHKey=rsa2048
+        AgentAuth=on
+        """
+        let (sections, _) = INISerializer.parse(ini)
+        let (filtered, skipped) = mgr.filterUnknownKeys(sections)
+
+        XCTAssertEqual(INISerializer.getValue(from: filtered, section: "TTSSH", key: "SSHVersion"), "2")
+        XCTAssertEqual(INISerializer.getValue(from: filtered, section: "TTSSH", key: "DefaultUserName"), "admin")
+        XCTAssertNil(INISerializer.getValue(from: filtered, section: "TTSSH", key: "WindowsSpecificSSHKey"))
+        XCTAssertNil(INISerializer.getValue(from: filtered, section: "TTSSH", key: "AgentAuth"))
+        XCTAssertEqual(skipped.count, 2)
+    }
+
+    func testFilterSkipsEntireUnknownSection() {
+        let ini = """
+        [Tera Term]
+        Version=5.6
+        FontName=Menlo
+
+        [CygTerm]
+        CygwinDirectory=C:\\cygwin
+        LoginShell=/bin/bash
+        """
+        let (sections, _) = INISerializer.parse(ini)
+        let (filtered, skipped) = mgr.filterUnknownKeys(sections)
+
+        // Known section preserved
+        XCTAssertEqual(INISerializer.getValue(from: filtered, section: "Tera Term", key: "FontName"), "Menlo")
+
+        // Unknown section's keys are in skipped list
+        XCTAssertEqual(skipped.count, 2)
+        XCTAssertTrue(skipped.allSatisfy { $0.section == "CygTerm" })
+    }
+
+    // MARK: - Valid keys pass through unchanged
+
+    func testFilterPreservesAllKnownKeys() {
+        let config = TeraTermConfig()
+        let sections = mgr.encode(config)
+        let (filtered, skipped) = mgr.filterUnknownKeys(sections)
+
+        // No keys should be skipped for our own encoded output
+        XCTAssertEqual(skipped.count, 0)
+
+        // Total pair counts should match
+        let originalCount = sections.flatMap { $0.pairs }.count
+        let filteredCount = filtered.flatMap { $0.pairs }.count
+        XCTAssertEqual(originalCount, filteredCount)
+    }
+
+    // MARK: - Mixed known and unknown keys
+
+    func testFilterMixedKeysPreservesOrder() {
+        let ini = """
+        [Tera Term]
+        Version=5.6
+        UnknownKey1=foo
+        FontName=Menlo
+        UnknownKey2=bar
+        FontSize=14
+        UnknownKey3=baz
+        """
+        let (sections, _) = INISerializer.parse(ini)
+        let (filtered, skipped) = mgr.filterUnknownKeys(sections)
+
+        let pairs = filtered[0].pairs
+        XCTAssertEqual(pairs.count, 3)
+        XCTAssertEqual(pairs[0].key, "Version")
+        XCTAssertEqual(pairs[1].key, "FontName")
+        XCTAssertEqual(pairs[2].key, "FontSize")
+        XCTAssertEqual(skipped.count, 3)
+    }
+
+    // MARK: - Case insensitive key matching
+
+    func testFilterIsCaseInsensitive() {
+        let ini = """
+        [Tera Term]
+        version=5.6
+        FONTNAME=Menlo
+        fontSize=14
+        """
+        let (sections, _) = INISerializer.parse(ini)
+        let (filtered, skipped) = mgr.filterUnknownKeys(sections)
+
+        XCTAssertEqual(filtered[0].pairs.count, 3)
+        XCTAssertEqual(skipped.count, 0)
+    }
+
+    // MARK: - Invalid values for integer fields are handled gracefully
+
+    func testDecodeSkipsInvalidIntegerValues() {
+        let ini = """
+        [Tera Term]
+        Version=5.6
+        TerminalWidth=abc
+        TerminalHeight=24
+        FontSize=not_a_number
+        Beep=3
+        """
+        let (sections, _) = INISerializer.parse(ini)
+        let config = mgr.decode(sections: sections)
+
+        // Invalid integer values fall back to defaults
+        XCTAssertEqual(config.terminalWidth, 80)   // default, "abc" skipped
+        XCTAssertEqual(config.terminalHeight, 24)   // valid
+        XCTAssertEqual(config.fontSize, 14)         // default, "not_a_number" skipped
+        XCTAssertEqual(config.beep, 3)              // valid
+    }
+
+    // MARK: - Full original Tera Term INI with Windows-specific keys
+
+    func testLoadOriginalTeraTermINISkipsWindowsOnlyKeys() {
+        let ini = """
+        [Tera Term]
+        Version=5.6
+        FontName=Terminal
+        FontSize=12
+        VTFont=Terminal,0,-13,128,1,0,0,0,0,0,0,0,0,128
+        FontCharSet=128
+        RussFont=,0,-13,0,0,0,0,0,0,0,0,0,0,0
+        DlgFont=,0,-13,0
+        CygwinDirectory=C:\\cygwin64
+        Locale=japanese
+        CodePage=65001
+        WindowMenu=on
+        ClickableUrlBrowser=1
+        TerminalWidth=80
+
+        [TCP/IP]
+        HostName=192.168.1.1
+        TCPPort=22
+        HistoryList=ssh://host1:22,host2:23
+        Telnet=off
+
+        [TTSSH]
+        SSHVersion=2
+        DefaultUserName=root
+        AuthBanner=on
+        Subsystem=sftp
+        """
+        let (rawSections, _) = INISerializer.parse(ini)
+        let (filtered, skipped) = mgr.filterUnknownKeys(rawSections)
+
+        // Windows-only keys skipped
+        XCTAssertTrue(skipped.contains(where: { $0.key == "VTFont" }))
+        XCTAssertTrue(skipped.contains(where: { $0.key == "FontCharSet" }))
+        XCTAssertTrue(skipped.contains(where: { $0.key == "RussFont" }))
+        XCTAssertTrue(skipped.contains(where: { $0.key == "CygwinDirectory" }))
+        XCTAssertTrue(skipped.contains(where: { $0.key == "Locale" }))
+        XCTAssertTrue(skipped.contains(where: { $0.key == "CodePage" }))
+        XCTAssertTrue(skipped.contains(where: { $0.key == "WindowMenu" }))
+        XCTAssertTrue(skipped.contains(where: { $0.key == "ClickableUrlBrowser" }))
+        XCTAssertTrue(skipped.contains(where: { $0.key == "AuthBanner" }))
+        XCTAssertTrue(skipped.contains(where: { $0.key == "Subsystem" }))
+
+        // Known keys decoded correctly
+        let config = mgr.decode(sections: filtered)
+        XCTAssertEqual(config.fontName, "Terminal")
+        XCTAssertEqual(config.fontSize, 12)
+        XCTAssertEqual(config.terminalWidth, 80)
+        XCTAssertEqual(config.hostName, "192.168.1.1")
+        XCTAssertEqual(config.tcpPort, 22)
+        XCTAssertEqual(config.sshVersion, 2)
+        XCTAssertEqual(config.sshDefaultUserName, "root")
+    }
+
+    // MARK: - TCP/IP HistoryList (Windows-only key in TCP/IP section)
+
+    func testFilterTCPIPUnknownKeys() {
+        let ini = """
+        [TCP/IP]
+        HostName=server.local
+        TCPPort=22
+        HistoryList=host1,host2,host3
+        """
+        let (sections, _) = INISerializer.parse(ini)
+        let (filtered, skipped) = mgr.filterUnknownKeys(sections)
+
+        XCTAssertEqual(INISerializer.getValue(from: filtered, section: "TCP/IP", key: "HostName"), "server.local")
+        XCTAssertEqual(INISerializer.getValue(from: filtered, section: "TCP/IP", key: "TCPPort"), "22")
+        // HistoryList is not a known key in TCP/IP section
+        XCTAssertNil(INISerializer.getValue(from: filtered, section: "TCP/IP", key: "HistoryList"))
+        XCTAssertEqual(skipped.count, 1)
+    }
+
+    // MARK: - Empty INI
+
+    func testFilterEmptyINI() {
+        let ini = ""
+        let (sections, _) = INISerializer.parse(ini)
+        let (filtered, skipped) = mgr.filterUnknownKeys(sections)
+        XCTAssertEqual(filtered.count, 0)
+        XCTAssertEqual(skipped.count, 0)
+    }
+
+    // MARK: - File I/O with unknown keys
+
+    func testLoadConfigWithUnknownKeysSkipsThem() {
+        let testDir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("UnknownKeyTest-\(UUID().uuidString)")
+        let mgr = TestableConfigManagerForFilter(directory: testDir)
+        defer { try? FileManager.default.removeItem(at: testDir) }
+
+        try! mgr.ensureDirectory()
+
+        // Write an INI with mixed known + unknown keys
+        let ini = """
+        [Tera Term]
+        Version=5.6
+        FontName=Monaco
+        FontSize=16
+        VTFont=Terminal,0,-13,128
+        CygwinDirectory=C:\\cygwin
+        TerminalWidth=100
+
+        [TCP/IP]
+        HostName=test.host
+        TCPPort=2222
+        """
+        try! ini.write(to: mgr.iniFileURL, atomically: true, encoding: .utf8)
+
+        let config = mgr.loadConfig()
+
+        // Known keys loaded correctly
+        XCTAssertEqual(config.fontName, "Monaco")
+        XCTAssertEqual(config.fontSize, 16)
+        XCTAssertEqual(config.terminalWidth, 100)
+        XCTAssertEqual(config.hostName, "test.host")
+        XCTAssertEqual(config.tcpPort, 2222)
+    }
+}
+
+/// Testable subclass for unknown-key filtering tests.
+private class TestableConfigManagerForFilter: ConfigPersistenceManager {
+    private let _dir: URL
+    init(directory: URL) { _dir = directory }
+    override var appSupportDirectory: URL { _dir }
+}
+
 // MARK: - Extended Round-Trip Tests
 
 final class ExtendedConfigRoundTripTests: XCTestCase {

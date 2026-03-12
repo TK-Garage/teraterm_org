@@ -473,7 +473,16 @@ final class ConfigPersistenceManager {
             return config
         }
 
-        let (sections, _) = INISerializer.parse(text)
+        let (rawSections, _) = INISerializer.parse(text)
+
+        // Filter out unknown / unsupported keys from original Tera Term INI.
+        // Each unrecognised line is silently skipped and parsing continues
+        // with the next line.
+        let (sections, skipped) = filterUnknownKeys(rawSections)
+        for entry in skipped {
+            print("ConfigPersistenceManager: Skipping unknown key " +
+                  "[\(entry.section)] \(entry.key)=\(entry.value)")
+        }
 
         // Version check
         let fileVersion = INISerializer.getValue(
@@ -583,6 +592,217 @@ final class ConfigPersistenceManager {
     // MARK: - Helpers
 
     private func onOff(_ b: Bool) -> String { b ? "on" : "off" }
+
+    // MARK: - Known Keys Registry
+
+    /// Set of known INI key names per section (case-insensitive comparison).
+    /// Keys not in this registry are from the original Windows Tera Term
+    /// or are otherwise unsupported, and will be silently skipped.
+    static let knownKeys: [String: Set<String>] = {
+        var map: [String: Set<String>] = [:]
+
+        map["Tera Term"] = [
+            "Version", "Port",
+            // Terminal Emulation
+            "TerminalID", "TerminalWidth", "TerminalHeight",
+            "TermIsWin", "AutoWinResize", "TermType", "Answerback",
+            "TerminalUID", "TerminalSpeed",
+            // New-line
+            "CRReceive", "CRSend",
+            // Character Encoding
+            "Encoding", "KanjiSend", "KatakanaReceive", "KatakanaSend",
+            "KanjiIn", "KanjiOut",
+            // Local Echo
+            "LocalEcho",
+            // Cursor
+            "CursorShape", "CursorBlink", "KillFocusCursor",
+            // Window Display
+            "Title", "TitleFormat", "SaveVTWinPos",
+            // Scroll
+            "EnableScrollBuffer", "ScrollBuffSize", "MaxBuffSize",
+            "ScrollThreshold", "ScrollWindowClearScreen",
+            // Color
+            "VTColor", "VTBoldColor", "VTBlinkColor", "VTReverseColor",
+            "VTUnderlineColor", "URLColor", "TEKColor", "ANSIColor",
+            "EnableBoldAttrColor", "EnableBlinkAttrColor",
+            "EnableReverseAttrColor", "EnableURLColor", "EnableANSIColor",
+            "PcBoldColor", "Aixterm16Color", "Xterm256Color",
+            "UseTextColor", "UseNormalBGColor", "TEKColorEmulation",
+            // Font
+            "FontName", "FontSize", "TEKFont", "EnableBold",
+            "URLUnderline", "UnderlineAttrFont", "UnderlineAttrColor",
+            "VTFontSpace", "FontQuality", "FontScaling",
+            "DrawingResizedFont", "DlgFont", "VTDrawAPI", "VTDrawACP",
+            // Keyboard
+            "BSKey", "DeleteKey", "MetaKey", "Meta8Bit",
+            "DisableAppKeypad", "DisableAppCursor", "StrictKeyMapping",
+            "RussKeyb", "IMERelatedCursor",
+            // Beep
+            "Beep", "BeepOnConnect", "BeepOverUsedCount",
+            "BeepOverUsedTime", "BeepSuppressTime", "BeepVBellWait",
+            "NotifySound",
+            // Connection
+            "Telnet", "TCPPort", "TelPort", "AutoWinClose",
+            "HistoryList", "ConnectingTimeout", "TelAutoDetect",
+            "TelBin", "TelEcho", "TelKeepAliveInterval",
+            "TCPLocalEcho", "TCPCRSend", "DisableTCPEchoCR",
+            // Serial
+            "DelayPerChar", "DelayPerLine", "ClearComBuffOnOpen",
+            "WaitCom", "AutoComPortReconnect",
+            "AutoComPortReconnectDelayNormal",
+            "AutoComPortReconnectDelayIllegal",
+            "AutoComPortReconnectRetryInterval",
+            "AutoComPortReconnectRetryCount",
+            // Log
+            "LogAutoStart", "LogDefaultName", "LogDefaultPath",
+            "LogTimestamp", "LogTimestampFormat", "LogTimestampType",
+            "LogTypePlainText", "LogBinary", "LogAppend",
+            "LogHideDialog", "LogIncludeScreenBuffer",
+            "LogRotate", "LogRotateSize", "LogRotateSizeType",
+            "LogRotateStep", "DeferredLogWriteMode",
+            "ViewlogEditor", "ViewlogEditorArg", "LogBOM",
+            // File Transfer
+            "TransBin", "XmodemOpt", "XmodemBin",
+            "XModemRcvCommand", "YModemRcvCommand",
+            "ZmodemDataLen", "ZmodemWinSize", "ZModemRcvCommand",
+            "ZmodemAuto", "ZmodemEscCtl",
+            "FileDir", "FileSendFilter", "ScpSendDir",
+            "FTHideDialog", "AutoFileRename", "ConfirmFileDragAndDrop",
+            // Timeouts
+            "XmodemTimeouts", "YmodemTimeouts", "ZmodemTimeouts",
+            // Control Sequences
+            "Accept8BitCtrl", "AllowWrongSequence",
+            "AcceptTitleChangeRequest", "WindowCtrlSequence",
+            "CursorCtrlSequence", "WindowReportSequence",
+            "TitleReportSequence", "ClipboardAccessFromRemote",
+            "NotifyClipboardAccess", "ClearScrollBufferFromRemote",
+            "ClearOnResize", "AlternateScreenBuffer",
+            "EnableStatusLine", "EnableLineMode",
+            "PrinterCtrlSequence", "UseInvalidDECRQSSResponse",
+            "TabStopModifySequence", "ISO2022ShiftFunction",
+            "MaxOSCBufferSize", "Send8BitCtrl",
+            // Copy & Paste
+            "AutoTextCopy", "EnableContinuedLineCopy",
+            "SelectOnlyByLButton", "SelectOnActivate",
+            "DisablePasteMouseRButton", "DisablePasteMouseMButton",
+            "ConfirmPasteMouseRButton", "ConfirmChangePaste",
+            "ConfirmChangePasteCR", "ConfirmChangePasteStringFile",
+            "TrimTrailingNLonPaste", "PasteDelayPerLine",
+            "DelimList", "DelimDBCS", "MouseSelectStartDelay",
+            // Mouse
+            "MouseEventTracking", "MouseWheelScrollLine", "MouseCursor",
+            "TranslateWheelToCursor", "DisableMouseTrackingByCtrl",
+            "DisableWheelToCursorByCtrl",
+            // Window Opacity
+            "AlphaBlend", "AlphaBlendActive",
+            // Broadcast
+            "BroadcastCommandHistory", "AcceptBroadcast",
+            "MaxBroadcatHistory",
+            // Debug
+            "Debug", "DebugModes",
+            // URL
+            "EnableClickableUrl", "JoinSplitURL",
+            "JoinSplitURLIgnoreEOLChar",
+            // Unicode
+            "UnicodeAmbiguousWidth", "UnicodeEmojiOverride",
+            "UnicodeEmojiWidth", "UnicodeToDecSpMapping",
+            "DecSpMappingDir",
+            // Sendfile
+            "SendfileDelayType", "SendfileDelayTick", "SendfileSize",
+            "SendfileSequential", "SendfileSkipOptionDialog",
+            // Receivefile
+            "FileReceiveFilter", "ReceivefileSkipOptionDialog",
+            "ReceivefileAutoStopWaitTime",
+            // UI Language
+            "UILanguageFile",
+            // Protocol Logs
+            "TelLog", "XmodemLog", "YmodemLog", "ZmodemLog",
+            // Kermit
+            "KmtLog", "KmtLongPacket", "KmtFileAttr",
+            // B-Plus
+            "BPAuto", "BPEscCtl", "BPLog",
+            // Quick-VAN
+            "QVLog", "QVWinSize",
+            // Other Special Options
+            "AutoWinSwitch", "CtrlInKanji", "FixedJIS", "BackWrap",
+            "AutoInvoke", "ConfirmDisconnect", "VTCompatTab",
+            "TEKIcon", "TEKGINMouseCode", "SendBreakTime",
+            "Wait4allMacroCommand", "ClearScreenOnCloseConnection",
+            "FileSendHighSpeedMode", "FallbackToCP932",
+            "StartupMacro", "AutoScrollOnlyInBottomLine",
+            "LockTUID", "WindowCornerDontround", "IniAutoBackup",
+            "BracketedSupport", "BracketedControlOnly", "AutoWrap",
+            // TEK
+            "TEKPos", "TEKPPI",
+        ]
+
+        map["TCP/IP"] = [
+            "HostName", "TCPPort", "Telnet", "PortType",
+        ]
+
+        map["Serial"] = [
+            "SerialPort", "BaudRate", "DataBits", "Parity",
+            "StopBits", "FlowControl",
+        ]
+
+        map["BG"] = [
+            "BGEnable", "BGThemeFile", "BGSPIPath",
+            "BGFastSizeMove", "BGNoFrame",
+        ]
+
+        map["TTSSH"] = [
+            "SSHVersion", "DefaultAuthMethod", "DefaultUserName",
+            "DefaultUserNameMode", "DefaultForwarding",
+            "HeartBeat", "ForwardAgent", "ConfirmForwardAgent",
+            "NotifyForwardAgent", "VerifyHostKeyDNS",
+            "KnownHostsFile", "KnownHostsReadOnlyFile",
+            "HostKeyRotation", "LogLevel", "CompressionLevel",
+            "XForwarding", "CheckAuthBeforeLogin",
+            "CipherOrder", "KexOrder", "HostKeyOrder",
+            "MACOrder", "CompOrder",
+        ]
+
+        map["Proxy"] = [
+            "ProxyType", "ProxyHost", "ProxyPort",
+            "ProxyUser", "ProxyPass",
+        ]
+
+        return map
+    }()
+
+    // MARK: - Unknown / Invalid Key Filtering
+
+    /// Filter parsed INI sections, removing keys that are not in the
+    /// known-keys registry.  Returns the filtered sections and a list
+    /// of skipped entries for diagnostics.
+    func filterUnknownKeys(
+        _ sections: [INISerializer.Section]
+    ) -> (filtered: [INISerializer.Section], skipped: [(section: String, key: String, value: String)]) {
+        var filtered: [INISerializer.Section] = []
+        var skipped: [(section: String, key: String, value: String)] = []
+
+        for section in sections {
+            let knownSet = Self.knownKeys[section.name]
+            var validPairs: [(key: String, value: String)] = []
+
+            for pair in section.pairs {
+                if let known = knownSet,
+                   known.contains(where: { $0.caseInsensitiveCompare(pair.key) == .orderedSame }) {
+                    validPairs.append(pair)
+                } else if knownSet == nil {
+                    // Unknown section entirely – skip all its keys
+                    skipped.append((section: section.name, key: pair.key, value: pair.value))
+                } else {
+                    // Known section but unknown key
+                    skipped.append((section: section.name, key: pair.key, value: pair.value))
+                }
+            }
+
+            filtered.append(.init(name: section.name, pairs: validPairs))
+        }
+
+        return (filtered, skipped)
+    }
 
     // MARK: - Encode
 
