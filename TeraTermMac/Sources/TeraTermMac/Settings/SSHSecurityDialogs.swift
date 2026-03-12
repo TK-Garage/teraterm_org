@@ -89,40 +89,36 @@ final class DifferentKeyDialog {
         alert.informativeText = String(format: TTL("dialog.security.differentKey.message"),
                                        hostname, keyType)
 
-        let container = NSView(frame: NSRect(x: 0, y: 0, width: 440, height: 120))
-
         let storedLabel = NSView.makeLabel(TTL("dialog.security.storedFingerprint"), alignment: .left)
         let storedField = NSView.makeTextField(value: storedFingerprint)
         storedField.isEditable = false
         storedField.font = NSFont.monospacedSystemFont(ofSize: 11, weight: .regular)
+        storedField.setContentCompressionResistancePriority(.required, for: .horizontal)
 
         let newLabel = NSView.makeLabel(TTL("dialog.security.newFingerprint"), alignment: .left)
         let newField = NSView.makeTextField(value: newFingerprint)
         newField.isEditable = false
         newField.font = NSFont.monospacedSystemFont(ofSize: 11, weight: .regular)
         newField.textColor = .systemRed
+        newField.setContentCompressionResistancePriority(.required, for: .horizontal)
 
         let warningLabel = NSView.makeLabel(TTL("dialog.security.differentKey.warning"), alignment: .left)
         warningLabel.textColor = .systemRed
         warningLabel.font = NSFont.boldSystemFont(ofSize: 12)
+        warningLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
 
         let stack = NSStackView(views: [storedLabel, storedField, newLabel, newField, warningLabel])
         stack.translatesAutoresizingMaskIntoConstraints = false
         stack.orientation = .vertical
         stack.alignment = .leading
         stack.spacing = 4
-        container.addSubview(stack)
 
-        NSLayoutConstraint.activate([
-            stack.topAnchor.constraint(equalTo: container.topAnchor),
-            stack.leadingAnchor.constraint(equalTo: container.leadingAnchor),
-            stack.trailingAnchor.constraint(equalTo: container.trailingAnchor),
-            stack.bottomAnchor.constraint(equalTo: container.bottomAnchor),
-            storedField.widthAnchor.constraint(equalTo: stack.widthAnchor),
-            newField.widthAnchor.constraint(equalTo: stack.widthAnchor),
-        ])
+        // Let the stack size itself via intrinsic content
+        stack.widthAnchor.constraint(greaterThanOrEqualToConstant: 440).isActive = true
+        storedField.widthAnchor.constraint(equalTo: stack.widthAnchor).isActive = true
+        newField.widthAnchor.constraint(equalTo: stack.widthAnchor).isActive = true
 
-        alert.accessoryView = container
+        alert.accessoryView = stack
         alert.addButton(withTitle: TTL("dialog.security.accept"))
         alert.addButton(withTitle: TTL("dialog.security.acceptOnce"))
         alert.addButton(withTitle: TTL("dialog.security.reject"))
@@ -259,30 +255,26 @@ final class SSHFPDialog {
 // MARK: - Helper
 
 private func makeFingerPrintView(keyType: String, fingerprint: String) -> NSView {
-    let container = NSView(frame: NSRect(x: 0, y: 0, width: 400, height: 60))
-
     let typeLabel = NSView.makeLabel(
         String(format: TTL("dialog.security.keyType"), keyType), alignment: .left)
+    typeLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
+
     let fpLabel = NSView.makeLabel(
         String(format: TTL("dialog.security.fingerprint"), fingerprint), alignment: .left)
     fpLabel.font = NSFont.monospacedSystemFont(ofSize: 11, weight: .regular)
     fpLabel.lineBreakMode = .byCharWrapping
+    fpLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
 
     let stack = NSStackView(views: [typeLabel, fpLabel])
     stack.translatesAutoresizingMaskIntoConstraints = false
     stack.orientation = .vertical
     stack.alignment = .leading
     stack.spacing = 4
-    container.addSubview(stack)
 
-    NSLayoutConstraint.activate([
-        stack.topAnchor.constraint(equalTo: container.topAnchor),
-        stack.leadingAnchor.constraint(equalTo: container.leadingAnchor),
-        stack.trailingAnchor.constraint(equalTo: container.trailingAnchor),
-        stack.bottomAnchor.constraint(equalTo: container.bottomAnchor),
-    ])
+    // Allow auto-expansion for longer localized strings
+    stack.widthAnchor.constraint(greaterThanOrEqualToConstant: 400).isActive = true
 
-    return container
+    return stack
 }
 
 #endif

@@ -257,16 +257,11 @@ class TerminalLogger {
 
 #if canImport(AppKit)
 
-private func LL(_ key: String) -> String {
-    #if SWIFT_PACKAGE
-    return NSLocalizedString(key, bundle: Bundle.module, comment: "")
-    #else
-    return NSLocalizedString(key, bundle: Bundle.main, comment: "")
-    #endif
-}
-
 /// Floating panel that shows log recording status, similar to the original
 /// Tera Term log dialog (IDD_FOPT_LOGDLG / IDD_LOGDLG).
+///
+/// Uses Auto Layout throughout — the panel sizes itself to fit its content
+/// and expands automatically if localized labels are longer.
 final class LogProgressPanel: NSPanel {
 
     private var filenameField: NSTextField = NSTextField(labelWithString: "")
@@ -274,7 +269,7 @@ final class LogProgressPanel: NSPanel {
     private var bytesField: NSTextField = NSTextField(labelWithString: "0")
     private var elapsedField: NSTextField = NSTextField(labelWithString: "0:00")
     private var stateField: NSTextField = NSTextField(labelWithString: "")
-    private var pauseButton: NSButton = NSButton(title: "Pause", target: nil, action: nil)
+    private var pauseButton: NSButton!
 
     private var startTime: Date = Date()
     private var updateTimer: Timer?
@@ -288,15 +283,17 @@ final class LogProgressPanel: NSPanel {
     override var isVisible: Bool { isKeyWindow || isMainWindow || super.isVisible }
 
     convenience init(logger: TerminalLogger) {
-        self.init(
-            contentRect: NSRect(x: 0, y: 0, width: 380, height: 210),
-            styleMask: [.titled, .closable, .utilityWindow],
-            backing: .buffered, defer: false)
+        // Build the content view controller so the panel sizes to content
+        let vc = NSViewController()
+        vc.view = NSView()
+        vc.view.translatesAutoresizingMaskIntoConstraints = false
 
-        title = LL("dialog.logProgress.title")
-        isFloatingPanel = true
-        becomesKeyOnlyIfNeeded = true
-        isReleasedWhenClosed = false
+        self.init(contentViewController: vc)
+        self.styleMask = [.titled, .closable, .utilityWindow]
+        self.title = TTL("dialog.logProgress.title")
+        self.isFloatingPanel = true
+        self.becomesKeyOnlyIfNeeded = true
+        self.isReleasedWhenClosed = false
 
         observedLogger = logger
         buildUI()
@@ -319,13 +316,13 @@ final class LogProgressPanel: NSPanel {
 
         switch logger.state {
         case .active:
-            stateField.stringValue = LL("dialog.logProgress.stateActive")
+            stateField.stringValue = TTL("dialog.logProgress.stateActive")
             stateField.textColor = .systemGreen
-            pauseButton.title = LL("dialog.logProgress.pause")
+            pauseButton.title = TTL("dialog.logProgress.pause")
         case .paused:
-            stateField.stringValue = LL("dialog.logProgress.statePaused")
+            stateField.stringValue = TTL("dialog.logProgress.statePaused")
             stateField.textColor = .systemOrange
-            pauseButton.title = LL("dialog.logProgress.resume")
+            pauseButton.title = TTL("dialog.logProgress.resume")
         case .inactive:
             stateField.stringValue = "—"
             stateField.textColor = .secondaryLabelColor
@@ -334,37 +331,42 @@ final class LogProgressPanel: NSPanel {
 
     private func buildUI() {
         let cv = contentView!
-        let pad: CGFloat = 16
+        let pad: CGFloat = DialogLayout.margin
 
-        // Grid labels
-        let fnTitle = NSTextField(labelWithString: LL("dialog.logProgress.filename"))
+        // Grid labels — all use TTL() for localization
+        let fnTitle = NSView.makeLabel(TTL("dialog.logProgress.filename"), alignment: .right)
         fnTitle.font = NSFont.systemFont(ofSize: NSFont.smallSystemFontSize)
+        fnTitle.setContentCompressionResistancePriority(.required, for: .horizontal)
         let fnField = NSTextField(labelWithString: "")
         fnField.lineBreakMode = .byTruncatingMiddle
         fnField.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
         filenameField = fnField
 
-        let fpTitle = NSTextField(labelWithString: LL("dialog.logProgress.fullpath"))
+        let fpTitle = NSView.makeLabel(TTL("dialog.logProgress.fullpath"), alignment: .right)
         fpTitle.font = NSFont.systemFont(ofSize: NSFont.smallSystemFontSize)
+        fpTitle.setContentCompressionResistancePriority(.required, for: .horizontal)
         let fpField = NSTextField(labelWithString: "")
         fpField.lineBreakMode = .byTruncatingMiddle
         fpField.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
         fullpathField = fpField
 
-        let btTitle = NSTextField(labelWithString: LL("dialog.logProgress.bytesLogged"))
+        let btTitle = NSView.makeLabel(TTL("dialog.logProgress.bytesLogged"), alignment: .right)
         btTitle.font = NSFont.systemFont(ofSize: NSFont.smallSystemFontSize)
+        btTitle.setContentCompressionResistancePriority(.required, for: .horizontal)
         let btField = NSTextField(labelWithString: "0")
         btField.alignment = .right
         bytesField = btField
 
-        let etTitle = NSTextField(labelWithString: LL("dialog.logProgress.elapsed"))
+        let etTitle = NSView.makeLabel(TTL("dialog.logProgress.elapsed"), alignment: .right)
         etTitle.font = NSFont.systemFont(ofSize: NSFont.smallSystemFontSize)
+        etTitle.setContentCompressionResistancePriority(.required, for: .horizontal)
         let etField = NSTextField(labelWithString: "0:00")
         etField.alignment = .right
         elapsedField = etField
 
-        let stTitle = NSTextField(labelWithString: LL("dialog.logProgress.state"))
+        let stTitle = NSView.makeLabel(TTL("dialog.logProgress.state"), alignment: .right)
         stTitle.font = NSFont.systemFont(ofSize: NSFont.smallSystemFontSize)
+        stTitle.setContentCompressionResistancePriority(.required, for: .horizontal)
         let stField = NSTextField(labelWithString: "")
         stField.font = NSFont.boldSystemFont(ofSize: NSFont.systemFontSize)
         stateField = stField
@@ -380,33 +382,39 @@ final class LogProgressPanel: NSPanel {
         grid.column(at: 0).xPlacement = .trailing
         grid.column(at: 1).xPlacement = .leading
         grid.rowSpacing = 6
-        grid.columnSpacing = 8
+        grid.columnSpacing = DialogLayout.labelTrailing
+        for i in 0..<grid.numberOfRows {
+            grid.row(at: i).rowAlignment = .firstBaseline
+        }
         cv.addSubview(grid)
 
         // Buttons: [Pause] [Comment] [Close]
-        let pBtn = NSButton(title: LL("dialog.logProgress.pause"),
-                            target: self, action: #selector(pauseAction))
-        pBtn.bezelStyle = .rounded
+        let pBtn = NSView.makePushButton(TTL("dialog.logProgress.pause"))
+        pBtn.target = self
+        pBtn.action = #selector(pauseAction)
         pauseButton = pBtn
 
-        let cBtn = NSButton(title: LL("dialog.logProgress.comment"),
-                            target: self, action: #selector(commentAction))
-        cBtn.bezelStyle = .rounded
+        let cBtn = NSView.makePushButton(TTL("dialog.logProgress.comment"))
+        cBtn.target = self
+        cBtn.action = #selector(commentAction)
 
-        let clBtn = NSButton(title: LL("dialog.logProgress.close"),
-                             target: self, action: #selector(closeAction))
-        clBtn.bezelStyle = .rounded
+        let clBtn = NSView.makePushButton(TTL("dialog.logProgress.close"))
+        clBtn.target = self
+        clBtn.action = #selector(closeAction)
 
         let buttonRow = NSStackView(views: [pBtn, cBtn, clBtn])
         buttonRow.translatesAutoresizingMaskIntoConstraints = false
         buttonRow.orientation = .horizontal
-        buttonRow.spacing = 8
+        buttonRow.spacing = DialogLayout.buttonSpacing
         cv.addSubview(buttonRow)
 
         NSLayoutConstraint.activate([
             grid.topAnchor.constraint(equalTo: cv.topAnchor, constant: pad),
             grid.leadingAnchor.constraint(equalTo: cv.leadingAnchor, constant: pad),
             grid.trailingAnchor.constraint(equalTo: cv.trailingAnchor, constant: -pad),
+
+            // Ensure minimum width for the value column
+            grid.widthAnchor.constraint(greaterThanOrEqualToConstant: 340),
 
             buttonRow.topAnchor.constraint(equalTo: grid.bottomAnchor, constant: pad),
             buttonRow.centerXAnchor.constraint(equalTo: cv.centerXAnchor),

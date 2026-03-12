@@ -362,11 +362,15 @@ final class SCPProgressWindowController: NSWindowController {
         self.isSend = send
         self.totalBytes = fileSize
 
-        // Create window (200x130 to match original proportions)
-        let contentRect = NSRect(x: 0, y: 0, width: 380, height: 160)
-        let style: NSWindow.StyleMask = [.titled, .closable, .miniaturizable]
-        let window = NSWindow(contentRect: contentRect, styleMask: style,
-                              backing: .buffered, defer: false)
+        // Content-driven window — builds Auto Layout content, then wraps
+        let container = NSView()
+        container.translatesAutoresizingMaskIntoConstraints = false
+        container.widthAnchor.constraint(greaterThanOrEqualToConstant: 380).isActive = true
+
+        let vc = NSViewController()
+        vc.view = container
+        let window = NSWindow(contentViewController: vc)
+        window.styleMask = [.titled, .closable, .miniaturizable]
         window.title = send
             ? TTL("dialog.scp.progress.title.send")
             : TTL("dialog.scp.progress.title.receive")
@@ -383,46 +387,43 @@ final class SCPProgressWindowController: NSWindowController {
     private func setupUI(filename: String) {
         guard let contentView = window?.contentView else { return }
 
-        let margin: CGFloat = 16
-        let labelWidth: CGFloat = 100
+        let margin = DialogLayout.margin
 
-        // Filename row
-        let fnLabel = NSTextField(labelWithString: TTL("dialog.scp.progress.filename"))
-        fnLabel.translatesAutoresizingMaskIntoConstraints = false
-        fnLabel.font = NSFont.systemFont(ofSize: 13)
-        fnLabel.setContentHuggingPriority(.required, for: .horizontal)
-        contentView.addSubview(fnLabel)
-
+        // Use NSGridView for label-value alignment
+        let fnLabel = NSView.makeLabel(TTL("dialog.scp.progress.filename"), alignment: .right)
+        fnLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
         filenameField = NSTextField(labelWithString: filename)
         filenameField.translatesAutoresizingMaskIntoConstraints = false
         filenameField.font = NSFont.systemFont(ofSize: 13)
         filenameField.lineBreakMode = .byTruncatingMiddle
         filenameField.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
-        contentView.addSubview(filenameField)
 
-        // Bytes row
-        let bytesLabel = NSTextField(labelWithString: TTL("dialog.scp.progress.bytes"))
-        bytesLabel.translatesAutoresizingMaskIntoConstraints = false
-        bytesLabel.font = NSFont.systemFont(ofSize: 13)
-        bytesLabel.setContentHuggingPriority(.required, for: .horizontal)
-        contentView.addSubview(bytesLabel)
-
+        let bytesLabel = NSView.makeLabel(TTL("dialog.scp.progress.bytes"), alignment: .right)
+        bytesLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
         bytesField = NSTextField(labelWithString: "0")
         bytesField.translatesAutoresizingMaskIntoConstraints = false
         bytesField.font = NSFont.monospacedDigitSystemFont(ofSize: 13, weight: .regular)
-        contentView.addSubview(bytesField)
 
-        // Time row
-        let timeLabel = NSTextField(labelWithString: TTL("dialog.scp.progress.time"))
-        timeLabel.translatesAutoresizingMaskIntoConstraints = false
-        timeLabel.font = NSFont.systemFont(ofSize: 13)
-        timeLabel.setContentHuggingPriority(.required, for: .horizontal)
-        contentView.addSubview(timeLabel)
-
+        let timeLabel = NSView.makeLabel(TTL("dialog.scp.progress.time"), alignment: .right)
+        timeLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
         timeField = NSTextField(labelWithString: "0:00")
         timeField.translatesAutoresizingMaskIntoConstraints = false
         timeField.font = NSFont.monospacedDigitSystemFont(ofSize: 13, weight: .regular)
-        contentView.addSubview(timeField)
+
+        let grid = NSGridView(views: [
+            [fnLabel, filenameField],
+            [bytesLabel, bytesField],
+            [timeLabel, timeField],
+        ])
+        grid.translatesAutoresizingMaskIntoConstraints = false
+        grid.column(at: 0).xPlacement = .trailing
+        grid.column(at: 1).xPlacement = .fill
+        grid.rowSpacing = 6
+        grid.columnSpacing = DialogLayout.labelTrailing
+        for i in 0..<grid.numberOfRows {
+            grid.row(at: i).rowAlignment = .firstBaseline
+        }
+        contentView.addSubview(grid)
 
         // Progress bar
         progressBar = NSProgressIndicator()
@@ -441,49 +442,22 @@ final class SCPProgressWindowController: NSWindowController {
         contentView.addSubview(progressBar)
 
         // Cancel button
-        let cancelButton = NSButton(title: TTL("Cancel"), target: self,
-                                    action: #selector(cancelTransfer(_:)))
-        cancelButton.translatesAutoresizingMaskIntoConstraints = false
-        cancelButton.bezelStyle = .rounded
-        cancelButton.keyEquivalent = "\u{1b}"  // Escape
+        let cancelButton = NSView.makePushButton(TTL("Cancel"), keyEquivalent: "\u{1b}")
+        cancelButton.target = self
+        cancelButton.action = #selector(cancelTransfer(_:))
         contentView.addSubview(cancelButton)
 
-        let rowSpacing: CGFloat = 6
-
         NSLayoutConstraint.activate([
-            // Filename row
-            fnLabel.topAnchor.constraint(equalTo: contentView.topAnchor, constant: margin),
-            fnLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: margin),
-            fnLabel.widthAnchor.constraint(equalToConstant: labelWidth),
-            filenameField.centerYAnchor.constraint(equalTo: fnLabel.centerYAnchor),
-            filenameField.leadingAnchor.constraint(equalTo: fnLabel.trailingAnchor, constant: 4),
-            filenameField.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -margin),
+            grid.topAnchor.constraint(equalTo: contentView.topAnchor, constant: margin),
+            grid.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: margin),
+            grid.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -margin),
 
-            // Bytes row
-            bytesLabel.topAnchor.constraint(equalTo: fnLabel.bottomAnchor, constant: rowSpacing),
-            bytesLabel.leadingAnchor.constraint(equalTo: fnLabel.leadingAnchor),
-            bytesLabel.widthAnchor.constraint(equalToConstant: labelWidth),
-            bytesField.centerYAnchor.constraint(equalTo: bytesLabel.centerYAnchor),
-            bytesField.leadingAnchor.constraint(equalTo: bytesLabel.trailingAnchor, constant: 4),
-            bytesField.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -margin),
-
-            // Time row
-            timeLabel.topAnchor.constraint(equalTo: bytesLabel.bottomAnchor, constant: rowSpacing),
-            timeLabel.leadingAnchor.constraint(equalTo: fnLabel.leadingAnchor),
-            timeLabel.widthAnchor.constraint(equalToConstant: labelWidth),
-            timeField.centerYAnchor.constraint(equalTo: timeLabel.centerYAnchor),
-            timeField.leadingAnchor.constraint(equalTo: timeLabel.trailingAnchor, constant: 4),
-            timeField.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -margin),
-
-            // Progress bar
-            progressBar.topAnchor.constraint(equalTo: timeLabel.bottomAnchor, constant: rowSpacing + 4),
+            progressBar.topAnchor.constraint(equalTo: grid.bottomAnchor, constant: 10),
             progressBar.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: margin),
             progressBar.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -margin),
 
-            // Cancel button
             cancelButton.topAnchor.constraint(equalTo: progressBar.bottomAnchor, constant: 12),
             cancelButton.centerXAnchor.constraint(equalTo: contentView.centerXAnchor),
-            cancelButton.widthAnchor.constraint(greaterThanOrEqualToConstant: 80),
             cancelButton.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -margin),
         ])
     }

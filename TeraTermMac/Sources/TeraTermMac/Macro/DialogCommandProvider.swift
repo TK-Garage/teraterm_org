@@ -139,11 +139,11 @@ class DialogCommandProvider {
 
             let inputField: NSTextField
             if isPassword {
-                inputField = NSSecureTextField(frame: NSRect(x: 0, y: 0, width: 300, height: 24))
+                inputField = NSView.makeSecureTextField(placeholder: "", width: nil)
             } else {
-                inputField = NSTextField(frame: NSRect(x: 0, y: 0, width: 300, height: 24))
-                inputField.stringValue = defaultValue
+                inputField = NSView.makeTextField(value: defaultValue)
             }
+            inputField.widthAnchor.constraint(greaterThanOrEqualToConstant: 300).isActive = true
             alert.accessoryView = inputField
             alert.window.initialFirstResponder = inputField
 
@@ -173,14 +173,14 @@ class DialogCommandProvider {
             alert.addButton(withTitle: NSLocalizedString("dialog.macro.cancel", value: "Cancel", comment: ""))
 
             // Build table view inside scroll view
-            let scrollView = NSScrollView(frame: NSRect(x: 0, y: 0, width: 300, height: 200))
+            let scrollView = NSScrollView()
+            scrollView.translatesAutoresizingMaskIntoConstraints = false
             scrollView.hasVerticalScroller = true
             scrollView.borderType = .bezelBorder
 
-            let tableView = NSTableView(frame: scrollView.bounds)
+            let tableView = NSTableView()
             let column = NSTableColumn(identifier: NSUserInterfaceItemIdentifier("item"))
             column.title = ""
-            column.width = 280
             tableView.addTableColumn(column)
             tableView.headerView = nil
             tableView.allowsMultipleSelection = false
@@ -196,6 +196,10 @@ class DialogCommandProvider {
             }
 
             scrollView.documentView = tableView
+            NSLayoutConstraint.activate([
+                scrollView.widthAnchor.constraint(greaterThanOrEqualToConstant: 300),
+                scrollView.heightAnchor.constraint(greaterThanOrEqualToConstant: 200),
+            ])
             alert.accessoryView = scrollView
 
             self?.runAlert(alert) { response in
@@ -227,16 +231,9 @@ class DialogCommandProvider {
                 return
             }
 
-            // Create new floating panel
-            let panel = NSPanel(
-                contentRect: NSRect(x: 0, y: 0, width: 360, height: 120),
-                styleMask: [.titled, .closable, .utilityWindow],
-                backing: .buffered,
-                defer: false
-            )
-            panel.title = title
-            panel.level = .floating
-            panel.isReleasedWhenClosed = false
+            // Create new floating panel with Auto Layout content
+            let container = NSView()
+            container.translatesAutoresizingMaskIntoConstraints = false
 
             let label = NSTextField(wrappingLabelWithString: message)
             label.translatesAutoresizingMaskIntoConstraints = false
@@ -244,14 +241,26 @@ class DialogCommandProvider {
             label.isSelectable = false
             label.alignment = .center
             label.font = NSFont.systemFont(ofSize: 13)
+            label.setContentCompressionResistancePriority(.required, for: .horizontal)
+            container.addSubview(label)
 
-            let contentView = panel.contentView!
-            contentView.addSubview(label)
+            let m = DialogLayout.margin
             NSLayoutConstraint.activate([
-                label.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
-                label.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20),
-                label.centerYAnchor.constraint(equalTo: contentView.centerYAnchor),
+                label.topAnchor.constraint(equalTo: container.topAnchor, constant: m),
+                label.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: m),
+                label.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -m),
+                label.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -m),
+                container.widthAnchor.constraint(greaterThanOrEqualToConstant: 360),
+                container.heightAnchor.constraint(greaterThanOrEqualToConstant: 80),
             ])
+
+            let vc = NSViewController()
+            vc.view = container
+            let panel = NSPanel(contentViewController: vc)
+            panel.styleMask = [.titled, .closable, .utilityWindow]
+            panel.title = title
+            panel.level = .floating
+            panel.isReleasedWhenClosed = false
 
             self.statusPanel = panel
             self.statusLabel = label
@@ -381,20 +390,10 @@ class DialogCommandProvider {
             completion(response)
 
         case .floatingPanel:
-            // Create a floating panel that wraps the alert
-            let panel = NSPanel(
-                contentRect: NSRect(x: 0, y: 0, width: 400, height: 200),
-                styleMask: [.titled, .closable, .utilityWindow],
-                backing: .buffered,
-                defer: false
-            )
-            panel.level = .floating
-            panel.isReleasedWhenClosed = false
-            applyPosition(to: panel)
             // For floating mode, still use modal as the macro is paused
             applyPositionToAlert(alert)
+            alert.window.level = .floating
             let response = alert.runModal()
-            panel.close()
             completion(response)
         }
     }

@@ -529,9 +529,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         alert.addButton(withTitle: L("dialog.logComment.ok"))
         alert.addButton(withTitle: L("dialog.logComment.cancel"))
 
-        let textField = NSTextField(frame: NSRect(x: 0, y: 0, width: 300, height: 24))
-        textField.placeholderString = L("dialog.logComment.placeholder")
+        let textField = NSView.makeTextField(value: "", placeholder: L("dialog.logComment.placeholder"))
         textField.font = NSFont.monospacedSystemFont(ofSize: 13, weight: .regular)
+        textField.widthAnchor.constraint(greaterThanOrEqualToConstant: 300).isActive = true
         alert.accessoryView = textField
         alert.window.initialFirstResponder = textField
 
@@ -759,28 +759,31 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         alert.messageText = L("dialog.pasteSpecial.title")
         alert.informativeText = L("dialog.pasteSpecial.message")
 
-        let accessoryView = NSView(frame: NSRect(x: 0, y: 0, width: 300, height: 80))
-
-        let textView = NSTextView(frame: NSRect(x: 0, y: 0, width: 300, height: 80))
+        let textView = NSTextView()
         textView.isEditable = true
         textView.isRichText = false
         textView.font = NSFont.monospacedSystemFont(ofSize: 12, weight: .regular)
-        textView.isVerticallyResizable = false
+        textView.isVerticallyResizable = true
         textView.isHorizontallyResizable = false
         textView.textContainer?.widthTracksTextView = true
 
-        let scrollView = NSScrollView(frame: NSRect(x: 0, y: 0, width: 300, height: 80))
+        let scrollView = NSScrollView()
+        scrollView.translatesAutoresizingMaskIntoConstraints = false
         scrollView.documentView = textView
         scrollView.hasVerticalScroller = true
         scrollView.borderType = .bezelBorder
-        accessoryView.addSubview(scrollView)
+
+        NSLayoutConstraint.activate([
+            scrollView.widthAnchor.constraint(greaterThanOrEqualToConstant: 300),
+            scrollView.heightAnchor.constraint(greaterThanOrEqualToConstant: 80),
+        ])
 
         // Pre-fill from clipboard
         if let clipText = NSPasteboard.general.string(forType: .string) {
             textView.string = clipText
         }
 
-        alert.accessoryView = accessoryView
+        alert.accessoryView = scrollView
         alert.addButton(withTitle: L("dialog.pasteSpecial.send"))
         alert.addButton(withTitle: L("Cancel"))
 
@@ -1088,18 +1091,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
     }
 
     private func showBroadcastPanel() {
-        let panel = NSPanel(
-            contentRect: NSRect(x: 0, y: 0, width: 420, height: 90),
-            styleMask: [.titled, .closable, .utilityWindow, .nonactivatingPanel],
-            backing: .buffered,
-            defer: false)
-        panel.title = L("menu.control.broadcast")
-        panel.isFloatingPanel = true
-        panel.becomesKeyOnlyIfNeeded = true
-        panel.isReleasedWhenClosed = false
-
         let contentView = NSView()
         contentView.translatesAutoresizingMaskIntoConstraints = false
+        contentView.widthAnchor.constraint(greaterThanOrEqualToConstant: 400).isActive = true
 
         let label = NSTextField(labelWithString: L("dialog.broadcast.label"))
         label.translatesAutoresizingMaskIntoConstraints = false
@@ -1147,7 +1141,15 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
             inputRow.widthAnchor.constraint(equalTo: vStack.widthAnchor),
         ])
 
-        panel.contentView = contentView
+        // Content-driven panel sizing
+        let vc = NSViewController()
+        vc.view = contentView
+        let panel = NSPanel(contentViewController: vc)
+        panel.styleMask = [.titled, .closable, .utilityWindow, .nonactivatingPanel]
+        panel.title = L("menu.control.broadcast")
+        panel.isFloatingPanel = true
+        panel.becomesKeyOnlyIfNeeded = true
+        panel.isReleasedWhenClosed = false
         panel.center()
         panel.makeKeyAndOrderFront(nil)
         broadcastPanel = panel

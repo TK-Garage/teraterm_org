@@ -99,29 +99,24 @@ final class MacroStatusPanelController {
     // MARK: - Panel Construction
 
     private func buildPanel() {
-        // --- Panel ---
-        let panelRect = NSRect(x: 0, y: 0, width: 280, height: 120)
-        let styleMask: NSWindow.StyleMask = [.titled, .closable, .utilityWindow]
-        let p = NSPanel(
-            contentRect: panelRect,
-            styleMask: styleMask,
-            backing: .buffered,
-            defer: false
-        )
-        p.title = NSLocalizedString("macroStatus.title", comment: "")
-        p.isFloatingPanel = true
-        p.level = .floating
-        p.becomesKeyOnlyIfNeeded = true
-        p.isReleasedWhenClosed = false
-        p.hidesOnDeactivate = false
+        // --- Build content view with Auto Layout ---
+        let container = NSView()
+        container.translatesAutoresizingMaskIntoConstraints = false
 
         // --- Visual Effect Background ---
-        let effectView = NSVisualEffectView(frame: panelRect)
+        let effectView = NSVisualEffectView()
+        effectView.translatesAutoresizingMaskIntoConstraints = false
         effectView.material = .hudWindow
         effectView.blendingMode = .behindWindow
         effectView.state = .active
-        effectView.autoresizingMask = [.width, .height]
-        p.contentView = effectView
+        container.addSubview(effectView)
+
+        NSLayoutConstraint.activate([
+            effectView.topAnchor.constraint(equalTo: container.topAnchor),
+            effectView.leadingAnchor.constraint(equalTo: container.leadingAnchor),
+            effectView.trailingAnchor.constraint(equalTo: container.trailingAnchor),
+            effectView.bottomAnchor.constraint(equalTo: container.bottomAnchor),
+        ])
 
         // --- Macro Name Label (header) ---
         let nameLabel = NSTextField(labelWithString: "")
@@ -129,64 +124,70 @@ final class MacroStatusPanelController {
         nameLabel.textColor = .labelColor
         nameLabel.lineBreakMode = .byTruncatingMiddle
         nameLabel.translatesAutoresizingMaskIntoConstraints = false
-        effectView.addSubview(nameLabel)
+        nameLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
         self.macroNameLabel = nameLabel
 
         // --- Line Number Label (center, monospace) ---
-        let lineLbl = NSTextField(labelWithString: "Line: 0")
+        let lineLbl = NSTextField(labelWithString: TTL("macroStatus.linePrefix", 0))
         lineLbl.font = NSFont.monospacedSystemFont(ofSize: 20, weight: .medium)
         lineLbl.textColor = .secondaryLabelColor
         lineLbl.alignment = .center
         lineLbl.translatesAutoresizingMaskIntoConstraints = false
-        effectView.addSubview(lineLbl)
         self.lineLabel = lineLbl
 
         // --- Buttons ---
-        let pauseBtn = NSButton(
-            title: NSLocalizedString("macroStatus.pause", comment: ""),
-            target: self,
-            action: #selector(pauseResumeClicked(_:))
-        )
-        pauseBtn.bezelStyle = .rounded
-        pauseBtn.translatesAutoresizingMaskIntoConstraints = false
+        let pauseBtn = NSView.makePushButton(NSLocalizedString("macroStatus.pause", comment: ""))
+        pauseBtn.target = self
+        pauseBtn.action = #selector(pauseResumeClicked(_:))
         self.pauseResumeButton = pauseBtn
 
-        let stopBtn = NSButton(
-            title: NSLocalizedString("macroStatus.stop", comment: ""),
-            target: self,
-            action: #selector(stopClicked(_:))
-        )
-        stopBtn.bezelStyle = .rounded
+        let stopBtn = NSView.makePushButton(NSLocalizedString("macroStatus.stop", comment: ""))
+        stopBtn.target = self
+        stopBtn.action = #selector(stopClicked(_:))
         stopBtn.contentTintColor = .systemRed
-        stopBtn.translatesAutoresizingMaskIntoConstraints = false
         self.stopButton = stopBtn
 
-        let stack = NSStackView(views: [pauseBtn, stopBtn])
-        stack.orientation = .horizontal
-        stack.spacing = 12
-        stack.distribution = .fillEqually
-        stack.translatesAutoresizingMaskIntoConstraints = false
-        effectView.addSubview(stack)
+        let buttonStack = NSStackView(views: [pauseBtn, stopBtn])
+        buttonStack.orientation = .horizontal
+        buttonStack.spacing = 12
+        buttonStack.distribution = .fillEqually
+        buttonStack.translatesAutoresizingMaskIntoConstraints = false
 
-        // --- Auto Layout ---
+        // --- Vertical Layout Stack ---
+        let mainStack = NSStackView(views: [nameLabel, lineLbl, buttonStack])
+        mainStack.translatesAutoresizingMaskIntoConstraints = false
+        mainStack.orientation = .vertical
+        mainStack.alignment = .centerX
+        mainStack.spacing = 8
+        effectView.addSubview(mainStack)
+
+        let pad: CGFloat = 16
         NSLayoutConstraint.activate([
-            // Name label – top
-            nameLabel.topAnchor.constraint(equalTo: effectView.topAnchor, constant: 12),
-            nameLabel.leadingAnchor.constraint(equalTo: effectView.leadingAnchor, constant: 16),
-            nameLabel.trailingAnchor.constraint(equalTo: effectView.trailingAnchor, constant: -16),
+            mainStack.topAnchor.constraint(equalTo: effectView.topAnchor, constant: 12),
+            mainStack.leadingAnchor.constraint(equalTo: effectView.leadingAnchor, constant: pad),
+            mainStack.trailingAnchor.constraint(equalTo: effectView.trailingAnchor, constant: -pad),
+            mainStack.bottomAnchor.constraint(equalTo: effectView.bottomAnchor, constant: -12),
 
-            // Line label – center
-            lineLbl.topAnchor.constraint(equalTo: nameLabel.bottomAnchor, constant: 8),
-            lineLbl.centerXAnchor.constraint(equalTo: effectView.centerXAnchor),
-            lineLbl.leadingAnchor.constraint(greaterThanOrEqualTo: effectView.leadingAnchor, constant: 16),
+            // Minimum width — expands if localized text is longer
+            container.widthAnchor.constraint(greaterThanOrEqualToConstant: 280),
 
-            // Button stack – bottom
-            stack.topAnchor.constraint(equalTo: lineLbl.bottomAnchor, constant: 12),
-            stack.leadingAnchor.constraint(equalTo: effectView.leadingAnchor, constant: 16),
-            stack.trailingAnchor.constraint(equalTo: effectView.trailingAnchor, constant: -16),
-            stack.bottomAnchor.constraint(equalTo: effectView.bottomAnchor, constant: -12),
+            // Name label spans full width
+            nameLabel.widthAnchor.constraint(equalTo: mainStack.widthAnchor),
+            // Button stack spans full width
+            buttonStack.widthAnchor.constraint(equalTo: mainStack.widthAnchor),
         ])
 
+        // --- Panel (content-driven sizing) ---
+        let vc = NSViewController()
+        vc.view = container
+        let p = NSPanel(contentViewController: vc)
+        p.styleMask = [.titled, .closable, .utilityWindow]
+        p.title = NSLocalizedString("macroStatus.title", comment: "")
+        p.isFloatingPanel = true
+        p.level = .floating
+        p.becomesKeyOnlyIfNeeded = true
+        p.isReleasedWhenClosed = false
+        p.hidesOnDeactivate = false
         p.center()
         self.panel = p
     }

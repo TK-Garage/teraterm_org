@@ -3311,11 +3311,12 @@ class TTLInterpreter {
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
             let alert = NSAlert()
-            alert.messageText = "Password"
+            alert.messageText = NSLocalizedString("dialog.macro.password", value: "Password", comment: "")
             alert.informativeText = prompt
-            alert.addButton(withTitle: "OK")
-            alert.addButton(withTitle: "Cancel")
-            let input = NSSecureTextField(frame: NSRect(x: 0, y: 0, width: 300, height: 24))
+            alert.addButton(withTitle: NSLocalizedString("dialog.macro.ok", value: "OK", comment: ""))
+            alert.addButton(withTitle: NSLocalizedString("dialog.macro.cancel", value: "Cancel", comment: ""))
+            let input = NSView.makeSecureTextField(placeholder: "", width: nil)
+            input.widthAnchor.constraint(greaterThanOrEqualToConstant: 300).isActive = true
             alert.accessoryView = input
             let response = alert.runModal()
             if response == .alertFirstButtonReturn {

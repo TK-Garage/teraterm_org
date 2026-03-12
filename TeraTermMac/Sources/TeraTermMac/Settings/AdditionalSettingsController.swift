@@ -136,11 +136,12 @@ final class AdditionalSettingsController: NSObject {
             tv.heightAnchor.constraint(greaterThanOrEqualToConstant: 420),
         ])
 
-        let win = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 600, height: 520),
-                           styleMask: [.titled, .closable],
-                           backing: .buffered, defer: false)
+        // Content-driven sizing — the window sizes to fit Auto Layout content
+        let vc = NSViewController()
+        vc.view = container
+        let win = NSWindow(contentViewController: vc)
+        win.styleMask = [.titled, .closable]
         win.title = TTL("dialog.additionalSettings.title")
-        win.contentView = container
         win.isReleasedWhenClosed = false
         self.window = win
         self.tabView = tv
@@ -236,9 +237,9 @@ final class GeneralTab: AdditionalSettingsTab {
         portRow.spacing = 8
 
         let titleBox = NSView.makeGroupBox(title: TTL("dialog.general.titleFormat"))
-        titleFormatTCPCheck = NSView.makeCheckbox("TCP/IP", checked: s.titleFormatTCP)
-        titleFormatSerialCheck = NSView.makeCheckbox("Serial", checked: s.titleFormatSerial)
-        titleFormatSessionCheck = NSView.makeCheckbox("Session", checked: s.titleFormatSession)
+        titleFormatTCPCheck = NSView.makeCheckbox(TTL("dialog.general.titleTCPIP"), checked: s.titleFormatTCP)
+        titleFormatSerialCheck = NSView.makeCheckbox(TTL("dialog.general.titleSerial"), checked: s.titleFormatSerial)
+        titleFormatSessionCheck = NSView.makeCheckbox(TTL("dialog.general.titleSession"), checked: s.titleFormatSession)
         let titleStack = NSStackView(views: [titleFormatTCPCheck, titleFormatSerialCheck, titleFormatSessionCheck])
         titleStack.translatesAutoresizingMaskIntoConstraints = false
         titleStack.orientation = .vertical
@@ -1190,11 +1191,11 @@ final class VisualTab: AdditionalSettingsTab {
 
         // Attributes
         let attrBox = NSView.makeGroupBox(title: TTL("dialog.visual.charAttributes"))
-        boldCheck = NSView.makeCheckbox("Bold", checked: s.attrBold)
-        blinkCheck = NSView.makeCheckbox("Blink", checked: s.attrBlink)
-        reverseCheck = NSView.makeCheckbox("Reverse", checked: s.attrReverse)
-        underlineCheck = NSView.makeCheckbox("Underline", checked: s.attrUnderline)
-        strikethroughCheck = NSView.makeCheckbox("Strikethrough", checked: s.attrStrikethrough)
+        boldCheck = NSView.makeCheckbox(TTL("dialog.visual.attrBold"), checked: s.attrBold)
+        blinkCheck = NSView.makeCheckbox(TTL("dialog.visual.attrBlink"), checked: s.attrBlink)
+        reverseCheck = NSView.makeCheckbox(TTL("dialog.visual.attrReverse"), checked: s.attrReverse)
+        underlineCheck = NSView.makeCheckbox(TTL("dialog.visual.attrUnderline"), checked: s.attrUnderline)
+        strikethroughCheck = NSView.makeCheckbox(TTL("dialog.visual.attrStrikethrough"), checked: s.attrStrikethrough)
         let attrStack = NSStackView(views: [boldCheck, blinkCheck, reverseCheck, underlineCheck, strikethroughCheck])
         attrStack.translatesAutoresizingMaskIntoConstraints = false
         attrStack.orientation = .horizontal

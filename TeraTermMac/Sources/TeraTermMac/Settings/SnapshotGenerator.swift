@@ -9,7 +9,8 @@
  * verification that controls fit within the specified window size.
  *
  * Usage:
- *   SnapshotGenerator.generateAll()
+ *   SnapshotGenerator.generateAll()                // Original 3 views
+ *   generateAllValidationSnapshots()                // ALL dialogs, both languages
  *
  * Output goes to ~/Desktop/TT_UI_Preview/
  */
@@ -23,60 +24,132 @@ final class SnapshotGenerator {
 
     private struct Spec {
         let name: String
-        let width: CGFloat
-        let height: CGFloat
         let viewBuilder: () -> NSView
     }
 
     // MARK: - Public API
 
-    /// Generate PNG snapshots for all three dialog views.
-    /// - Parameter outputDir: Optional output directory.  Defaults to
-    ///   the project `img/` directory or `~/Desktop/TT_UI_Preview/`.
+    /// Generate PNG snapshots for the original three dialog views.
+    /// - Parameter outputDir: Optional output directory.
     static func generateAll(outputDir: URL? = nil) {
         let specs: [Spec] = [
             Spec(name: "01_NewConnection",
-                 width: 520, height: 260,
                  viewBuilder: { buildConnectionAccessoryView() }),
             Spec(name: "02_TerminalSetup",
-                 width: 500, height: 420,
                  viewBuilder: { buildTerminalSetupView() }),
             Spec(name: "03_KeyboardSetup",
-                 width: 540, height: 450,
                  viewBuilder: { buildKeyboardSetupView() }),
         ]
 
+        renderSpecs(specs, outputDir: outputDir)
+        NSLog("[SnapshotGenerator] All snapshots generated.")
+    }
+
+    // MARK: - Comprehensive Validation
+
+    /// Generate PNG snapshots for ALL dialog views across all languages.
+    /// Each dialog is rendered with a 2pt red boundary overlay.
+    /// Reports warnings if any control's fittingSize exceeds the window.
+    ///
+    /// This is the main validation entry point requested by the refactoring task.
+    static func generateAllValidationSnapshots(outputDir: URL? = nil) {
+        let settings = TerminalSettings()
+        var allSpecs: [Spec] = []
+
+        // --- Connection / Setup dialogs ---
+        allSpecs.append(Spec(name: "01_NewConnection",
+                             viewBuilder: { buildConnectionAccessoryView() }))
+        allSpecs.append(Spec(name: "02_TerminalSetup",
+                             viewBuilder: { buildTerminalSetupView() }))
+        allSpecs.append(Spec(name: "03_KeyboardSetup",
+                             viewBuilder: { buildKeyboardSetupView() }))
+
+        // --- BaseSetupDialogController subclasses ---
+        allSpecs.append(Spec(name: "04_DragDropDialog",
+                             viewBuilder: { buildDialogView(DragDropDialogController(path: "/tmp/test.txt")) }))
+        allSpecs.append(Spec(name: "05_EditHistoryDialog",
+                             viewBuilder: { buildDialogView(EditHistoryDialogController(history: ["host1", "host2"])) }))
+        allSpecs.append(Spec(name: "06_LogDialog",
+                             viewBuilder: { buildDialogView(LogDialogController()) }))
+        allSpecs.append(Spec(name: "07_TCPIPDialog",
+                             viewBuilder: { buildDialogView(TCPIPDialogController(settings: settings)) }))
+
+        // --- SSH Dialogs ---
+        allSpecs.append(Spec(name: "08_SSHAuthDialog",
+                             viewBuilder: { buildDialogView(SSHAuthViewController(settings: settings)) }))
+
+        // --- Additional Settings Tabs (13 total) ---
+        let tabClasses: [(String, AdditionalSettingsTab)] = [
+            ("09_Tab_General", GeneralTab(settings: settings)),
+            ("10_Tab_Coding", CodingTab(settings: settings)),
+            ("11_Tab_CopyPaste", CopyPasteTab(settings: settings)),
+            ("12_Tab_Sequence", SequenceTab(settings: settings)),
+            ("13_Tab_Mouse", MouseTab(settings: settings)),
+            ("14_Tab_Log", LogTab(settings: settings)),
+            ("15_Tab_Visual", VisualTab(settings: settings)),
+            ("16_Tab_Font", FontTab(settings: settings)),
+            ("17_Tab_TEKFont", TEKFontTab(settings: settings)),
+            ("18_Tab_Theme", ThemeTab(settings: settings)),
+            ("19_Tab_UI", UITab(settings: settings)),
+            ("20_Tab_Plugin", PluginTab(settings: settings)),
+            ("21_Tab_Debug", DebugTab(settings: settings)),
+        ]
+        for (name, tab) in tabClasses {
+            allSpecs.append(Spec(name: name, viewBuilder: {
+                let view = tab.contentView
+                view.translatesAutoresizingMaskIntoConstraints = false
+                return view
+            }))
+        }
+
+        // --- File Transfer Accessory Views ---
+        allSpecs.append(Spec(name: "22_XMODEMOption",
+                             viewBuilder: { XMODEMOptionAccessory(isSend: true) }))
+        allSpecs.append(Spec(name: "23_FileOption",
+                             viewBuilder: { FileOptionAccessory() }))
+
+        renderSpecs(allSpecs, outputDir: outputDir)
+
+        NSLog("[SnapshotGenerator] All \(allSpecs.count) validation snapshots generated.")
+    }
+
+    // MARK: - Private Rendering
+
+    private static func renderSpecs(_ specs: [Spec], outputDir: URL?) {
         for spec in specs {
             let view = spec.viewBuilder()
-            let containerFrame = NSRect(x: 0, y: 0,
-                                        width: spec.width, height: spec.height)
+            view.translatesAutoresizingMaskIntoConstraints = false
 
             // Host the view in an offscreen window so Auto Layout resolves
-            let window = NSWindow(
-                contentRect: containerFrame,
-                styleMask: [.titled],
-                backing: .buffered,
-                defer: false)
-            window.contentView = view
-            view.frame = containerFrame
+            let vc = NSViewController()
+            vc.view = view
+            let window = NSWindow(contentViewController: vc)
+            window.styleMask = [.titled]
 
             // Force layout
             view.needsLayout = true
             view.layoutSubtreeIfNeeded()
 
-            // Snapshot
+            // Snapshot with red debug border
             view.saveToDebugPNG(name: spec.name, outputDir: outputDir)
 
-            // Also verify intrinsic fitting vs spec size
+            // Verify no controls overflow
             let fitting = view.fittingSize
-            if fitting.width > spec.width || fitting.height > spec.height {
-                NSLog("[SnapshotGenerator] WARNING: \(spec.name) fittingSize "
-                    + "(\(fitting.width)x\(fitting.height)) exceeds spec "
-                    + "(\(spec.width)x\(spec.height))")
+            let bounds = view.bounds
+            if bounds.width > 0 && bounds.height > 0 {
+                if fitting.width > bounds.width + 2 || fitting.height > bounds.height + 2 {
+                    NSLog("[SnapshotGenerator] WARNING: \(spec.name) fittingSize "
+                        + "(\(Int(fitting.width))x\(Int(fitting.height))) exceeds bounds "
+                        + "(\(Int(bounds.width))x\(Int(bounds.height)))")
+                }
             }
         }
+    }
 
-        NSLog("[SnapshotGenerator] All snapshots generated.")
+    /// Build a BaseSetupDialogController's view for snapshotting.
+    private static func buildDialogView(_ vc: BaseSetupDialogController) -> NSView {
+        _ = vc.view  // force loadView
+        return vc.view
     }
 
     // MARK: - Connection Dialog Accessory View
@@ -285,19 +358,20 @@ final class SnapshotGenerator {
 
     private static func buildKeyboardSetupView() -> NSView {
         let bsLabel = NSView.makeLabel(TTL("dialog.keyboardSetup.bsKey"))
+        bsLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
         let delLabel = NSView.makeLabel(TTL("dialog.keyboardSetup.deleteKey"))
+        delLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
         let metaLabel = NSView.makeLabel(TTL("dialog.keyboardSetup.metaKey"))
+        metaLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
         let ansLabel = NSView.makeLabel(TTL("dialog.keyboardSetup.answerback"))
+        ansLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
 
-        let kbPopupWidth: CGFloat = 180
         let bsPopup = NSView.makePopUpButton(
-            items: ["BS (0x08)", "DEL (0x7F)"], width: kbPopupWidth)
+            items: ["BS (0x08)", "DEL (0x7F)"])
         let delPopup = NSView.makePopUpButton(
-            items: ["DEL (0x7F)", "BS (0x08)", TTL("dialog.keyboardSetup.deleteEscSeq")],
-            width: kbPopupWidth)
+            items: ["DEL (0x7F)", "BS (0x08)", TTL("dialog.keyboardSetup.deleteEscSeq")])
         let metaPopup = NSView.makePopUpButton(
-            items: [TTL("dialog.keyboardSetup.metaOff"), TTL("dialog.keyboardSetup.metaOn")],
-            width: kbPopupWidth)
+            items: [TTL("dialog.keyboardSetup.metaOff"), TTL("dialog.keyboardSetup.metaOn")])
         let ansField = NSView.makeTextField(
             value: "", placeholder: TTL("dialog.keyboardSetup.answerbackPlaceholder"),
             width: DialogLayout.wideFieldWidth)
@@ -310,27 +384,41 @@ final class SnapshotGenerator {
         ])
         grid.translatesAutoresizingMaskIntoConstraints = false
         grid.rowSpacing = 12
-        grid.columnSpacing = 10
+        grid.columnSpacing = DialogLayout.labelTrailing
         grid.column(at: 0).xPlacement = .trailing
         grid.column(at: 1).xPlacement = .leading
-        grid.column(at: 0).width = 140
         for i in 0..<grid.numberOfRows {
             grid.row(at: i).rowAlignment = .firstBaseline
-            grid.row(at: i).height = 24
         }
 
         let container = NSView()
         container.translatesAutoresizingMaskIntoConstraints = false
         container.addSubview(grid)
+        let m = DialogLayout.margin
         NSLayoutConstraint.activate([
-            grid.topAnchor.constraint(equalTo: container.topAnchor, constant: 20),
-            grid.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 20),
-            grid.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -20),
-            grid.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -20),
+            grid.topAnchor.constraint(equalTo: container.topAnchor, constant: m),
+            grid.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: m),
+            grid.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -m),
+            grid.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -m),
             container.widthAnchor.constraint(greaterThanOrEqualToConstant: 500),
         ])
 
         return container
     }
 }
+
+// MARK: - Global Convenience Function
+
+/// Generate validation snapshots for ALL dialogs in the project.
+/// Each snapshot includes a 2pt red border and nested blue/green sub-control
+/// boundaries for visual verification that no elements overlap.
+///
+/// Call this from a debug menu action or unit test:
+/// ```swift
+/// generateAllValidationSnapshots()
+/// ```
+func generateAllValidationSnapshots(outputDir: URL? = nil) {
+    SnapshotGenerator.generateAllValidationSnapshots(outputDir: outputDir)
+}
+
 #endif

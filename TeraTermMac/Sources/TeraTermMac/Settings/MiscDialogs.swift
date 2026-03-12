@@ -31,11 +31,12 @@ final class ClipboardConfirmationDialog {
         alert.addButton(withTitle: TTL("OK"))
         alert.addButton(withTitle: TTL("Cancel"))
 
-        let scrollView = NSScrollView(frame: NSRect(x: 0, y: 0, width: 400, height: 250))
+        let scrollView = NSScrollView()
+        scrollView.translatesAutoresizingMaskIntoConstraints = false
         scrollView.hasVerticalScroller = true
         scrollView.borderType = .bezelBorder
 
-        let textView = NSTextView(frame: scrollView.bounds)
+        let textView = NSTextView()
         textView.isEditable = true
         textView.isRichText = false
         textView.font = NSFont.monospacedSystemFont(ofSize: 12, weight: .regular)
@@ -45,6 +46,10 @@ final class ClipboardConfirmationDialog {
         textView.textContainer?.widthTracksTextView = true
         scrollView.documentView = textView
 
+        NSLayoutConstraint.activate([
+            scrollView.widthAnchor.constraint(greaterThanOrEqualToConstant: 400),
+            scrollView.heightAnchor.constraint(greaterThanOrEqualToConstant: 250),
+        ])
         alert.accessoryView = scrollView
 
         alert.beginSheetModal(for: window) { response in
@@ -171,27 +176,24 @@ final class ChangeDirectoryDialog {
         alert.addButton(withTitle: TTL("OK"))
         alert.addButton(withTitle: TTL("Cancel"))
 
-        let container = NSView(frame: NSRect(x: 0, y: 0, width: 320, height: 40))
-
         let field = NSView.makeTextField(value: "", placeholder: TTL("dialog.changeDir.placeholder"))
-        container.addSubview(field)
+        field.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
 
-        let browseBtn = NSButton(title: "...", target: nil, action: nil)
+        let browseBtn = NSButton(title: TTL("..."), target: nil, action: nil)
         browseBtn.translatesAutoresizingMaskIntoConstraints = false
         browseBtn.bezelStyle = .rounded
-        container.addSubview(browseBtn)
+        browseBtn.widthAnchor.constraint(equalToConstant: 30).isActive = true
 
-        NSLayoutConstraint.activate([
-            field.topAnchor.constraint(equalTo: container.topAnchor),
-            field.leadingAnchor.constraint(equalTo: container.leadingAnchor),
-            field.trailingAnchor.constraint(equalTo: browseBtn.leadingAnchor, constant: -4),
-            field.bottomAnchor.constraint(equalTo: container.bottomAnchor),
-            browseBtn.centerYAnchor.constraint(equalTo: field.centerYAnchor),
-            browseBtn.trailingAnchor.constraint(equalTo: container.trailingAnchor),
-            browseBtn.widthAnchor.constraint(equalToConstant: 30),
-        ])
+        let row = NSStackView(views: [field, browseBtn])
+        row.translatesAutoresizingMaskIntoConstraints = false
+        row.orientation = .horizontal
+        row.spacing = 4
+        row.alignment = .centerY
+        row.distribution = .fill
 
-        alert.accessoryView = container
+        row.widthAnchor.constraint(greaterThanOrEqualToConstant: 320).isActive = true
+
+        alert.accessoryView = row
 
         alert.beginSheetModal(for: window) { response in
             if response == .alertFirstButtonReturn {
@@ -241,7 +243,7 @@ final class EditHistoryDialogController: BaseSetupDialogController {
 
         historyList = NSTableView()
         let col = NSTableColumn(identifier: NSUserInterfaceItemIdentifier("host"))
-        col.title = "Host"
+        col.title = TTL("dialog.editHistory.hostColumn")
         col.width = 360
         historyList.addTableColumn(col)
         historyList.headerView = nil
@@ -368,8 +370,8 @@ final class InputDialog {
         alert.addButton(withTitle: TTL("OK"))
         alert.addButton(withTitle: TTL("Cancel"))
 
-        let field = NSTextField(frame: NSRect(x: 0, y: 0, width: 260, height: 24))
-        field.stringValue = defaultValue
+        let field = NSView.makeTextField(value: defaultValue)
+        field.widthAnchor.constraint(greaterThanOrEqualToConstant: 260).isActive = true
         alert.accessoryView = field
         alert.window.initialFirstResponder = field
 
@@ -395,14 +397,14 @@ final class ListDialog {
         alert.addButton(withTitle: TTL("OK"))
         alert.addButton(withTitle: TTL("Cancel"))
 
-        let scrollView = NSScrollView(frame: NSRect(x: 0, y: 0, width: 340, height: 180))
+        let scrollView = NSScrollView()
+        scrollView.translatesAutoresizingMaskIntoConstraints = false
         scrollView.hasVerticalScroller = true
         scrollView.borderType = .bezelBorder
 
         let tableView = NSTableView()
         let col = NSTableColumn(identifier: NSUserInterfaceItemIdentifier("item"))
         col.title = ""
-        col.width = 320
         tableView.addTableColumn(col)
         tableView.headerView = nil
         let ds = DialogListBoxDataSource(items: items)
@@ -413,6 +415,11 @@ final class ListDialog {
             tableView.selectRowIndexes(IndexSet(integer: 0), byExtendingSelection: false)
         }
         scrollView.documentView = tableView
+
+        NSLayoutConstraint.activate([
+            scrollView.widthAnchor.constraint(greaterThanOrEqualToConstant: 340),
+            scrollView.heightAnchor.constraint(greaterThanOrEqualToConstant: 180),
+        ])
         alert.accessoryView = scrollView
 
         // Prevent ds from being deallocated
@@ -594,7 +601,7 @@ final class MessageDialog {
         alert.informativeText = message
         alert.addButton(withTitle: TTL("OK"))
         if showNoButton {
-            alert.addButton(withTitle: "No")
+            alert.addButton(withTitle: TTL("No"))
         }
 
         alert.beginSheetModal(for: window) { response in
@@ -611,25 +618,42 @@ final class PrintAbortDialog {
     var onCancel: (() -> Void)?
 
     func show() {
-        let p = NSPanel(
-            contentRect: NSRect(x: 0, y: 0, width: 200, height: 80),
-            styleMask: [.titled, .utilityWindow],
-            backing: .buffered, defer: false)
-        p.title = "Tera Term"
-        p.isFloatingPanel = true
-        p.isReleasedWhenClosed = false
+        let container = NSView()
+        container.translatesAutoresizingMaskIntoConstraints = false
 
-        let cv = p.contentView!
-        let cancelBtn = NSButton(title: TTL("Cancel"), target: self, action: #selector(cancelClicked(_:)))
-        cancelBtn.translatesAutoresizingMaskIntoConstraints = false
-        cancelBtn.bezelStyle = .rounded
-        cv.addSubview(cancelBtn)
+        let messageLabel = NSView.makeLabel(TTL("dialog.printAbort.printing"), alignment: .center)
+        messageLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
 
+        let cancelBtn = NSView.makePushButton(TTL("Cancel"), keyEquivalent: "\u{1b}")
+        cancelBtn.target = self
+        cancelBtn.action = #selector(cancelClicked(_:))
+
+        let stack = NSStackView(views: [messageLabel, cancelBtn])
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        stack.orientation = .vertical
+        stack.alignment = .centerX
+        stack.spacing = DialogLayout.rowSpacing
+        container.addSubview(stack)
+
+        let m = DialogLayout.margin
         NSLayoutConstraint.activate([
-            cancelBtn.centerXAnchor.constraint(equalTo: cv.centerXAnchor),
-            cancelBtn.centerYAnchor.constraint(equalTo: cv.centerYAnchor),
+            stack.topAnchor.constraint(equalTo: container.topAnchor, constant: m),
+            stack.leadingAnchor.constraint(greaterThanOrEqualTo: container.leadingAnchor, constant: m),
+            stack.trailingAnchor.constraint(lessThanOrEqualTo: container.trailingAnchor, constant: -m),
+            stack.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -m),
+            stack.centerXAnchor.constraint(equalTo: container.centerXAnchor),
+            container.widthAnchor.constraint(greaterThanOrEqualToConstant: 200),
         ])
 
+        let p = NSPanel(contentViewController: {
+            let vc = NSViewController()
+            vc.view = container
+            return vc
+        }())
+        p.styleMask = [.titled, .utilityWindow]
+        p.title = TTL("Tera Term")
+        p.isFloatingPanel = true
+        p.isReleasedWhenClosed = false
         p.center()
         p.orderFront(nil)
         self.panel = p
@@ -660,23 +684,34 @@ final class StatusDialog {
             return
         }
 
-        let p = NSPanel(
-            contentRect: NSRect(x: 0, y: 0, width: 160, height: 60),
-            styleMask: [.titled, .utilityWindow],
-            backing: .buffered, defer: false)
-        p.title = "Status"
-        p.isFloatingPanel = true
-        p.isReleasedWhenClosed = false
+        let container = NSView()
+        container.translatesAutoresizingMaskIntoConstraints = false
 
         let l = NSTextField(labelWithString: message)
         l.translatesAutoresizingMaskIntoConstraints = false
         l.alignment = .center
-        p.contentView!.addSubview(l)
+        l.setContentCompressionResistancePriority(.required, for: .horizontal)
+        container.addSubview(l)
 
+        let m = DialogLayout.margin
         NSLayoutConstraint.activate([
-            l.centerXAnchor.constraint(equalTo: p.contentView!.centerXAnchor),
-            l.centerYAnchor.constraint(equalTo: p.contentView!.centerYAnchor),
+            l.topAnchor.constraint(equalTo: container.topAnchor, constant: m),
+            l.leadingAnchor.constraint(greaterThanOrEqualTo: container.leadingAnchor, constant: m),
+            l.trailingAnchor.constraint(lessThanOrEqualTo: container.trailingAnchor, constant: -m),
+            l.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -m),
+            l.centerXAnchor.constraint(equalTo: container.centerXAnchor),
+            container.widthAnchor.constraint(greaterThanOrEqualToConstant: 160),
         ])
+
+        let p = NSPanel(contentViewController: {
+            let vc = NSViewController()
+            vc.view = container
+            return vc
+        }())
+        p.styleMask = [.titled, .utilityWindow]
+        p.title = TTL("dialog.status.title")
+        p.isFloatingPanel = true
+        p.isReleasedWhenClosed = false
 
         self.label = l
         p.center()
@@ -791,14 +826,14 @@ final class WindowListDialog {
         }
         let windowTitles = windows.map { $0.title }
 
-        let scrollView = NSScrollView(frame: NSRect(x: 0, y: 0, width: 360, height: 180))
+        let scrollView = NSScrollView()
+        scrollView.translatesAutoresizingMaskIntoConstraints = false
         scrollView.hasVerticalScroller = true
         scrollView.borderType = .bezelBorder
 
         let tableView = NSTableView()
         let col = NSTableColumn(identifier: NSUserInterfaceItemIdentifier("window"))
-        col.title = "Window"
-        col.width = 340
+        col.title = TTL("dialog.windowList.windowColumn")
         tableView.addTableColumn(col)
         tableView.headerView = nil
         let ds = DialogListBoxDataSource(items: windowTitles)
@@ -809,6 +844,11 @@ final class WindowListDialog {
             tableView.selectRowIndexes(IndexSet(integer: 0), byExtendingSelection: false)
         }
         scrollView.documentView = tableView
+
+        NSLayoutConstraint.activate([
+            scrollView.widthAnchor.constraint(greaterThanOrEqualToConstant: 360),
+            scrollView.heightAnchor.constraint(greaterThanOrEqualToConstant: 180),
+        ])
         alert.accessoryView = scrollView
 
         objc_setAssociatedObject(alert, "ds", ds, .OBJC_ASSOCIATION_RETAIN)

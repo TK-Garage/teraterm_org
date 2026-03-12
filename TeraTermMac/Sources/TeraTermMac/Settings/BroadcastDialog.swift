@@ -180,11 +180,12 @@ final class BroadcastDialogController: NSObject {
             buttonRow.trailingAnchor.constraint(equalTo: stack.trailingAnchor),
         ])
 
-        let win = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 500, height: 380),
-                           styleMask: [.titled, .closable, .resizable],
-                           backing: .buffered, defer: false)
+        // Use content-driven sizing — window expands for longer localized labels
+        let vc = NSViewController()
+        vc.view = container
+        let win = NSWindow(contentViewController: vc)
+        win.styleMask = [.titled, .closable, .resizable]
         win.title = TTL("dialog.broadcast.title")
-        win.contentView = container
         win.isReleasedWhenClosed = false
         win.minSize = NSSize(width: 400, height: 300)
         self.window = win

@@ -58,7 +58,8 @@ final class XMODEMOptionAccessory: NSView {
         binaryCheck = NSView.makeCheckbox(
             NSLocalizedString("dialog.xopt.binary", value: "Binary", comment: ""), checked: true)
 
-        super.init(frame: NSRect(x: 0, y: 0, width: 440, height: 52))
+        super.init(frame: .zero)
+        translatesAutoresizingMaskIntoConstraints = false
 
         // GroupBox
         let box = NSView.makeGroupBox(
@@ -129,7 +130,8 @@ final class FileOptionAccessory: NSView {
         binaryCheck = NSView.makeCheckbox(
             NSLocalizedString("dialog.fopt.binary", value: "Binary", comment: ""), checked: true)
 
-        super.init(frame: NSRect(x: 0, y: 0, width: 300, height: 52))
+        super.init(frame: .zero)
+        translatesAutoresizingMaskIntoConstraints = false
 
         let box = NSView.makeGroupBox(
             title: NSLocalizedString("dialog.fopt.option", value: "Option", comment: ""))
@@ -235,17 +237,12 @@ final class ProtocolTransferPanel {
     }
 
     private func buildPanel() {
-        let p = NSPanel(
-            contentRect: NSRect(x: 0, y: 0, width: 340, height: 200),
-            styleMask: [.titled, .closable, .utilityWindow],
-            backing: .buffered, defer: false)
-        p.title = "Tera Term: File Transfer"
-        p.isFloatingPanel = true
-        p.becomesKeyOnlyIfNeeded = true
-        p.isReleasedWhenClosed = false
+        let container = NSView()
+        container.translatesAutoresizingMaskIntoConstraints = false
+        container.widthAnchor.constraint(greaterThanOrEqualToConstant: 340).isActive = true
 
-        let cv = p.contentView!
-        let pad: CGFloat = 16
+        let cv = container
+        let pad: CGFloat = DialogLayout.margin
 
         // Grid: label | value
         let fnTitle = NSView.makeLabel(
@@ -338,6 +335,14 @@ final class ProtocolTransferPanel {
             cancelBtn.bottomAnchor.constraint(equalTo: cv.bottomAnchor, constant: -pad),
         ])
 
+        let vc = NSViewController()
+        vc.view = container
+        let p = NSPanel(contentViewController: vc)
+        p.styleMask = [.titled, .closable, .utilityWindow]
+        p.title = TTL("dialog.prot.title")
+        p.isFloatingPanel = true
+        p.becomesKeyOnlyIfNeeded = true
+        p.isReleasedWhenClosed = false
         p.center()
         self.panel = p
     }
@@ -425,16 +430,12 @@ final class FileTransferProgressPanel {
     }
 
     private func buildPanel() {
-        let p = NSPanel(
-            contentRect: NSRect(x: 0, y: 0, width: 380, height: 200),
-            styleMask: [.titled, .closable, .miniaturizable, .utilityWindow],
-            backing: .buffered, defer: false)
-        p.title = "Tera Term: File Transfer"
-        p.isFloatingPanel = false
-        p.isReleasedWhenClosed = false
+        let container = NSView()
+        container.translatesAutoresizingMaskIntoConstraints = false
+        container.widthAnchor.constraint(greaterThanOrEqualToConstant: 380).isActive = true
 
-        let cv = p.contentView!
-        let pad: CGFloat = 16
+        let cv = container
+        let pad: CGFloat = DialogLayout.margin
 
         let fnTitle = NSView.makeLabel(
             NSLocalizedString("dialog.ftrans.filename", value: "Filename:", comment: ""))
@@ -526,6 +527,13 @@ final class FileTransferProgressPanel {
             btnStack.bottomAnchor.constraint(equalTo: cv.bottomAnchor, constant: -pad),
         ])
 
+        let vc = NSViewController()
+        vc.view = container
+        let p = NSPanel(contentViewController: vc)
+        p.styleMask = [.titled, .closable, .miniaturizable, .utilityWindow]
+        p.title = TTL("dialog.ftrans.title")
+        p.isFloatingPanel = false
+        p.isReleasedWhenClosed = false
         p.center()
         self.panel = p
     }
@@ -1182,7 +1190,8 @@ final class YMODEMOptionAccessory: NSView {
         binaryCheck = NSView.makeCheckbox(
             NSLocalizedString("dialog.yopt.binary", value: "Binary", comment: ""), checked: true)
 
-        super.init(frame: NSRect(x: 0, y: 0, width: 440, height: 52))
+        super.init(frame: .zero)
+        translatesAutoresizingMaskIntoConstraints = false
 
         let box = NSView.makeGroupBox(
             title: NSLocalizedString("dialog.yopt.option", value: "Option", comment: ""))
