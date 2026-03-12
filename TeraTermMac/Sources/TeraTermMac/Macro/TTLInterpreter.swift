@@ -45,8 +45,9 @@ protocol TTLInterpreterDelegate: AnyObject {
     func ttlLogPause()
     func ttlLogStart()
     func ttlLogWrite(_ text: String)
-    /// Display error message
-    func ttlShowError(_ message: String, line: Int)
+    /// Display error message with stop/continue choice.
+    /// Returns `true` to stop execution, `false` to continue.
+    func ttlShowError(_ message: String, line: Int, lineText: String, fileName: String, completion: @escaping (Bool) -> Void)
     /// Display status box
     func ttlShowStatusBox(_ message: String, title: String)
     func ttlCloseStatusBox()
@@ -315,10 +316,34 @@ class TTLInterpreter {
     }
 
     private func dispError(_ error: TTLError) {
-        let msg = "Error at line \(parser.currentLine): \(error.message)"
-        delegate?.ttlShowError(msg, line: parser.currentLine)
-        onError?(msg, parser.currentLine)
-        stop()
+        let lineNo = parser.currentLine
+        let lineText = parser.lineBuffer
+        let fileName = macroFileName
+        let msg = error.message
+
+        // Pause execution while dialog is shown
+        execTimer?.invalidate()
+        execTimer = nil
+
+        let handleResult: (Bool) -> Void = { [weak self] shouldStop in
+            guard let self = self else { return }
+            if shouldStop {
+                let fullMsg = "Error at line \(lineNo): \(msg)"
+                self.onError?(fullMsg, lineNo)
+                self.stop()
+            } else {
+                // Continue execution from the next line (like original IDCANCEL)
+                self.parseAgain = false
+                self.scheduleExec()
+            }
+        }
+
+        if let delegate = delegate {
+            delegate.ttlShowError(msg, line: lineNo, lineText: lineText, fileName: fileName, completion: handleResult)
+        } else {
+            // No delegate: stop by default
+            handleResult(true)
+        }
     }
 
     // MARK: - Label Scanning

@@ -48,7 +48,7 @@ class MockTTLDelegate: TTLInterpreterDelegate {
     func ttlLogPause() {}
     func ttlLogStart() {}
     func ttlLogWrite(_ text: String) {}
-    func ttlShowError(_ message: String, line: Int) { errorMessage = message; errorLine = line }
+    func ttlShowError(_ message: String, line: Int, lineText: String, fileName: String, completion: @escaping (Bool) -> Void) { errorMessage = message; errorLine = line; completion(true) }
     func ttlShowStatusBox(_ message: String, title: String) { statusBoxMessage = message; statusBoxTitle = title }
     func ttlCloseStatusBox() { statusBoxMessage = ""; statusBoxTitle = "" }
     func ttlGetClipboard() -> String { return clipboard }

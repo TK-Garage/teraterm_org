@@ -390,6 +390,8 @@
 
 /* Macro */
 "macro.error.title" = "マクロエラー";
+"macro.error.stop" = "停止";
+"macro.error.continue" = "続行";
 "menu.control.stopMacro" = "マクロ停止";
 
 /* Macro Dialog Commands */

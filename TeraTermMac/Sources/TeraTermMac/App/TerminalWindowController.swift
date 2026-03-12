@@ -492,8 +492,7 @@ class TerminalWindowController: NSWindowController {
             self?.macroInterpreter = nil
         }
         interpreter.onError = { [weak self] msg, line in
-            // Error dialog is already shown by delegate (ttlShowError).
-            // Only perform cleanup here.
+            // Called when user chose "Stop" in the error dialog.
             self?.macroInterpreter = nil
         }
 
@@ -975,15 +974,29 @@ extension TerminalWindowController: TTLInterpreterDelegate {
         logger.logData(Data(text.utf8))
     }
 
-    func ttlShowError(_ message: String, line: Int) {
+    func ttlShowError(_ message: String, line: Int, lineText: String, fileName: String, completion: @escaping (Bool) -> Void) {
         DispatchQueue.main.async { [weak self] in
             let alert = NSAlert()
             alert.messageText = L("macro.error.title")
-            alert.informativeText = message
+            // Build informative text like the original: filename:line: error message + line content
+            var info = "\(fileName):\(line): \(message)"
+            if !lineText.isEmpty {
+                info += "\n\n\(lineText)"
+            }
+            alert.informativeText = info
             alert.alertStyle = .warning
-            alert.addButton(withTitle: "OK")
+            // Original Tera Term buttons: Stop (IDOK), Continue (IDCANCEL)
+            alert.addButton(withTitle: L("macro.error.stop"))      // First button (returnCode 1000)
+            alert.addButton(withTitle: L("macro.error.continue"))  // Second button (returnCode 1001)
             if let win = self?.window {
-                alert.beginSheetModal(for: win)
+                alert.beginSheetModal(for: win) { response in
+                    // NSApplication.ModalResponse.alertFirstButtonReturn = 1000 = Stop
+                    let shouldStop = (response == .alertFirstButtonReturn)
+                    completion(shouldStop)
+                }
+            } else {
+                // No window available, stop by default
+                completion(true)
             }
         }
     }
