@@ -41,6 +41,11 @@ class TerminalWindowController: NSWindowController {
     private var useTelnet: Bool = false
     private var isConnected: Bool = false
 
+    // Resize tooltip
+    private var resizeTooltipWindow: NSWindow?
+    private var resizeTooltipLabel: NSTextField?
+    private var resizeHideTimer: Timer?
+
     // Macro file transfer state
     var macroTransferCompletion: ((Bool) -> Void)?
     var macroRecvFileHandle: FileHandle?
@@ -555,9 +560,21 @@ class TerminalWindowController: NSWindowController {
 extension TerminalWindowController: NSWindowDelegate {
     func windowDidResize(_ notification: Notification) {
         handleResize()
+        if window?.inLiveResize == true {
+            showResizeTooltip()
+        }
+    }
+
+    func windowDidEndLiveResize(_ notification: Notification) {
+        // Keep tooltip visible briefly after resize ends
+        resizeHideTimer?.invalidate()
+        resizeHideTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: false) { [weak self] _ in
+            self?.hideResizeTooltip()
+        }
     }
 
     func windowWillClose(_ notification: Notification) {
+        hideResizeTooltip()
         disconnect()
         logger.stopLogging()
     }
@@ -572,6 +589,78 @@ extension TerminalWindowController: NSWindowDelegate {
         if let data = keyboardHandler.focusOut() {
             connectionManager.send(data)
         }
+    }
+
+    // MARK: - Resize Tooltip
+
+    private func showResizeTooltip() {
+        let size = terminalView.terminalSize
+        let text = "\(size.columns) x \(size.rows)"
+
+        if resizeTooltipWindow == nil {
+            let label = NSTextField(labelWithString: text)
+            label.font = NSFont.monospacedSystemFont(ofSize: 14, weight: .medium)
+            label.textColor = .white
+            label.alignment = .center
+            label.isBezeled = false
+            label.isEditable = false
+            label.drawsBackground = false
+
+            let padding: CGFloat = 12
+            let labelSize = label.intrinsicContentSize
+            let panelWidth = labelSize.width + padding * 2
+            let panelHeight = labelSize.height + padding
+
+            let panel = NSWindow(
+                contentRect: NSRect(x: 0, y: 0, width: panelWidth, height: panelHeight),
+                styleMask: [.borderless],
+                backing: .buffered,
+                defer: false
+            )
+            panel.isOpaque = false
+            panel.backgroundColor = NSColor(white: 0.15, alpha: 0.85)
+            panel.level = .floating
+            panel.hasShadow = true
+            panel.isReleasedWhenClosed = false
+            panel.contentView?.wantsLayer = true
+            panel.contentView?.layer?.cornerRadius = 6
+
+            label.frame = NSRect(x: padding, y: padding / 2, width: labelSize.width, height: labelSize.height)
+            panel.contentView?.addSubview(label)
+
+            resizeTooltipWindow = panel
+            resizeTooltipLabel = label
+        }
+
+        // Update text and refit
+        resizeTooltipLabel?.stringValue = text
+        resizeTooltipLabel?.sizeToFit()
+
+        let padding: CGFloat = 12
+        let labelSize = resizeTooltipLabel?.intrinsicContentSize ?? .zero
+        let panelWidth = labelSize.width + padding * 2
+        let panelHeight = labelSize.height + padding
+        resizeTooltipLabel?.frame = NSRect(x: padding, y: padding / 2, width: labelSize.width, height: labelSize.height)
+
+        // Position at center of window
+        if let mainWindow = window {
+            let windowFrame = mainWindow.frame
+            let tooltipX = windowFrame.midX - panelWidth / 2
+            let tooltipY = windowFrame.midY - panelHeight / 2
+            resizeTooltipWindow?.setFrame(NSRect(x: tooltipX, y: tooltipY, width: panelWidth, height: panelHeight), display: true)
+        }
+
+        resizeTooltipWindow?.orderFront(nil)
+
+        // Cancel any pending hide
+        resizeHideTimer?.invalidate()
+        resizeHideTimer = nil
+    }
+
+    private func hideResizeTooltip() {
+        resizeHideTimer?.invalidate()
+        resizeHideTimer = nil
+        resizeTooltipWindow?.orderOut(nil)
     }
 }
 
