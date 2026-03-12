@@ -1734,10 +1734,10 @@ intdim matC 25
 ; Fill 5x5 matrices
 for i 0 4
   for j 0 4
-    idx = i * 5 + j
-    matA[idx] = i + j
-    matB[idx] = i - j + 5
-    matC[idx] = 0
+    midx = i * 5 + j
+    matA[midx] = i + j
+    matB[midx] = i - j + 5
+    matC[midx] = 0
   next
 next
 
