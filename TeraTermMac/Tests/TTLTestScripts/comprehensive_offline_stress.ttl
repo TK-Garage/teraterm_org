@@ -1526,7 +1526,7 @@ filewriteln fh msg
 
 ; 10-10 getspecialfolder (Desktop)
 test_num = test_num + 1
-getspecialfolder spdir 'Desktop'
+getspecialfolder spdir 0
 strlen spdir
 if result > 0 then
   pass_count = pass_count + 1
