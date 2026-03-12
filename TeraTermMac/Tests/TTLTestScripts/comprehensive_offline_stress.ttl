@@ -614,8 +614,7 @@ crcfile = '/tmp/ttl_crc_test.bin'
 fileopen cfh crcfile 0
 filewriteln cfh 'CRC file test data 0123456789'
 fileclose cfh
-crc32file crcfile
-frc = result
+crc32file frc crcfile
 filedelete crcfile
 if frc >= 0 then
   pass_count = pass_count + 1
