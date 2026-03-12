@@ -1659,11 +1659,11 @@ filewriteln fh ''
 filewriteln fh '=== Section 13: exec ==='
 
 test_num = test_num + 1
-exec 'echo hello_from_exec' execresult
-strlen execresult
+exec 'echo hello_from_exec'
+strlen inputstr
 if result > 0 then
   pass_count = pass_count + 1
-  sprintf2 msg 'PASS [%d] exec echo="%s"' test_num execresult
+  sprintf2 msg 'PASS [%d] exec echo="%s"' test_num inputstr
 else
   fail_count = fail_count + 1
   sprintf2 msg 'FAIL [%d] exec echo empty' test_num
@@ -1671,11 +1671,11 @@ endif
 filewriteln fh msg
 
 test_num = test_num + 1
-exec 'uname' uname_out
-strlen uname_out
+exec 'uname'
+strlen inputstr
 if result > 0 then
   pass_count = pass_count + 1
-  sprintf2 msg 'PASS [%d] exec uname="%s"' test_num uname_out
+  sprintf2 msg 'PASS [%d] exec uname="%s"' test_num inputstr
 else
   ; may fail on some platforms
   pass_count = pass_count + 1
