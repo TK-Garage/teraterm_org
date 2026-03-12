@@ -580,12 +580,14 @@ extension TerminalWindowController: NSWindowDelegate {
     }
 
     func windowDidBecomeKey(_ notification: Notification) {
+        window?.alphaValue = CGFloat(settings.windowAlpha)
         if let data = keyboardHandler.focusIn() {
             connectionManager.send(data)
         }
     }
 
     func windowDidResignKey(_ notification: Notification) {
+        window?.alphaValue = CGFloat(settings.windowAlphaInactive)
         if let data = keyboardHandler.focusOut() {
             connectionManager.send(data)
         }

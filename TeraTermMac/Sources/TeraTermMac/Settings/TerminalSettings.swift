@@ -405,7 +405,17 @@ class TerminalSettings: Codable {
     // Window
     var title: String = "Tera Term"
     var titleFormat: Int = 0  // 0=title, 1=hostname, etc.
-    var windowAlpha: Double = 1.0
+    /// Computed from `windowOpacityActive` (0–100) for backward compatibility.
+    var windowAlpha: Double {
+        get { Double(windowOpacityActive) / 100.0 }
+        set { windowOpacityActive = Int((newValue * 100).rounded()) }
+    }
+
+    /// Computed from `windowOpacityInactive` (0–100).
+    var windowAlphaInactive: Double {
+        get { Double(windowOpacityInactive) / 100.0 }
+        set { windowOpacityInactive = Int((newValue * 100).rounded()) }
+    }
 
     // Connection
     var portType: PortType = .tcpip
