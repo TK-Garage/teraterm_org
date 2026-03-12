@@ -1364,7 +1364,7 @@ filewriteln fh msg
 
 ; 9-2 makepath
 test_num = test_num + 1
-makepath mp '/usr' 'local' 'bin'
+makepath mp '/usr/local' 'bin'
 strlen mp
 if result > 0 then
   pass_count = pass_count + 1
@@ -1377,7 +1377,7 @@ filewriteln fh msg
 
 ; 9-3 basename
 test_num = test_num + 1
-basename '/home/user/file.txt' bn
+basename bn '/home/user/file.txt'
 if bn = 'file.txt' then
   pass_count = pass_count + 1
   sprintf2 msg 'PASS [%d] basename="%s"' test_num bn
@@ -1389,7 +1389,7 @@ filewriteln fh msg
 
 ; 9-4 dirname
 test_num = test_num + 1
-dirname '/home/user/file.txt' dn
+dirname dn '/home/user/file.txt'
 if dn = '/home/user' then
   pass_count = pass_count + 1
   sprintf2 msg 'PASS [%d] dirname="%s"' test_num dn
