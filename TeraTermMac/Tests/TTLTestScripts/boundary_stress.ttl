@@ -49,19 +49,19 @@ else
 endif
 filewriteln fh msg
 
-; 1-2 Build beyond 512 - should truncate, not crash
+; 1-2 Build beyond 512 - should not crash (Swift has no 512 limit)
 test_num = test_num + 1
 s = ''
 for i 1 600
   strconcat s 'B'
 next
 strlen s
-if result <= 512 then
+if result = 600 then
   pass_count = pass_count + 1
-  sprintf2 msg 'PASS [%d] String truncation at max (%d chars)' test_num result
+  sprintf2 msg 'PASS [%d] String length 600 chars (no truncation)' test_num
 else
   fail_count = fail_count + 1
-  sprintf2 msg 'FAIL [%d] String exceeded max (%d chars)' test_num result
+  sprintf2 msg 'FAIL [%d] String length expected 600, got %d' test_num result
 endif
 filewriteln fh msg
 
@@ -388,7 +388,7 @@ test_num = test_num + 1
 x = 0
 do
   x = x + 1
-until x == 10
+loop until x == 10
 if x == 10 then
   pass_count = pass_count + 1
   sprintf2 msg 'PASS [%d] Do-until: x=%d' test_num x
@@ -476,19 +476,18 @@ filewriteln fh ''
 ; ############################################################
 filewriteln fh '=== Section 6: String Operations Boundary ==='
 
-; 6-1 strsplit many segments
+; 6-1 strsplit many segments (results go to groupmatchstr1..9, max 9)
 test_num = test_num + 1
 s = 'a,b,c,d,e,f,g,h,i,j'
-strdim parts 10
-strsplit s ',' parts
-if result == 10 then
-  if parts[0] == 'a' then
-    if parts[9] == 'j' then
+strsplit s ','
+if result = 10 then
+  if groupmatchstr1 = 'a' then
+    if groupmatchstr9 = 'i' then
       pass_count = pass_count + 1
       sprintf2 msg 'PASS [%d] strsplit 10 segments' test_num
     else
       fail_count = fail_count + 1
-      sprintf2 msg 'FAIL [%d] strsplit last element' test_num
+      sprintf2 msg 'FAIL [%d] strsplit 9th element' test_num
     endif
   else
     fail_count = fail_count + 1
@@ -677,7 +676,7 @@ for i 1 100
 next
 fileclose wfh
 
-fileopen rfh tmpfile 0
+fileopen rfh tmpfile 0 1
 count = 0
 :io_readloop
 filereadln rfh s
