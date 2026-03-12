@@ -28,7 +28,7 @@ final class WindowMenuLocalizationTests: XCTestCase {
             "menu.window.tileHorizontal",
         ]
         for key in keys {
-            let value = NSLocalizedString(key, bundle: Bundle.module, comment: "")
+            let value = NSLocalizedString(key, bundle: Bundle.main, comment: "")
             XCTAssertNotEqual(value, key,
                 "Localization key '\(key)' should resolve to a translated string")
             XCTAssertFalse(value.isEmpty,

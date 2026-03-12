@@ -81,6 +81,11 @@
 		BB0001000000000000000048 /* AppIcon.icns in Resources */ = {isa = PBXBuildFile; fileRef = AA000100000000000000004B /* AppIcon.icns */; };
 		BB0001000000000000000049 /* FileIcon.icns in Resources */ = {isa = PBXBuildFile; fileRef = AA000100000000000000004C /* FileIcon.icns */; };
 		BB000100000000000000004A /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AA000100000000000000004D /* Assets.xcassets */; };
+		BB000100000000000000004B /* SSHSecurityDialogs.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000100000000000000004E /* SSHSecurityDialogs.swift */; };
+		BB000100000000000000004C /* LocalizedTerminalSetupViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000100000000000000004F /* LocalizedTerminalSetupViewController.swift */; };
+		BB000100000000000000004D /* MultilingualSettingsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0001000000000000000050 /* MultilingualSettingsTests.swift */; };
+		BB000100000000000000004E /* MultilingualSnapshotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0001000000000000000051 /* MultilingualSnapshotTests.swift */; };
+		BB000100000000000000004F /* NewSettingsImplementationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0001000000000000000052 /* NewSettingsImplementationTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -170,6 +175,11 @@
 		AA000100000000000000004B /* AppIcon.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = AppIcon.icns; sourceTree = "<group>"; };
 		AA000100000000000000004C /* FileIcon.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = FileIcon.icns; sourceTree = "<group>"; };
 		AA000100000000000000004D /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		AA000100000000000000004E /* SSHSecurityDialogs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SSHSecurityDialogs.swift; sourceTree = "<group>"; };
+		AA000100000000000000004F /* LocalizedTerminalSetupViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalizedTerminalSetupViewController.swift; sourceTree = "<group>"; };
+		AA0001000000000000000050 /* MultilingualSettingsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MultilingualSettingsTests.swift; sourceTree = "<group>"; };
+		AA0001000000000000000051 /* MultilingualSnapshotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MultilingualSnapshotTests.swift; sourceTree = "<group>"; };
+		AA0001000000000000000052 /* NewSettingsImplementationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewSettingsImplementationTests.swift; sourceTree = "<group>"; };
 		DD0001000000000000000004 /* TeraTermMac.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TeraTermMac.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		DD0001000000000000000005 /* TeraTermMacTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TeraTermMacTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -309,6 +319,8 @@
 				AA0001000000000000000034 /* NSView+DebugSnapshot.swift */,
 				AA000100000000000000003A /* SSHSetupDialogs.swift */,
 				AA000100000000000000003D /* BroadcastDialog.swift */,
+				AA000100000000000000004E /* SSHSecurityDialogs.swift */,
+				AA000100000000000000004F /* LocalizedTerminalSetupViewController.swift */,
 			);
 			path = Settings;
 			sourceTree = "<group>";
@@ -382,6 +394,9 @@
 				AA0001000000000000000048 /* TTLBoundaryTests.swift */,
 				AA0001000000000000000049 /* TTLParserValidationTests.swift */,
 				AA000100000000000000004A /* LayoutEngineTests.swift */,
+				AA0001000000000000000050 /* MultilingualSettingsTests.swift */,
+				AA0001000000000000000051 /* MultilingualSnapshotTests.swift */,
+				AA0001000000000000000052 /* NewSettingsImplementationTests.swift */,
 			);
 			path = TeraTermMacTests;
 			sourceTree = "<group>";
@@ -537,6 +552,8 @@
 				BB0001000000000000000038 /* KeymapLoader.swift in Sources */,
 				BB0001000000000000000039 /* TEKWindowController.swift in Sources */,
 				BB000100000000000000003A /* BroadcastDialog.swift in Sources */,
+				BB000100000000000000004B /* SSHSecurityDialogs.swift in Sources */,
+				BB000100000000000000004C /* LocalizedTerminalSetupViewController.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -579,6 +596,9 @@
 				BB0001000000000000000045 /* TTLBoundaryTests.swift in Sources */,
 				BB0001000000000000000046 /* TTLParserValidationTests.swift in Sources */,
 				BB0001000000000000000047 /* LayoutEngineTests.swift in Sources */,
+				BB000100000000000000004D /* MultilingualSettingsTests.swift in Sources */,
+				BB000100000000000000004E /* MultilingualSnapshotTests.swift in Sources */,
+				BB000100000000000000004F /* NewSettingsImplementationTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

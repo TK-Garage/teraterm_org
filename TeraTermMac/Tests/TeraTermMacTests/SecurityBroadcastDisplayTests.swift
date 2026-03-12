@@ -279,10 +279,19 @@ private func collectRecursive(view: NSView, counts: inout ControlCounts) {
     case is NSPopUpButton:
         counts.popups += 1
     case let button as NSButton:
-        if button.buttonType == .switch {
-            counts.checkboxes += 1
-        } else if button.buttonType == .radio {
-            counts.radios += 1
+        // buttonType has no public getter; infer type from cell masks.
+        // Checkboxes/radios: highlightsBy = .contentsCellMask, showsStateBy = .contentsCellMask
+        // Push buttons: highlightsBy contains .pushInCellMask, showsStateBy is empty
+        if let cell = button.cell as? NSButtonCell,
+           cell.highlightsBy == .contentsCellMask,
+           cell.showsStateBy == .contentsCellMask {
+            // Both checkbox and radio have identical masks;
+            // distinguish by image: radio uses a circle, checkbox uses a square
+            if button.image?.name()?.lowercased().contains("radio") == true {
+                counts.radios += 1
+            } else {
+                counts.checkboxes += 1
+            }
         } else {
             counts.buttons += 1
         }

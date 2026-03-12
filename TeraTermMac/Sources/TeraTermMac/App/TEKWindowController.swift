@@ -72,7 +72,7 @@ class TEKWindowController: NSWindowController {
     // MARK: - Printing (port of TEK window print functionality)
 
     /// Print the current TEK graphics content using macOS standard print dialog.
-    func printTEKWindow() {
+    @objc func printTEKWindow() {
         guard let window = window else { return }
 
         let printInfo = NSPrintInfo.shared
