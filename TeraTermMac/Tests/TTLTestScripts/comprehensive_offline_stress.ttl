@@ -536,10 +536,10 @@ filewriteln fh '=== Section 3: Checksum & CRC ==='
 
 ; 3-1 checksum8
 test_num = test_num + 1
-checksum8 'ABC'
-if result >= 0 then
+checksum8 chk8 'ABC'
+if chk8 >= 0 then
   pass_count = pass_count + 1
-  sprintf2 msg 'PASS [%d] checksum8 "ABC"=%d' test_num result
+  sprintf2 msg 'PASS [%d] checksum8 "ABC"=%d' test_num chk8
 else
   fail_count = fail_count + 1
   sprintf2 msg 'FAIL [%d] checksum8' test_num
@@ -548,8 +548,7 @@ filewriteln fh msg
 
 ; 3-2 checksum16
 test_num = test_num + 1
-checksum16 'Test data for checksum'
-chk16 = result
+checksum16 chk16 'Test data for checksum'
 if chk16 >= 0 then
   pass_count = pass_count + 1
   sprintf2 msg 'PASS [%d] checksum16=%d' test_num chk16
@@ -561,8 +560,7 @@ filewriteln fh msg
 
 ; 3-3 checksum32
 test_num = test_num + 1
-checksum32 'Test data for checksum'
-chk32 = result
+checksum32 chk32 'Test data for checksum'
 if chk32 >= 0 then
   pass_count = pass_count + 1
   sprintf2 msg 'PASS [%d] checksum32=%d' test_num chk32
@@ -574,8 +572,7 @@ filewriteln fh msg
 
 ; 3-4 crc16
 test_num = test_num + 1
-crc16 '123456789'
-c16 = result
+crc16 c16 '123456789'
 ; CRC-16-CCITT of "123456789" is known value
 if c16 >= 0 then
   pass_count = pass_count + 1
@@ -588,8 +585,7 @@ filewriteln fh msg
 
 ; 3-5 crc32
 test_num = test_num + 1
-crc32 '123456789'
-c32 = result
+crc32 c32 '123456789'
 if c32 >= 0 then
   pass_count = pass_count + 1
   sprintf2 msg 'PASS [%d] crc32 "123456789"=%d' test_num c32
@@ -601,10 +597,8 @@ filewriteln fh msg
 
 ; 3-6 crc consistency: same input -> same output
 test_num = test_num + 1
-crc32 'consistent input'
-first = result
-crc32 'consistent input'
-second = result
+crc32 first 'consistent input'
+crc32 second 'consistent input'
 if first = second then
   pass_count = pass_count + 1
   sprintf2 msg 'PASS [%d] crc32 consistency' test_num
