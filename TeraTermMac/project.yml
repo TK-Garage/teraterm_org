@@ -45,7 +45,25 @@ targets:
         CFBundleShortVersionString: "1.0.0"
         CFBundlePackageType: APPL
         CFBundleExecutable: TeraTermMac
+        CFBundleIconFile: AppIcon.icns
         CFBundleIconName: AppIcon
+        CFBundleDocumentTypes:
+          - CFBundleTypeName: "Tera Term Macro"
+            CFBundleTypeRole: Editor
+            CFBundleTypeIconFile: FileIcon.icns
+            CFBundleTypeExtensions:
+              - ttl
+            LSHandlerRank: Owner
+            LSItemContentTypes:
+              - com.teraterm.macro
+        UTExportedTypeDeclarations:
+          - UTTypeIdentifier: com.teraterm.macro
+            UTTypeDescription: "Tera Term Macro"
+            UTTypeConformsTo:
+              - public.plain-text
+            UTTypeTagSpecification:
+              public.filename-extension:
+                - ttl
         LSMinimumSystemVersion: "13.0"
         NSPrincipalClass: NSApplication
         NSHighResolutionCapable: true
