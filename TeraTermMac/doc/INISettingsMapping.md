@@ -3,8 +3,44 @@
 オリジナル Tera Term (Windows) の `TERATERM.INI` 設定フォーマットと、
 Tera Term Mac での対応状況を記載する。
 
-INI ファイル保存先: `~/Library/Application Support/com.teraterm.mac/TERATERM.INI`
-改行コード: LF
+---
+
+## INI ファイル仕様
+
+### 保存先
+
+| 項目 | Windows (オリジナル) | macOS (移植版) |
+|------|---------------------|---------------|
+| パス | `%APPDATA%\teraterm\TERATERM.INI` またはインストールディレクトリ | `~/Library/Application Support/com.teraterm.mac/TERATERM.INI` |
+
+### デフォルト保存フォーマット（Mac 標準）
+
+| 項目 | 値 |
+|------|-----|
+| 文字コード | UTF-8 (BOM なし) |
+| 改行コード | LF (`\n`) — macOS 標準 |
+| 書き込み方式 | アトミック書き込み（一時ファイル経由で安全に置換） |
+
+### 読み込み時の自動判定
+
+読み込み時は文字コード・改行コードを自動判定する。
+Windows 版で作成した INI ファイルをそのまま読み込み可能。
+
+| 項目 | 自動判定対象 |
+|------|------------|
+| 文字コード | UTF-8 (BOM あり/なし) → Shift_JIS (CP932) → EUC-JP → ISO Latin-1 |
+| 改行コード | CRLF (`\r\n`) / LF (`\n`) / CR (`\r`) を自動検出 |
+
+### Windows 版との主な違い
+
+| 項目 | Windows (オリジナル) | macOS (移植版) |
+|------|---------------------|---------------|
+| 文字コード (保存) | システム依存 (多くは Shift_JIS または UTF-16 LE + BOM) | UTF-8 (BOM なし) |
+| 改行コード (保存) | CRLF (`\r\n`) | LF (`\n`) |
+| 文字コード (読込) | システムロケール依存 (`GetPrivateProfileString` API) | 自動判定 (UTF-8 / Shift_JIS / EUC-JP / Latin-1) |
+| 改行コード (読込) | CRLF 前提 | 自動判定 (CRLF / LF / CR) |
+| API | Win32 `GetPrivateProfileString` / `WritePrivateProfileString` | 独自 `INISerializer` (Swift) |
+| バージョン管理 | なし | `Version` キーで管理。古いバージョンは自動再作成 |
 
 ---
 

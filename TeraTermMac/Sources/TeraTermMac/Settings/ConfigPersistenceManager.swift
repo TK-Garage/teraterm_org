@@ -460,9 +460,11 @@ final class ConfigPersistenceManager {
             return config
         }
 
-        // Read existing file
+        // Read existing file with auto-detection of character encoding.
+        // Try UTF-8 first (Mac standard), then Shift_JIS / EUC-JP / Latin-1
+        // for compatibility with Windows-originated TERATERM.INI files.
         guard let data = fm.contents(atPath: path.path),
-              let text = String(data: data, encoding: .utf8) else {
+              let text = Self.decodeText(data) else {
             // Unreadable – recreate
             print("Old configuration format detected. Recreating...")
             try? fm.removeItem(at: path)
@@ -490,9 +492,44 @@ final class ConfigPersistenceManager {
         return decode(sections: sections)
     }
 
+    // MARK: - Encoding Auto-Detection
+
+    /// Decode raw bytes into a String, trying multiple encodings.
+    /// Order: UTF-8 (with/without BOM) → Shift_JIS (CP932) → EUC-JP → ISO Latin-1.
+    /// Line endings (CRLF / LF / CR) are handled transparently by INISerializer.
+    static func decodeText(_ data: Data) -> String? {
+        // Strip UTF-8 BOM if present
+        let bom: [UInt8] = [0xEF, 0xBB, 0xBF]
+        let stripped: Data
+        if data.count >= 3, Array(data.prefix(3)) == bom {
+            stripped = data.dropFirst(3)
+        } else {
+            stripped = data
+        }
+
+        // Try UTF-8 first (Mac standard)
+        if let text = String(data: stripped, encoding: .utf8) {
+            return text
+        }
+
+        // Try Shift_JIS (Windows Japanese default, CP932)
+        if let text = String(data: stripped, encoding: .shiftJIS) {
+            return text
+        }
+
+        // Try EUC-JP
+        if let text = String(data: stripped, encoding: .japaneseEUC) {
+            return text
+        }
+
+        // Fallback: ISO Latin-1 (always succeeds for any byte sequence)
+        return String(data: stripped, encoding: .isoLatin1)
+    }
+
     // MARK: - Save
 
     /// Write configuration to `TERATERM.INI` atomically.
+    /// Saves as UTF-8 with LF line endings (macOS standard).
     func saveConfig(_ config: TeraTermConfig) {
         do {
             try ensureDirectory()
