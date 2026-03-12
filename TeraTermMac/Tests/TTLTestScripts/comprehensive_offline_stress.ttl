@@ -1474,7 +1474,8 @@ filewriteln fh msg
 ; 10-6 expandenv
 test_num = test_num + 1
 setenv 'TTL_EXP_TEST' 'expanded_value'
-expandenv '$TTL_EXP_TEST' expval
+expval = '%TTL_EXP_TEST%'
+expandenv expval
 if expval = 'expanded_value' then
   pass_count = pass_count + 1
   sprintf2 msg 'PASS [%d] expandenv' test_num
