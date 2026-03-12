@@ -75,6 +75,8 @@
 		BB0001000000000000000042 /* KeymapLoaderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0001000000000000000045 /* KeymapLoaderTests.swift */; };
 		BB0001000000000000000043 /* TTLFileTransferCommandTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0001000000000000000046 /* TTLFileTransferCommandTests.swift */; };
 		BB0001000000000000000044 /* FileTransferFileSelectionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0001000000000000000047 /* FileTransferFileSelectionTests.swift */; };
+		BB0001000000000000000045 /* TTLBoundaryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0001000000000000000048 /* TTLBoundaryTests.swift */; };
+		BB0001000000000000000046 /* TTLParserValidationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0001000000000000000049 /* TTLParserValidationTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -158,6 +160,8 @@
 		AA0001000000000000000045 /* KeymapLoaderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeymapLoaderTests.swift; sourceTree = "<group>"; };
 		AA0001000000000000000046 /* TTLFileTransferCommandTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TTLFileTransferCommandTests.swift; sourceTree = "<group>"; };
 		AA0001000000000000000047 /* FileTransferFileSelectionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileTransferFileSelectionTests.swift; sourceTree = "<group>"; };
+		AA0001000000000000000048 /* TTLBoundaryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TTLBoundaryTests.swift; sourceTree = "<group>"; };
+		AA0001000000000000000049 /* TTLParserValidationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TTLParserValidationTests.swift; sourceTree = "<group>"; };
 		DD0001000000000000000004 /* TeraTermMac.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TeraTermMac.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		DD0001000000000000000005 /* TeraTermMacTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TeraTermMacTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -364,6 +368,8 @@
 				AA0001000000000000000045 /* KeymapLoaderTests.swift */,
 				AA0001000000000000000046 /* TTLFileTransferCommandTests.swift */,
 				AA0001000000000000000047 /* FileTransferFileSelectionTests.swift */,
+				AA0001000000000000000048 /* TTLBoundaryTests.swift */,
+				AA0001000000000000000049 /* TTLParserValidationTests.swift */,
 			);
 			path = TeraTermMacTests;
 			sourceTree = "<group>";
@@ -555,6 +561,8 @@
 				BB0001000000000000000042 /* KeymapLoaderTests.swift in Sources */,
 				BB0001000000000000000043 /* TTLFileTransferCommandTests.swift in Sources */,
 				BB0001000000000000000044 /* FileTransferFileSelectionTests.swift in Sources */,
+				BB0001000000000000000045 /* TTLBoundaryTests.swift in Sources */,
+				BB0001000000000000000046 /* TTLParserValidationTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
