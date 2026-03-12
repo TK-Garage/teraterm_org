@@ -1318,12 +1318,12 @@ findfirst found '/tmp/ttl_find_*.tmp'
 if result = 0 then
   fcount = 1
   :findloop
-  findnext found
+  findnext found 0
   if result = 0 then
     fcount = fcount + 1
     goto findloop
   endif
-  findclose
+  findclose 0
   if fcount >= 3 then
     pass_count = pass_count + 1
     sprintf2 msg 'PASS [%d] findfirst/next found %d files' test_num fcount
