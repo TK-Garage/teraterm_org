@@ -1488,14 +1488,13 @@ filewriteln fh msg
 
 ; 10-7 getver
 test_num = test_num + 1
-getver verstr
-strlen verstr
-if result > 0 then
+getver verint
+if verint > 0 then
   pass_count = pass_count + 1
-  sprintf2 msg 'PASS [%d] getver="%s"' test_num verstr
+  sprintf2 msg 'PASS [%d] getver=%d' test_num verint
 else
   fail_count = fail_count + 1
-  sprintf2 msg 'FAIL [%d] getver empty' test_num
+  sprintf2 msg 'FAIL [%d] getver=0' test_num
 endif
 filewriteln fh msg
 
