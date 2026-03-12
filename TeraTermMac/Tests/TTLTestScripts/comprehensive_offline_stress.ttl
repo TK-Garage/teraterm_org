@@ -1242,10 +1242,10 @@ statf = '/tmp/ttl_stat_test.txt'
 fileopen stfh statf 0
 filewriteln stfh 'stat test content 1234567890'
 fileclose stfh
-filestat statf
+filestat statf fsize
 if result >= 0 then
   pass_count = pass_count + 1
-  sprintf2 msg 'PASS [%d] filestat size=%d' test_num result
+  sprintf2 msg 'PASS [%d] filestat size=%d' test_num fsize
 else
   fail_count = fail_count + 1
   sprintf2 msg 'FAIL [%d] filestat' test_num
