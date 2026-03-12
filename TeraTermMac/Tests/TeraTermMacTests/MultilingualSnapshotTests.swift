@@ -320,7 +320,7 @@ final class TruncationDetectionTests: XCTestCase {
         vc.view.needsLayout = true
         vc.view.layoutSubtreeIfNeeded()
 
-        let checkboxes = findAllButtons(in: vc.view).filter { $0.buttonType == .switch }
+        let checkboxes = findAllButtons(in: vc.view).filter { isCheckbox($0) }
         for checkbox in checkboxes {
             let title = checkbox.title
             guard !title.isEmpty else { continue }
@@ -378,7 +378,7 @@ final class TruncationDetectionTests: XCTestCase {
             let buttonWidth = button.frame.width
 
             if buttonWidth > 0 {
-                let availableWidth = button.buttonType == .switch
+                let availableWidth = isCheckbox(button)
                     ? buttonWidth - 20
                     : buttonWidth - 16
                 if textWidth > availableWidth * 1.05 {
@@ -400,6 +400,13 @@ final class TruncationDetectionTests: XCTestCase {
             results.append(contentsOf: findAllLabels(in: subview))
         }
         return results
+    }
+
+    /// Check if a button is a checkbox (buttonType has no public getter).
+    private func isCheckbox(_ button: NSButton) -> Bool {
+        guard let cell = button.cell as? NSButtonCell else { return false }
+        return cell.highlightsBy == .contentsCellMask
+            && cell.showsStateBy == .contentsCellMask
     }
 
     private func findAllButtons(in view: NSView) -> [NSButton] {
