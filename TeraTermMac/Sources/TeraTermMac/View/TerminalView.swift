@@ -420,7 +420,10 @@ class TerminalView: NSView {
         )
         context.setFillColor(selColor.cgColor)
 
-        for row in max(0, sel.startY)...min(rows - 1, sel.endY) {
+        let rowStart = max(0, sel.startY)
+        let rowEnd = min(rows - 1, sel.endY)
+        guard rowStart <= rowEnd else { return }
+        for row in rowStart...rowEnd {
             let startCol = (row == sel.startY) ? sel.startX : 0
             let endCol = (row == sel.endY) ? sel.endX : columns
             let x = leftInset + CGFloat(startCol) * cellWidth
