@@ -403,6 +403,11 @@ class TCPConnection: Connection {
         }
     }
 
+    /// TCP 送信時の n==0 (バッファフル) リトライ上限。
+    /// 各リトライは 1ms sleep するため、最大約 5 秒間待機する。
+    /// ネットワーク混雑やリモート側の受信遅延を考慮し、十分な猶予を確保。
+    private static let sendMaxRetries = 5000
+
     func send(_ data: Data) {
         stateLock.lock()
         let running = _isRunning
@@ -417,7 +422,6 @@ class TCPConnection: Connection {
                 var offset = 0
                 let total = data.count
                 var retries = 0
-                let maxRetries = 1000  // 無限ループ防止
                 while offset < total {
                     let n = output.write(basePtr + offset, maxLength: total - offset)
                     if n > 0 {
@@ -426,7 +430,16 @@ class TCPConnection: Connection {
                     } else if n == 0 {
                         // ストリームが一時的に書き込み不可
                         retries += 1
-                        if retries > maxRetries { break }
+                        if retries > TCPConnection.sendMaxRetries {
+                            // リトライ上限到達 → 送信失敗として切断・通知
+                            NSLog("[TCPConnection] send: write retry limit exceeded (%d retries, %d/%d bytes sent)",
+                                  retries, offset, total)
+                            DispatchQueue.main.async { [weak self] in
+                                self?.delegate?.connectionDidFail(error: ConnectionError.sendFailed)
+                                self?.disconnect()
+                            }
+                            return
+                        }
                         Thread.sleep(forTimeInterval: 0.001)
                     } else {
                         // 書き込みエラー → 切断
@@ -805,6 +818,8 @@ class LocalShellConnection: Connection {
     private let stateLock = NSLock()
     private var _isRunning = false
     private var _disconnected = false
+    /// 接続通知済みフラグ（readQueue 上でのみ更新、main queue へは通知のみ投げる）
+    private var _hasNotifiedConnect = false
 
     var isConnected: Bool {
         if case .connected = state { return true }
@@ -1009,7 +1024,6 @@ class LocalShellConnection: Connection {
         readQueue.async { [weak self] in
             let bufferSize = 16384
             var buffer = [UInt8](repeating: 0, count: bufferSize)
-            var connected = false  // 接続通知済みフラグ
 
             while true {
                 guard let self = self else { break }
@@ -1023,12 +1037,19 @@ class LocalShellConnection: Connection {
 
                 let bytesRead = read(fd, &buffer, bufferSize)
                 if bytesRead > 0 {
+                    // 接続通知の判定・更新は readQueue 上で完結させる
+                    let needsConnectNotify: Bool
+                    if !self._hasNotifiedConnect {
+                        self._hasNotifiedConnect = true
+                        needsConnectNotify = true
+                    } else {
+                        needsConnectNotify = false
+                    }
                     let data = Data(buffer[0..<bytesRead])
                     DispatchQueue.main.async { [weak self] in
                         guard let self = self else { return }
-                        if !connected {
-                            // 初回データ受信で子プロセス生存を確認してから通知
-                            connected = true
+                        if needsConnectNotify {
+                            // 初回データ受信で子プロセス生存を確認してから通知（1回だけ）
                             self.state = .connected
                             self.delegate?.connectionDidConnect()
                         }
@@ -1037,7 +1058,7 @@ class LocalShellConnection: Connection {
                 } else if bytesRead < 0 {
                     if errno == EAGAIN || errno == EINTR {
                         // 接続待ち中は子プロセスの生存を確認
-                        if !connected {
+                        if !self._hasNotifiedConnect {
                             var status: Int32 = 0
                             let r = waitpid(self.childPID, &status, WNOHANG)
                             if r > 0 {
@@ -1056,9 +1077,10 @@ class LocalShellConnection: Connection {
                         continue
                     }
                     // Process likely exited
+                    let wasConnected = self._hasNotifiedConnect
                     DispatchQueue.main.async { [weak self] in
                         guard let self = self else { return }
-                        if !connected {
+                        if !wasConnected {
                             self.state = .error("Shell launch failed")
                             self.delegate?.connectionDidFail(
                                 error: ConnectionError.ptyCreationFailed)
@@ -1068,9 +1090,10 @@ class LocalShellConnection: Connection {
                     break
                 } else {
                     // EOF - process exited
+                    let wasConnected = self._hasNotifiedConnect
                     DispatchQueue.main.async { [weak self] in
                         guard let self = self else { return }
-                        if !connected {
+                        if !wasConnected {
                             self.state = .error("Shell exited immediately")
                             self.delegate?.connectionDidFail(
                                 error: ConnectionError.ptyCreationFailed)
