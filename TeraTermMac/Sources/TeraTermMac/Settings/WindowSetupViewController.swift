@@ -156,9 +156,9 @@ class WindowSetupViewController: BaseSetupDialogController {
         ])
 
         // ── Right-side checkboxes (aligned next to cursor box) ──
-        hideTitleCheck = NSView.makeCheckbox(TTL("dialog.winSetup.hideTitleBar"))
-        hideMenuCheck = NSView.makeCheckbox(TTL("dialog.winSetup.hideMenuBar"))
-        pc16ColorCheck = NSView.makeCheckbox(TTL("dialog.winSetup.pc16Colors"))
+        hideTitleCheck = NSView.makeCheckbox(TTL("dialog.winSetup.hideTitleBar"), checked: settings.hideTitleBar)
+        hideMenuCheck = NSView.makeCheckbox(TTL("dialog.winSetup.hideMenuBar"), checked: settings.hideMenuBar)
+        pc16ColorCheck = NSView.makeCheckbox(TTL("dialog.winSetup.pc16Colors"), checked: settings.pcBoldColor)
 
         let checkStack = NSStackView(views: [hideTitleCheck, hideMenuCheck, pc16ColorCheck])
         checkStack.translatesAutoresizingMaskIntoConstraints = false
@@ -427,6 +427,11 @@ class WindowSetupViewController: BaseSetupDialogController {
         // Scroll buffer
         settings.enableScrollBuffer = scrollCheck.state == .on
         settings.scrollBufferSize = scrollSizeField.integerValue
+
+        // Checkboxes
+        settings.hideTitleBar = hideTitleCheck.state == .on
+        settings.hideMenuBar = hideMenuCheck.state == .on
+        settings.pcBoldColor = pc16ColorCheck.state == .on
 
         // Alpha
         settings.windowAlpha = alphaSlider.doubleValue / 100.0

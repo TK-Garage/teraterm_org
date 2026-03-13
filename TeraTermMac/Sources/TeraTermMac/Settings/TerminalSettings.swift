@@ -597,6 +597,10 @@ class TerminalSettings: Codable {
     var enableANSIColor: Bool = true
     var fontRenderingQuality: Int = 0  // 0=Default, 1=AntiAlias, 2=Subpixel
 
+    // Window extended settings (port of IDD_WINDLG)
+    var hideTitleBar: Bool = false            // Hide title bar (IDC_HIDETITLE)
+    var hideMenuBar: Bool = false             // Hide menu bar (IDC_HIDEMENU)
+
     // Window extended settings (port of IDD_TABSHEET_VISUAL window section)
     var enableBoldDisplay: Bool = true       // Enable bold text rendering
     var hideWindowFrame: Bool = false         // Frameless window display
