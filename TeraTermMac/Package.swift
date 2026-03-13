@@ -5,7 +5,7 @@ import PackageDescription
 
 let package = Package(
     name: "TeraTermMac",
-    defaultLocalization: "en",
+    defaultLocalization: "ja",
     platforms: [
         .macOS(.v14)
     ],
