@@ -755,12 +755,30 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
     }
 
     @objc func pasteSpecial(_ sender: Any?) {
-        guard let wc = activeWindowController, let win = wc.window else { return }
+        guard let wc = activeWindowController else { return }
 
-        let alert = NSAlert()
-        alert.messageText = L("dialog.pasteSpecial.title")
-        alert.informativeText = L("dialog.pasteSpecial.message")
+        let m = DialogLayout.margin
 
+        // NSPanel ベースのモーダルダイアログ
+        let panel = NSPanel(
+            contentRect: NSRect(x: 0, y: 0, width: 400, height: 250),
+            styleMask: [.titled, .fullSizeContentView],
+            backing: .buffered,
+            defer: true)
+        panel.title = L("dialog.pasteSpecial.title")
+        panel.isReleasedWhenClosed = false
+
+        guard let root = panel.contentView else { return }
+
+        // 説明ラベル
+        let messageLabel = NSTextField(labelWithString: L("dialog.pasteSpecial.message"))
+        messageLabel.translatesAutoresizingMaskIntoConstraints = false
+        messageLabel.font = NSFont.systemFont(ofSize: 13)
+        messageLabel.lineBreakMode = .byWordWrapping
+        messageLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        root.addSubview(messageLabel)
+
+        // テキストビュー
         let textView = NSTextView()
         textView.isEditable = true
         textView.isRichText = false
@@ -774,23 +792,69 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         scrollView.documentView = textView
         scrollView.hasVerticalScroller = true
         scrollView.borderType = .bezelBorder
+        root.addSubview(scrollView)
 
-        NSLayoutConstraint.activate([
-            scrollView.widthAnchor.constraint(greaterThanOrEqualToConstant: 300),
-            scrollView.heightAnchor.constraint(greaterThanOrEqualToConstant: 80),
-        ])
-
-        // Pre-fill from clipboard
+        // クリップボードから事前入力
         if let clipText = NSPasteboard.general.string(forType: .string) {
             textView.string = clipText
         }
 
-        alert.accessoryView = scrollView
-        alert.addButton(withTitle: L("dialog.pasteSpecial.send"))
-        alert.addButton(withTitle: L("Cancel"))
+        // セパレータ
+        let separator = NSBox()
+        separator.translatesAutoresizingMaskIntoConstraints = false
+        separator.boxType = .separator
+        root.addSubview(separator)
 
-        alert.beginSheetModal(for: win) { response in
-            guard response == .alertFirstButtonReturn else { return }
+        // ボタンバー: [spacer] [Cancel] [Send]
+        let sendButton = NSView.makePushButton(L("dialog.pasteSpecial.send"), keyEquivalent: "\r")
+        let cancelButton = NSView.makePushButton(L("Cancel"), keyEquivalent: "\u{1b}")
+
+        let buttonSpacer = NSView()
+        buttonSpacer.translatesAutoresizingMaskIntoConstraints = false
+        buttonSpacer.setContentHuggingPriority(.defaultLow - 1, for: .horizontal)
+
+        let buttonBar = NSStackView(views: [buttonSpacer, cancelButton, sendButton])
+        buttonBar.translatesAutoresizingMaskIntoConstraints = false
+        buttonBar.orientation = .horizontal
+        buttonBar.spacing = DialogLayout.buttonSpacing
+        buttonBar.alignment = .centerY
+        root.addSubview(buttonBar)
+
+        NSLayoutConstraint.activate([
+            messageLabel.topAnchor.constraint(equalTo: root.topAnchor, constant: m),
+            messageLabel.leadingAnchor.constraint(equalTo: root.leadingAnchor, constant: m),
+            messageLabel.trailingAnchor.constraint(equalTo: root.trailingAnchor, constant: -m),
+
+            scrollView.topAnchor.constraint(equalTo: messageLabel.bottomAnchor, constant: DialogLayout.rowSpacing),
+            scrollView.leadingAnchor.constraint(equalTo: root.leadingAnchor, constant: m),
+            scrollView.trailingAnchor.constraint(equalTo: root.trailingAnchor, constant: -m),
+            scrollView.heightAnchor.constraint(greaterThanOrEqualToConstant: 120),
+
+            separator.topAnchor.constraint(equalTo: scrollView.bottomAnchor, constant: m),
+            separator.leadingAnchor.constraint(equalTo: root.leadingAnchor),
+            separator.trailingAnchor.constraint(equalTo: root.trailingAnchor),
+
+            buttonBar.topAnchor.constraint(equalTo: separator.bottomAnchor, constant: m * 0.75),
+            buttonBar.leadingAnchor.constraint(equalTo: root.leadingAnchor, constant: m),
+            buttonBar.trailingAnchor.constraint(equalTo: root.trailingAnchor, constant: -m),
+            buttonBar.bottomAnchor.constraint(equalTo: root.bottomAnchor, constant: -m * 0.75),
+
+            root.widthAnchor.constraint(greaterThanOrEqualToConstant: 400),
+        ])
+
+        sendButton.target = nil
+        sendButton.action = #selector(AppDelegate.connectionDialogOK(_:))
+        cancelButton.target = nil
+        cancelButton.action = #selector(AppDelegate.connectionDialogCancel(_:))
+
+        root.layoutSubtreeIfNeeded()
+        panel.setContentSize(root.fittingSize)
+        panel.center()
+
+        let response = NSApp.runModal(for: panel)
+        panel.close()
+
+        if response == .OK {
             let text = textView.string
             guard !text.isEmpty else { return }
             wc.connectionManager.send(Data(text.utf8))
@@ -1379,7 +1443,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         // （contentView を置き換えるとウィンドウのフレーム管理が壊れる）
         let panel = NSPanel(
             contentRect: NSRect(x: 0, y: 0, width: 560, height: 400),
-            styleMask: [.titled, .closable],
+            styleMask: [.titled, .fullSizeContentView],
             backing: .buffered,
             defer: true)
         panel.title = L("dialog.connection.title")
@@ -1874,18 +1938,12 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
 
     private func showKeyboardSetupDialog() {
         dismissCurrentSetupSheet()
-        let alert = NSAlert()
-        alert.messageText = L("dialog.keyboardSetup.title")
-        alert.informativeText = ""
 
-        // ── Labels (right-aligned) ──
-        let bsLabel = NSView.makeLabel(L("dialog.keyboardSetup.bsKey"))
-        let delLabel = NSView.makeLabel(L("dialog.keyboardSetup.deleteKey"))
-        let metaLabel = NSView.makeLabel(L("dialog.keyboardSetup.metaKey"))
-        let ansLabel = NSView.makeLabel(L("dialog.keyboardSetup.answerback"))
+        let m = DialogLayout.margin
 
-        // ── Controls ──
+        // ── コントロール作成 ──
         let kbPopupWidth: CGFloat = 180
+
         let bsPopup = NSView.makePopUpButton(
             items: ["BS (0x08)", "DEL (0x7F)"],
             width: kbPopupWidth)
@@ -1906,8 +1964,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
             placeholder: L("dialog.keyboardSetup.answerbackPlaceholder"),
             width: DialogLayout.wideFieldWidth)
 
-        // ── Keyboard Type (Terminal ID) ──
-        let kbTypeLabel = NSView.makeLabel(L("dialog.keyboardSetup.keyboardType"))
         let kbTypePopup = NSView.makePopUpButton(
             items: TerminalID.allCases.map { $0.displayName },
             width: kbPopupWidth)
@@ -1915,56 +1971,97 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
             kbTypePopup.selectItem(at: idx)
         }
 
-        // ── Disable Application Keypad ──
-        let disableAppKPLabel = NSView.makeLabel(L("dialog.keyboardSetup.disableAppKeypad"))
         let disableAppKPCheck = NSButton(checkboxWithTitle: L("dialog.keyboardSetup.disableAppKeypadOption"), target: nil, action: nil)
         disableAppKPCheck.state = settings.disableAppKeypad ? .on : .off
 
-        // ── Disable Application Cursor ──
-        let disableAppCurLabel = NSView.makeLabel(L("dialog.keyboardSetup.disableAppCursor"))
         let disableAppCurCheck = NSButton(checkboxWithTitle: L("dialog.keyboardSetup.disableAppCursorOption"), target: nil, action: nil)
         disableAppCurCheck.state = settings.disableAppCursor ? .on : .off
 
         // ── NSGridView: 7 rows x 2 columns (label | control) ──
         let grid = NSGridView(views: [
-            [kbTypeLabel, kbTypePopup],
-            [bsLabel,   bsPopup],
-            [delLabel,  delPopup],
-            [metaLabel, metaPopup],
-            [ansLabel,  ansField],
-            [disableAppKPLabel, disableAppKPCheck],
-            [disableAppCurLabel, disableAppCurCheck],
+            [NSView.makeLabel(L("dialog.keyboardSetup.keyboardType")), kbTypePopup],
+            [NSView.makeLabel(L("dialog.keyboardSetup.bsKey")),       bsPopup],
+            [NSView.makeLabel(L("dialog.keyboardSetup.deleteKey")),    delPopup],
+            [NSView.makeLabel(L("dialog.keyboardSetup.metaKey")),      metaPopup],
+            [NSView.makeLabel(L("dialog.keyboardSetup.answerback")),   ansField],
+            [NSView.makeLabel(L("dialog.keyboardSetup.disableAppKeypad")), disableAppKPCheck],
+            [NSView.makeLabel(L("dialog.keyboardSetup.disableAppCursor")), disableAppCurCheck],
         ])
         grid.translatesAutoresizingMaskIntoConstraints = false
-        grid.rowSpacing = 12  // 24pt row height with controls
-        grid.columnSpacing = 10  // label-to-control spacing >= 10pt
-        grid.column(at: 0).xPlacement = .trailing   // labels right-aligned
-        grid.column(at: 1).xPlacement = .leading     // controls left-aligned
-        // Fixed label column width for consistent alignment
+        grid.rowSpacing = 12
+        grid.columnSpacing = 10
+        grid.column(at: 0).xPlacement = .trailing
+        grid.column(at: 1).xPlacement = .leading
         grid.column(at: 0).width = 140
-        // Baseline alignment per row
         for i in 0..<grid.numberOfRows {
             grid.row(at: i).rowAlignment = .firstBaseline
-            grid.row(at: i).height = 24  // 24pt per row for vertical spacing
+            grid.row(at: i).height = 24
         }
 
-        // Wrap grid in a padded container (20pt EdgeInsets)
-        let paddedContainer = NSView()
-        paddedContainer.translatesAutoresizingMaskIntoConstraints = false
-        paddedContainer.addSubview(grid)
+        // ── NSPanel 作成 ──
+        let panel = NSPanel(
+            contentRect: NSRect(x: 0, y: 0, width: 500, height: 300),
+            styleMask: [.titled, .fullSizeContentView],
+            backing: .buffered,
+            defer: true)
+        panel.title = L("dialog.keyboardSetup.title")
+        panel.isReleasedWhenClosed = false
+
+        guard let root = panel.contentView else { return }
+
+        root.addSubview(grid)
+
+        // セパレータ
+        let separator = NSBox()
+        separator.translatesAutoresizingMaskIntoConstraints = false
+        separator.boxType = .separator
+        root.addSubview(separator)
+
+        // ボタンバー: [spacer] [Cancel] [OK]
+        let okButton = NSView.makePushButton(L("dialog.keyboardSetup.ok"), keyEquivalent: "\r")
+        let cancelButton = NSView.makePushButton(L("dialog.keyboardSetup.cancel"), keyEquivalent: "\u{1b}")
+
+        let buttonSpacer = NSView()
+        buttonSpacer.translatesAutoresizingMaskIntoConstraints = false
+        buttonSpacer.setContentHuggingPriority(.defaultLow - 1, for: .horizontal)
+
+        let buttonBar = NSStackView(views: [buttonSpacer, cancelButton, okButton])
+        buttonBar.translatesAutoresizingMaskIntoConstraints = false
+        buttonBar.orientation = .horizontal
+        buttonBar.spacing = DialogLayout.buttonSpacing
+        buttonBar.alignment = .centerY
+        root.addSubview(buttonBar)
+
         NSLayoutConstraint.activate([
-            grid.topAnchor.constraint(equalTo: paddedContainer.topAnchor, constant: 20),
-            grid.leadingAnchor.constraint(equalTo: paddedContainer.leadingAnchor, constant: 20),
-            grid.trailingAnchor.constraint(equalTo: paddedContainer.trailingAnchor, constant: -20),
-            grid.bottomAnchor.constraint(equalTo: paddedContainer.bottomAnchor, constant: -20),
-            paddedContainer.widthAnchor.constraint(greaterThanOrEqualToConstant: 500),
+            grid.topAnchor.constraint(equalTo: root.topAnchor, constant: m),
+            grid.leadingAnchor.constraint(equalTo: root.leadingAnchor, constant: m),
+            grid.trailingAnchor.constraint(lessThanOrEqualTo: root.trailingAnchor, constant: -m),
+
+            separator.topAnchor.constraint(equalTo: grid.bottomAnchor, constant: m),
+            separator.leadingAnchor.constraint(equalTo: root.leadingAnchor),
+            separator.trailingAnchor.constraint(equalTo: root.trailingAnchor),
+
+            buttonBar.topAnchor.constraint(equalTo: separator.bottomAnchor, constant: m * 0.75),
+            buttonBar.leadingAnchor.constraint(equalTo: root.leadingAnchor, constant: m),
+            buttonBar.trailingAnchor.constraint(equalTo: root.trailingAnchor, constant: -m),
+            buttonBar.bottomAnchor.constraint(equalTo: root.bottomAnchor, constant: -m * 0.75),
+
+            root.widthAnchor.constraint(greaterThanOrEqualToConstant: 500),
         ])
 
-        alert.accessoryView = paddedContainer
-        alert.addButton(withTitle: L("dialog.keyboardSetup.ok"))
-        alert.addButton(withTitle: L("dialog.keyboardSetup.cancel"))
+        okButton.target = nil
+        okButton.action = #selector(AppDelegate.connectionDialogOK(_:))
+        cancelButton.target = nil
+        cancelButton.action = #selector(AppDelegate.connectionDialogCancel(_:))
 
-        if alert.runModal() == .alertFirstButtonReturn {
+        root.layoutSubtreeIfNeeded()
+        panel.setContentSize(root.fittingSize)
+        panel.center()
+
+        let response = NSApp.runModal(for: panel)
+        panel.close()
+
+        if response == .OK {
             // Keyboard type (Terminal ID)
             let allIDs = TerminalID.allCases
             let selectedIdx = kbTypePopup.indexOfSelectedItem
