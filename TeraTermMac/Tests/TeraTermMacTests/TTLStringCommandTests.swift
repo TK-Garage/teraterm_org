@@ -232,7 +232,7 @@ final class TTLStringCommandTests: XCTestCase {
     // MARK: - strcopy (substring extraction)
 
     func testStrCopy_BasicSubstring() {
-        let p = interpreter.parser
+        _ = interpreter.parser
         interpreter.loadScript("")
 
         let src = "Hello World"

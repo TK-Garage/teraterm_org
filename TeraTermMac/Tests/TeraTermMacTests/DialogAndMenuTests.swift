@@ -653,9 +653,9 @@ private func collectRecursive(view: NSView, counts: inout ControlCounts) {
     case is NSPopUpButton:
         counts.popups += 1
     case let button as NSButton:
-        if button.buttonType == .switch {
+        if button.accessibilityRole() == .checkBox {
             counts.checkboxes += 1
-        } else if button.buttonType == .radio {
+        } else if button.accessibilityRole() == .radioButton {
             counts.radios += 1
         } else {
             counts.buttons += 1

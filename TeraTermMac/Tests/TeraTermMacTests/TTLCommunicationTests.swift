@@ -93,7 +93,7 @@ final class TTLCommunicationTests: XCTestCase {
     // MARK: - Wait Pattern Detection
 
     func testWaitPatternDetection_SimpleMatch() {
-        let stream = delegate.stream
+        _ = delegate.stream
         let buffer = "Login: admin\r\nPassword: "
 
         // Simulate wait for "Password:"

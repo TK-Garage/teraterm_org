@@ -90,7 +90,7 @@ class SnapshotValidator {
     var recordMode: Bool = true
 
     init(referenceDirectory: URL? = nil, outputDirectory: URL? = nil) {
-        let testBundle = Bundle(for: type(of: self) as! AnyClass.Type)
+        let testBundle = Bundle(for: type(of: self))
         self.referenceDirectory = referenceDirectory
             ?? testBundle.resourceURL?.appendingPathComponent("Snapshots")
             ?? FileManager.default.temporaryDirectory.appendingPathComponent("TeraTermSnapshots/Reference")

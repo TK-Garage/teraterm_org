@@ -649,7 +649,7 @@ final class TTLParserTests: XCTestCase {
 
     func testGetExpressionStringVar() {
         parser.loadScript("")
-        let sid = parser.newStrVar("msg", value: "hello")
+        let _ = parser.newStrVar("msg", value: "hello")
         parser.lineBuffer = "msg"
         parser.linePtr = 0
         let result = try? parser.getExpression()

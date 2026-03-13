@@ -233,7 +233,7 @@ final class TTLDialogCommandTests: XCTestCase {
     }
 
     func testStatusBoxUpdateDoesNotDuplicate() {
-        let provider = interpreter.dialogProvider
+        _ = interpreter.dialogProvider
 
         // First statusbox call
         let script1 = "statusbox 'First message' 'Title'"
