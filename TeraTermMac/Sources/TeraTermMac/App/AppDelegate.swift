@@ -36,6 +36,11 @@ private class ConnectionDialogHelper: NSObject {
     weak var serialRadio: NSButton?
     weak var shellRadio: NSButton?
 
+    // サービスタイプラジオボタン（別々の NSStackView 行に配置されるため手動排他が必要）
+    weak var telnetRadio: NSButton?
+    weak var sshRadio: NSButton?
+    weak var otherRadio: NSButton?
+
     /// TCP/IP(tag=0) vs Serial(tag=1) vs Local Shell(tag=2)
     @objc func connectionTypeChanged(_ sender: NSButton) {
         let tag = sender.tag
@@ -51,7 +56,13 @@ private class ConnectionDialogHelper: NSObject {
 
     /// Service radio: Telnet(tag=0) / SSH(tag=1) / Other(tag=2)
     @objc func serviceChanged(_ sender: NSButton) {
-        switch sender.tag {
+        let tag = sender.tag
+        // 別々の NSStackView 行に配置されたラジオボタンは自動排他にならないため手動で制御
+        telnetRadio?.state = (tag == 0) ? .on : .off
+        sshRadio?.state = (tag == 1) ? .on : .off
+        otherRadio?.state = (tag == 2) ? .on : .off
+
+        switch tag {
         case 0: // Telnet
             tcpPortField?.integerValue = 23
             sshVersionLabel?.isEnabled = false
@@ -1498,6 +1509,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         telnetRadio.target = helper
         telnetRadio.action = #selector(ConnectionDialogHelper.serviceChanged(_:))
         telnetRadio.state = (settings.serviceType == .telnet) ? .on : .off
+        helper.telnetRadio = telnetRadio
 
         let tcpPortLabel = NSView.makeLabel(L("dialog.connection.tcpPort"))
 
@@ -1527,6 +1539,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         sshRadio.target = helper
         sshRadio.action = #selector(ConnectionDialogHelper.serviceChanged(_:))
         sshRadio.state = (settings.serviceType == .ssh) ? .on : .off
+        helper.sshRadio = sshRadio
 
         let sshVerLabel = NSView.makeLabel(L("dialog.connection.sshVersion"))
         sshVerLabel.isEnabled = (settings.serviceType == .ssh)
@@ -1561,6 +1574,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         otherRadio.target = helper
         otherRadio.action = #selector(ConnectionDialogHelper.serviceChanged(_:))
         otherRadio.state = (settings.serviceType == .other) ? .on : .off
+        helper.otherRadio = otherRadio
 
         let ipVerLabel = NSView.makeLabel(L("dialog.connection.ipVersion"))
 
