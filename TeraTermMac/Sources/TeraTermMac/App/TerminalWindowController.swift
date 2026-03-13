@@ -619,15 +619,20 @@ extension TerminalWindowController: NSWindowDelegate {
                 defer: false
             )
             panel.isOpaque = false
-            panel.backgroundColor = NSColor(white: 0.15, alpha: 0.85)
+            panel.backgroundColor = .clear
             panel.level = .floating
             panel.hasShadow = true
             panel.isReleasedWhenClosed = false
-            panel.contentView?.wantsLayer = true
-            panel.contentView?.layer?.cornerRadius = 6
+
+            let bgView = NSView(frame: NSRect(x: 0, y: 0, width: panelWidth, height: panelHeight))
+            bgView.wantsLayer = true
+            bgView.layer?.backgroundColor = NSColor(white: 0.15, alpha: 0.85).cgColor
+            bgView.layer?.cornerRadius = 10
+            bgView.layer?.masksToBounds = true
+            panel.contentView = bgView
 
             label.frame = NSRect(x: padding, y: padding / 2, width: labelSize.width, height: labelSize.height)
-            panel.contentView?.addSubview(label)
+            bgView.addSubview(label)
 
             resizeTooltipWindow = panel
             resizeTooltipLabel = label
