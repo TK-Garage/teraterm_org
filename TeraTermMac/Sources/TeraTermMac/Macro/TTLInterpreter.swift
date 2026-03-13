@@ -9,6 +9,7 @@
 
 #if canImport(AppKit)
 import AppKit
+import Security
 
 // MARK: - Interpreter Delegate Protocol
 
@@ -427,8 +428,8 @@ class TTLInterpreter {
                     breakFlag -= 1
                     // breakの場合はループフレームを除去
                     if breakFlag == 0 && !continueFlag {
-                        if !parser.loopStack.isEmpty {
-                            ifNest = parser.loopStack.last!.ifNest
+                        if let lastLoop = parser.loopStack.last {
+                            ifNest = lastLoop.ifNest
                             parser.loopStack.removeLast()
                         }
                     }
@@ -1135,11 +1136,10 @@ class TTLInterpreter {
     }
 
     private func ttlEndWhile(mode: Bool) throws {
-        guard !parser.loopStack.isEmpty else { throw TTLError.invalidCtl }
+        guard let loop = parser.loopStack.last else { throw TTLError.invalidCtl }
 
         // whileの先頭にジャンプバックし、条件再評価はttlWhileで行う
         // lineIndex はwhile行自体を指すので、そこに戻す（getNewLineがcurrentLine行を読んで+1する）
-        let loop = parser.loopStack.last!
         parser.currentLine = loop.lineIndex
     }
 
@@ -1155,7 +1155,7 @@ class TTLInterpreter {
     }
 
     private func ttlLoop() throws {
-        guard !parser.loopStack.isEmpty else { throw TTLError.invalidCtl }
+        guard let loop = parser.loopStack.last else { throw TTLError.invalidCtl }
 
         var shouldLoop = true
 
@@ -1170,7 +1170,6 @@ class TTLInterpreter {
             }
         }
 
-        let loop = parser.loopStack.last!
         ifNest = loop.ifNest  // Restore ifNest to loop entry value
         if shouldLoop {
             parser.currentLine = loop.lineIndex + 1
@@ -3349,12 +3348,22 @@ class TTLInterpreter {
         regexOptionCaseInsensitive = (opt & 1) != 0
     }
 
-    // MARK: - Password Commands (Keychain stubs)
+    // MARK: - Password Commands (macOS Keychain)
+
+    /// Keychain service name for TTL password storage
+    private static let keychainService = "com.teraterm.mac.ttl"
 
     private func ttlGetPassword() throws {
-        // Prompt for password
+        // Prompt for password (with Keychain lookup)
         let varId = try parser.getStrVar()
         let prompt = try parser.getStrExpression()
+
+        // Try Keychain first
+        if let stored = keychainLoad(account: prompt) {
+            parser.setStrVal(id: varId, value: stored)
+            parser.setResult(1)
+            return
+        }
 
         parser.status = .pause
         DispatchQueue.main.async { [weak self] in
@@ -3380,19 +3389,66 @@ class TTLInterpreter {
     }
 
     private func ttlSetPassword() throws {
-        _ = try parser.getStrExpression()
-        _ = try parser.getStrExpression()
-        parser.setResult(0)
+        let account = try parser.getStrExpression()
+        let password = try parser.getStrExpression()
+        let ok = keychainSave(account: account, password: password)
+        parser.setResult(ok ? 0 : -1)
     }
 
     private func ttlDelPassword() throws {
-        _ = try parser.getStrExpression()
-        parser.setResult(0)
+        let account = try parser.getStrExpression()
+        let ok = keychainDelete(account: account)
+        parser.setResult(ok ? 0 : -1)
     }
 
     private func ttlIsPassword() throws {
-        _ = try parser.getStrExpression()
-        parser.setResult(0)
+        let account = try parser.getStrExpression()
+        let exists = keychainLoad(account: account) != nil
+        parser.setResult(exists ? 1 : 0)
+    }
+
+    // MARK: - Keychain Helpers
+
+    private func keychainSave(account: String, password: String) -> Bool {
+        guard let data = password.data(using: .utf8) else { return false }
+        // Delete existing entry first
+        let deleteQuery: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: Self.keychainService,
+            kSecAttrAccount as String: account,
+        ]
+        SecItemDelete(deleteQuery as CFDictionary)
+
+        let addQuery: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: Self.keychainService,
+            kSecAttrAccount as String: account,
+            kSecValueData as String: data,
+        ]
+        return SecItemAdd(addQuery as CFDictionary, nil) == errSecSuccess
+    }
+
+    private func keychainLoad(account: String) -> String? {
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: Self.keychainService,
+            kSecAttrAccount as String: account,
+            kSecReturnData as String: true,
+            kSecMatchLimit as String: kSecMatchLimitOne,
+        ]
+        var result: AnyObject?
+        let status = SecItemCopyMatching(query as CFDictionary, &result)
+        guard status == errSecSuccess, let data = result as? Data else { return nil }
+        return String(data: data, encoding: .utf8)
+    }
+
+    private func keychainDelete(account: String) -> Bool {
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: Self.keychainService,
+            kSecAttrAccount as String: account,
+        ]
+        return SecItemDelete(query as CFDictionary) == errSecSuccess
     }
 
     private func ttlGetPassword2() throws {

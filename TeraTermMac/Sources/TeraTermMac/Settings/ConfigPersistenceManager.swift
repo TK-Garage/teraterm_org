@@ -409,7 +409,7 @@ class ConfigPersistenceManager {
         let base = FileManager.default.urls(
             for: .applicationSupportDirectory,
             in: .userDomainMask
-        ).first!
+        ).first ?? URL(fileURLWithPath: NSHomeDirectory()).appendingPathComponent("Library/Application Support")
         return base.appendingPathComponent(Self.appDirectoryName, isDirectory: true)
     }
 

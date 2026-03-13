@@ -1050,7 +1050,9 @@ extension TerminalWindowController: TTLInterpreterDelegate {
     }
 
     func ttlLogOpen(_ path: String, append: Bool) {
-        _ = logger.startLogging(to: path)
+        var opts = LogOptions()
+        opts.appendMode = append
+        _ = logger.startLogging(to: path, options: opts)
     }
 
     func ttlLogClose() {
