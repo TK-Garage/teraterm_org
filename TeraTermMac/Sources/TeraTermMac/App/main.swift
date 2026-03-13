@@ -10,6 +10,12 @@
 #if canImport(AppKit)
 import AppKit
 
+// Tera Term は日本語アプリケーション — 日本語を優先言語に設定する。
+// システム言語が英語でも日本語UIで表示されるようにする。
+// ユーザーがシステム環境設定で英語を選んでいる場合も日本語を優先する。
+UserDefaults.standard.set(["ja", "en"], forKey: "AppleLanguages")
+UserDefaults.standard.synchronize()
+
 // Transform the process into a foreground (GUI) application.
 // Without this, SPM executables run as background processes
 // and won't show a Dock icon or menu bar.

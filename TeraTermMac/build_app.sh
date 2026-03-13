@@ -39,6 +39,16 @@ mkdir -p "$APP_DIR/Contents/Resources"
 # 実行ファイルコピー
 cp "$BUILD_DIR/$EXECUTABLE" "$APP_DIR/Contents/MacOS/$EXECUTABLE"
 
+# SPM リソースバンドルコピー (Bundle.module が参照する)
+# SPM は実行ファイルと同じディレクトリに _<Target>.bundle を生成する
+RESOURCE_BUNDLE="${EXECUTABLE}_${EXECUTABLE}.bundle"
+if [ -d "$BUILD_DIR/$RESOURCE_BUNDLE" ]; then
+    cp -R "$BUILD_DIR/$RESOURCE_BUNDLE" "$APP_DIR/Contents/MacOS/$RESOURCE_BUNDLE"
+    echo "  SPM リソースバンドル ($RESOURCE_BUNDLE) をコピーしました"
+else
+    echo "  警告: SPM リソースバンドル ($RESOURCE_BUNDLE) が見つかりません"
+fi
+
 # Info.plist コピー (ソースの完全な Info.plist を使用)
 cp "Sources/TeraTermMac/Info.plist" "$APP_DIR/Contents/Info.plist"
 
