@@ -35,7 +35,8 @@ class SSHConnection: Connection {
     let forwardAgent: Bool
     let termType: String
 
-    private let password: String
+    // password は resetPort() で再利用するため internal(set) で公開
+    private(set) var password: String
     let keyFile: String
 
     private(set) var state: ConnectionState = .disconnected
@@ -168,9 +169,7 @@ class SSHConnection: Connection {
         let flags = fcntl(masterFD, F_GETFL)
         _ = fcntl(masterFD, F_SETFL, flags | O_NONBLOCK)
 
-        state = .connected
-        delegate?.connectionDidConnect()
-
+        // 接続通知は startReading 内で子プロセスの生存確認後に行う
         startReading()
 
         // Clean up ASKPASS helper after ssh has had time to authenticate
@@ -230,9 +229,28 @@ class SSHConnection: Connection {
         stateLock.unlock()
 
         guard running, fd >= 0 else { return }
+        // 全バイト送信完了までループ（部分書き込み対応）
         data.withUnsafeBytes { buffer in
-            guard let ptr = buffer.baseAddress else { return }
-            _ = write(fd, ptr, data.count)
+            guard let basePtr = buffer.baseAddress else { return }
+            var offset = 0
+            let total = data.count
+            while offset < total {
+                let n = write(fd, basePtr + offset, total - offset)
+                if n > 0 {
+                    offset += n
+                } else if n < 0 {
+                    if errno == EINTR { continue }
+                    if errno == EAGAIN {
+                        Thread.sleep(forTimeInterval: 0.001)
+                        continue
+                    }
+                    // 書き込みエラー → 切断
+                    DispatchQueue.main.async { [weak self] in
+                        self?.disconnect()
+                    }
+                    return
+                }
+            }
         }
     }
 
@@ -378,6 +396,7 @@ class SSHConnection: Connection {
         readQueue.async { [weak self] in
             let bufferSize = 16384
             var buffer = [UInt8](repeating: 0, count: bufferSize)
+            var connected = false  // 接続通知済みフラグ
 
             while true {
                 guard let self = self else { break }
@@ -393,21 +412,55 @@ class SSHConnection: Connection {
                 if bytesRead > 0 {
                     let data = Data(buffer[0..<bytesRead])
                     DispatchQueue.main.async { [weak self] in
-                        self?.delegate?.connectionDidReceiveData(data)
+                        guard let self = self else { return }
+                        if !connected {
+                            // 初回データ受信で子プロセス生存を確認してから通知
+                            connected = true
+                            self.state = .connected
+                            self.delegate?.connectionDidConnect()
+                        }
+                        self.delegate?.connectionDidReceiveData(data)
                     }
                 } else if bytesRead < 0 {
                     if errno == EAGAIN || errno == EINTR {
+                        // 接続待ち中の EAGAIN は子プロセスの生存を確認
+                        if !connected {
+                            var status: Int32 = 0
+                            let r = waitpid(self.childPID, &status, WNOHANG)
+                            if r > 0 {
+                                // 子プロセスが既に終了 (execvp 失敗等)
+                                DispatchQueue.main.async { [weak self] in
+                                    self?.handleSSHExit()
+                                }
+                                break
+                            }
+                        }
                         Thread.sleep(forTimeInterval: 0.005)
                         continue
                     }
                     // SSH process likely exited
                     DispatchQueue.main.async { [weak self] in
+                        if !connected {
+                            // 接続完了前にエラー → 失敗通知
+                            self?.state = .error("SSH connection failed")
+                            self?.delegate?.connectionDidFail(
+                                error: ConnectionError.sshConnectionFailed(
+                                    host: self?.host ?? "", port: self?.port ?? 0,
+                                    detail: "PTY read error before connection established"))
+                        }
                         self?.handleSSHExit()
                     }
                     break
                 } else {
                     // EOF - SSH process exited
                     DispatchQueue.main.async { [weak self] in
+                        if !connected {
+                            self?.state = .error("SSH connection failed")
+                            self?.delegate?.connectionDidFail(
+                                error: ConnectionError.sshConnectionFailed(
+                                    host: self?.host ?? "", port: self?.port ?? 0,
+                                    detail: "SSH process exited before connection established"))
+                        }
                         self?.handleSSHExit()
                     }
                     break

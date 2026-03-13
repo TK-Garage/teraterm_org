@@ -2258,8 +2258,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
     private func showSSHSCPDialog() {
         guard let wc = activeWindowController else { return }
 
-        // Check if connected via SSH
-        guard wc.connectionManager.currentConnection is SSHConnection else {
+        // 安全キャストで SSH 接続を取得（失敗時は警告表示）
+        guard let ssh = wc.connectionManager.currentConnection as? SSHConnection else {
             let alert = NSAlert()
             alert.messageText = L("dialog.scp.error.notConnected")
             alert.alertStyle = .warning
@@ -2271,8 +2271,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
             }
             return
         }
-
-        let ssh = wc.connectionManager.currentConnection as! SSHConnection
         let vc = SCPDialogController(settings: settings)
         vc.onSend = { [weak self] localPath, remotePath in
             SCPDialogController.executeSCP(

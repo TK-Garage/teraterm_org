@@ -233,13 +233,14 @@ class ConnectionManager {
             let h = ssh.host
             let p = ssh.port
             let u = ssh.username
+            let pw = ssh.password  // reset後も認証情報を維持
             let m = ssh.authMethod
             let k = ssh.keyFile
             let f = ssh.forwardAgent
             let t = ssh.termType
             ssh.disconnect()
             let newConn = SSHConnection(
-                host: h, port: p, username: u, password: "",
+                host: h, port: p, username: u, password: pw,
                 authMethod: m, keyFile: k, forwardAgent: f, termType: t)
             newConn.delegate = self
             currentConnection = newConn
@@ -409,10 +410,32 @@ class TCPConnection: Connection {
         stateLock.unlock()
 
         guard running, let output = output else { return }
-        writeQueue.async {
+        writeQueue.async { [weak self] in
+            // 全バイト送信完了までループ（部分書き込み対応）
             data.withUnsafeBytes { buffer in
-                guard let ptr = buffer.baseAddress?.assumingMemoryBound(to: UInt8.self) else { return }
-                output.write(ptr, maxLength: data.count)
+                guard let basePtr = buffer.baseAddress?.assumingMemoryBound(to: UInt8.self) else { return }
+                var offset = 0
+                let total = data.count
+                var retries = 0
+                let maxRetries = 1000  // 無限ループ防止
+                while offset < total {
+                    let n = output.write(basePtr + offset, maxLength: total - offset)
+                    if n > 0 {
+                        offset += n
+                        retries = 0
+                    } else if n == 0 {
+                        // ストリームが一時的に書き込み不可
+                        retries += 1
+                        if retries > maxRetries { break }
+                        Thread.sleep(forTimeInterval: 0.001)
+                    } else {
+                        // 書き込みエラー → 切断
+                        DispatchQueue.main.async { [weak self] in
+                            self?.disconnect()
+                        }
+                        return
+                    }
+                }
             }
         }
     }
@@ -672,9 +695,28 @@ class SerialConnection: Connection {
         stateLock.unlock()
 
         guard running, fd >= 0 else { return }
+        // 全バイト送信完了までループ（部分書き込み対応）
         data.withUnsafeBytes { buffer in
-            guard let ptr = buffer.baseAddress else { return }
-            _ = write(fd, ptr, data.count)
+            guard let basePtr = buffer.baseAddress else { return }
+            var offset = 0
+            let total = data.count
+            while offset < total {
+                let n = write(fd, basePtr + offset, total - offset)
+                if n > 0 {
+                    offset += n
+                } else if n < 0 {
+                    if errno == EINTR { continue }
+                    if errno == EAGAIN {
+                        Thread.sleep(forTimeInterval: 0.001)
+                        continue
+                    }
+                    // 書き込みエラー → 切断
+                    DispatchQueue.main.async { [weak self] in
+                        self?.disconnect()
+                    }
+                    return
+                }
+            }
         }
     }
 
@@ -867,9 +909,7 @@ class LocalShellConnection: Connection {
         let flags = fcntl(masterFD, F_GETFL)
         _ = fcntl(masterFD, F_SETFL, flags | O_NONBLOCK)
 
-        state = .connected
-        delegate?.connectionDidConnect()
-
+        // 接続通知は startReading 内で子プロセスの生存確認後に行う
         startReading()
     }
 
@@ -917,9 +957,28 @@ class LocalShellConnection: Connection {
         stateLock.unlock()
 
         guard running, fd >= 0 else { return }
+        // 全バイト送信完了までループ（部分書き込み対応）
         data.withUnsafeBytes { buffer in
-            guard let ptr = buffer.baseAddress else { return }
-            _ = write(fd, ptr, data.count)
+            guard let basePtr = buffer.baseAddress else { return }
+            var offset = 0
+            let total = data.count
+            while offset < total {
+                let n = write(fd, basePtr + offset, total - offset)
+                if n > 0 {
+                    offset += n
+                } else if n < 0 {
+                    if errno == EINTR { continue }
+                    if errno == EAGAIN {
+                        Thread.sleep(forTimeInterval: 0.001)
+                        continue
+                    }
+                    // 書き込みエラー → 切断
+                    DispatchQueue.main.async { [weak self] in
+                        self?.disconnect()
+                    }
+                    return
+                }
+            }
         }
     }
 
@@ -950,6 +1009,7 @@ class LocalShellConnection: Connection {
         readQueue.async { [weak self] in
             let bufferSize = 16384
             var buffer = [UInt8](repeating: 0, count: bufferSize)
+            var connected = false  // 接続通知済みフラグ
 
             while true {
                 guard let self = self else { break }
@@ -965,22 +1025,57 @@ class LocalShellConnection: Connection {
                 if bytesRead > 0 {
                     let data = Data(buffer[0..<bytesRead])
                     DispatchQueue.main.async { [weak self] in
-                        self?.delegate?.connectionDidReceiveData(data)
+                        guard let self = self else { return }
+                        if !connected {
+                            // 初回データ受信で子プロセス生存を確認してから通知
+                            connected = true
+                            self.state = .connected
+                            self.delegate?.connectionDidConnect()
+                        }
+                        self.delegate?.connectionDidReceiveData(data)
                     }
                 } else if bytesRead < 0 {
                     if errno == EAGAIN || errno == EINTR {
+                        // 接続待ち中は子プロセスの生存を確認
+                        if !connected {
+                            var status: Int32 = 0
+                            let r = waitpid(self.childPID, &status, WNOHANG)
+                            if r > 0 {
+                                // 子プロセスが既に終了 (execvp 失敗等)
+                                DispatchQueue.main.async { [weak self] in
+                                    guard let self = self else { return }
+                                    self.state = .error("Shell launch failed")
+                                    self.delegate?.connectionDidFail(
+                                        error: ConnectionError.ptyCreationFailed)
+                                    self.disconnect()
+                                }
+                                break
+                            }
+                        }
                         Thread.sleep(forTimeInterval: 0.005)
                         continue
                     }
                     // Process likely exited
                     DispatchQueue.main.async { [weak self] in
-                        self?.disconnect()
+                        guard let self = self else { return }
+                        if !connected {
+                            self.state = .error("Shell launch failed")
+                            self.delegate?.connectionDidFail(
+                                error: ConnectionError.ptyCreationFailed)
+                        }
+                        self.disconnect()
                     }
                     break
                 } else {
                     // EOF - process exited
                     DispatchQueue.main.async { [weak self] in
-                        self?.disconnect()
+                        guard let self = self else { return }
+                        if !connected {
+                            self.state = .error("Shell exited immediately")
+                            self.delegate?.connectionDidFail(
+                                error: ConnectionError.ptyCreationFailed)
+                        }
+                        self.disconnect()
                     }
                     break
                 }
