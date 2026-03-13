@@ -194,6 +194,9 @@ class SSHConnection: Connection {
 
         guard !alreadyDisconnected else { return }
 
+        // 認証情報をメモリから消去（resetPort は disconnect 前に取得済み）
+        password = ""
+
         cleanupAskpass()
 
         // Send SIGHUP to ssh process and wait for it to exit
