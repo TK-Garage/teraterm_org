@@ -35,8 +35,6 @@ class TEKWindowController: NSWindowController {
         window.title = "Tera Term: TEK"
         window.minSize = NSSize(width: 320, height: 240)
         window.isReleasedWhenClosed = false
-        window.appearance = NSAppearance(named: .darkAqua)
-
         super.init(window: window)
 
         setupTEKView()

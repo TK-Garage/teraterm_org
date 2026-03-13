@@ -70,10 +70,9 @@ class TerminalWindowController: NSWindowController {
         window.isReleasedWhenClosed = false
         window.isRestorable = false
 
-        // macOS HIG: visible title bar with standard dark appearance
+        // macOS HIG: OS標準の外観モードに追従
         window.titlebarAppearsTransparent = false
         window.titleVisibility = .visible
-        window.appearance = NSAppearance(named: .darkAqua)
         window.animationBehavior = .documentWindow
 
         super.init(window: window)
@@ -118,7 +117,7 @@ class TerminalWindowController: NSWindowController {
         // background so the effect shows through.
         let visualEffect = NSVisualEffectView(frame: NSRect(x: 0, y: 0, width: 640, height: 400))
         visualEffect.autoresizingMask = [.width, .height]
-        visualEffect.material = .hudWindow
+        visualEffect.material = .underWindowBackground
         visualEffect.blendingMode = .behindWindow
         visualEffect.state = .active
         window.contentView = visualEffect

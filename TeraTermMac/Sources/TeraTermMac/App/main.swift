@@ -16,8 +16,8 @@ import AppKit
 let app = NSApplication.shared
 app.setActivationPolicy(.regular)
 
-// Use dark appearance for terminal aesthetics with glass effects
-app.appearance = NSAppearance(named: .darkAqua)
+// OS標準の外観モード（ライト/ダーク）に追従する
+// app.appearance を設定しないことでシステム設定を尊重する
 
 let delegate = AppDelegate()
 app.delegate = delegate
@@ -29,6 +29,6 @@ app.run()
 #else
 import Foundation
 print("Tera Term Mac requires macOS with AppKit.")
-print("Please build and run on macOS 13.0 or later.")
+print("Please build and run on macOS 14.0 or later.")
 Foundation.exit(1)
 #endif
