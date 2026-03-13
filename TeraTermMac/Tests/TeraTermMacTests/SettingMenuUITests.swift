@@ -316,7 +316,7 @@ final class SettingMenuUITests: XCTestCase {
         description: String
     ) {
         let elements = container.descendants(matching: type)
-        let matchCount = elements.allElementsBoundByIndex.filter { element in
+        let _ = elements.allElementsBoundByIndex.filter { element in
             let id = element.identifier
             return id.contains(identifier) || !id.isEmpty
         }.count
@@ -561,23 +561,12 @@ final class SettingDialogConstructionTests: XCTestCase {
         case is NSPopUpButton:
             counts.popups += 1
         case let button as NSButton:
-            switch button.bezelStyle {
-            case .rounded, .regularSquare, .texturedRounded:
-                if button.buttonType == .switch {
-                    counts.checkboxes += 1
-                } else if button.buttonType == .radio {
-                    counts.radios += 1
-                } else {
-                    counts.buttons += 1
-                }
-            default:
-                if button.buttonType == .switch {
-                    counts.checkboxes += 1
-                } else if button.buttonType == .radio {
-                    counts.radios += 1
-                } else {
-                    counts.buttons += 1
-                }
+            if button.accessibilityRole() == .checkBox {
+                counts.checkboxes += 1
+            } else if button.accessibilityRole() == .radioButton {
+                counts.radios += 1
+            } else {
+                counts.buttons += 1
             }
         case is NSTextField:
             counts.textFields += 1

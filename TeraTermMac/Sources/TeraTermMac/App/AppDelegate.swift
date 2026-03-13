@@ -1368,22 +1368,28 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
     // MARK: - Dialogs (port of ttpdlg)
 
     private func showConnectionDialog(for targetWC: TerminalWindowController? = nil) {
-        let alert = NSAlert()
-        alert.messageText = L("dialog.connection.title")
-        alert.informativeText = ""
-
-        // Helper retains target/action for radio button groups
+        // ── NSPanel ベースのモーダルダイアログ（NSAlert は accessoryView の Auto Layout を破壊するため使用不可） ──
         let helper = ConnectionDialogHelper()
-        objc_setAssociatedObject(alert, "helper", helper, .OBJC_ASSOCIATION_RETAIN)
 
-        let accessoryView = NSView()
-        accessoryView.translatesAutoresizingMaskIntoConstraints = false
+        let m = DialogLayout.margin
+        let innerM = DialogLayout.innerMargin
+
+        // メインコンテンツビュー
+        let contentView = NSView()
+        contentView.translatesAutoresizingMaskIntoConstraints = false
+
+        // タイトルラベル
+        let titleLabel = NSTextField(labelWithString: L("dialog.connection.title"))
+        titleLabel.translatesAutoresizingMaskIntoConstraints = false
+        titleLabel.font = NSFont.boldSystemFont(ofSize: 14)
+        titleLabel.alignment = .left
+        contentView.addSubview(titleLabel)
 
         // ── TCP/IP Group Box ──
         let tcpBox = NSBox()
         tcpBox.translatesAutoresizingMaskIntoConstraints = false
         tcpBox.titlePosition = .noTitle
-        accessoryView.addSubview(tcpBox)
+        contentView.addSubview(tcpBox)
 
         let tcpContent = NSView()
         tcpContent.translatesAutoresizingMaskIntoConstraints = false
@@ -1508,8 +1514,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         row4.spacing = DialogLayout.sectionSpacing
         row4.alignment = .firstBaseline
 
-        // Service rows: align radio buttons with leading indent
-        // Ensure radio buttons have enough width for labels
+        // Service rows: ラジオボタンの最小幅を揃える
         for radio in [telnetRadio, sshRadio, otherRadio] {
             radio.widthAnchor.constraint(greaterThanOrEqualToConstant: 80).isActive = true
         }
@@ -1529,7 +1534,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
 
         tcpContent.addSubview(tcpStack)
 
-        let innerM = DialogLayout.innerMargin
         NSLayoutConstraint.activate([
             tcpStack.topAnchor.constraint(equalTo: tcpContent.topAnchor, constant: innerM),
             tcpStack.leadingAnchor.constraint(equalTo: tcpContent.leadingAnchor, constant: innerM),
@@ -1539,7 +1543,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
 
         tcpBox.contentView = tcpContent
 
-        // Align service radio rows under the host combobox column
+        // サービス行をホストコンボボックス列に揃える
         NSLayoutConstraint.activate([
             serviceLabel.trailingAnchor.constraint(equalTo: tcpRadio.trailingAnchor),
             sshRow.leadingAnchor.constraint(equalTo: serviceRow.leadingAnchor),
@@ -1559,7 +1563,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         let serialBox = NSBox()
         serialBox.translatesAutoresizingMaskIntoConstraints = false
         serialBox.titlePosition = .noTitle
-        accessoryView.addSubview(serialBox)
+        contentView.addSubview(serialBox)
 
         let serialContent = NSView()
         serialContent.translatesAutoresizingMaskIntoConstraints = false
@@ -1603,11 +1607,11 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
 
         helper.serialControls = [serialPortLabel, serialPortPopup]
 
-        // ── Local Shell Group Box (macOS port of Cygwin) ──
+        // ── Local Shell Group Box ──
         let shellBox = NSBox()
         shellBox.translatesAutoresizingMaskIntoConstraints = false
         shellBox.titlePosition = .noTitle
-        accessoryView.addSubview(shellBox)
+        contentView.addSubview(shellBox)
 
         let shellContent = NSView()
         shellContent.translatesAutoresizingMaskIntoConstraints = false
@@ -1643,25 +1647,65 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
 
         helper.localShellControls = [shellPathLabel, shellPathField]
 
-        // ── Main vertical stack: [tcpBox] - 12 - [serialBox] - 12 - [shellBox] ──
+        // ── セパレータ ──
+        let separator = NSBox()
+        separator.translatesAutoresizingMaskIntoConstraints = false
+        separator.boxType = .separator
+        contentView.addSubview(separator)
+
+        // ── ボタンバー: [spacer] [Cancel] [OK] ──
+        let okButton = NSView.makePushButton(L("dialog.connection.ok"), keyEquivalent: "\r")
+        let cancelButton = NSView.makePushButton(L("dialog.connection.cancel"), keyEquivalent: "\u{1b}")
+
+        let buttonSpacer = NSView()
+        buttonSpacer.translatesAutoresizingMaskIntoConstraints = false
+        buttonSpacer.setContentHuggingPriority(.defaultLow - 1, for: .horizontal)
+
+        let buttonBar = NSStackView(views: [buttonSpacer, cancelButton, okButton])
+        buttonBar.translatesAutoresizingMaskIntoConstraints = false
+        buttonBar.orientation = .horizontal
+        buttonBar.spacing = DialogLayout.buttonSpacing
+        buttonBar.alignment = .centerY
+        contentView.addSubview(buttonBar)
+
+        // ── NSBox に対して直接制約を張る（contentView ではなく） ──
         NSLayoutConstraint.activate([
-            tcpBox.topAnchor.constraint(equalTo: accessoryView.topAnchor),
-            tcpBox.leadingAnchor.constraint(equalTo: accessoryView.leadingAnchor),
-            tcpBox.trailingAnchor.constraint(equalTo: accessoryView.trailingAnchor),
+            // タイトル
+            titleLabel.topAnchor.constraint(equalTo: contentView.topAnchor, constant: m),
+            titleLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: m),
+            titleLabel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -m),
 
-            serialBox.topAnchor.constraint(equalTo: tcpBox.bottomAnchor, constant: DialogLayout.innerMargin),
-            serialBox.leadingAnchor.constraint(equalTo: accessoryView.leadingAnchor),
-            serialBox.trailingAnchor.constraint(equalTo: accessoryView.trailingAnchor),
+            // TCP/IP ボックス
+            tcpBox.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: m),
+            tcpBox.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: m),
+            tcpBox.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -m),
 
-            shellBox.topAnchor.constraint(equalTo: serialBox.bottomAnchor, constant: DialogLayout.innerMargin),
-            shellBox.leadingAnchor.constraint(equalTo: accessoryView.leadingAnchor),
-            shellBox.trailingAnchor.constraint(equalTo: accessoryView.trailingAnchor),
-            shellBox.bottomAnchor.constraint(equalTo: accessoryView.bottomAnchor),
+            // Serial ボックス
+            serialBox.topAnchor.constraint(equalTo: tcpBox.bottomAnchor, constant: innerM),
+            serialBox.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: m),
+            serialBox.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -m),
 
-            accessoryView.widthAnchor.constraint(greaterThanOrEqualToConstant: 520),
+            // Local Shell ボックス
+            shellBox.topAnchor.constraint(equalTo: serialBox.bottomAnchor, constant: innerM),
+            shellBox.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: m),
+            shellBox.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -m),
+
+            // セパレータ
+            separator.topAnchor.constraint(equalTo: shellBox.bottomAnchor, constant: m),
+            separator.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
+            separator.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
+
+            // ボタンバー
+            buttonBar.topAnchor.constraint(equalTo: separator.bottomAnchor, constant: m * 0.75),
+            buttonBar.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: m),
+            buttonBar.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -m),
+            buttonBar.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -m * 0.75),
+
+            // 最小幅
+            contentView.widthAnchor.constraint(greaterThanOrEqualToConstant: 520),
         ])
 
-        // Apply initial enable/disable state
+        // 初期有効/無効状態を適用
         let activeTag: Int
         switch settings.portType {
         case .serial: activeTag = 1
@@ -1672,7 +1716,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         for ctrl in helper.serialControls { ctrl.isEnabled = (activeTag == 1) }
         for ctrl in helper.localShellControls { ctrl.isEnabled = (activeTag == 2) }
 
-        // If no serial ports available, disable Serial radio
+        // シリアルポートが無い場合は Serial ラジオを無効化
         if serialPorts.isEmpty {
             serialRadio.isEnabled = false
             if settings.portType == .serial {
@@ -1683,11 +1727,30 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
             }
         }
 
-        alert.accessoryView = accessoryView
-        alert.addButton(withTitle: L("dialog.connection.ok"))
-        alert.addButton(withTitle: L("dialog.connection.cancel"))
+        // ── NSPanel を作成してモーダル表示 ──
+        let panel = NSPanel(
+            contentRect: .zero,
+            styleMask: [.titled, .closable],
+            backing: .buffered,
+            defer: true)
+        panel.title = L("dialog.connection.title")
+        panel.isReleasedWhenClosed = false
+        panel.contentView = contentView
 
-        if alert.runModal() == .alertFirstButtonReturn {
+        // helper をパネルに関連付けて保持（ラジオボタンの target/action 用）
+        objc_setAssociatedObject(panel, "helper", helper, .OBJC_ASSOCIATION_RETAIN)
+
+        // ボタンアクション: レスポンダチェーン経由で AppDelegate に到達
+        okButton.target = nil
+        okButton.action = #selector(AppDelegate.connectionDialogOK(_:))
+        cancelButton.target = nil
+        cancelButton.action = #selector(AppDelegate.connectionDialogCancel(_:))
+
+        panel.center()
+        let response = NSApp.runModal(for: panel)
+        panel.close()
+
+        if response == .OK {
             let wc = targetWC ?? newTerminalWindow()
 
             if wc.connectionManager.state != .disconnected {
@@ -1695,7 +1758,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
             }
 
             if shellRadio.state == .on {
-                // Local Shell connection
+                // Local Shell 接続
                 let path = shellPathField.stringValue
                 if !path.isEmpty && path != defaultShell {
                     settings.localShellPath = path
@@ -1744,6 +1807,14 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
                 }
             }
         }
+    }
+
+    @objc private func connectionDialogOK(_ sender: NSButton) {
+        NSApp.stopModal(withCode: .OK)
+    }
+
+    @objc private func connectionDialogCancel(_ sender: NSButton) {
+        NSApp.stopModal(withCode: .cancel)
     }
 
     private func addToHostHistory(_ host: String) {

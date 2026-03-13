@@ -58,7 +58,7 @@ enum AccessibilityIDAssigner {
         let typeName = controlTypeName(view)
 
         // Only assign if no existing identifier
-        if view.accessibilityIdentifier() == nil || view.accessibilityIdentifier()!.isEmpty {
+        if view.accessibilityIdentifier().isEmpty {
             let key = "\(prefix).\(typeName)"
             let idx = counters[key, default: 0]
             counters[key] = idx + 1
@@ -66,7 +66,7 @@ enum AccessibilityIDAssigner {
         }
 
         for subview in view.subviews {
-            let childPrefix = view.accessibilityIdentifier() ?? prefix
+            let childPrefix = view.accessibilityIdentifier().isEmpty ? prefix : view.accessibilityIdentifier()
             assignRecursive(view: subview, prefix: childPrefix, counters: &counters)
         }
     }
@@ -795,7 +795,8 @@ final class UITestHarnessTests: XCTestCase {
 
     private func countControlsWithIDs(in view: NSView) -> Int {
         var count = 0
-        if let id = view.accessibilityIdentifier(), !id.isEmpty {
+        let id = view.accessibilityIdentifier()
+        if !id.isEmpty {
             count += 1
         }
         for sub in view.subviews {
