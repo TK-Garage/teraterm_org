@@ -783,7 +783,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         // NSPanel ベースのモーダルダイアログ
         let panel = NSPanel(
             contentRect: NSRect(x: 0, y: 0, width: 400, height: 250),
-            styleMask: [.titled, .fullSizeContentView],
+            styleMask: [.titled, .closable],
             backing: .buffered,
             defer: true)
         panel.title = L("dialog.pasteSpecial.title")
@@ -1465,7 +1465,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         // （contentView を置き換えるとウィンドウのフレーム管理が壊れる）
         let panel = NSPanel(
             contentRect: NSRect(x: 0, y: 0, width: 560, height: 400),
-            styleMask: [.titled, .fullSizeContentView],
+            styleMask: [.titled, .closable],
             backing: .buffered,
             defer: true)
         panel.title = L("dialog.connection.title")
