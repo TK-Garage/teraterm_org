@@ -23,6 +23,50 @@ private func WEXITSTATUS(_ status: Int32) -> Int32 {
     return (status >> 8) & 0xFF
 }
 
+// MARK: - Secure Password Buffer
+
+/// パスワードを UnsafeMutableBufferPointer で管理し、
+/// 不要時に確実にゼロクリアするためのバッファ。
+/// Swift String の CoW では元バッファのゼロ化が保証されないため、
+/// セキュリティ上重要な認証情報にはこちらを使用する。
+private final class SecurePasswordBuffer {
+    private var buffer: UnsafeMutableBufferPointer<UInt8>?
+    private let count: Int
+
+    init(_ string: String) {
+        let utf8 = Array(string.utf8)
+        count = utf8.count
+        if count > 0 {
+            let ptr = UnsafeMutableBufferPointer<UInt8>.allocate(capacity: count)
+            _ = ptr.initialize(from: utf8)
+            buffer = ptr
+        }
+    }
+
+    deinit {
+        clear()
+    }
+
+    /// パスワード文字列を取得（コピー）
+    var string: String {
+        guard let buf = buffer else { return "" }
+        return String(bytes: buf, encoding: .utf8) ?? ""
+    }
+
+    var isEmpty: Bool { count == 0 || buffer == nil }
+
+    /// バッファをゼロクリアして解放
+    func clear() {
+        guard let buf = buffer else { return }
+        // volatile 相当: コンパイラ最適化で省略されないようにする
+        for i in 0..<buf.count {
+            buf[i] = 0
+        }
+        buf.deallocate()
+        buffer = nil
+    }
+}
+
 // MARK: - SSH Connection (system ssh via PTY)
 
 class SSHConnection: Connection {
@@ -35,8 +79,10 @@ class SSHConnection: Connection {
     let forwardAgent: Bool
     let termType: String
 
-    // password は resetPort() で再利用するため internal(set) で公開
-    private(set) var password: String
+    /// パスワードをセキュアバッファで保持（resetPort で読み取り後、disconnect でゼロクリア）
+    private var _passwordBuffer: SecurePasswordBuffer
+    /// resetPort() 用のアクセサ（文字列コピーを返す）
+    var password: String { _passwordBuffer.string }
     let keyFile: String
 
     private(set) var state: ConnectionState = .disconnected
@@ -81,7 +127,7 @@ class SSHConnection: Connection {
         self.host = host
         self.port = port
         self.username = username
-        self.password = password
+        self._passwordBuffer = SecurePasswordBuffer(password)
         self.authMethod = authMethod
         self.keyFile = keyFile
         self.forwardAgent = forwardAgent
@@ -89,6 +135,7 @@ class SSHConnection: Connection {
     }
 
     deinit {
+        _passwordBuffer.clear()
         cleanupAskpass()
     }
 
@@ -99,8 +146,8 @@ class SSHConnection: Connection {
         delegate?.connectionStateChanged(state)
 
         // Create ASKPASS helper if password/passphrase is provided
-        if !password.isEmpty {
-            askpassPath = createAskpassHelper(password: password)
+        if !_passwordBuffer.isEmpty {
+            askpassPath = createAskpassHelper(password: _passwordBuffer.string)
         }
 
         // Capture values for use after fork
@@ -194,8 +241,8 @@ class SSHConnection: Connection {
 
         guard !alreadyDisconnected else { return }
 
-        // 認証情報をメモリから消去（resetPort は disconnect 前に取得済み）
-        password = ""
+        // 認証情報をメモリからゼロクリア（resetPort は disconnect 前に取得済み）
+        _passwordBuffer.clear()
 
         cleanupAskpass()
 
