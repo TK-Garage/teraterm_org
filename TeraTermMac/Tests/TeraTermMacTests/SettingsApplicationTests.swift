@@ -60,20 +60,20 @@ class SettingsApplicationTests: XCTestCase {
     func testApplySettingsUpdatesWindowAlpha() {
         settings.windowAlpha = 0.5
         wc.applySettings()
-        XCTAssertEqual(wc.window?.alphaValue, 0.5, accuracy: 0.01,
+        XCTAssertEqual(wc.window?.alphaValue ?? 0, 0.5, accuracy: 0.01,
             "Window alpha should match settings")
     }
 
     func testApplySettingsFullyOpaque() {
         settings.windowAlpha = 1.0
         wc.applySettings()
-        XCTAssertEqual(wc.window?.alphaValue, 1.0, accuracy: 0.01)
+        XCTAssertEqual(wc.window?.alphaValue ?? 0, 1.0, accuracy: 0.01)
     }
 
     func testApplySettingsPartialTransparency() {
         settings.windowAlpha = 0.75
         wc.applySettings()
-        XCTAssertEqual(wc.window?.alphaValue, 0.75, accuracy: 0.01)
+        XCTAssertEqual(wc.window?.alphaValue ?? 0, 0.75, accuracy: 0.01)
     }
 
     // MARK: - Font Changes
