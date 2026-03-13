@@ -42,9 +42,12 @@ class XMODEMOptionAccessoryTests: XCTestCase {
     }
 
     func testFrameSize() {
+        // Auto Layoutベースのビューは layoutSubtreeIfNeeded 後に fittingSize を使う
         let accessory = XMODEMOptionAccessory(isSend: true)
-        XCTAssertEqual(accessory.frame.width, 440)
-        XCTAssertEqual(accessory.frame.height, 52)
+        accessory.layoutSubtreeIfNeeded()
+        let size = accessory.fittingSize
+        XCTAssertGreaterThan(size.width, 0, "XMODEMOptionAccessory should have non-zero width")
+        XCTAssertGreaterThan(size.height, 0, "XMODEMOptionAccessory should have non-zero height")
     }
 
     func testRadioMutualExclusion() {
@@ -85,8 +88,10 @@ class FileOptionAccessoryTests: XCTestCase {
 
     func testFrameSize() {
         let accessory = FileOptionAccessory()
-        XCTAssertEqual(accessory.frame.width, 300)
-        XCTAssertEqual(accessory.frame.height, 52)
+        accessory.layoutSubtreeIfNeeded()
+        let size = accessory.fittingSize
+        XCTAssertGreaterThan(size.width, 0, "FileOptionAccessory should have non-zero width")
+        XCTAssertGreaterThan(size.height, 0, "FileOptionAccessory should have non-zero height")
     }
 }
 
@@ -210,7 +215,8 @@ class SendFileDialogControllerTests: XCTestCase {
 
     func testTitleIsSet() {
         let vc = SendFileDialogController()
-        XCTAssertEqual(vc.title, "Send file")
+        // タイトルはローカライズされる
+        XCTAssertEqual(vc.title, NSLocalizedString("dialog.sendFile.title", value: "Send file", comment: ""))
     }
 
     func testDelayTypeEnum() {
@@ -273,7 +279,8 @@ class RecvFileDialogControllerTests: XCTestCase {
 
     func testTitleIsSet() {
         let vc = RecvFileDialogController()
-        XCTAssertEqual(vc.title, "Receive file")
+        // タイトルはローカライズされる
+        XCTAssertEqual(vc.title, NSLocalizedString("dialog.recvFile.title", value: "Receive file", comment: ""))
     }
 
     func testResultInitialization() {

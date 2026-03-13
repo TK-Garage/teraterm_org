@@ -28,6 +28,9 @@ final class TTLDialogCommandTests: XCTestCase {
         interpreter = TTLInterpreter()
         delegate = MockTTLDelegate()
         interpreter.delegate = delegate
+        // システム変数（result, inputstr 等）を初期化するために
+        // ダミースクリプトを読み込む
+        interpreter.loadScript("end")
     }
 
     override func tearDown() {

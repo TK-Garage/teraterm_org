@@ -1882,8 +1882,9 @@ class TTLInterpreter {
     }
 
     private func ttlStr2Int() throws {
-        let s = try parser.getStrExpression()
+        // str2int <intvar> <strexpr> — Tera Term 互換パラメータ順
         let varId = try parser.getIntVar()
+        let s = try parser.getStrExpression()
 
         let trimmed = s.trimmingCharacters(in: .whitespaces)
         var val: Int? = nil
@@ -2202,13 +2203,12 @@ class TTLInterpreter {
     }
 
     private func ttlFileOpen() throws {
+        // fileopen <handle> <filename> <mode>
+        // mode: 0=read, 1=write(truncate), 2=append (Tera Term 互換)
         let varId = try parser.getIntVar()
         let filename = try parser.getStrExpression()
-        let appendMode = try parser.getIntExpression()
-        var readOnly = false
-        if parser.checkParameterGiven() {
-            readOnly = try parser.getIntExpression() != 0
-        }
+        let mode = try parser.getIntExpression()
+        let readOnly = (mode == 0)
 
         let path = resolvePath(filename)
 
@@ -2245,10 +2245,11 @@ class TTLInterpreter {
         }
 
         if !readOnly {
-            if appendMode != 0 {
+            if mode == 2 {
+                // Append mode
                 fileHandle.seekToEndOfFile()
             } else {
-                // Truncate file for write mode (non-append)
+                // Write mode (truncate)
                 fileHandle.truncateFile(atOffset: 0)
             }
         }
@@ -3245,12 +3246,13 @@ class TTLInterpreter {
             for byte in data { sum = sum &+ UInt32(byte) }
             return Int(sum)
         case .crc16:
+            // CRC-16/CCITT-FALSE: init=0xFFFF, poly=0x1021 (Tera Term 互換)
             var crc: UInt16 = 0xFFFF
             for byte in data {
-                crc ^= UInt16(byte)
+                crc ^= UInt16(byte) << 8
                 for _ in 0..<8 {
-                    if crc & 1 != 0 { crc = (crc >> 1) ^ 0xA001 }
-                    else { crc >>= 1 }
+                    if crc & 0x8000 != 0 { crc = (crc << 1) ^ 0x1021 }
+                    else { crc <<= 1 }
                 }
             }
             return Int(crc)

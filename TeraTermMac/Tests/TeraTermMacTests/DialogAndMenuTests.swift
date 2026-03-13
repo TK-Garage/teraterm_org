@@ -55,10 +55,11 @@ final class AdditionalSettingsTests: XCTestCase {
     }
 
     func testTabTitles() {
+        // タブタイトルはローカライズされるので TTL() を使う
         let expectedTitles = [
-            "General", "Coding", "Copy and Paste", "Sequence",
-            "Mouse", "Log", "Visual", "Font", "TEK Font",
-            "Theme", "UI", "Plugin", "Debug"
+            TTL("tab.general"), TTL("tab.coding"), TTL("tab.copyPaste"), TTL("tab.sequence"),
+            TTL("tab.mouse"), TTL("tab.log"), TTL("tab.visual"), TTL("tab.font"), TTL("tab.tekFont"),
+            TTL("tab.theme"), TTL("tab.ui"), TTL("tab.plugin"), TTL("tab.debug")
         ]
 
         let tabs: [AdditionalSettingsTab] = [

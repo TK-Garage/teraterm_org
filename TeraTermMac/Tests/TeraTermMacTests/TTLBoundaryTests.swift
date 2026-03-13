@@ -704,22 +704,21 @@ final class TTLBoundaryTests: XCTestCase {
     // ================================================================
 
     /// 7.1 strsplit with maximum segments
+    /// strsplit は結果を groupmatchstr1〜groupmatchstr9 に格納（最大9個）
     func testStrsplit_ManySegments() {
         let script = """
         s = 'a,b,c,d,e,f,g,h,i,j'
-        strdim parts 10
-        strsplit s ',' parts
-        x = parts[0]
-        y = parts[9]
+        strsplit s ','
         end
         """
         let ok = execSync(script)
         XCTAssertTrue(ok)
 
         let p = interpreter.parser
-        if let (_, id) = p.checkVar("x") { XCTAssertEqual(p.getStrVal(id: id), "a") }
-        if let (_, id) = p.checkVar("y") { XCTAssertEqual(p.getStrVal(id: id), "j") }
-        // result should be 10 (number of parts)
+        // groupmatchstr1 = "a", groupmatchstr9 = "i"（最大9個）
+        if let (_, id) = p.checkVar("groupmatchstr1") { XCTAssertEqual(p.getStrVal(id: id), "a") }
+        if let (_, id) = p.checkVar("groupmatchstr9") { XCTAssertEqual(p.getStrVal(id: id), "i") }
+        // result = 分割数 (10)
         XCTAssertEqual(p.getIntVal(id: p.resultVarId), 10)
     }
 
@@ -818,7 +817,7 @@ final class TTLBoundaryTests: XCTestCase {
     func testFileWriteReadback() {
         let path = "/tmp/ttl_boundary_test_\(ProcessInfo.processInfo.processIdentifier).txt"
         let script = """
-        fileopen fh '\(path)' 0
+        fileopen fh '\(path)' 1
         filewriteln fh 'line1'
         filewriteln fh 'line2'
         filewriteln fh 'line3'
@@ -963,7 +962,7 @@ final class TTLBoundaryTests: XCTestCase {
         x = 0
         do
           x = x + 1
-        until x == 10
+        loop until x == 10
         end
         """
         let ok = execSync(script)

@@ -54,6 +54,8 @@ class StreamingMockDelegate: MockTTLDelegate {
     var sendLog: [String] = []
 
     override func ttlSendData(_ data: Data) {
+        // sentData（基底クラス）にも追加してテストで確認可能にする
+        super.ttlSendData(data)
         sendLog.append(String(data: data, encoding: .utf8) ?? "")
     }
 
@@ -65,7 +67,8 @@ class StreamingMockDelegate: MockTTLDelegate {
         sendLog.append(text + "\r\n")
     }
 
-    override func ttlIsConnected() -> Bool { return true }
+    // isConnected プロパティに従う（基底クラスに委譲）
+    override func ttlIsConnected() -> Bool { return isConnected }
 
     override func ttlGetReceivedData(clear: Bool) -> String {
         return stream.readBuffer(clear: clear)

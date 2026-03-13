@@ -3727,7 +3727,8 @@ class QuickVANProtocol: FileTransferProtocol {
 // MARK: - CRC-16 Utility
 
 func crc16(_ data: Data) -> UInt16 {
-    var crc: UInt16 = 0
+    // CRC-16/CCITT-FALSE: init=0xFFFF, poly=0x1021
+    var crc: UInt16 = 0xFFFF
     for byte in data {
         crc = crc ^ (UInt16(byte) << 8)
         for _ in 0..<8 {

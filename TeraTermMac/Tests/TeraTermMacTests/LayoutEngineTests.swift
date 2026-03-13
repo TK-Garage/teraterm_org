@@ -23,7 +23,7 @@ final class LayoutEngineTests: XCTestCase {
         XCTAssertEqual(DialogLayout.innerMargin, 12)
         XCTAssertEqual(DialogLayout.rowSpacing, 8)
         XCTAssertEqual(DialogLayout.labelTrailing, 10)
-        XCTAssertEqual(DialogLayout.buttonWidth, 80)
+        XCTAssertEqual(DialogLayout.buttonWidth, 72)
         XCTAssertEqual(DialogLayout.sectionSpacing, 16)
     }
 

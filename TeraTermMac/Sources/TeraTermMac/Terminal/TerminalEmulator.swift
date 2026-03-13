@@ -940,6 +940,10 @@ extension TerminalEmulator: VTParserDelegate {
                 buffer.scrollLeft(params.param(0, default: 1))
             default: break
             }
+        case 0x21: // ! - DECSTR
+            if final == 0x70 { // CSI ! p - Soft Terminal Reset
+                softReset()
+            }
         case 0x2A: // *
             break
         case 0x24: // $

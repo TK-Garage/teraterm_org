@@ -322,12 +322,9 @@ final class TTLParserValidationTests: XCTestCase {
 
     /// 3.4 strjoin - join array elements
     func testStrjoin() {
+        // strjoin は明示的な文字列パラメータを受け取る
         let script = """
-        strdim parts 3
-        parts[0] = 'A'
-        parts[1] = 'B'
-        parts[2] = 'C'
-        strjoin s '-' parts
+        strjoin s '-' 'A' 'B' 'C'
         end
         """
         let ok = execSync(script)
@@ -340,12 +337,13 @@ final class TTLParserValidationTests: XCTestCase {
 
     /// 3.5 strsplit then strjoin roundtrip
     func testStrsplitStrjoin_Roundtrip() {
+        // strsplit は groupmatchstrN に結果を格納
+        // strjoin はそれらを明示的に渡す
         let script = """
         original = 'one:two:three:four'
-        strdim parts 10
-        strsplit original ':' parts
+        strsplit original ':'
         n = result
-        strjoin rebuilt ':' parts
+        strjoin rebuilt ':' groupmatchstr1 groupmatchstr2 groupmatchstr3 groupmatchstr4
         end
         """
         let ok = execSync(script)
@@ -356,7 +354,6 @@ final class TTLParserValidationTests: XCTestCase {
             XCTAssertEqual(p.getIntVal(id: id), 4)
         }
         if let (_, id) = p.checkVar("rebuilt") {
-            // May have trailing empty entries depending on implementation
             let val = p.getStrVal(id: id)
             XCTAssertTrue(val.hasPrefix("one:two:three:four"))
         }
@@ -385,7 +382,7 @@ final class TTLParserValidationTests: XCTestCase {
     func testFileIO_FullCycle() {
         let path = "/tmp/ttl_validation_test_\(ProcessInfo.processInfo.processIdentifier).txt"
         let script = """
-        fileopen fh '\(path)' 0
+        fileopen fh '\(path)' 1
         for i 1 5
           sprintf2 line 'Line %d' i
           filewriteln fh line
@@ -416,7 +413,7 @@ final class TTLParserValidationTests: XCTestCase {
     func testFilesearch() {
         let path = "/tmp/ttl_fsearch_test_\(ProcessInfo.processInfo.processIdentifier).txt"
         let script = """
-        fileopen fh '\(path)' 0
+        fileopen fh '\(path)' 1
         filewriteln fh 'test'
         fileclose fh
         filesearch '\(path)'

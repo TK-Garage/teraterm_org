@@ -121,9 +121,11 @@ final class TTLMacSpecificTests: XCTestCase {
 
     func testCRLF_ParsingMacroFile() {
         // Windows-format macro files use CRLF
+        // .newlines は \r と \n を個別に分割するので CRLF 正規化が必要
         let crlfScript = "line1\r\nline2\r\nline3"
-        let lines = crlfScript.components(separatedBy: .newlines)
-        // .newlines includes \r\n, \n, \r
+        let normalized = crlfScript.replacingOccurrences(of: "\r\n", with: "\n")
+                                   .replacingOccurrences(of: "\r", with: "\n")
+        let lines = normalized.components(separatedBy: "\n")
         XCTAssertEqual(lines.count, 3)
         XCTAssertEqual(lines[0], "line1")
         XCTAssertEqual(lines[1], "line2")
@@ -151,7 +153,10 @@ final class TTLMacSpecificTests: XCTestCase {
 
     func testCRLF_EmptyLines() {
         let script = "line1\r\n\r\nline3\r\n"
-        let lines = script.components(separatedBy: .newlines)
+        let normalized = script.replacingOccurrences(of: "\r\n", with: "\n")
+                               .replacingOccurrences(of: "\r", with: "\n")
+        let lines = normalized.components(separatedBy: "\n")
+        // "line1", "", "line3", "" (末尾の改行で空文字列)
         XCTAssertEqual(lines[0], "line1")
         XCTAssertEqual(lines[1], "")
         XCTAssertEqual(lines[2], "line3")
@@ -348,9 +353,12 @@ final class TTLMacSpecificTests: XCTestCase {
     }
 
     func testFileEncoding_FallbackFromUTF8ToASCII() {
-        // Invalid UTF-8 sequence should fall back to ASCII
+        // Invalid UTF-8 sequence should fall back
+        // 0x80 は ASCII 範囲外なので .isoLatin1 にフォールバック
         let invalidUTF8 = Data([0x48, 0x65, 0x6C, 0x6C, 0x6F, 0x80]) // "Hello" + invalid byte
-        let decoded = String(data: invalidUTF8, encoding: .utf8) ?? String(data: invalidUTF8, encoding: .ascii) ?? ""
+        let decoded = String(data: invalidUTF8, encoding: .utf8)
+                   ?? String(data: invalidUTF8, encoding: .isoLatin1)
+                   ?? ""
         XCTAssertFalse(decoded.isEmpty)
     }
 
