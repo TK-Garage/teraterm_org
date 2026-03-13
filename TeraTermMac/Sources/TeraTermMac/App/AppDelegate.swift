@@ -31,9 +31,19 @@ private class ConnectionDialogHelper: NSObject {
     weak var sshVersionLabel: NSTextField?
     weak var sshVersionPopup: NSPopUpButton?
 
+    // 接続タイプラジオボタン（別々の NSBox に配置されるため手動排他が必要）
+    weak var tcpRadio: NSButton?
+    weak var serialRadio: NSButton?
+    weak var shellRadio: NSButton?
+
     /// TCP/IP(tag=0) vs Serial(tag=1) vs Local Shell(tag=2)
     @objc func connectionTypeChanged(_ sender: NSButton) {
         let tag = sender.tag
+        // 別々の NSBox に配置されたラジオボタンは自動排他にならないため手動で制御
+        tcpRadio?.state = (tag == 0) ? .on : .off
+        serialRadio?.state = (tag == 1) ? .on : .off
+        shellRadio?.state = (tag == 2) ? .on : .off
+
         for ctrl in tcpControls { ctrl.isEnabled = (tag == 0) }
         for ctrl in serialControls { ctrl.isEnabled = (tag == 1) }
         for ctrl in localShellControls { ctrl.isEnabled = (tag == 2) }
@@ -1623,11 +1633,15 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
                               sshVerLabel, sshVerPopup,
                               ipVerLabel, ipVerPopup]
 
+        // tcpRadio のみ先に登録（serialRadio/shellRadio は後で追加）
+        helper.tcpRadio = tcpRadio
+
         // ── Serial セクション ──
         let serialRadio = NSView.makeRadioButton(L("dialog.connection.serial"), tag: 1)
         serialRadio.target = helper
         serialRadio.action = #selector(ConnectionDialogHelper.connectionTypeChanged(_:))
         serialRadio.state = (settings.portType == .serial) ? .on : .off
+        helper.serialRadio = serialRadio
 
         let serialPortLabel = NSView.makeLabel(L("dialog.connection.serialPort"))
 
@@ -1671,6 +1685,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         shellRadio.target = helper
         shellRadio.action = #selector(ConnectionDialogHelper.connectionTypeChanged(_:))
         shellRadio.state = (settings.portType == .localShell) ? .on : .off
+        helper.shellRadio = shellRadio
 
         let shellPathLabel = NSView.makeLabel(L("dialog.connection.shellPath"))
         let defaultShell = ProcessInfo.processInfo.environment["SHELL"] ?? "/bin/zsh"
