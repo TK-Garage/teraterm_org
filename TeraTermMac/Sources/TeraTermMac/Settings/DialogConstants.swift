@@ -536,7 +536,7 @@ class BaseSetupDialogController: NSViewController {
     /// the user clicks OK or Cancel.
     /// Returns the dialog window for tracking purposes.
     @discardableResult
-    func presentAsSheet(on parentWindow: NSWindow) -> NSWindow {
+    func presentAsModal(on parentWindow: NSWindow) -> NSWindow {
         // NSWindow(contentViewController:) は内部で fullSizeContentView 相当の
         // 設定を行い、コンテンツがタイトルバー背後に描画されてしまう。
         // 明示的に contentRect + styleMask でウィンドウを作成し、

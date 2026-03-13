@@ -779,13 +779,8 @@ enum FileTransferDialogHelper {
         completion: @escaping (String?) -> Void
     ) {
         let vc = KermitGetDialogController()
-        vc.presentAsSheet(on: window)
-
-        // BaseSetupDialogController dismisses on OK/Cancel, we
-        // read the result after dismissal via DispatchQueue.
-        DispatchQueue.main.async {
-            completion(vc.resultFilename)
-        }
+        vc.presentAsModal(on: window)
+        completion(vc.resultFilename)
     }
 
     // MARK: - Send File Dialog
@@ -796,11 +791,8 @@ enum FileTransferDialogHelper {
         completion: @escaping (SendFileDialogController.Result?) -> Void
     ) {
         let vc = SendFileDialogController()
-        vc.presentAsSheet(on: window)
-
-        DispatchQueue.main.async {
-            completion(vc.result)
-        }
+        vc.presentAsModal(on: window)
+        completion(vc.result)
     }
 
     // MARK: - Receive File Dialog
@@ -811,11 +803,8 @@ enum FileTransferDialogHelper {
         completion: @escaping (RecvFileDialogController.Result?) -> Void
     ) {
         let vc = RecvFileDialogController()
-        vc.presentAsSheet(on: window)
-
-        DispatchQueue.main.async {
-            completion(vc.result)
-        }
+        vc.presentAsModal(on: window)
+        completion(vc.result)
     }
 }
 

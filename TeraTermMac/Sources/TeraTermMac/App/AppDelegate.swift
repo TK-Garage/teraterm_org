@@ -84,7 +84,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
     private var settings: TerminalSettings = TerminalSettings()
 
     /// 現在開いている設定シート（排他制御用）
-    private weak var currentSetupSheet: NSWindow?
+    private weak var currentSetupDialog: NSWindow?
 
     // MARK: - Application Lifecycle
 
@@ -519,7 +519,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
             _ = result
             wc?.startLog()
         }
-        currentSetupSheet = vc.presentAsSheet(on: win)
+        currentSetupDialog = vc.presentAsModal(on: win)
     }
 
     @objc func stopLog(_ sender: Any?) {
@@ -654,7 +654,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
             guard let self = self, let vc = vc else { return }
             self.settings.hostHistory = vc.resultHistory
         }
-        currentSetupSheet = vc.presentAsSheet(on: win)
+        currentSetupDialog = vc.presentAsModal(on: win)
     }
 
     @objc func showWindowList(_ sender: Any?) {
@@ -1920,7 +1920,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
             // User chose "Disconnect" — do nothing
         }
         if let win = wc.window {
-            currentSetupSheet = vc.presentAsSheet(on: win)
+            currentSetupDialog = vc.presentAsModal(on: win)
         } else {
             _ = vc.presentModal()
         }
@@ -1934,7 +1934,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
             fontPanel.orderOut(nil)
         }
         // 設定ダイアログが開いていれば閉じる
-        if let sheet = currentSetupSheet {
+        if let sheet = currentSetupDialog {
             if let parent = sheet.sheetParent {
                 // シートとして表示されている場合
                 parent.endSheet(sheet, returnCode: .OK)
@@ -1944,7 +1944,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
                 sheet.close()
             }
         }
-        currentSetupSheet = nil
+        currentSetupDialog = nil
     }
 
     private func showTerminalSetupDialog() {
@@ -1954,7 +1954,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
             self?.activeWindowController?.applySettings()
         }
         if let win = activeWindowController?.window {
-            currentSetupSheet = vc.presentAsSheet(on: win)
+            currentSetupDialog = vc.presentAsModal(on: win)
         } else {
             _ = vc.presentModal()
         }
@@ -1969,7 +1969,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
             self?.activeWindowController?.applySettings()
         }
         if let win = activeWindowController?.window {
-            currentSetupSheet = vc.presentAsSheet(on: win)
+            currentSetupDialog = vc.presentAsModal(on: win)
         } else {
             _ = vc.presentModal()
         }
@@ -1988,7 +1988,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
             }
         }
         if let win = activeWindowController?.window {
-            currentSetupSheet = vc.presentAsSheet(on: win)
+            currentSetupDialog = vc.presentAsModal(on: win)
         } else {
             _ = vc.presentModal()
         }
@@ -2005,7 +2005,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
             }
         }
         if let win = activeWindowController?.window {
-            currentSetupSheet = vc.presentAsSheet(on: win)
+            currentSetupDialog = vc.presentAsModal(on: win)
         } else {
             _ = vc.presentModal()
         }
@@ -2020,7 +2020,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
             self?.activeWindowController?.applySettings()
         }
         if let win = activeWindowController?.window {
-            currentSetupSheet = vc.presentAsSheet(on: win)
+            currentSetupDialog = vc.presentAsModal(on: win)
         } else {
             _ = vc.presentModal()
         }
@@ -2038,8 +2038,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         }
         additionalSettingsController = controller
         if let win = activeWindowController?.window {
-            // 排他制御: showAsSheet（モーダルウィンドウ）の戻り値を currentSetupSheet に代入
-            currentSetupSheet = controller.showAsSheet(on: win)
+            // 排他制御: showAsSheet（モーダルウィンドウ）の戻り値を currentSetupDialog に代入
+            currentSetupDialog = controller.showAsSheet(on: win)
         } else {
             controller.showModal()
         }
@@ -2054,7 +2054,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
             self?.activeWindowController?.applySettings()
         }
         if let win = activeWindowController?.window {
-            currentSetupSheet = vc.presentAsSheet(on: win)
+            currentSetupDialog = vc.presentAsModal(on: win)
         } else {
             _ = vc.presentModal()
         }
@@ -2069,7 +2069,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
             self?.activeWindowController?.applySettings()
         }
         if let win = activeWindowController?.window {
-            currentSetupSheet = vc.presentAsSheet(on: win)
+            currentSetupDialog = vc.presentAsModal(on: win)
         } else {
             _ = vc.presentModal()
         }
@@ -2084,7 +2084,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
             self?.activeWindowController?.applySettings()
         }
         if let win = activeWindowController?.window {
-            currentSetupSheet = vc.presentAsSheet(on: win)
+            currentSetupDialog = vc.presentAsModal(on: win)
         } else {
             _ = vc.presentModal()
         }
@@ -2099,7 +2099,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
             self?.activeWindowController?.applySettings()
         }
         if let win = activeWindowController?.window {
-            currentSetupSheet = vc.presentAsSheet(on: win)
+            currentSetupDialog = vc.presentAsModal(on: win)
         } else {
             _ = vc.presentModal()
         }
@@ -2111,7 +2111,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         dismissCurrentSetupSheet()
         let vc = SSHKeyGenDialogController()
         if let win = activeWindowController?.window {
-            currentSetupSheet = vc.presentAsSheet(on: win)
+            currentSetupDialog = vc.presentAsModal(on: win)
         } else {
             _ = vc.presentModal()
         }
@@ -2126,7 +2126,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
             self?.activeWindowController?.applySettings()
         }
         if let win = activeWindowController?.window {
-            currentSetupSheet = vc.presentAsSheet(on: win)
+            currentSetupDialog = vc.presentAsModal(on: win)
         } else {
             _ = vc.presentModal()
         }
@@ -2170,7 +2170,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
             }
         }
         if let win = wc.window {
-            currentSetupSheet = vc.presentAsSheet(on: win)
+            currentSetupDialog = vc.presentAsModal(on: win)
         }
     }
 
