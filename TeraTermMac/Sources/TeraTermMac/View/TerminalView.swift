@@ -83,6 +83,9 @@ class TerminalView: NSView {
     override var acceptsFirstResponder: Bool { true }
     override var isFlipped: Bool { true }
 
+    // Prevent NSVisualEffectView vibrancy from altering text/background colors
+    override var allowsVibrancy: Bool { false }
+
     // MARK: - Initialization
 
     override init(frame frameRect: NSRect) {
@@ -437,13 +440,12 @@ class TerminalView: NSView {
 
     private var backgroundColor: NSColor {
         let c = modes.reverseVideo ? settings.colorTheme.foreground : settings.colorTheme.background
-        // Use reduced alpha so the NSVisualEffectView glass effect bleeds through
-        let glassAlpha = CGFloat(settings.windowAlpha) * 0.85
+        let alpha = CGFloat(settings.windowAlpha)
         return NSColor(
             red: CGFloat(c.r) / 255.0,
             green: CGFloat(c.g) / 255.0,
             blue: CGFloat(c.b) / 255.0,
-            alpha: glassAlpha
+            alpha: alpha
         )
     }
 
