@@ -449,87 +449,150 @@ class TerminalView: NSView {
         )
     }
 
-    private func resolveBackgroundColor(_ cell: BufferCharacter, inSelection: Bool) -> NSColor {
+    // MARK: - Color Resolution Helpers
+
+    func nsColor(from tc: TerminalColor, alpha: CGFloat = 1.0) -> NSColor {
+        NSColor(red: CGFloat(tc.r) / 255.0, green: CGFloat(tc.g) / 255.0, blue: CGFloat(tc.b) / 255.0, alpha: alpha)
+    }
+
+    func nsColor(r: UInt8, g: UInt8, b: UInt8) -> NSColor {
+        NSColor(red: CGFloat(r) / 255.0, green: CGFloat(g) / 255.0, blue: CGFloat(b) / 255.0, alpha: 1.0)
+    }
+
+    /// Resolve foreground and background colors for a cell.
+    ///
+    /// Port of GetDrawAttr() in vtdisp.c.  Priority order:
+    ///  1. Selection overrides everything.
+    ///  2. Attribute colors (URL > Underline > Bold > Blink > Normal/Reverse)
+    ///     — only applied when the corresponding enable*Color flag is true.
+    ///  3. ANSI palette override — only when `enableANSIColor` is true AND
+    ///     the cell carries an explicit ANSI fg/bg.
+    ///  4. Reverse swaps fg/bg (XOR with DECSCNM reverseVideo).
+    func resolveColors(_ cell: BufferCharacter, inSelection: Bool) -> (fg: NSColor, bg: NSColor) {
+        // --- selection shortcut ---
         if inSelection {
-            let c = settings.colorTheme.selectionBackground
-            return NSColor(red: CGFloat(c.r) / 255.0, green: CGFloat(c.g) / 255.0, blue: CGFloat(c.b) / 255.0, alpha: 1.0)
+            return (fg: nsColor(from: settings.colorTheme.selectionForeground),
+                    bg: nsColor(from: settings.colorTheme.selectionBackground))
         }
 
         let color = cell.color
         let attrs = cell.attributes
 
-        // Handle reverse video
+        // --- effective reverse (attr XOR global DECSCNM) ---
         let reversed = attrs.contains(.reverse) != modes.reverseVideo
 
-        if reversed {
-            // Use foreground as background
-            if color.isFgRGB {
-                return NSColor(red: CGFloat(color.fgR) / 255.0, green: CGFloat(color.fgG) / 255.0, blue: CGFloat(color.fgB) / 255.0, alpha: 1.0)
-            } else if color.isFg256 || !color.isFgDefault {
-                return palette256Color(Int(color.foreground))
+        // --- invisible text: fg == bg ---
+        if attrs.contains(.invisible) {
+            let bg = resolveRawBackgroundColor(color, reversed: reversed)
+            return (fg: bg, bg: bg)
+        }
+
+        // --- Step 1: attribute-based base colors (port of vtdisp.c priority) ---
+        var textColor: NSColor
+        var backColor: NSColor
+
+        // Determine which attribute color to use (if any).
+        // Priority: URL > Underline > Bold > Blink > (none)
+        let attrColor: TerminalColor? = {
+            if settings.enableURLColor && attrs.contains(.url) { return settings.attrColorURL }
+            if settings.enableUnderlineColor && attrs.contains(.underline) { return settings.attrColorUnderline }
+            if settings.enableBoldColor && attrs.contains(.bold) { return settings.attrColorBold }
+            if settings.enableBlinkColor && attrs.contains(.blink) { return settings.attrColorBlink }
+            return nil
+        }()
+
+        let normalBG = nsColor(from: settings.colorTheme.background)
+
+        if let ac = attrColor {
+            if !reversed {
+                textColor = nsColor(from: ac)
+                backColor = normalBG
             } else {
-                let c = settings.colorTheme.foreground
-                return NSColor(red: CGFloat(c.r) / 255.0, green: CGFloat(c.g) / 255.0, blue: CGFloat(c.b) / 255.0, alpha: 1.0)
+                textColor = normalBG
+                backColor = nsColor(from: ac)
+            }
+        } else {
+            // No special attribute — normal or reverse color
+            if !reversed {
+                textColor = nsColor(from: settings.colorTheme.foreground)
+                backColor = nsColor(from: settings.colorTheme.background)
+            } else {
+                if settings.enableReverseColor {
+                    textColor = nsColor(from: settings.attrColorReverse)
+                    backColor = nsColor(from: settings.colorTheme.foreground)
+                } else {
+                    // Simple swap
+                    textColor = nsColor(from: settings.colorTheme.background)
+                    backColor = nsColor(from: settings.colorTheme.foreground)
+                }
             }
         }
 
-        if color.isBgRGB {
-            return NSColor(red: CGFloat(color.bgR) / 255.0, green: CGFloat(color.bgG) / 255.0, blue: CGFloat(color.bgB) / 255.0, alpha: 1.0)
-        } else if color.isBg256 || !color.isBgDefault {
-            return palette256Color(Int(color.background))
+        // --- Step 2: ANSI color override (only when enableANSIColor) ---
+        if settings.enableANSIColor {
+            // Foreground ANSI override
+            if color.isFgRGB {
+                let c = nsColor(r: color.fgR, g: color.fgG, b: color.fgB)
+                if !reversed { textColor = c } else { backColor = c }
+            } else if color.isFg256 || !color.isFgDefault {
+                var idx = Int(color.foreground)
+                // PC-style bold: brighten standard colors 0-7 → 8-15
+                if attrs.contains(.bold) && idx < 8 && settings.pcBoldColor {
+                    idx += 8
+                }
+                let c = palette256Color(idx)
+                if !reversed { textColor = c } else { backColor = c }
+            }
+
+            // Background ANSI override
+            if color.isBgRGB {
+                let c = nsColor(r: color.bgR, g: color.bgG, b: color.bgB)
+                if !reversed { backColor = c } else { textColor = c }
+            } else if color.isBg256 || !color.isBgDefault {
+                let idx = Int(color.background)
+                let c = palette256Color(idx)
+                if !reversed { backColor = c } else { textColor = c }
+            }
+        }
+        // When enableANSIColor == false, ANSI palette indices are ignored
+        // and the attribute / theme colors from Step 1 are used as-is.
+
+        // --- Step 3: dim attribute ---
+        if attrs.contains(.dim) {
+            textColor = textColor.withAlphaComponent(0.5)
         }
 
+        return (fg: textColor, bg: backColor)
+    }
+
+    /// Raw background color without attribute/ANSI logic (used for invisible text).
+    private func resolveRawBackgroundColor(_ color: ColorIndex, reversed: Bool) -> NSColor {
+        if reversed {
+            if settings.enableANSIColor {
+                if color.isFgRGB {
+                    return nsColor(r: color.fgR, g: color.fgG, b: color.fgB)
+                } else if color.isFg256 || !color.isFgDefault {
+                    return palette256Color(Int(color.foreground))
+                }
+            }
+            return nsColor(from: settings.colorTheme.foreground)
+        }
+        if settings.enableANSIColor {
+            if color.isBgRGB {
+                return nsColor(r: color.bgR, g: color.bgG, b: color.bgB)
+            } else if color.isBg256 || !color.isBgDefault {
+                return palette256Color(Int(color.background))
+            }
+        }
         return backgroundColor
     }
 
+    private func resolveBackgroundColor(_ cell: BufferCharacter, inSelection: Bool) -> NSColor {
+        resolveColors(cell, inSelection: inSelection).bg
+    }
+
     private func resolveForegroundColor(_ cell: BufferCharacter, inSelection: Bool) -> NSColor {
-        if inSelection {
-            let c = settings.colorTheme.selectionForeground
-            return NSColor(red: CGFloat(c.r) / 255.0, green: CGFloat(c.g) / 255.0, blue: CGFloat(c.b) / 255.0, alpha: 1.0)
-        }
-
-        let color = cell.color
-        let attrs = cell.attributes
-
-        let reversed = attrs.contains(.reverse) != modes.reverseVideo
-
-        if reversed {
-            // Use background as foreground
-            if color.isBgRGB {
-                return NSColor(red: CGFloat(color.bgR) / 255.0, green: CGFloat(color.bgG) / 255.0, blue: CGFloat(color.bgB) / 255.0, alpha: 1.0)
-            } else if color.isBg256 || !color.isBgDefault {
-                return palette256Color(Int(color.background))
-            } else {
-                let c = settings.colorTheme.background
-                return NSColor(red: CGFloat(c.r) / 255.0, green: CGFloat(c.g) / 255.0, blue: CGFloat(c.b) / 255.0, alpha: 1.0)
-            }
-        }
-
-        if attrs.contains(.invisible) {
-            return backgroundColor
-        }
-
-        var resultColor: NSColor
-
-        if color.isFgRGB {
-            resultColor = NSColor(red: CGFloat(color.fgR) / 255.0, green: CGFloat(color.fgG) / 255.0, blue: CGFloat(color.fgB) / 255.0, alpha: 1.0)
-        } else if color.isFg256 || !color.isFgDefault {
-            var idx = Int(color.foreground)
-            // Bold brightens colors 0-7
-            if attrs.contains(.bold) && idx < 8 {
-                idx += 8
-            }
-            resultColor = palette256Color(idx)
-        } else {
-            let c = settings.colorTheme.foreground
-            resultColor = NSColor(red: CGFloat(c.r) / 255.0, green: CGFloat(c.g) / 255.0, blue: CGFloat(c.b) / 255.0, alpha: 1.0)
-        }
-
-        if attrs.contains(.dim) {
-            resultColor = resultColor.withAlphaComponent(0.5)
-        }
-
-        return resultColor
+        resolveColors(cell, inSelection: inSelection).fg
     }
 
     // MARK: - 256 Color Palette
