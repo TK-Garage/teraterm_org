@@ -955,3 +955,85 @@
 "dialog.theme.url" = "URL:";
 "dialog.theme.selFg" = "Selection FG:";
 "dialog.theme.selBg" = "Selection BG:";
+
+/* Missing Localization Keys */
+
+/* Macro Status Panel - line number display */
+"macroStatus.linePrefix" = "Line: %d";
+
+/* Print Abort Dialog */
+"dialog.printAbort.printing" = "Printing...";
+
+/* Status Dialog */
+"dialog.status.processing" = "Processing...";
+
+/* TEK Window */
+"dialog.tek.title" = "Tera Term: TEK";
+
+/* Transfer Window Title */
+"window.title.transfer" = "Transfer: %@ - %@";
+
+/* Kermit Get Dialog */
+"dialog.kermitGet.title" = "Tera Term: Kermit Get";
+
+/* ANSI Color Names (tooltips) */
+"color.black" = "Black";
+"color.red" = "Red";
+"color.green" = "Green";
+"color.yellow" = "Yellow";
+"color.blue" = "Blue";
+"color.magenta" = "Magenta";
+"color.cyan" = "Cyan";
+"color.white" = "White";
+"color.brightBlack" = "Bright Black";
+"color.brightRed" = "Bright Red";
+"color.brightGreen" = "Bright Green";
+"color.brightYellow" = "Bright Yellow";
+"color.brightBlue" = "Bright Blue";
+"color.brightMagenta" = "Bright Magenta";
+"color.brightCyan" = "Bright Cyan";
+"color.brightWhite" = "Bright White";
+
+/* Drawing API names */
+"dialog.font.apiDefault" = "Default";
+"dialog.font.apiCoreText" = "CoreText";
+"dialog.font.apiCoreGraphics" = "CoreGraphics";
+
+/* UI Tab */
+"dialog.ui.systemDefault" = "(System Default)";
+
+/* Plugin Tab */
+"dialog.plugin.directoryColumn" = "Directory";
+
+/* Telnet Group Box (TCP/IP dialog) */
+"dialog.tcpip.telnetGroup" = "Telnet";
+
+/* Default Port items */
+"dialog.general.portTCPIP" = "TCP/IP";
+"dialog.general.portSerial" = "Serial";
+
+/* Macro */
+"macroStatus.lineFmt" = "Line: %d";
+
+/* Input Dialog default title */
+"dialog.input.defaultTitle" = "Input";
+
+/* Message Dialog default title */
+"dialog.message.defaultTitle" = "Message";
+
+/* File Transfer Read Error */
+"dialog.fileTransfer.readError.title" = "Cannot Read File";
+"dialog.fileTransfer.readError.message" = "The file \"%@\" cannot be read. Please check the file permissions.";
+
+/* YMODEM Option Panel */
+"dialog.yopt.ymodem" = "YMODEM";
+"dialog.yopt.ymodemG" = "YMODEM-G";
+"dialog.yopt.binary" = "Binary";
+"dialog.yopt.option" = "Option";
+
+/* YMODEM Dialog Titles */
+"dialog.ymodem.sendTitle" = "Tera Term: YMODEM Send";
+"dialog.ymodem.receiveTitle" = "Tera Term: YMODEM Receive";
+
+/* Macro - Password Dialog */
+"dialog.macro.password" = "Password";

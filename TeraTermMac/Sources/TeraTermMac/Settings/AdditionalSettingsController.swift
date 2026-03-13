@@ -226,7 +226,7 @@ final class GeneralTab: AdditionalSettingsTab {
         cursorIMECheck = NSView.makeCheckbox(TTL("dialog.general.cursorIME"), checked: s.cursorChangeIME)
 
         let portLabel = NSView.makeLabel(TTL("dialog.general.defaultPort"), alignment: .left)
-        defaultPortPopup = NSView.makePopUpButton(items: ["TCP/IP", "Serial"], width: 120)
+        defaultPortPopup = NSView.makePopUpButton(items: [TTL("dialog.general.portTCPIP"), TTL("dialog.general.portSerial")], width: 120)
         defaultPortPopup.selectItem(at: s.portType == .serial ? 1 : 0)
 
         let portRow = NSStackView(views: [portLabel, defaultPortPopup])
@@ -1154,9 +1154,10 @@ final class VisualTab: AdditionalSettingsTab {
 
         // ANSI color palette
         let colorBox = NSView.makeGroupBox(title: TTL("dialog.visual.ansiColorPalette"))
-        let colorNames = ["Black", "Red", "Green", "Yellow", "Blue", "Magenta", "Cyan", "White",
-                          "Bright Black", "Bright Red", "Bright Green", "Bright Yellow",
-                          "Bright Blue", "Bright Magenta", "Bright Cyan", "Bright White"]
+        let colorNames = [TTL("color.black"), TTL("color.red"), TTL("color.green"), TTL("color.yellow"),
+                          TTL("color.blue"), TTL("color.magenta"), TTL("color.cyan"), TTL("color.white"),
+                          TTL("color.brightBlack"), TTL("color.brightRed"), TTL("color.brightGreen"), TTL("color.brightYellow"),
+                          TTL("color.brightBlue"), TTL("color.brightMagenta"), TTL("color.brightCyan"), TTL("color.brightWhite")]
         let colorGrid = NSView()
         colorGrid.translatesAutoresizingMaskIntoConstraints = false
         colorWells = []
@@ -1458,7 +1459,7 @@ final class FontTab: AdditionalSettingsTab {
         ])
 
         let apiLabel = NSView.makeLabel(TTL("dialog.font.drawingAPI"), alignment: .left)
-        drawingAPIPopup = NSView.makePopUpButton(items: ["Default", "CoreText", "CoreGraphics"], width: 140)
+        drawingAPIPopup = NSView.makePopUpButton(items: [TTL("dialog.font.apiDefault"), TTL("dialog.font.apiCoreText"), TTL("dialog.font.apiCoreGraphics")], width: 140)
         drawingAPIPopup.selectItem(at: s.drawingAPI)
         let apiRow = NSStackView(views: [apiLabel, drawingAPIPopup])
         apiRow.translatesAutoresizingMaskIntoConstraints = false
@@ -1822,7 +1823,7 @@ final class UITab: AdditionalSettingsTab {
 
         let fontBox = NSView.makeGroupBox(title: TTL("dialog.ui.dialogFont"))
         let fontLabel = NSView.makeLabel(TTL("dialog.ui.fontName"), alignment: .left)
-        let displayName = s.dialogFontName.isEmpty ? "(System Default)" : "\(s.dialogFontName) \(Int(s.dialogFontSize))pt"
+        let displayName = s.dialogFontName.isEmpty ? TTL("dialog.ui.systemDefault") : "\(s.dialogFontName) \(Int(s.dialogFontSize))pt"
         dialogFontField = NSView.makeTextField(value: displayName)
         dialogFontField.isEditable = false
 
@@ -1896,7 +1897,7 @@ final class PluginTab: NSObject, AdditionalSettingsTab {
 
         directoryList = NSTableView()
         let col = NSTableColumn(identifier: NSUserInterfaceItemIdentifier("dir"))
-        col.title = "Directory"
+        col.title = TTL("dialog.plugin.directoryColumn")
         col.width = 400
         directoryList.addTableColumn(col)
         directoryList.headerView = nil

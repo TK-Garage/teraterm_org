@@ -50,20 +50,20 @@ final class XMODEMOptionAccessory: NSView {
     ///   - defaultCRC: initial radio selection (true = CRC, false = checksum).
     init(isSend: Bool, defaultCRC: Bool = true) {
         checksumRadio = NSView.makeRadioButton(
-            NSLocalizedString("dialog.xopt.checksum", value: "Checksum", comment: ""), tag: 0)
+            TTL("dialog.xopt.checksum"), tag: 0)
         crcRadio = NSView.makeRadioButton(
-            NSLocalizedString("dialog.xopt.crc", value: "CRC", comment: ""), tag: 1)
+            TTL("dialog.xopt.crc"), tag: 1)
         oneKCheck = NSView.makeCheckbox(
-            NSLocalizedString("dialog.xopt.1k", value: "1K", comment: ""))
+            TTL("dialog.xopt.1k"))
         binaryCheck = NSView.makeCheckbox(
-            NSLocalizedString("dialog.xopt.binary", value: "Binary", comment: ""), checked: true)
+            TTL("dialog.xopt.binary"), checked: true)
 
         super.init(frame: .zero)
         translatesAutoresizingMaskIntoConstraints = false
 
         // GroupBox
         let box = NSView.makeGroupBox(
-            title: NSLocalizedString("dialog.xopt.option", value: "Option", comment: ""))
+            title: TTL("dialog.xopt.option"))
         addSubview(box)
         box.translatesAutoresizingMaskIntoConstraints = false
 
@@ -128,13 +128,13 @@ final class FileOptionAccessory: NSView {
 
     init() {
         binaryCheck = NSView.makeCheckbox(
-            NSLocalizedString("dialog.fopt.binary", value: "Binary", comment: ""), checked: true)
+            TTL("dialog.fopt.binary"), checked: true)
 
         super.init(frame: .zero)
         translatesAutoresizingMaskIntoConstraints = false
 
         let box = NSView.makeGroupBox(
-            title: NSLocalizedString("dialog.fopt.option", value: "Option", comment: ""))
+            title: TTL("dialog.fopt.option"))
         addSubview(box)
         box.translatesAutoresizingMaskIntoConstraints = false
 
@@ -246,32 +246,32 @@ final class ProtocolTransferPanel {
 
         // Grid: label | value
         let fnTitle = NSView.makeLabel(
-            NSLocalizedString("dialog.prot.filename", value: "Filename:", comment: ""))
+            TTL("dialog.prot.filename"))
         let fnField = NSTextField(labelWithString: "")
         fnField.lineBreakMode = .byTruncatingMiddle
         fnField.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
         filenameField = fnField
 
         let prTitle = NSView.makeLabel(
-            NSLocalizedString("dialog.prot.protocol", value: "Protocol:", comment: ""))
+            TTL("dialog.prot.protocol"))
         let prField = NSTextField(labelWithString: "")
         prField.alignment = .right
         protocolLabel = prField
 
         let pkTitle = NSView.makeLabel(
-            NSLocalizedString("dialog.prot.packet", value: "Packet#:", comment: ""))
+            TTL("dialog.prot.packet"))
         let pkField = NSTextField(labelWithString: "0")
         pkField.alignment = .right
         packetLabel = pkField
 
         let btTitle = NSView.makeLabel(
-            NSLocalizedString("dialog.prot.bytesTransferred", value: "Bytes transferred:", comment: ""))
+            TTL("dialog.prot.bytesTransferred"))
         let btField = NSTextField(labelWithString: "0")
         btField.alignment = .right
         bytesLabel = btField
 
         let etTitle = NSView.makeLabel(
-            NSLocalizedString("dialog.prot.elapsed", value: "Elapsed time:", comment: ""))
+            TTL("dialog.prot.elapsed"))
         let etField = NSTextField(labelWithString: "0:00")
         etField.alignment = .right
         elapsedLabel = etField
@@ -309,7 +309,7 @@ final class ProtocolTransferPanel {
 
         // Cancel button
         let cancelBtn = NSButton(
-            title: NSLocalizedString("dialog.prot.cancel", value: "Cancel", comment: ""),
+            title: TTL("dialog.prot.cancel"),
             target: self, action: #selector(cancelClicked(_:)))
         cancelBtn.translatesAutoresizingMaskIntoConstraints = false
         cancelBtn.bezelStyle = .rounded
@@ -442,27 +442,27 @@ final class FileTransferProgressPanel {
         let pad: CGFloat = DialogLayout.margin
 
         let fnTitle = NSView.makeLabel(
-            NSLocalizedString("dialog.ftrans.filename", value: "Filename:", comment: ""))
+            TTL("dialog.ftrans.filename"))
         let fnField = NSTextField(labelWithString: "")
         fnField.lineBreakMode = .byTruncatingMiddle
         fnField.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
         filenameField = fnField
 
         let fpTitle = NSView.makeLabel(
-            NSLocalizedString("dialog.ftrans.fullpath", value: "Fullpath:", comment: ""))
+            TTL("dialog.ftrans.fullpath"))
         let fpField = NSTextField(labelWithString: "")
         fpField.lineBreakMode = .byTruncatingMiddle
         fpField.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
         fullpathField = fpField
 
         let btTitle = NSView.makeLabel(
-            NSLocalizedString("dialog.ftrans.bytesTransferred", value: "Bytes transferred:", comment: ""))
+            TTL("dialog.ftrans.bytesTransferred"))
         let btField = NSTextField(labelWithString: "0")
         btField.alignment = .right
         bytesLabel = btField
 
         let etTitle = NSView.makeLabel(
-            NSLocalizedString("dialog.ftrans.elapsed", value: "Elapsed time:", comment: ""))
+            TTL("dialog.ftrans.elapsed"))
         let etField = NSTextField(labelWithString: "0:00")
         etField.alignment = .right
         elapsedLabel = etField
@@ -491,20 +491,20 @@ final class FileTransferProgressPanel {
 
         // Buttons: [Close] [Pause] [Help]
         let closeBtn = NSButton(
-            title: NSLocalizedString("dialog.ftrans.close", value: "Close", comment: ""),
+            title: TTL("dialog.ftrans.close"),
             target: self, action: #selector(closeClicked(_:)))
         closeBtn.bezelStyle = .rounded
         closeBtn.translatesAutoresizingMaskIntoConstraints = false
 
         let pauseBtn = NSButton(
-            title: NSLocalizedString("dialog.ftrans.pause", value: "Pause", comment: ""),
+            title: TTL("dialog.ftrans.pause"),
             target: self, action: #selector(pauseClicked(_:)))
         pauseBtn.bezelStyle = .rounded
         pauseBtn.translatesAutoresizingMaskIntoConstraints = false
         pauseButton = pauseBtn
 
         let helpBtn = NSButton(
-            title: NSLocalizedString("dialog.ftrans.help", value: "Help", comment: ""),
+            title: TTL("dialog.ftrans.help"),
             target: nil, action: nil)
         helpBtn.bezelStyle = .rounded
         helpBtn.translatesAutoresizingMaskIntoConstraints = false
@@ -559,8 +559,8 @@ final class FileTransferProgressPanel {
 
     private func updatePauseButton() {
         pauseButton?.title = isPaused
-            ? NSLocalizedString("dialog.ftrans.resume", value: "Resume", comment: "")
-            : NSLocalizedString("dialog.ftrans.pause", value: "Pause", comment: "")
+            ? TTL("dialog.ftrans.resume")
+            : TTL("dialog.ftrans.pause")
     }
 }
 
@@ -581,7 +581,7 @@ final class KermitGetDialogController: BaseSetupDialogController {
 
     init() {
         super.init(nibName: nil, bundle: nil)
-        self.title = "Tera Term: Kermit Get"
+        self.title = TTL("dialog.kermitGet.title")
     }
 
     required init?(coder: NSCoder) { fatalError() }
@@ -595,7 +595,7 @@ final class KermitGetDialogController: BaseSetupDialogController {
         contentArea.widthAnchor.constraint(equalToConstant: 340).isActive = true
 
         let fnLabel = NSView.makeLabel(
-            NSLocalizedString("dialog.kermitGet.filename", value: "Filename:", comment: ""),
+            TTL("dialog.kermitGet.filename"),
             alignment: .right)
         fnLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
 
@@ -647,17 +647,11 @@ enum FileTransferDialogHelper {
         guard FileManager.default.isReadableFile(atPath: url.path) else {
             let alert = NSAlert()
             alert.alertStyle = .critical
-            alert.messageText = NSLocalizedString(
-                "dialog.fileTransfer.readError.title",
-                value: "Cannot Read File",
-                comment: "Alert title when selected file lacks read permission")
+            alert.messageText = TTL("dialog.fileTransfer.readError.title")
             alert.informativeText = String(
-                format: NSLocalizedString(
-                    "dialog.fileTransfer.readError.message",
-                    value: "The file \"%@\" cannot be read. Please check the file permissions.",
-                    comment: "Alert message when selected file lacks read permission"),
+                format: TTL("dialog.fileTransfer.readError.message"),
                 url.lastPathComponent)
-            alert.addButton(withTitle: NSLocalizedString("OK", value: "OK", comment: ""))
+            alert.addButton(withTitle: TTL("OK"))
             if let window = window {
                 alert.beginSheetModal(for: window, completionHandler: nil)
             } else {
@@ -681,8 +675,7 @@ enum FileTransferDialogHelper {
         panel.canChooseDirectories = false
         panel.allowsMultipleSelection = false
         configureOpenPanelForAllFileTypes(panel)
-        panel.title = NSLocalizedString("dialog.xmodem.sendTitle",
-            value: "Tera Term: XMODEM Send", comment: "")
+        panel.title = TTL("dialog.xmodem.sendTitle")
 
         let accessory = XMODEMOptionAccessory(isSend: true, defaultCRC: true)
         panel.accessoryView = accessory
@@ -703,8 +696,7 @@ enum FileTransferDialogHelper {
         completion: @escaping (URL, TransferProtocolType) -> Void
     ) {
         let panel = NSSavePanel()
-        panel.title = NSLocalizedString("dialog.xmodem.receiveTitle",
-            value: "Tera Term: XMODEM Receive", comment: "")
+        panel.title = TTL("dialog.xmodem.receiveTitle")
 
         let accessory = XMODEMOptionAccessory(isSend: false, defaultCRC: true)
         panel.accessoryView = accessory
@@ -737,8 +729,7 @@ enum FileTransferDialogHelper {
         case .quickVAN: protoName = "Quick-VAN"
         default:        protoName = "File Transfer"
         }
-        panel.title = String(format: NSLocalizedString("dialog.multi.sendTitle",
-            value: "Tera Term: %@ Send", comment: ""), protoName)
+        panel.title = String(format: TTL("dialog.multi.sendTitle"), protoName)
 
         let accessory = FileOptionAccessory()
         panel.accessoryView = accessory
@@ -769,8 +760,7 @@ enum FileTransferDialogHelper {
         case .quickVAN: protoName = "Quick-VAN"
         default:        protoName = "File Transfer"
         }
-        panel.title = String(format: NSLocalizedString("dialog.multi.receiveTitle",
-            value: "Tera Term: %@ Receive", comment: ""), protoName)
+        panel.title = String(format: TTL("dialog.multi.receiveTitle"), protoName)
 
         let accessory = FileOptionAccessory()
         panel.accessoryView = accessory
@@ -854,9 +844,9 @@ final class SendFileDialogController: BaseSetupDialogController {
 
         var localizedTitle: String {
             switch self {
-            case .noDelay: return NSLocalizedString("dialog.sendFile.delayNone", value: "No delay", comment: "")
-            case .perChar: return NSLocalizedString("dialog.sendFile.delayPerChar", value: "Per character", comment: "")
-            case .perLine: return NSLocalizedString("dialog.sendFile.delayPerLine", value: "Per line", comment: "")
+            case .noDelay: return TTL("dialog.sendFile.delayNone")
+            case .perChar: return TTL("dialog.sendFile.delayPerChar")
+            case .perLine: return TTL("dialog.sendFile.delayPerLine")
             }
         }
     }
@@ -883,8 +873,7 @@ final class SendFileDialogController: BaseSetupDialogController {
 
     init() {
         super.init(nibName: nil, bundle: nil)
-        self.title = NSLocalizedString("dialog.sendFile.title",
-            value: "Send file", comment: "")
+        self.title = TTL("dialog.sendFile.title")
     }
 
     required init?(coder: NSCoder) { fatalError() }
@@ -899,8 +888,7 @@ final class SendFileDialogController: BaseSetupDialogController {
 
         // --- Filename row ---
         let fnLabel = NSView.makeLabel(
-            NSLocalizedString("dialog.sendFile.filename",
-                value: "Filename (drop file in this dialog):", comment: ""))
+            TTL("dialog.sendFile.filename"))
         fnLabel.alignment = .left
 
         filenameField = NSView.makeTextField(value: "", placeholder: "")
@@ -919,20 +907,17 @@ final class SendFileDialogController: BaseSetupDialogController {
 
         // --- Reading method ---
         let readLabel = NSView.makeLabel(
-            NSLocalizedString("dialog.sendFile.readingMethod",
-                value: "File reading method:", comment: ""))
+            TTL("dialog.sendFile.readingMethod"))
         readLabel.alignment = .left
 
         bulkRadio = NSView.makeRadioButton(
-            NSLocalizedString("dialog.sendFile.bulkRead",
-                value: "Bulk read", comment: ""), tag: 0)
+            TTL("dialog.sendFile.bulkRead"), tag: 0)
         bulkRadio.state = .on
         bulkRadio.target = self
         bulkRadio.action = #selector(readMethodChanged(_:))
 
         sequentialRadio = NSView.makeRadioButton(
-            NSLocalizedString("dialog.sendFile.sequentialRead",
-                value: "Sequential read", comment: ""), tag: 1)
+            TTL("dialog.sendFile.sequentialRead"), tag: 1)
         sequentialRadio.state = .off
         sequentialRadio.target = self
         sequentialRadio.action = #selector(readMethodChanged(_:))
@@ -944,13 +929,11 @@ final class SendFileDialogController: BaseSetupDialogController {
 
         // --- Binary checkbox ---
         binaryCheck = NSView.makeCheckbox(
-            NSLocalizedString("dialog.sendFile.binary",
-                value: "Binary", comment: ""), checked: false)
+            TTL("dialog.sendFile.binary"), checked: false)
 
         // --- Delay type ---
         let delayLabel = NSView.makeLabel(
-            NSLocalizedString("dialog.sendFile.delayType",
-                value: "Delay type:", comment: ""))
+            TTL("dialog.sendFile.delayType"))
         delayLabel.alignment = .left
 
         delayTypePopup = NSView.makePopUpButton(
@@ -963,8 +946,7 @@ final class SendFileDialogController: BaseSetupDialogController {
 
         // --- Send size ---
         let sizeLabel = NSView.makeLabel(
-            NSLocalizedString("dialog.sendFile.sendSize",
-                value: "Send size(bytes):", comment: ""))
+            TTL("dialog.sendFile.sendSize"))
         sizeLabel.alignment = .left
 
         let sizeItems = ["All", "80", "160", "320", "640", "1280", "2560", "5120", "10240"]
@@ -977,8 +959,7 @@ final class SendFileDialogController: BaseSetupDialogController {
 
         // --- Delay time ---
         let timeLabel = NSView.makeLabel(
-            NSLocalizedString("dialog.sendFile.delayTime",
-                value: "Delay time(ms):", comment: ""))
+            TTL("dialog.sendFile.delayTime"))
         timeLabel.alignment = .left
 
         delayTimeField = NSView.makeTextField(value: "0", width: 60)
@@ -1080,8 +1061,7 @@ final class RecvFileDialogController: BaseSetupDialogController {
 
     init() {
         super.init(nibName: nil, bundle: nil)
-        self.title = NSLocalizedString("dialog.recvFile.title",
-            value: "Receive file", comment: "")
+        self.title = TTL("dialog.recvFile.title")
     }
 
     required init?(coder: NSCoder) { fatalError() }
@@ -1096,8 +1076,7 @@ final class RecvFileDialogController: BaseSetupDialogController {
 
         // --- Filename row ---
         let fnLabel = NSView.makeLabel(
-            NSLocalizedString("dialog.recvFile.filename",
-                value: "Filename (drop file in this dialog):", comment: ""))
+            TTL("dialog.recvFile.filename"))
         fnLabel.alignment = .left
 
         filenameField = NSView.makeTextField(value: "", placeholder: "")
@@ -1116,13 +1095,11 @@ final class RecvFileDialogController: BaseSetupDialogController {
 
         // --- Binary checkbox ---
         binaryCheck = NSView.makeCheckbox(
-            NSLocalizedString("dialog.recvFile.binary",
-                value: "Binary", comment: ""), checked: false)
+            TTL("dialog.recvFile.binary"), checked: false)
 
         // --- Auto-stop wait time ---
         let autoLabel = NSView.makeLabel(
-            NSLocalizedString("dialog.recvFile.autoStop",
-                value: "Auto-stop wait time(sec):", comment: ""))
+            TTL("dialog.recvFile.autoStop"))
         autoLabel.alignment = .left
 
         autoStopField = NSView.makeTextField(value: "0", width: 60)
@@ -1192,17 +1169,17 @@ final class YMODEMOptionAccessory: NSView {
 
     init(defaultStandard: Bool = true) {
         standardRadio = NSView.makeRadioButton(
-            NSLocalizedString("dialog.yopt.ymodem", value: "YMODEM", comment: ""), tag: 0)
+            TTL("dialog.yopt.ymodem"), tag: 0)
         ymodemGRadio = NSView.makeRadioButton(
-            NSLocalizedString("dialog.yopt.ymodemG", value: "YMODEM-G", comment: ""), tag: 1)
+            TTL("dialog.yopt.ymodemG"), tag: 1)
         binaryCheck = NSView.makeCheckbox(
-            NSLocalizedString("dialog.yopt.binary", value: "Binary", comment: ""), checked: true)
+            TTL("dialog.yopt.binary"), checked: true)
 
         super.init(frame: .zero)
         translatesAutoresizingMaskIntoConstraints = false
 
         let box = NSView.makeGroupBox(
-            title: NSLocalizedString("dialog.yopt.option", value: "Option", comment: ""))
+            title: TTL("dialog.yopt.option"))
         addSubview(box)
         box.translatesAutoresizingMaskIntoConstraints = false
 
@@ -1265,8 +1242,7 @@ extension FileTransferDialogHelper {
         panel.canChooseDirectories = false
         panel.allowsMultipleSelection = false
         configureOpenPanelForAllFileTypes(panel)
-        panel.title = NSLocalizedString("dialog.ymodem.sendTitle",
-            value: "Tera Term: YMODEM Send", comment: "")
+        panel.title = TTL("dialog.ymodem.sendTitle")
 
         let accessory = YMODEMOptionAccessory(defaultStandard: true)
         panel.accessoryView = accessory
@@ -1288,8 +1264,7 @@ extension FileTransferDialogHelper {
         completion: @escaping (URL) -> Void
     ) {
         let panel = NSSavePanel()
-        panel.title = NSLocalizedString("dialog.ymodem.receiveTitle",
-            value: "Tera Term: YMODEM Receive", comment: "")
+        panel.title = TTL("dialog.ymodem.receiveTitle")
         panel.nameFieldStringValue = "received_file"
 
         let accessory = YMODEMOptionAccessory(defaultStandard: true)

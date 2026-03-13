@@ -485,7 +485,7 @@ class TerminalWindowController: NSWindowController {
             alert.messageText = L("macro.error.title")
             alert.informativeText = error.localizedDescription
             alert.alertStyle = .warning
-            alert.addButton(withTitle: "OK")
+            alert.addButton(withTitle: L("OK"))
             if let win = window { alert.beginSheetModal(for: win) }
             return
         }
@@ -925,7 +925,7 @@ extension TerminalWindowController: FileTransferDelegate {
                     bytesTransferred: bytes,
                     totalBytes: total)
                 let progress = total.map { "\(bytes)/\($0)" } ?? "\(bytes) bytes"
-                self.window?.title = "Transfer: \(name) - \(progress)"
+                self.window?.title = String(format: L("window.title.transfer"), name, progress)
             case .completed(let name, let bytes):
                 self.protocolTransferPanel.close()
                 self.updateWindowTitle()

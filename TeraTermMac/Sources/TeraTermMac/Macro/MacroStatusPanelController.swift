@@ -51,7 +51,7 @@ final class MacroStatusPanelController {
         }
         isPaused = false
         macroNameLabel?.stringValue = macroName
-        lineLabel?.stringValue = "Line: 0"
+        lineLabel?.stringValue = String(format: TTL("macroStatus.lineFmt"), 0)
         updatePauseButtonTitle()
         panel?.orderFront(nil)
     }
@@ -69,7 +69,7 @@ final class MacroStatusPanelController {
     /// Update the displayed line number. Safe to call from any thread.
     func updateLineNumber(_ line: Int) {
         let update: () -> Void = { [weak self] in
-            self?.lineLabel?.stringValue = "Line: \(line)"
+            self?.lineLabel?.stringValue = String(format: TTL("macroStatus.lineFmt"), line)
         }
         if Thread.isMainThread {
             update()
@@ -136,12 +136,12 @@ final class MacroStatusPanelController {
         self.lineLabel = lineLbl
 
         // --- Buttons ---
-        let pauseBtn = NSView.makePushButton(NSLocalizedString("macroStatus.pause", comment: ""))
+        let pauseBtn = NSView.makePushButton(TTL("macroStatus.pause"))
         pauseBtn.target = self
         pauseBtn.action = #selector(pauseResumeClicked(_:))
         self.pauseResumeButton = pauseBtn
 
-        let stopBtn = NSView.makePushButton(NSLocalizedString("macroStatus.stop", comment: ""))
+        let stopBtn = NSView.makePushButton(TTL("macroStatus.stop"))
         stopBtn.target = self
         stopBtn.action = #selector(stopClicked(_:))
         stopBtn.contentTintColor = .systemRed
@@ -186,7 +186,7 @@ final class MacroStatusPanelController {
             backing: .buffered,
             defer: true)
         p.contentViewController = vc
-        p.title = NSLocalizedString("macroStatus.title", comment: "")
+        p.title = TTL("macroStatus.title")
         p.isFloatingPanel = true
         p.level = .floating
         p.becomesKeyOnlyIfNeeded = true
@@ -212,7 +212,7 @@ final class MacroStatusPanelController {
 
     private func updatePauseButtonTitle() {
         let key = isPaused ? "macroStatus.resume" : "macroStatus.pause"
-        pauseResumeButton?.title = NSLocalizedString(key, comment: "")
+        pauseResumeButton?.title = TTL(key)
     }
 }
 

@@ -2169,7 +2169,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
 
     private func showSCPErrorAlert(_ detail: String) {
         let alert = NSAlert()
-        alert.messageText = "SCP"
+        alert.messageText = "SCP"  // protocol name, not localized
         alert.informativeText = detail
         alert.alertStyle = .warning
         alert.addButton(withTitle: L("OK"))

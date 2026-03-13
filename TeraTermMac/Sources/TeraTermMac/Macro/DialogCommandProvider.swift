@@ -89,7 +89,7 @@ class DialogCommandProvider {
             let alert = NSAlert()
             alert.messageText = title
             alert.informativeText = message
-            alert.addButton(withTitle: NSLocalizedString("dialog.macro.ok", value: "OK", comment: ""))
+            alert.addButton(withTitle: TTL("dialog.macro.ok"))
 
             self?.runAlert(alert) { _ in
                 completion(1)
@@ -110,8 +110,8 @@ class DialogCommandProvider {
             let alert = NSAlert()
             alert.messageText = title
             alert.informativeText = message
-            alert.addButton(withTitle: NSLocalizedString("dialog.macro.yes", value: "Yes", comment: ""))
-            alert.addButton(withTitle: NSLocalizedString("dialog.macro.no", value: "No", comment: ""))
+            alert.addButton(withTitle: TTL("dialog.macro.yes"))
+            alert.addButton(withTitle: TTL("dialog.macro.no"))
 
             self?.runAlert(alert) { response in
                 completion(response == .alertFirstButtonReturn ? 1 : 0)
@@ -134,8 +134,8 @@ class DialogCommandProvider {
             let alert = NSAlert()
             alert.messageText = title
             alert.informativeText = prompt
-            alert.addButton(withTitle: NSLocalizedString("dialog.macro.ok", value: "OK", comment: ""))
-            alert.addButton(withTitle: NSLocalizedString("dialog.macro.cancel", value: "Cancel", comment: ""))
+            alert.addButton(withTitle: TTL("dialog.macro.ok"))
+            alert.addButton(withTitle: TTL("dialog.macro.cancel"))
 
             let inputField: NSTextField
             if isPassword {
@@ -169,8 +169,8 @@ class DialogCommandProvider {
         DispatchQueue.main.async { [weak self] in
             let alert = NSAlert()
             alert.messageText = title
-            alert.addButton(withTitle: NSLocalizedString("dialog.macro.ok", value: "OK", comment: ""))
-            alert.addButton(withTitle: NSLocalizedString("dialog.macro.cancel", value: "Cancel", comment: ""))
+            alert.addButton(withTitle: TTL("dialog.macro.ok"))
+            alert.addButton(withTitle: TTL("dialog.macro.cancel"))
 
             // Build table view inside scroll view
             let scrollView = NSScrollView()

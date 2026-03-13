@@ -2732,7 +2732,7 @@ class TTLInterpreter {
 
     private func ttlFilenameBox() throws {
         let varId = try parser.getStrVar()
-        var title = NSLocalizedString("dialog.macro.selectFile", comment: "")
+        var title = TTL("dialog.macro.selectFile")
         if parser.checkParameterGiven() {
             title = try parser.getStrExpression()
         }
@@ -2755,7 +2755,7 @@ class TTLInterpreter {
 
     private func ttlDirnameBox() throws {
         let varId = try parser.getStrVar()
-        var title = NSLocalizedString("dialog.macro.selectFolder", comment: "")
+        var title = TTL("dialog.macro.selectFolder")
         if parser.checkParameterGiven() {
             title = try parser.getStrExpression()
         }
@@ -3313,10 +3313,10 @@ class TTLInterpreter {
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
             let alert = NSAlert()
-            alert.messageText = NSLocalizedString("dialog.macro.password", value: "Password", comment: "")
+            alert.messageText = TTL("dialog.macro.password")
             alert.informativeText = prompt
-            alert.addButton(withTitle: NSLocalizedString("dialog.macro.ok", value: "OK", comment: ""))
-            alert.addButton(withTitle: NSLocalizedString("dialog.macro.cancel", value: "Cancel", comment: ""))
+            alert.addButton(withTitle: TTL("dialog.macro.ok"))
+            alert.addButton(withTitle: TTL("dialog.macro.cancel"))
             let input = NSView.makeSecureTextField(placeholder: "", width: nil)
             input.widthAnchor.constraint(greaterThanOrEqualToConstant: 300).isActive = true
             alert.accessoryView = input

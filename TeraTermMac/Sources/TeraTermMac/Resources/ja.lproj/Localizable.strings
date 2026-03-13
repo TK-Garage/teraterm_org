@@ -955,3 +955,85 @@
 "dialog.theme.url" = "URL:";
 "dialog.theme.selFg" = "選択前景色:";
 "dialog.theme.selBg" = "選択背景色:";
+
+/* 不足していたローカライズキー */
+
+/* マクロステータスパネル - 行番号表示 */
+"macroStatus.linePrefix" = "行: %d";
+
+/* 印刷中止ダイアログ */
+"dialog.printAbort.printing" = "印刷中...";
+
+/* ステータスダイアログ */
+"dialog.status.processing" = "処理中...";
+
+/* TEKウィンドウ */
+"dialog.tek.title" = "Tera Term: TEK";
+
+/* 転送ウィンドウタイトル */
+"window.title.transfer" = "転送: %@ - %@";
+
+/* Kermit取得ダイアログ */
+"dialog.kermitGet.title" = "Tera Term: Kermit取得";
+
+/* ANSIカラー名（ツールチップ） */
+"color.black" = "黒";
+"color.red" = "赤";
+"color.green" = "緑";
+"color.yellow" = "黄";
+"color.blue" = "青";
+"color.magenta" = "マゼンタ";
+"color.cyan" = "シアン";
+"color.white" = "白";
+"color.brightBlack" = "明るい黒";
+"color.brightRed" = "明るい赤";
+"color.brightGreen" = "明るい緑";
+"color.brightYellow" = "明るい黄";
+"color.brightBlue" = "明るい青";
+"color.brightMagenta" = "明るいマゼンタ";
+"color.brightCyan" = "明るいシアン";
+"color.brightWhite" = "明るい白";
+
+/* 描画API名 */
+"dialog.font.apiDefault" = "デフォルト";
+"dialog.font.apiCoreText" = "CoreText";
+"dialog.font.apiCoreGraphics" = "CoreGraphics";
+
+/* UIタブ */
+"dialog.ui.systemDefault" = "（システムデフォルト）";
+
+/* プラグインタブ */
+"dialog.plugin.directoryColumn" = "ディレクトリ";
+
+/* Telnetグループボックス（TCP/IPダイアログ） */
+"dialog.tcpip.telnetGroup" = "Telnet";
+
+/* デフォルトポート項目 */
+"dialog.general.portTCPIP" = "TCP/IP";
+"dialog.general.portSerial" = "シリアル";
+
+/* マクロ */
+"macroStatus.lineFmt" = "行: %d";
+
+/* 入力ダイアログのデフォルトタイトル */
+"dialog.input.defaultTitle" = "入力";
+
+/* メッセージダイアログのデフォルトタイトル */
+"dialog.message.defaultTitle" = "メッセージ";
+
+/* ファイル転送読み込みエラー */
+"dialog.fileTransfer.readError.title" = "ファイルを読み込めません";
+"dialog.fileTransfer.readError.message" = "ファイル \"%@\" を読み込めません。ファイルのアクセス権を確認してください。";
+
+/* YMODEMオプションパネル */
+"dialog.yopt.ymodem" = "YMODEM";
+"dialog.yopt.ymodemG" = "YMODEM-G";
+"dialog.yopt.binary" = "バイナリ";
+"dialog.yopt.option" = "オプション";
+
+/* YMODEMダイアログタイトル */
+"dialog.ymodem.sendTitle" = "Tera Term: YMODEM 送信";
+"dialog.ymodem.receiveTitle" = "Tera Term: YMODEM 受信";
+
+/* マクロ - パスワードダイアログ */
+"dialog.macro.password" = "パスワード";

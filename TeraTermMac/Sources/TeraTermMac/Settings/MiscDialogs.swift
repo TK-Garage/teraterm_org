@@ -360,7 +360,7 @@ final class MacroErrorDialog {
 
 final class InputDialog {
 
-    static func show(title: String = "Input", prompt: String = "",
+    static func show(title: String = TTL("dialog.input.defaultTitle"), prompt: String = "",
                      defaultValue: String = "",
                      on window: NSWindow,
                      completion: @escaping (String?) -> Void) {
@@ -592,7 +592,7 @@ final class LogDialogController: BaseSetupDialogController {
 
 final class MessageDialog {
 
-    static func show(message: String, title: String = "Message",
+    static func show(message: String, title: String = TTL("dialog.message.defaultTitle"),
                      showNoButton: Bool = true,
                      on window: NSWindow,
                      completion: @escaping (_ okClicked: Bool) -> Void) {
@@ -679,7 +679,7 @@ final class StatusDialog {
     private var panel: NSPanel?
     private var label: NSTextField?
 
-    func show(message: String = "Processing...") {
+    func show(message: String = TTL("dialog.status.processing")) {
         if let p = panel {
             label?.stringValue = message
             p.orderFront(nil)
@@ -925,7 +925,7 @@ final class TCPIPDialogController: BaseSetupDialogController {
         ])
 
         // ── Telnet ──
-        let telnetBox = NSView.makeGroupBox(title: "Telnet")
+        let telnetBox = NSView.makeGroupBox(title: TTL("dialog.tcpip.telnetGroup"))
         telnetAutoDetectCheck = NSView.makeCheckbox(
             TTL("dialog.tcpip.telnetAutoDetect"), checked: settings.telnetAutoDetect)
         telnetBinaryOptionCheck = NSView.makeCheckbox(
