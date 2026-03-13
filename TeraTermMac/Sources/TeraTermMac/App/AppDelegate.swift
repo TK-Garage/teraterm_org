@@ -1368,31 +1368,29 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
     // MARK: - Dialogs (port of ttpdlg)
 
     private func showConnectionDialog(for targetWC: TerminalWindowController? = nil) {
-        // ── NSPanel ベースのモーダルダイアログ（NSAlert は accessoryView の Auto Layout を破壊するため使用不可） ──
+        // ── NSPanel ベースのモーダルダイアログ ──
+        // NSAlert は accessoryView の Auto Layout を破壊するため使用不可
         let helper = ConnectionDialogHelper()
 
         let m = DialogLayout.margin
         let innerM = DialogLayout.innerMargin
 
-        // メインコンテンツビュー
-        let contentView = NSView()
-        contentView.translatesAutoresizingMaskIntoConstraints = false
+        // パネルを先に作成し、既存の contentView にサブビューを追加する
+        // （contentView を置き換えるとウィンドウのフレーム管理が壊れる）
+        let panel = NSPanel(
+            contentRect: NSRect(x: 0, y: 0, width: 560, height: 400),
+            styleMask: [.titled, .closable],
+            backing: .buffered,
+            defer: true)
+        panel.title = L("dialog.connection.title")
+        panel.isReleasedWhenClosed = false
 
-        // タイトルラベル
-        let titleLabel = NSTextField(labelWithString: L("dialog.connection.title"))
-        titleLabel.translatesAutoresizingMaskIntoConstraints = false
-        titleLabel.font = NSFont.boldSystemFont(ofSize: 14)
-        titleLabel.alignment = .left
-        contentView.addSubview(titleLabel)
+        guard let root = panel.contentView else { return }
 
-        // ── TCP/IP Group Box ──
-        let tcpBox = NSBox()
-        tcpBox.translatesAutoresizingMaskIntoConstraints = false
-        tcpBox.titlePosition = .noTitle
-        contentView.addSubview(tcpBox)
+        // helper をパネルに関連付けて保持（ラジオボタンの target/action 用）
+        objc_setAssociatedObject(panel, "helper", helper, .OBJC_ASSOCIATION_RETAIN)
 
-        let tcpContent = NSView()
-        tcpContent.translatesAutoresizingMaskIntoConstraints = false
+        // ── TCP/IP セクション ──
 
         // Row 1: [TCP/IP radio] [Host:] [combobox]
         let tcpRadio = NSView.makeRadioButton(L("dialog.connection.tcpip"), tag: 0)
@@ -1450,7 +1448,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         row2.spacing = DialogLayout.sectionSpacing
         row2.alignment = .firstBaseline
 
-        // Row 3: [spacer] [SSH radio]  [SSH version:] [popup]
+        // Row 3: [SSH radio]  [SSH version:] [popup]
         let sshRadio = NSView.makeRadioButton("SSH", tag: 1)
         sshRadio.target = helper
         sshRadio.action = #selector(ConnectionDialogHelper.serviceChanged(_:))
@@ -1484,7 +1482,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         row3.spacing = DialogLayout.sectionSpacing
         row3.alignment = .firstBaseline
 
-        // Row 4: [spacer] [Other radio]  [IP version:] [popup]
+        // Row 4: [Other radio]  [IP version:] [popup]
         let otherRadio = NSView.makeRadioButton(L("dialog.connection.other"), tag: 2)
         otherRadio.target = helper
         otherRadio.action = #selector(ConnectionDialogHelper.serviceChanged(_:))
@@ -1514,7 +1512,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         row4.spacing = DialogLayout.sectionSpacing
         row4.alignment = .firstBaseline
 
-        // Service rows: ラジオボタンの最小幅を揃える
+        // ラジオボタンの最小幅を揃える
         for radio in [telnetRadio, sshRadio, otherRadio] {
             radio.widthAnchor.constraint(greaterThanOrEqualToConstant: 80).isActive = true
         }
@@ -1525,23 +1523,25 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         serviceStack.alignment = .leading
         serviceStack.spacing = DialogLayout.rowSpacing
 
-        // TCP content: hostRow + serviceStack
         let tcpStack = NSStackView(views: [hostRow, serviceStack])
         tcpStack.translatesAutoresizingMaskIntoConstraints = false
         tcpStack.orientation = .vertical
         tcpStack.alignment = .leading
         tcpStack.spacing = DialogLayout.rowSpacing
 
-        tcpContent.addSubview(tcpStack)
+        // TCP/IP グループボックス — tcpStack を直接 addSubview し、NSBox に対して制約
+        let tcpBox = NSBox()
+        tcpBox.translatesAutoresizingMaskIntoConstraints = false
+        tcpBox.titlePosition = .noTitle
+        tcpBox.addSubview(tcpStack)
+        root.addSubview(tcpBox)
 
         NSLayoutConstraint.activate([
-            tcpStack.topAnchor.constraint(equalTo: tcpContent.topAnchor, constant: innerM),
-            tcpStack.leadingAnchor.constraint(equalTo: tcpContent.leadingAnchor, constant: innerM),
-            tcpStack.trailingAnchor.constraint(lessThanOrEqualTo: tcpContent.trailingAnchor, constant: -innerM),
-            tcpStack.bottomAnchor.constraint(equalTo: tcpContent.bottomAnchor, constant: -innerM),
+            tcpStack.topAnchor.constraint(equalTo: tcpBox.topAnchor, constant: innerM),
+            tcpStack.leadingAnchor.constraint(equalTo: tcpBox.leadingAnchor, constant: innerM),
+            tcpStack.trailingAnchor.constraint(lessThanOrEqualTo: tcpBox.trailingAnchor, constant: -innerM),
+            tcpStack.bottomAnchor.constraint(equalTo: tcpBox.bottomAnchor, constant: -innerM),
         ])
-
-        tcpBox.contentView = tcpContent
 
         // サービス行をホストコンボボックス列に揃える
         NSLayoutConstraint.activate([
@@ -1559,15 +1559,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
                               sshVerLabel, sshVerPopup,
                               ipVerLabel, ipVerPopup]
 
-        // ── Serial Group Box ──
-        let serialBox = NSBox()
-        serialBox.translatesAutoresizingMaskIntoConstraints = false
-        serialBox.titlePosition = .noTitle
-        contentView.addSubview(serialBox)
-
-        let serialContent = NSView()
-        serialContent.translatesAutoresizingMaskIntoConstraints = false
-
+        // ── Serial セクション ──
         let serialRadio = NSView.makeRadioButton(L("dialog.connection.serial"), tag: 1)
         serialRadio.target = helper
         serialRadio.action = #selector(ConnectionDialogHelper.connectionTypeChanged(_:))
@@ -1595,27 +1587,22 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         serialRow.spacing = DialogLayout.labelTrailing
         serialRow.alignment = .firstBaseline
 
-        serialContent.addSubview(serialRow)
-        NSLayoutConstraint.activate([
-            serialRow.topAnchor.constraint(equalTo: serialContent.topAnchor, constant: innerM),
-            serialRow.leadingAnchor.constraint(equalTo: serialContent.leadingAnchor, constant: innerM),
-            serialRow.trailingAnchor.constraint(equalTo: serialContent.trailingAnchor, constant: -innerM),
-            serialRow.bottomAnchor.constraint(equalTo: serialContent.bottomAnchor, constant: -innerM),
-        ])
+        let serialBox = NSBox()
+        serialBox.translatesAutoresizingMaskIntoConstraints = false
+        serialBox.titlePosition = .noTitle
+        serialBox.addSubview(serialRow)
+        root.addSubview(serialBox)
 
-        serialBox.contentView = serialContent
+        NSLayoutConstraint.activate([
+            serialRow.topAnchor.constraint(equalTo: serialBox.topAnchor, constant: innerM),
+            serialRow.leadingAnchor.constraint(equalTo: serialBox.leadingAnchor, constant: innerM),
+            serialRow.trailingAnchor.constraint(equalTo: serialBox.trailingAnchor, constant: -innerM),
+            serialRow.bottomAnchor.constraint(equalTo: serialBox.bottomAnchor, constant: -innerM),
+        ])
 
         helper.serialControls = [serialPortLabel, serialPortPopup]
 
-        // ── Local Shell Group Box ──
-        let shellBox = NSBox()
-        shellBox.translatesAutoresizingMaskIntoConstraints = false
-        shellBox.titlePosition = .noTitle
-        contentView.addSubview(shellBox)
-
-        let shellContent = NSView()
-        shellContent.translatesAutoresizingMaskIntoConstraints = false
-
+        // ── Local Shell セクション ──
         let shellRadio = NSView.makeRadioButton(L("dialog.connection.localShell"), tag: 2)
         shellRadio.target = helper
         shellRadio.action = #selector(ConnectionDialogHelper.connectionTypeChanged(_:))
@@ -1635,15 +1622,18 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         shellRow.spacing = DialogLayout.labelTrailing
         shellRow.alignment = .firstBaseline
 
-        shellContent.addSubview(shellRow)
-        NSLayoutConstraint.activate([
-            shellRow.topAnchor.constraint(equalTo: shellContent.topAnchor, constant: innerM),
-            shellRow.leadingAnchor.constraint(equalTo: shellContent.leadingAnchor, constant: innerM),
-            shellRow.trailingAnchor.constraint(equalTo: shellContent.trailingAnchor, constant: -innerM),
-            shellRow.bottomAnchor.constraint(equalTo: shellContent.bottomAnchor, constant: -innerM),
-        ])
+        let shellBox = NSBox()
+        shellBox.translatesAutoresizingMaskIntoConstraints = false
+        shellBox.titlePosition = .noTitle
+        shellBox.addSubview(shellRow)
+        root.addSubview(shellBox)
 
-        shellBox.contentView = shellContent
+        NSLayoutConstraint.activate([
+            shellRow.topAnchor.constraint(equalTo: shellBox.topAnchor, constant: innerM),
+            shellRow.leadingAnchor.constraint(equalTo: shellBox.leadingAnchor, constant: innerM),
+            shellRow.trailingAnchor.constraint(equalTo: shellBox.trailingAnchor, constant: -innerM),
+            shellRow.bottomAnchor.constraint(equalTo: shellBox.bottomAnchor, constant: -innerM),
+        ])
 
         helper.localShellControls = [shellPathLabel, shellPathField]
 
@@ -1651,7 +1641,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         let separator = NSBox()
         separator.translatesAutoresizingMaskIntoConstraints = false
         separator.boxType = .separator
-        contentView.addSubview(separator)
+        root.addSubview(separator)
 
         // ── ボタンバー: [spacer] [Cancel] [OK] ──
         let okButton = NSView.makePushButton(L("dialog.connection.ok"), keyEquivalent: "\r")
@@ -1666,43 +1656,38 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         buttonBar.orientation = .horizontal
         buttonBar.spacing = DialogLayout.buttonSpacing
         buttonBar.alignment = .centerY
-        contentView.addSubview(buttonBar)
+        root.addSubview(buttonBar)
 
-        // ── NSBox に対して直接制約を張る（contentView ではなく） ──
+        // ── メインレイアウト: root に対して制約を張る ──
         NSLayoutConstraint.activate([
-            // タイトル
-            titleLabel.topAnchor.constraint(equalTo: contentView.topAnchor, constant: m),
-            titleLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: m),
-            titleLabel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -m),
-
-            // TCP/IP ボックス
-            tcpBox.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: m),
-            tcpBox.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: m),
-            tcpBox.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -m),
+            // TCP/IP ボックス（最上部）
+            tcpBox.topAnchor.constraint(equalTo: root.topAnchor, constant: m),
+            tcpBox.leadingAnchor.constraint(equalTo: root.leadingAnchor, constant: m),
+            tcpBox.trailingAnchor.constraint(equalTo: root.trailingAnchor, constant: -m),
 
             // Serial ボックス
             serialBox.topAnchor.constraint(equalTo: tcpBox.bottomAnchor, constant: innerM),
-            serialBox.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: m),
-            serialBox.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -m),
+            serialBox.leadingAnchor.constraint(equalTo: root.leadingAnchor, constant: m),
+            serialBox.trailingAnchor.constraint(equalTo: root.trailingAnchor, constant: -m),
 
             // Local Shell ボックス
             shellBox.topAnchor.constraint(equalTo: serialBox.bottomAnchor, constant: innerM),
-            shellBox.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: m),
-            shellBox.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -m),
+            shellBox.leadingAnchor.constraint(equalTo: root.leadingAnchor, constant: m),
+            shellBox.trailingAnchor.constraint(equalTo: root.trailingAnchor, constant: -m),
 
             // セパレータ
             separator.topAnchor.constraint(equalTo: shellBox.bottomAnchor, constant: m),
-            separator.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
-            separator.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
+            separator.leadingAnchor.constraint(equalTo: root.leadingAnchor),
+            separator.trailingAnchor.constraint(equalTo: root.trailingAnchor),
 
             // ボタンバー
             buttonBar.topAnchor.constraint(equalTo: separator.bottomAnchor, constant: m * 0.75),
-            buttonBar.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: m),
-            buttonBar.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -m),
-            buttonBar.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -m * 0.75),
+            buttonBar.leadingAnchor.constraint(equalTo: root.leadingAnchor, constant: m),
+            buttonBar.trailingAnchor.constraint(equalTo: root.trailingAnchor, constant: -m),
+            buttonBar.bottomAnchor.constraint(equalTo: root.bottomAnchor, constant: -m * 0.75),
 
             // 最小幅
-            contentView.widthAnchor.constraint(greaterThanOrEqualToConstant: 520),
+            root.widthAnchor.constraint(greaterThanOrEqualToConstant: 560),
         ])
 
         // 初期有効/無効状態を適用
@@ -1727,26 +1712,17 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
             }
         }
 
-        // ── NSPanel を作成してモーダル表示 ──
-        let panel = NSPanel(
-            contentRect: .zero,
-            styleMask: [.titled, .closable],
-            backing: .buffered,
-            defer: true)
-        panel.title = L("dialog.connection.title")
-        panel.isReleasedWhenClosed = false
-        panel.contentView = contentView
-
-        // helper をパネルに関連付けて保持（ラジオボタンの target/action 用）
-        objc_setAssociatedObject(panel, "helper", helper, .OBJC_ASSOCIATION_RETAIN)
-
         // ボタンアクション: レスポンダチェーン経由で AppDelegate に到達
         okButton.target = nil
         okButton.action = #selector(AppDelegate.connectionDialogOK(_:))
         cancelButton.target = nil
         cancelButton.action = #selector(AppDelegate.connectionDialogCancel(_:))
 
+        // Auto Layout でサイズを決定してからセンタリング
+        root.layoutSubtreeIfNeeded()
+        panel.setContentSize(root.fittingSize)
         panel.center()
+
         let response = NSApp.runModal(for: panel)
         panel.close()
 
@@ -1758,7 +1734,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
             }
 
             if shellRadio.state == .on {
-                // Local Shell 接続
                 let path = shellPathField.stringValue
                 if !path.isEmpty && path != defaultShell {
                     settings.localShellPath = path
