@@ -1058,15 +1058,41 @@ extension TerminalWindowController: TTLInterpreterDelegate {
     }
 
     func ttlLogPause() {
-        // Pause logging
+        logger.pauseLogging()
     }
 
     func ttlLogStart() {
-        // Resume logging
+        logger.resumeLogging()
     }
 
     func ttlLogWrite(_ text: String) {
         logger.logData(Data(text.utf8))
+    }
+
+    func ttlLogInfo() -> (state: Int, filePath: String) {
+        let stateValue: Int
+        switch logger.state {
+        case .inactive:
+            stateValue = -1
+        case .active:
+            stateValue = 0
+        case .paused:
+            stateValue = 1
+        }
+        return (state: stateValue, filePath: logger.logFilePath ?? "")
+    }
+
+    func ttlLogRotateSet(mode: String, value: Int) {
+        switch mode {
+        case "size":
+            logger.setRotation(mode: .size, size: value)
+        case "rotate":
+            logger.setRotation(step: value)
+        case "halt":
+            logger.setRotation(mode: .none)
+        default:
+            break
+        }
     }
 
     func ttlShowError(_ message: String, line: Int, lineText: String, fileName: String, completion: @escaping (Bool) -> Void) {

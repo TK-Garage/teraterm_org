@@ -35,6 +35,12 @@ struct LogOptions {
 
 // MARK: - Terminal Logger (port of filesys_log.cpp)
 
+/// Log rotation mode (port of rotate_mode enum from filesys_log.cpp)
+enum LogRotateMode {
+    case none
+    case size
+}
+
 class TerminalLogger {
     private(set) var state: LogState = .inactive
     private(set) var logFilePath: String?
@@ -43,6 +49,11 @@ class TerminalLogger {
     private var fileHandle: FileHandle?
     private var options: LogOptions
     private let dateFormatter = DateFormatter()
+
+    // Log rotation state
+    private var rotateMode: LogRotateMode = .none
+    private var rotateSize: Int = 0
+    private var rotateStep: Int = 0
 
     // Strip ESC sequences for plain text logging
     private var escapeState: EscapeStripState = .normal
@@ -184,6 +195,47 @@ class TerminalLogger {
         writeToLog(line)
     }
 
+    // MARK: - Log Rotation (port of LogRotate() in filesys_log.cpp)
+
+    /// Configure log rotation mode and size threshold.
+    func setRotation(mode: LogRotateMode? = nil, size: Int? = nil, step: Int? = nil) {
+        if let mode = mode { rotateMode = mode }
+        if let size = size { rotateSize = size }
+        if let step = step { rotateStep = step }
+    }
+
+    /// Perform log file rotation when size limit exceeded.
+    private func performRotation() {
+        guard rotateMode == .size, rotateSize > 0, bytesLogged > Int64(rotateSize) else { return }
+        guard let currentPath = logFilePath else { return }
+
+        fileHandle?.closeFile()
+        fileHandle = nil
+        bytesLogged = 0
+
+        let fm = FileManager.default
+
+        // Rotate files: .log.N → .log.(N+1), current → .log.1
+        let maxGen = rotateStep > 0 ? rotateStep : 10
+        for i in stride(from: maxGen - 1, through: 1, by: -1) {
+            let src = "\(currentPath).\(i)"
+            let dst = "\(currentPath).\(i + 1)"
+            try? fm.removeItem(atPath: dst)
+            if fm.fileExists(atPath: src) {
+                try? fm.moveItem(atPath: src, toPath: dst)
+            }
+        }
+
+        // Move current log to .1
+        let rotatedPath = "\(currentPath).1"
+        try? fm.removeItem(atPath: rotatedPath)
+        try? fm.moveItem(atPath: currentPath, toPath: rotatedPath)
+
+        // Create new log file
+        fm.createFile(atPath: currentPath, contents: nil)
+        fileHandle = FileHandle(forWritingAtPath: currentPath)
+    }
+
     // MARK: - Private Methods
 
     private func writeToLog(_ string: String) {
@@ -194,6 +246,10 @@ class TerminalLogger {
     private func writeRawToLog(_ data: Data) {
         fileHandle?.write(data)
         bytesLogged += Int64(data.count)
+        // Check rotation after writing
+        if rotateMode == .size {
+            performRotation()
+        }
     }
 
     private func stripEscapeSequences(_ data: Data) -> String {

@@ -128,39 +128,18 @@
 
 /* Terminal Setup Dialog */
 "dialog.terminalSetup.title" = "Terminal Setup";
-"dialog.terminalSetup.message" = "Terminal emulation settings";
-"dialog.terminalSetup.terminalId" = "Terminal ID:";
-"dialog.terminalSetup.size" = "Size:";
-"dialog.terminalSetup.encoding" = "Encoding:";
-"dialog.terminalSetup.newLine" = "New Line:";
 "dialog.terminalSetup.localEcho" = "Local Echo";
-"dialog.terminalSetup.autoWrap" = "Auto Wrap";
-"dialog.terminalSetup.ok" = "OK";
-"dialog.terminalSetup.cancel" = "Cancel";
 
 /* Window Setup Dialog */
 "dialog.windowSetup.title" = "Window Setup";
 "dialog.windowSetup.title_label" = "Title:";
 "dialog.windowSetup.alpha" = "Opacity:";
-"dialog.windowSetup.cursorShape" = "Cursor:";
 "dialog.windowSetup.cursorBlock" = "Block";
 "dialog.windowSetup.cursorVertical" = "Vertical Bar";
 "dialog.windowSetup.cursorHorizontal" = "Underline";
-"dialog.windowSetup.cursorBlink" = "Blink";
-"dialog.windowSetup.cursorColor" = "Cursor:";
 "dialog.windowSetup.colors" = "Colors";
-"dialog.windowSetup.foreground" = "Foreground:";
-"dialog.windowSetup.background" = "Background:";
-"dialog.windowSetup.selection" = "Selection:";
 "dialog.windowSetup.scrollBuffer" = "Scroll Buffer:";
-"dialog.windowSetup.enableScroll" = "Enable";
 "dialog.windowSetup.lines" = "lines";
-"dialog.windowSetup.beep" = "Beep:";
-"dialog.windowSetup.beepNone" = "None";
-"dialog.windowSetup.beepSystem" = "System Sound";
-"dialog.windowSetup.beepVisual" = "Visual Bell";
-"dialog.windowSetup.ok" = "OK";
-"dialog.windowSetup.cancel" = "Cancel";
 
 /* Keyboard Setup Dialog */
 "dialog.keyboardSetup.title" = "Keyboard Setup";
@@ -191,7 +170,6 @@
 /* Serial Port Dialog */
 "dialog.serialPort.title" = "Serial Port Setup";
 "dialog.serialPort.port" = "Port:";
-"dialog.serialPort.baudRate" = "Baud Rate:";
 "dialog.serialPort.dataBits" = "Data Bits:";
 "dialog.serialPort.parity" = "Parity:";
 "dialog.serialPort.parityNone" = "None";
@@ -202,8 +180,6 @@
 "dialog.serialPort.flowXonXoff" = "XON/XOFF";
 "dialog.serialPort.flowHardware" = "Hardware";
 "dialog.serialPort.noPortsFound" = "(No ports found)";
-"dialog.serialPort.connect" = "Connect";
-"dialog.serialPort.cancel" = "Cancel";
 
 /* Terminal Setup Dialog (new ViewController keys - matching IDD_TERMDLG) */
 "dialog.termSetup.terminalSize" = "Terminal size";
@@ -713,6 +689,7 @@
 "menu.setup.sshForward" = "SSH Forwarding…";
 "menu.setup.sshKeyGen" = "SSH Key Generation…";
 "menu.setup.general" = "General…";
+"menu.setup.openConfigFolder" = "Open Config Folder";
 
 /* SSH SCP Dialog (IDD_SSHSCP) */
 "dialog.scp.title" = "Tera Term: Secure Copy Protocol (SCP)";

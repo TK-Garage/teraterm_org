@@ -1,49 +1,10 @@
 # Tera Term Mac: 未使用リソースキー・未移植機能の一覧
 
-## 1. 日本語リソース (`ja.lproj/Localizable.strings`) で定義済みだがSwiftコードで未使用のキー (36個)
+## 1. 未使用リソースキーの整理 (完了)
 
-### 端末設定ダイアログ (旧 — `dialog.termSetup.*` に置換済み)
-
-| キー | 日本語テキスト |
-|------|---------------|
-| `dialog.terminalSetup.title` | 端末の設定 |
-| `dialog.terminalSetup.message` | ターミナルエミュレーションの設定 |
-| `dialog.terminalSetup.terminalId` | 端末ID: |
-| `dialog.terminalSetup.size` | サイズ: |
-| `dialog.terminalSetup.encoding` | 文字コード: |
-| `dialog.terminalSetup.newLine` | 改行コード: |
-| `dialog.terminalSetup.autoWrap` | 自動折り返し |
-| `dialog.terminalSetup.ok` | OK |
-| `dialog.terminalSetup.cancel` | キャンセル |
-
-### ウインドウ設定ダイアログ (旧 — `dialog.winSetup.*` に置換済み)
-
-| キー | 日本語テキスト |
-|------|---------------|
-| `dialog.windowSetup.title` | ウインドウの設定 |
-| `dialog.windowSetup.cursorShape` | カーソル: |
-| `dialog.windowSetup.cursorBlink` | 点滅 |
-| `dialog.windowSetup.cursorColor` | カーソル: |
-| `dialog.windowSetup.foreground` | 前景色: |
-| `dialog.windowSetup.background` | 背景色: |
-| `dialog.windowSetup.selection` | 選択: |
-| `dialog.windowSetup.enableScroll` | 有効 |
-| `dialog.windowSetup.beep` | ビープ: |
-| `dialog.windowSetup.beepNone` | なし |
-| `dialog.windowSetup.beepSystem` | システム音 |
-| `dialog.windowSetup.beepVisual` | ビジュアルベル |
-| `dialog.windowSetup.ok` | OK |
-| `dialog.windowSetup.cancel` | キャンセル |
-
-### シリアルポートダイアログ (旧 — `dialog.serialSetup.*` に置換済み)
-
-| キー | 日本語テキスト |
-|------|---------------|
-| `dialog.serialPort.title` | シリアルポートの設定 |
-| `dialog.serialPort.baudRate` | ボーレート: |
-| `dialog.serialPort.flow` | フロー: |
-| `dialog.serialPort.connect` | 接続 |
-| `dialog.serialPort.cancel` | キャンセル |
+旧ダイアログキー (`dialog.terminalSetup.*`、`dialog.windowSetup.*`、`dialog.serialPort.*`) のうち
+Swiftコードで参照されていない23個のキーを削除済み。
+現在使用中のキーのみが `.strings` ファイルに残っている。
 
 ### 接続エラーメッセージ (ローカライゼーションキー使用済み)
 
@@ -102,7 +63,7 @@
 
 | Windows版の機能 | 備考 |
 |----------------|------|
-| 設定フォルダを開く | INI/CNF/known_hostsの場所表示 |
+| ~~設定フォルダを開く~~ | ~~INI/CNF/known_hostsの場所表示~~ → **実装済み** (`openConfigFolder()` + NSWorkspace.open) |
 | ~~キーマップ読み込み~~ | ~~`.cnf` ファイルの読み込み~~ → **実装済み** (`KeymapLoader` + `loadKeymap()` メニューアクション + NSOpenPanel) |
 
 ### ウインドウメニュー

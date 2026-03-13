@@ -372,6 +372,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         setSymbol("square.and.arrow.down", for: saveItem)
         let restoreItem = setupMenu.addItem(withTitle: L("menu.setup.restoreSetup"), action: #selector(restoreSetup(_:)), keyEquivalent: "")
         setSymbol("square.and.arrow.up", for: restoreItem)
+        setupMenu.addItem(NSMenuItem.separator())
+        let openConfigItem = setupMenu.addItem(withTitle: L("menu.setup.openConfigFolder"), action: #selector(openConfigFolder(_:)), keyEquivalent: "")
+        setSymbol("folder", for: openConfigItem)
 
         // Code menu (encoding selection)
         let codeMenuItem = NSMenuItem()
@@ -1084,6 +1087,14 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
             alert.informativeText = error.localizedDescription
             alert.beginSheetModal(for: parentWindow)
         }
+    }
+
+    @objc func openConfigFolder(_ sender: Any?) {
+        let configManager = ConfigPersistenceManager()
+        let dir = configManager.appSupportDirectory
+        // Ensure directory exists before opening
+        try? configManager.ensureDirectory()
+        NSWorkspace.shared.open(dir)
     }
 
     @objc func resetTerminal(_ sender: Any?) {

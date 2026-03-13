@@ -128,39 +128,18 @@
 
 /* Terminal Setup Dialog */
 "dialog.terminalSetup.title" = "端末の設定";
-"dialog.terminalSetup.message" = "ターミナルエミュレーションの設定";
-"dialog.terminalSetup.terminalId" = "端末ID:";
-"dialog.terminalSetup.size" = "サイズ:";
-"dialog.terminalSetup.encoding" = "文字コード:";
-"dialog.terminalSetup.newLine" = "改行コード:";
 "dialog.terminalSetup.localEcho" = "ローカルエコー";
-"dialog.terminalSetup.autoWrap" = "自動折り返し";
-"dialog.terminalSetup.ok" = "OK";
-"dialog.terminalSetup.cancel" = "キャンセル";
 
 /* Window Setup Dialog */
 "dialog.windowSetup.title" = "ウインドウの設定";
 "dialog.windowSetup.title_label" = "タイトル:";
 "dialog.windowSetup.alpha" = "不透明度:";
-"dialog.windowSetup.cursorShape" = "カーソル:";
 "dialog.windowSetup.cursorBlock" = "ブロック";
 "dialog.windowSetup.cursorVertical" = "縦線";
 "dialog.windowSetup.cursorHorizontal" = "下線";
-"dialog.windowSetup.cursorBlink" = "点滅";
-"dialog.windowSetup.cursorColor" = "カーソル:";
 "dialog.windowSetup.colors" = "カラー";
-"dialog.windowSetup.foreground" = "前景色:";
-"dialog.windowSetup.background" = "背景色:";
-"dialog.windowSetup.selection" = "選択:";
 "dialog.windowSetup.scrollBuffer" = "スクロール:";
-"dialog.windowSetup.enableScroll" = "有効";
 "dialog.windowSetup.lines" = "行";
-"dialog.windowSetup.beep" = "ビープ:";
-"dialog.windowSetup.beepNone" = "なし";
-"dialog.windowSetup.beepSystem" = "システム音";
-"dialog.windowSetup.beepVisual" = "ビジュアルベル";
-"dialog.windowSetup.ok" = "OK";
-"dialog.windowSetup.cancel" = "キャンセル";
 
 /* Keyboard Setup Dialog */
 "dialog.keyboardSetup.title" = "キーボードの設定";
@@ -191,7 +170,6 @@
 /* Serial Port Dialog */
 "dialog.serialPort.title" = "シリアルポートの設定";
 "dialog.serialPort.port" = "ポート:";
-"dialog.serialPort.baudRate" = "ボーレート:";
 "dialog.serialPort.dataBits" = "データビット:";
 "dialog.serialPort.parity" = "パリティ:";
 "dialog.serialPort.parityNone" = "なし";
@@ -202,8 +180,6 @@
 "dialog.serialPort.flowXonXoff" = "XON/XOFF";
 "dialog.serialPort.flowHardware" = "ハードウェア";
 "dialog.serialPort.noPortsFound" = "(ポートが見つかりません)";
-"dialog.serialPort.connect" = "接続";
-"dialog.serialPort.cancel" = "キャンセル";
 
 /* Terminal Setup Dialog (new ViewController keys - matching IDD_TERMDLG) */
 "dialog.termSetup.terminalSize" = "端末サイズ";
@@ -713,6 +689,7 @@
 "menu.setup.sshForward" = "SSH転送…";
 "menu.setup.sshKeyGen" = "SSH鍵生成…";
 "menu.setup.general" = "全般…";
+"menu.setup.openConfigFolder" = "設定フォルダを開く";
 
 /* SSH SCP Dialog (IDD_SSHSCP) */
 "dialog.scp.title" = "Tera Term: Secure Copy Protocol (SCP)";

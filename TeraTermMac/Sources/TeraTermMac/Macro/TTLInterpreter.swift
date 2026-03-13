@@ -45,6 +45,10 @@ protocol TTLInterpreterDelegate: AnyObject {
     func ttlLogPause()
     func ttlLogStart()
     func ttlLogWrite(_ text: String)
+    /// Get log info: returns (state, filePath) where state encodes log flags
+    func ttlLogInfo() -> (state: Int, filePath: String)
+    /// Set log rotation: mode is "size"/"rotate"/"halt", value is size in bytes or generation count
+    func ttlLogRotateSet(mode: String, value: Int)
     /// Display error message with stop/continue choice.
     /// Returns `true` to stop execution, `false` to continue.
     func ttlShowError(_ message: String, line: Int, lineText: String, fileName: String, completion: @escaping (Bool) -> Void)
@@ -3137,13 +3141,56 @@ class TTLInterpreter {
     }
 
     private func ttlLogInfo() throws {
-        // Log info - stub
-        parser.setResult(0)
+        let varId = try parser.getStrVar()
+        guard delegate?.ttlIsConnected() == true else { throw TTLError.linkFirst }
+        let info = delegate?.ttlLogInfo() ?? (state: -1, filePath: "")
+        parser.setResult(info.state)
+        parser.setStrVal(id: varId, value: info.filePath)
     }
 
     private func ttlLogRotate() throws {
-        // Log rotate - stub
-        parser.setResult(0)
+        let mode = try parser.getStrExpression()
+        guard delegate?.ttlIsConnected() == true else { throw TTLError.linkFirst }
+
+        switch mode {
+        case "size":
+            guard parser.checkParameterGiven() else { throw TTLError.syntax }
+            let sizeStr = try parser.getStrExpression()
+            // Parse size value: supports suffixes K/M/G
+            let sizeValue = parseSize(sizeStr)
+            delegate?.ttlLogRotateSet(mode: "size", value: sizeValue)
+            parser.setResult(0)
+        case "rotate":
+            guard parser.checkParameterGiven() else { throw TTLError.syntax }
+            let num = try parser.getIntExpression()
+            guard num > 0 else { throw TTLError.syntax }
+            delegate?.ttlLogRotateSet(mode: "rotate", value: num)
+            parser.setResult(0)
+        case "halt":
+            delegate?.ttlLogRotateSet(mode: "halt", value: 0)
+            parser.setResult(0)
+        default:
+            throw TTLError.syntax
+        }
+    }
+
+    /// Parse size string with optional K/M/G suffix (e.g. "1024", "10K", "1M")
+    private func parseSize(_ str: String) -> Int {
+        let trimmed = str.trimmingCharacters(in: .whitespaces)
+        guard !trimmed.isEmpty else { return 0 }
+
+        let lastChar = trimmed.last!
+        if lastChar.isLetter {
+            let numPart = String(trimmed.dropLast())
+            let base = Int(numPart) ?? 0
+            switch lastChar.uppercased() {
+            case "K": return base * 1024
+            case "M": return base * 1024 * 1024
+            case "G": return base * 1024 * 1024 * 1024
+            default: return base
+            }
+        }
+        return Int(trimmed) ?? 0
     }
 
     private func ttlLogAutoClose() throws {
