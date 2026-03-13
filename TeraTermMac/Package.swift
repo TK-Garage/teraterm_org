@@ -13,6 +13,9 @@ let package = Package(
         .executableTarget(
             name: "TeraTermMac",
             path: "Sources/TeraTermMac",
+            exclude: [
+                "Resources/Info.plist",
+            ],
             resources: [
                 .process("Resources"),
             ],
