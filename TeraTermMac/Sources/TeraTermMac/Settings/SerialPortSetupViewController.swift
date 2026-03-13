@@ -54,7 +54,7 @@ class SerialPortSetupViewController: BaseSetupDialogController {
     init(settings: TerminalSettings) {
         self.settings = settings
         super.init(nibName: nil, bundle: nil)
-        self.title = "Tera Term: Serial port setup"
+        self.title = TTL("dialog.serialPort.title")
     }
 
     required init?(coder: NSCoder) {

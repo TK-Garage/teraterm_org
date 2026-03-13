@@ -80,7 +80,7 @@ class WindowSetupViewController: BaseSetupDialogController {
         self.textColor = settings.colorTheme.foreground
         self.backgroundColor = settings.colorTheme.background
         super.init(nibName: nil, bundle: nil)
-        self.title = "Tera Term: Window setup"
+        self.title = TTL("dialog.windowSetup.title")
     }
 
     required init?(coder: NSCoder) {

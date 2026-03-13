@@ -52,7 +52,7 @@ class TerminalSetupViewController: BaseSetupDialogController {
     init(settings: TerminalSettings) {
         self.settings = settings
         super.init(nibName: nil, bundle: nil)
-        self.title = "Tera Term: Terminal setup"
+        self.title = TTL("dialog.terminalSetup.title")
     }
 
     required init?(coder: NSCoder) {
