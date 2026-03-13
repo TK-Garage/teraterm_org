@@ -39,85 +39,57 @@ mkdir -p "$APP_DIR/Contents/Resources"
 # 実行ファイルコピー
 cp "$BUILD_DIR/$EXECUTABLE" "$APP_DIR/Contents/MacOS/$EXECUTABLE"
 
-# Info.plist 作成
-cat > "$APP_DIR/Contents/Info.plist" << 'PLIST'
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-    <key>CFBundleName</key>
-    <string>Tera Term Mac</string>
-    <key>CFBundleDisplayName</key>
-    <string>Tera Term Mac</string>
-    <key>CFBundleIdentifier</key>
-    <string>com.teraterm.mac</string>
-    <key>CFBundleVersion</key>
-    <string>1.0.0</string>
-    <key>CFBundleShortVersionString</key>
-    <string>1.0.0</string>
-    <key>CFBundlePackageType</key>
-    <string>APPL</string>
-    <key>CFBundleExecutable</key>
-    <string>TeraTermMac</string>
-    <key>CFBundleIconFile</key>
-    <string>AppIcon</string>
-    <key>CFBundleIconName</key>
-    <string>AppIcon</string>
-    <key>LSMinimumSystemVersion</key>
-    <string>13.0</string>
-    <key>NSPrincipalClass</key>
-    <string>NSApplication</string>
-    <key>NSHighResolutionCapable</key>
-    <true/>
-    <key>NSSupportsAutomaticTermination</key>
-    <false/>
-    <key>NSSupportsSuddenTermination</key>
-    <false/>
-</dict>
-</plist>
-PLIST
+# Info.plist コピー (ソースの完全な Info.plist を使用)
+cp "Sources/TeraTermMac/Info.plist" "$APP_DIR/Contents/Info.plist"
+
+# CFBundleDevelopmentRegion と CFBundleLocalizations を追加
+# (macOS がローカライズリソースを正しく検出するために必要)
+/usr/libexec/PlistBuddy -c "Add :CFBundleDevelopmentRegion string ja" "$APP_DIR/Contents/Info.plist" 2>/dev/null || \
+/usr/libexec/PlistBuddy -c "Set :CFBundleDevelopmentRegion ja" "$APP_DIR/Contents/Info.plist"
+/usr/libexec/PlistBuddy -c "Add :CFBundleLocalizations array" "$APP_DIR/Contents/Info.plist" 2>/dev/null || true
+/usr/libexec/PlistBuddy -c "Add :CFBundleLocalizations:0 string ja" "$APP_DIR/Contents/Info.plist" 2>/dev/null || true
+/usr/libexec/PlistBuddy -c "Add :CFBundleLocalizations:1 string en" "$APP_DIR/Contents/Info.plist" 2>/dev/null || true
 
 # PkgInfo 作成
 echo -n "APPL????" > "$APP_DIR/Contents/PkgInfo"
 
-# アイコンファイルコピー (.icns があれば使用)
-ICON_DIR="Sources/TeraTermMac/Resources/Assets.xcassets/AppIcon.appiconset"
-if [ -d "$ICON_DIR" ]; then
-    # actool が使える場合はアセットカタログをコンパイル
-    if command -v actool &> /dev/null; then
-        actool --compile "$APP_DIR/Contents/Resources" \
-               --platform macosx \
-               --minimum-deployment-target 13.0 \
-               --app-icon AppIcon \
-               --output-partial-info-plist /dev/null \
-               "Sources/TeraTermMac/Resources/Assets.xcassets"
-        echo "  アセットカタログからアイコンをコンパイルしました"
-    elif command -v iconutil &> /dev/null; then
-        # iconutil で .icns を生成
-        ICONSET_DIR="/tmp/TeraTermMac.iconset"
-        rm -rf "$ICONSET_DIR"
-        mkdir -p "$ICONSET_DIR"
-        # アイコンファイルをiconutilの命名規則にコピー
-        cp "$ICON_DIR/icon_16x16.png"     "$ICONSET_DIR/icon_16x16.png"     2>/dev/null || true
-        cp "$ICON_DIR/icon_16x16@2x.png"  "$ICONSET_DIR/icon_16x16@2x.png"  2>/dev/null || true
-        cp "$ICON_DIR/icon_32x32.png"      "$ICONSET_DIR/icon_32x32.png"     2>/dev/null || true
-        cp "$ICON_DIR/icon_32x32@2x.png"  "$ICONSET_DIR/icon_32x32@2x.png"  2>/dev/null || true
-        cp "$ICON_DIR/icon_128x128.png"    "$ICONSET_DIR/icon_128x128.png"   2>/dev/null || true
-        cp "$ICON_DIR/icon_128x128@2x.png" "$ICONSET_DIR/icon_128x128@2x.png" 2>/dev/null || true
-        cp "$ICON_DIR/icon_256x256.png"    "$ICONSET_DIR/icon_256x256.png"   2>/dev/null || true
-        cp "$ICON_DIR/icon_256x256@2x.png" "$ICONSET_DIR/icon_256x256@2x.png" 2>/dev/null || true
-        cp "$ICON_DIR/icon_512x512.png"    "$ICONSET_DIR/icon_512x512.png"   2>/dev/null || true
-        cp "$ICON_DIR/icon_512x512@2x.png" "$ICONSET_DIR/icon_512x512@2x.png" 2>/dev/null || true
-        iconutil -c icns "$ICONSET_DIR" -o "$APP_DIR/Contents/Resources/AppIcon.icns"
-        rm -rf "$ICONSET_DIR"
-        echo "  iconutil で AppIcon.icns を生成しました"
-    else
-        # フォールバック: 最大サイズの PNG を直接コピー
-        if [ -f "$ICON_DIR/icon_512x512@2x.png" ]; then
-            cp "$ICON_DIR/icon_512x512@2x.png" "$APP_DIR/Contents/Resources/AppIcon.png"
-            echo "  PNG アイコンをコピーしました (actool/iconutil が見つかりません)"
+# アイコンファイルコピー
+RESOURCES_DIR="Sources/TeraTermMac/Resources"
+
+# 既存の .icns ファイルを優先的にコピー
+if [ -f "$RESOURCES_DIR/AppIcon.icns" ]; then
+    cp "$RESOURCES_DIR/AppIcon.icns" "$APP_DIR/Contents/Resources/AppIcon.icns"
+    echo "  AppIcon.icns をコピーしました"
+else
+    # .icns が無い場合、アセットカタログからビルド
+    ICON_DIR="$RESOURCES_DIR/Assets.xcassets/AppIcon.appiconset"
+    if [ -d "$ICON_DIR" ]; then
+        if command -v actool &> /dev/null; then
+            actool --compile "$APP_DIR/Contents/Resources" \
+                   --platform macosx \
+                   --minimum-deployment-target 13.0 \
+                   --app-icon AppIcon \
+                   --output-partial-info-plist /dev/null \
+                   "$RESOURCES_DIR/Assets.xcassets"
+            echo "  アセットカタログからアイコンをコンパイルしました"
+        elif command -v iconutil &> /dev/null; then
+            ICONSET_DIR="/tmp/TeraTermMac.iconset"
+            rm -rf "$ICONSET_DIR"
+            mkdir -p "$ICONSET_DIR"
+            for f in "$ICON_DIR"/icon_*.png; do
+                cp "$f" "$ICONSET_DIR/" 2>/dev/null || true
+            done
+            iconutil -c icns "$ICONSET_DIR" -o "$APP_DIR/Contents/Resources/AppIcon.icns"
+            rm -rf "$ICONSET_DIR"
+            echo "  iconutil で AppIcon.icns を生成しました"
         fi
     fi
+fi
+
+# FileIcon.icns をコピー (.ttl ファイル用アイコン)
+if [ -f "$RESOURCES_DIR/FileIcon.icns" ]; then
+    cp "$RESOURCES_DIR/FileIcon.icns" "$APP_DIR/Contents/Resources/FileIcon.icns"
+    echo "  FileIcon.icns をコピーしました"
 fi
 
 # ローカライズファイルコピー
