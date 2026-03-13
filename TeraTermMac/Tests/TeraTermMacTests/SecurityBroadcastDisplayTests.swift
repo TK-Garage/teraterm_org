@@ -111,24 +111,24 @@ final class SSHSecurityDialogTests: XCTestCase {
     }
 
     func testUnknownHostDialogClassExists() {
-        // Verify the class is accessible
-        XCTAssertTrue(UnknownHostDialog.self is AnyClass)
+        // クラスがアクセス可能であることを確認
+        XCTAssertNotNil(UnknownHostDialog.self as AnyClass)
     }
 
     func testDifferentKeyDialogClassExists() {
-        XCTAssertTrue(DifferentKeyDialog.self is AnyClass)
+        XCTAssertNotNil(DifferentKeyDialog.self as AnyClass)
     }
 
     func testDifferentTypeKeyDialogClassExists() {
-        XCTAssertTrue(DifferentTypeKeyDialog.self is AnyClass)
+        XCTAssertNotNil(DifferentTypeKeyDialog.self as AnyClass)
     }
 
     func testHostKeyRotationDialogClassExists() {
-        XCTAssertTrue(HostKeyRotationDialog.self is AnyClass)
+        XCTAssertNotNil(HostKeyRotationDialog.self as AnyClass)
     }
 
     func testSSHFPDialogClassExists() {
-        XCTAssertTrue(SSHFPDialog.self is AnyClass)
+        XCTAssertNotNil(SSHFPDialog.self as AnyClass)
     }
 }
 

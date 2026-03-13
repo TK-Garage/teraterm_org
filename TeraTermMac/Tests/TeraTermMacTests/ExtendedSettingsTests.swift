@@ -330,7 +330,7 @@ final class VisualTabExtendedTests: XCTestCase {
         settings.enableXterm256Colors = true
         settings.useStandardBGColor = false
 
-        let tab = VisualTab(settings: settings)
+        _ = VisualTab(settings: settings)
 
         // Modify settings via tab
         settings.enableBoldDisplay = false
@@ -394,7 +394,7 @@ final class ThemeTabExtendedTests: XCTestCase {
 
     func testThemeTabAppliesColorEditorSettings() {
         let settings = TerminalSettings()
-        let originalFg = settings.colorTheme.foreground
+        _ = settings.colorTheme.foreground
         let tab = ThemeTab(settings: settings)
         tab.apply(to: settings)
         // Color wells should preserve the color when applied

@@ -19,18 +19,12 @@ class TransferProtocolTypeTests: XCTestCase {
 
     func testBPlusProtocolTypeExists() {
         let type: TransferProtocolType = .bplus
-        switch type {
-        case .bplus: break
-        default: XCTFail("Should match .bplus")
-        }
+        XCTAssertEqual(type, .bplus)
     }
 
     func testQuickVANProtocolTypeExists() {
         let type: TransferProtocolType = .quickVAN
-        switch type {
-        case .quickVAN: break
-        default: XCTFail("Should match .quickVAN")
-        }
+        XCTAssertEqual(type, .quickVAN)
     }
 
     func testAllProtocolTypesAreCovered() {
@@ -58,18 +52,12 @@ class KermitModeTests: XCTestCase {
 
     func testKermitGetMode() {
         let mode: KermitMode = .get
-        switch mode {
-        case .get: break
-        default: XCTFail("Should match .get")
-        }
+        XCTAssertEqual(mode, .get)
     }
 
     func testKermitFinishMode() {
         let mode: KermitMode = .finish
-        switch mode {
-        case .finish: break
-        default: XCTFail("Should match .finish")
-        }
+        XCTAssertEqual(mode, .finish)
     }
 }
 
