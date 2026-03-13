@@ -133,8 +133,10 @@ final class AdditionalSettingsController: NSObject {
         vc.view = container
         let win = NSWindow(contentViewController: vc)
         win.styleMask = [.titled, .closable]
-        win.title = TTL("dialog.additionalSettings.title")
         win.isReleasedWhenClosed = false
+        // レイアウト確定後にタイトルを設定（KVO バインディングによる上書きを防止）
+        win.contentView?.layoutSubtreeIfNeeded()
+        win.title = TTL("dialog.additionalSettings.title")
         self.window = win
         self.tabView = tv
     }

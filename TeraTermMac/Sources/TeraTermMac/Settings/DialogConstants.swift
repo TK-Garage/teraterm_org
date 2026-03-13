@@ -537,12 +537,15 @@ class BaseSetupDialogController: NSViewController {
     func presentAsSheet(on parentWindow: NSWindow) -> NSWindow {
         let dialogWindow = NSWindow(contentViewController: self)
         dialogWindow.styleMask = [.titled, .closable]
-        dialogWindow.title = self.title ?? ""
         dialogWindow.isReleasedWhenClosed = false
         dialogWindow.styleMask.remove(.resizable)
 
         // Auto Layout 確定後にウィンドウサイズを決定
         dialogWindow.contentView?.layoutSubtreeIfNeeded()
+
+        // タイトルは layoutSubtreeIfNeeded 後に設定（KVO バインディングによる上書きを防止）
+        let dialogTitle = self.title ?? ""
+        dialogWindow.title = dialogTitle
 
         parentWindow.beginSheet(dialogWindow) { [weak self] response in
             if response == .OK {
@@ -558,12 +561,15 @@ class BaseSetupDialogController: NSViewController {
     func presentModal() -> NSApplication.ModalResponse {
         let dialogWindow = NSWindow(contentViewController: self)
         dialogWindow.styleMask = [.titled, .closable]
-        dialogWindow.title = self.title ?? ""
         dialogWindow.isReleasedWhenClosed = false
         dialogWindow.styleMask.remove(.resizable)
 
         // Auto Layout 確定後にウィンドウサイズを決定
         dialogWindow.contentView?.layoutSubtreeIfNeeded()
+
+        // タイトルは layoutSubtreeIfNeeded 後に設定（KVO バインディングによる上書きを防止）
+        let dialogTitle = self.title ?? ""
+        dialogWindow.title = dialogTitle
         dialogWindow.center()
 
         // スクリーン内に収める
