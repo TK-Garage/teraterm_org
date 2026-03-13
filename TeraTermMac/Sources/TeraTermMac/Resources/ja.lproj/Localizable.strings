@@ -681,9 +681,19 @@
 "dialog.tcpip.title" = "TCP/IP";
 "dialog.tcpip.host" = "ホスト:";
 "dialog.tcpip.port" = "ポート#:";
-"dialog.tcpip.keepAlive" = "Telnet Keep-alive";
-"dialog.tcpip.keepAliveInterval" = "Keep-alive間隔:";
-"dialog.tcpip.autoClose" = "自動的にウィンドウを閉じる";
+"dialog.tcpip.keepAlive" = "TCP キープアライブ";
+"dialog.tcpip.keepAliveInterval" = "キープアライブ間隔:";
+"dialog.tcpip.autoClose" = "切断時に自動でウィンドウを閉じる";
+"dialog.tcpip.historySize" = "履歴件数:";
+"dialog.tcpip.antiIdle" = "アイドル防止";
+"dialog.tcpip.antiIdleEnable" = "アイドル防止を有効にする";
+"dialog.tcpip.antiIdleString" = "送信文字列:";
+"dialog.tcpip.antiIdleInterval" = "間隔:";
+"dialog.tcpip.telnetAutoDetect" = "自動検出";
+"dialog.tcpip.telnetBinaryOption" = "バイナリオプション";
+"dialog.tcpip.telnetBinaryMode" = "バイナリモード";
+"dialog.tcpip.telnetIgnoreDisconnect" = "切断時の終了を無視";
+"dialog.tcpip.sshHeartbeat" = "SSHハートビート:";
 
 /* Window List Dialog (IDD_WINLISTDLG) */
 "dialog.windowList.title" = "Tera Term: ウィンドウのリスト";
@@ -736,6 +746,7 @@
 "dialog.proxy.password" = "パスワード:";
 
 /* SSH Setup Dialog (IDD_SSHSETUP) */
+"dialog.ssh.title" = "SSH設定";
 "dialog.sshSetup.title" = "SSH設定";
 "dialog.sshSetup.cipherOrder" = "優先する暗号アルゴリズムの順";
 "dialog.sshSetup.moveUp" = "上へ";
@@ -777,6 +788,7 @@
 "dialog.sshAuthSetup.checkAuth" = "ログイン前にサーバで有効な認証方式を確認する (SSH2)";
 
 /* SSH Forwarding Setup Dialog (IDD_SSHFWDSETUP) */
+"dialog.sshForward.title" = "SSHポート転送設定";
 "dialog.sshFwd.title" = "SSHポート転送設定";
 "dialog.sshFwd.portForwarding" = "ポート転送";
 "dialog.sshFwd.add" = "追加…";
@@ -815,6 +827,7 @@
 "dialog.sshKeyGen.error" = "鍵生成に失敗しました: %@";
 
 /* General Setup Dialog (IDD_GENDLG) */
+"dialog.general.title" = "全般の設定";
 "dialog.generalSetup.title" = "全般の設定";
 "dialog.generalSetup.language" = "言語:";
 "dialog.generalSetup.languageEnglish" = "English";

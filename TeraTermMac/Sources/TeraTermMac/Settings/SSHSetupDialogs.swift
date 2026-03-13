@@ -627,7 +627,7 @@ final class SSHSetupDialogController: BaseSetupDialogController {
     init(settings: TerminalSettings) {
         self.settings = settings
         super.init(nibName: nil, bundle: nil)
-        self.title = TTL("dialog.sshSetup.title")
+        self.title = TTL("dialog.ssh.title")
     }
 
     required init?(coder: NSCoder) { fatalError() }
@@ -1079,7 +1079,7 @@ final class SSHAuthSetupDialogController: BaseSetupDialogController {
     init(settings: TerminalSettings) {
         self.settings = settings
         super.init(nibName: nil, bundle: nil)
-        self.title = TTL("dialog.sshAuthSetup.title")
+        self.title = TTL("dialog.sshAuth.title")
     }
 
     required init?(coder: NSCoder) { fatalError() }
@@ -1336,7 +1336,7 @@ final class SSHForwardingSetupDialogController: BaseSetupDialogController {
         self.settings = settings
         self.forwardings = settings.sshPortForwardings
         super.init(nibName: nil, bundle: nil)
-        self.title = TTL("dialog.sshFwd.title")
+        self.title = TTL("dialog.sshForward.title")
     }
 
     required init?(coder: NSCoder) { fatalError() }
@@ -1975,7 +1975,7 @@ final class GeneralSetupDialogController: BaseSetupDialogController {
     init(settings: TerminalSettings) {
         self.settings = settings
         super.init(nibName: nil, bundle: nil)
-        self.title = TTL("dialog.generalSetup.title")
+        self.title = TTL("dialog.general.title")
     }
 
     required init?(coder: NSCoder) { fatalError() }

@@ -645,6 +645,14 @@ class TerminalSettings: Codable {
     var tcpKeepAlive: Bool = true
     var tcpKeepAliveInterval: Int = 300
     var autoWindowClose: Bool = true
+    var hostHistorySize: Int = 20                // ホスト履歴の保存件数
+    var antiIdle: Bool = false                   // アイドル防止 on/off
+    var antiIdleString: String = "\\0"           // アイドル防止送信文字列
+    var antiIdleInterval: Int = 60               // アイドル防止間隔（秒）
+    var telnetAutoDetect: Bool = true            // Telnet: Auto detect
+    var telnetBinaryOption: Bool = false          // Telnet: Binary option
+    var telnetBinaryMode: Bool = false            // Telnet: Binary mode
+    var telnetIgnoreDisconnect: Bool = false      // Telnet: Ignore disconnect
 
     // Log additional
     var logViewEditor: String = ""

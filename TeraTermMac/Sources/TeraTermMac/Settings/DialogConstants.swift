@@ -539,8 +539,10 @@ class BaseSetupDialogController: NSViewController {
         dialogWindow.styleMask = [.titled, .closable]
         dialogWindow.title = self.title ?? ""
         dialogWindow.isReleasedWhenClosed = false
-        // Fixed size — not resizable
         dialogWindow.styleMask.remove(.resizable)
+
+        // Auto Layout 確定後にウィンドウサイズを決定
+        dialogWindow.contentView?.layoutSubtreeIfNeeded()
 
         parentWindow.beginSheet(dialogWindow) { [weak self] response in
             if response == .OK {
@@ -559,7 +561,20 @@ class BaseSetupDialogController: NSViewController {
         dialogWindow.title = self.title ?? ""
         dialogWindow.isReleasedWhenClosed = false
         dialogWindow.styleMask.remove(.resizable)
+
+        // Auto Layout 確定後にウィンドウサイズを決定
+        dialogWindow.contentView?.layoutSubtreeIfNeeded()
         dialogWindow.center()
+
+        // スクリーン内に収める
+        if let screen = NSScreen.main {
+            var frame = dialogWindow.frame
+            let visible = screen.visibleFrame
+            frame.origin.x = max(visible.minX, min(frame.origin.x, visible.maxX - frame.width))
+            frame.origin.y = max(visible.minY, min(frame.origin.y, visible.maxY - frame.height))
+            dialogWindow.setFrame(frame, display: true)
+        }
+
         return NSApplication.shared.runModal(for: dialogWindow)
     }
 

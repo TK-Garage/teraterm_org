@@ -1035,6 +1035,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
     }
 
     @objc func loadKeymap(_ sender: Any?) {
+        dismissCurrentSetupSheet()
         guard let win = activeWindowController?.window ?? NSApp.keyWindow else { return }
         let panel = NSOpenPanel()
         let cnfType = UTType(filenameExtension: "cnf") ?? .plainText
@@ -1967,152 +1968,18 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
 
     private func showKeyboardSetupDialog() {
         dismissCurrentSetupSheet()
-
-        let m = DialogLayout.margin
-
-        // ── コントロール作成 ──
-        let kbPopupWidth: CGFloat = 180
-
-        let bsPopup = NSView.makePopUpButton(
-            items: ["BS (0x08)", "DEL (0x7F)"],
-            width: kbPopupWidth)
-        bsPopup.selectItem(at: settings.bsKey == 8 ? 0 : 1)
-
-        let delPopup = NSView.makePopUpButton(
-            items: ["DEL (0x7F)", "BS (0x08)", L("dialog.keyboardSetup.deleteEscSeq")],
-            width: kbPopupWidth)
-        delPopup.selectItem(at: settings.deleteKey == 127 ? 0 : (settings.deleteKey == 8 ? 1 : 2))
-
-        let metaPopup = NSView.makePopUpButton(
-            items: [L("dialog.keyboardSetup.metaOff"), L("dialog.keyboardSetup.metaOn")],
-            width: kbPopupWidth)
-        metaPopup.selectItem(at: settings.metaKey)
-
-        let ansField = NSView.makeTextField(
-            value: settings.answerback,
-            placeholder: L("dialog.keyboardSetup.answerbackPlaceholder"),
-            width: DialogLayout.wideFieldWidth)
-
-        let kbTypePopup = NSView.makePopUpButton(
-            items: TerminalID.allCases.map { $0.displayName },
-            width: kbPopupWidth)
-        if let idx = TerminalID.allCases.firstIndex(of: settings.terminalID) {
-            kbTypePopup.selectItem(at: idx)
-        }
-
-        let disableAppKPCheck = NSButton(checkboxWithTitle: L("dialog.keyboardSetup.disableAppKeypadOption"), target: nil, action: nil)
-        disableAppKPCheck.state = settings.disableAppKeypad ? .on : .off
-
-        let disableAppCurCheck = NSButton(checkboxWithTitle: L("dialog.keyboardSetup.disableAppCursorOption"), target: nil, action: nil)
-        disableAppCurCheck.state = settings.disableAppCursor ? .on : .off
-
-        // ── NSGridView: 7 rows x 2 columns (label | control) ──
-        let grid = NSGridView(views: [
-            [NSView.makeLabel(L("dialog.keyboardSetup.keyboardType")), kbTypePopup],
-            [NSView.makeLabel(L("dialog.keyboardSetup.bsKey")),       bsPopup],
-            [NSView.makeLabel(L("dialog.keyboardSetup.deleteKey")),    delPopup],
-            [NSView.makeLabel(L("dialog.keyboardSetup.metaKey")),      metaPopup],
-            [NSView.makeLabel(L("dialog.keyboardSetup.answerback")),   ansField],
-            [NSView.makeLabel(L("dialog.keyboardSetup.disableAppKeypad")), disableAppKPCheck],
-            [NSView.makeLabel(L("dialog.keyboardSetup.disableAppCursor")), disableAppCurCheck],
-        ])
-        grid.translatesAutoresizingMaskIntoConstraints = false
-        grid.rowSpacing = 12
-        grid.columnSpacing = 10
-        grid.column(at: 0).xPlacement = .trailing
-        grid.column(at: 1).xPlacement = .leading
-        grid.column(at: 0).width = 140
-        for i in 0..<grid.numberOfRows {
-            grid.row(at: i).rowAlignment = .firstBaseline
-            grid.row(at: i).height = 24
-        }
-
-        // ── NSPanel 作成 ──
-        let panel = NSPanel(
-            contentRect: NSRect(x: 0, y: 0, width: 500, height: 300),
-            styleMask: [.titled, .fullSizeContentView],
-            backing: .buffered,
-            defer: true)
-        panel.title = L("dialog.keyboardSetup.title")
-        panel.isReleasedWhenClosed = false
-
-        guard let root = panel.contentView else { return }
-
-        root.addSubview(grid)
-
-        // セパレータ
-        let separator = NSBox()
-        separator.translatesAutoresizingMaskIntoConstraints = false
-        separator.boxType = .separator
-        root.addSubview(separator)
-
-        // ボタンバー: [spacer] [Cancel] [OK]
-        let okButton = NSView.makePushButton(L("dialog.keyboardSetup.ok"), keyEquivalent: "\r")
-        let cancelButton = NSView.makePushButton(L("dialog.keyboardSetup.cancel"), keyEquivalent: "\u{1b}")
-
-        let buttonSpacer = NSView()
-        buttonSpacer.translatesAutoresizingMaskIntoConstraints = false
-        buttonSpacer.setContentHuggingPriority(.defaultLow - 1, for: .horizontal)
-
-        let buttonBar = NSStackView(views: [buttonSpacer, cancelButton, okButton])
-        buttonBar.translatesAutoresizingMaskIntoConstraints = false
-        buttonBar.orientation = .horizontal
-        buttonBar.spacing = DialogLayout.buttonSpacing
-        buttonBar.alignment = .centerY
-        root.addSubview(buttonBar)
-
-        NSLayoutConstraint.activate([
-            grid.topAnchor.constraint(equalTo: root.topAnchor, constant: m),
-            grid.leadingAnchor.constraint(equalTo: root.leadingAnchor, constant: m),
-            grid.trailingAnchor.constraint(lessThanOrEqualTo: root.trailingAnchor, constant: -m),
-
-            separator.topAnchor.constraint(equalTo: grid.bottomAnchor, constant: m),
-            separator.leadingAnchor.constraint(equalTo: root.leadingAnchor),
-            separator.trailingAnchor.constraint(equalTo: root.trailingAnchor),
-
-            buttonBar.topAnchor.constraint(equalTo: separator.bottomAnchor, constant: m * 0.75),
-            buttonBar.leadingAnchor.constraint(equalTo: root.leadingAnchor, constant: m),
-            buttonBar.trailingAnchor.constraint(equalTo: root.trailingAnchor, constant: -m),
-            buttonBar.bottomAnchor.constraint(equalTo: root.bottomAnchor, constant: -m * 0.75),
-
-            root.widthAnchor.constraint(greaterThanOrEqualToConstant: 500),
-        ])
-
-        okButton.target = nil
-        okButton.action = #selector(AppDelegate.connectionDialogOK(_:))
-        cancelButton.target = nil
-        cancelButton.action = #selector(AppDelegate.connectionDialogCancel(_:))
-
-        root.layoutSubtreeIfNeeded()
-        panel.setContentSize(root.fittingSize)
-        panel.center()
-
-        let response = NSApp.runModal(for: panel)
-        panel.close()
-
-        if response == .OK {
-            // Keyboard type (Terminal ID)
-            let allIDs = TerminalID.allCases
-            let selectedIdx = kbTypePopup.indexOfSelectedItem
-            if selectedIdx >= 0 && selectedIdx < allIDs.count {
-                settings.terminalID = allIDs[allIDs.index(allIDs.startIndex, offsetBy: selectedIdx)]
-            }
-
-            settings.bsKey = bsPopup.indexOfSelectedItem == 0 ? 8 : 127
-            switch delPopup.indexOfSelectedItem {
-            case 0: settings.deleteKey = 127
-            case 1: settings.deleteKey = 8
-            default: settings.deleteKey = 0  // escape sequence
-            }
-            settings.metaKey = metaPopup.indexOfSelectedItem
-            settings.answerback = ansField.stringValue
-            settings.disableAppKeypad = disableAppKPCheck.state == .on
-            settings.disableAppCursor = disableAppCurCheck.state == .on
-
+        let vc = KeyboardSetupDialogController(settings: settings)
+        vc.okHandler = { [weak self] in
             // Apply terminal ID to emulator
-            activeWindowController?.terminalEmulator.terminalID = settings.terminalID
-
-            activeWindowController?.applySettings()
+            if let self = self {
+                self.activeWindowController?.terminalEmulator.terminalID = self.settings.terminalID
+                self.activeWindowController?.applySettings()
+            }
+        }
+        if let win = activeWindowController?.window {
+            currentSetupSheet = vc.presentAsSheet(on: win)
+        } else {
+            _ = vc.presentModal()
         }
     }
 
@@ -2160,7 +2027,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         }
         additionalSettingsController = controller
         if let win = activeWindowController?.window {
-            controller.showAsSheet(on: win)
+            // 排他制御: showAsSheet の戻り値を currentSetupSheet に代入
+            currentSetupSheet = controller.showAsSheet(on: win)
         } else {
             controller.showModal()
         }

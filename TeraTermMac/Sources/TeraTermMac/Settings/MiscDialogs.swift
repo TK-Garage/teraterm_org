@@ -730,17 +730,119 @@ final class StatusDialog {
     }
 }
 
+// MARK: - Keyboard Setup Dialog (IDD_KEYBDLG)
+
+final class KeyboardSetupDialogController: BaseSetupDialogController {
+
+    private var settings: TerminalSettings
+
+    private var kbTypePopup: NSPopUpButton!
+    private var bsPopup: NSPopUpButton!
+    private var delPopup: NSPopUpButton!
+    private var metaPopup: NSPopUpButton!
+    private var ansField: NSTextField!
+    private var disableAppKPCheck: NSButton!
+    private var disableAppCurCheck: NSButton!
+
+    init(settings: TerminalSettings) {
+        self.settings = settings
+        super.init(nibName: nil, bundle: nil)
+        self.title = TTL("dialog.keyboardSetup.title")
+    }
+
+    required init?(coder: NSCoder) { fatalError() }
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+
+        let kbPopupWidth: CGFloat = 180
+
+        kbTypePopup = NSView.makePopUpButton(
+            items: TerminalID.allCases.map { $0.displayName }, width: kbPopupWidth)
+        if let idx = TerminalID.allCases.firstIndex(of: settings.terminalID) {
+            kbTypePopup.selectItem(at: idx)
+        }
+
+        bsPopup = NSView.makePopUpButton(items: ["BS (0x08)", "DEL (0x7F)"], width: kbPopupWidth)
+        bsPopup.selectItem(at: settings.bsKey == 8 ? 0 : 1)
+
+        delPopup = NSView.makePopUpButton(
+            items: ["DEL (0x7F)", "BS (0x08)", TTL("dialog.keyboardSetup.deleteEscSeq")],
+            width: kbPopupWidth)
+        delPopup.selectItem(at: settings.deleteKey == 127 ? 0 : (settings.deleteKey == 8 ? 1 : 2))
+
+        metaPopup = NSView.makePopUpButton(
+            items: [TTL("dialog.keyboardSetup.metaOff"), TTL("dialog.keyboardSetup.metaOn")],
+            width: kbPopupWidth)
+        metaPopup.selectItem(at: settings.metaKey)
+
+        ansField = NSView.makeTextField(
+            value: settings.answerback,
+            placeholder: TTL("dialog.keyboardSetup.answerbackPlaceholder"),
+            width: DialogLayout.wideFieldWidth)
+
+        disableAppKPCheck = NSView.makeCheckbox(
+            TTL("dialog.keyboardSetup.disableAppKeypadOption"),
+            checked: settings.disableAppKeypad)
+        disableAppCurCheck = NSView.makeCheckbox(
+            TTL("dialog.keyboardSetup.disableAppCursorOption"),
+            checked: settings.disableAppCursor)
+
+        addFormGrid(rows: [
+            ("dialog.keyboardSetup.keyboardType", kbTypePopup),
+            ("dialog.keyboardSetup.bsKey", bsPopup),
+            ("dialog.keyboardSetup.deleteKey", delPopup),
+            ("dialog.keyboardSetup.metaKey", metaPopup),
+            ("dialog.keyboardSetup.answerback", ansField),
+            ("dialog.keyboardSetup.disableAppKeypad", disableAppKPCheck),
+            ("dialog.keyboardSetup.disableAppCursor", disableAppCurCheck),
+        ])
+    }
+
+    override func applySettings() {
+        let allIDs = TerminalID.allCases
+        let idx = kbTypePopup.indexOfSelectedItem
+        if idx >= 0 && idx < allIDs.count {
+            settings.terminalID = allIDs[allIDs.index(allIDs.startIndex, offsetBy: idx)]
+        }
+        settings.bsKey = bsPopup.indexOfSelectedItem == 0 ? 8 : 127
+        switch delPopup.indexOfSelectedItem {
+        case 0: settings.deleteKey = 127
+        case 1: settings.deleteKey = 8
+        default: settings.deleteKey = 0
+        }
+        settings.metaKey = metaPopup.indexOfSelectedItem
+        settings.answerback = ansField.stringValue
+        settings.disableAppKeypad = disableAppKPCheck.state == .on
+        settings.disableAppCursor = disableAppCurCheck.state == .on
+    }
+}
+
 // MARK: - TCP/IP Dialog (IDD_TCPIPDLG)
 
 final class TCPIPDialogController: BaseSetupDialogController {
 
     private var settings: TerminalSettings
 
-    private var hostField: NSTextField!
-    private var portField: NSTextField!
+    // General
+    private var autoCloseCheck: NSButton!
     private var keepAliveCheck: NSButton!
     private var keepAliveIntervalField: NSTextField!
-    private var autoCloseCheck: NSButton!
+    private var historySizeField: NSTextField!
+
+    // Anti-idle
+    private var antiIdleCheck: NSButton!
+    private var antiIdleStringField: NSTextField!
+    private var antiIdleIntervalField: NSTextField!
+
+    // Telnet
+    private var telnetAutoDetectCheck: NSButton!
+    private var telnetBinaryOptionCheck: NSButton!
+    private var telnetBinaryModeCheck: NSButton!
+    private var telnetIgnoreDisconnectCheck: NSButton!
+
+    // SSH
+    private var sshHeartbeatField: NSTextField!
 
     init(settings: TerminalSettings) {
         self.settings = settings
@@ -756,56 +858,136 @@ final class TCPIPDialogController: BaseSetupDialogController {
     }
 
     private func setupControls() {
-        contentArea.widthAnchor.constraint(equalToConstant: 380).isActive = true
+        minimumContentWidth = 440
 
-        let hostLabel = NSView.makeLabel(TTL("dialog.tcpip.host"))
-        hostField = NSView.makeTextField(value: settings.hostname)
+        // ── General ──
+        autoCloseCheck = NSView.makeCheckbox(
+            TTL("dialog.tcpip.autoClose"), checked: settings.autoWindowClose)
 
-        let portLabel = NSView.makeLabel(TTL("dialog.tcpip.port"))
-        portField = NSView.makeNumberField(value: settings.defaultPort, width: 80)
-
-        let grid = NSGridView(views: [
-            [hostLabel, hostField],
-            [portLabel, portField],
+        keepAliveCheck = NSView.makeCheckbox(
+            TTL("dialog.tcpip.keepAlive"), checked: settings.tcpKeepAlive)
+        keepAliveIntervalField = NSView.makeNumberField(
+            value: settings.tcpKeepAliveInterval, width: 70)
+        let keepAliveRow = NSStackView(views: [
+            NSView.makeLabel(TTL("dialog.tcpip.keepAliveInterval"), alignment: .left),
+            keepAliveIntervalField,
+            NSView.makeLabel("sec", alignment: .left),
         ])
-        grid.translatesAutoresizingMaskIntoConstraints = false
-        grid.rowSpacing = 10
-        grid.columnSpacing = 10
-        grid.column(at: 0).xPlacement = .trailing
-        grid.column(at: 1).xPlacement = .fill
+        keepAliveRow.translatesAutoresizingMaskIntoConstraints = false
+        keepAliveRow.orientation = .horizontal
+        keepAliveRow.spacing = 8
 
-        keepAliveCheck = NSView.makeCheckbox(TTL("dialog.tcpip.keepAlive"), checked: settings.tcpKeepAlive)
-        let intervalLabel = NSView.makeLabel(TTL("dialog.tcpip.keepAliveInterval"), alignment: .left)
-        keepAliveIntervalField = NSView.makeNumberField(value: settings.tcpKeepAliveInterval, width: 80)
-        let secLabel = NSView.makeLabel("sec", alignment: .left)
-        let intervalRow = NSStackView(views: [intervalLabel, keepAliveIntervalField, secLabel])
-        intervalRow.translatesAutoresizingMaskIntoConstraints = false
-        intervalRow.orientation = .horizontal
-        intervalRow.spacing = 8
+        historySizeField = NSView.makeNumberField(
+            value: settings.hostHistorySize, width: 70)
+        let historyRow = NSView.createFormRow(
+            label: "dialog.tcpip.historySize", control: historySizeField)
 
-        autoCloseCheck = NSView.makeCheckbox(TTL("dialog.tcpip.autoClose"), checked: settings.autoWindowClose)
+        // ── Anti-idle ──
+        let antiIdleBox = NSView.makeGroupBox(title: TTL("dialog.tcpip.antiIdle"))
+        antiIdleCheck = NSView.makeCheckbox(
+            TTL("dialog.tcpip.antiIdleEnable"), checked: settings.antiIdle)
+        antiIdleStringField = NSView.makeTextField(
+            value: settings.antiIdleString, width: 120)
+        antiIdleIntervalField = NSView.makeNumberField(
+            value: settings.antiIdleInterval, width: 70)
 
-        let stack = NSStackView(views: [grid, keepAliveCheck, intervalRow, autoCloseCheck])
-        stack.translatesAutoresizingMaskIntoConstraints = false
-        stack.orientation = .vertical
-        stack.alignment = .leading
-        stack.spacing = 10
-        contentArea.addSubview(stack)
-
-        NSLayoutConstraint.activate([
-            stack.topAnchor.constraint(equalTo: contentArea.topAnchor),
-            stack.leadingAnchor.constraint(equalTo: contentArea.leadingAnchor),
-            stack.trailingAnchor.constraint(equalTo: contentArea.trailingAnchor),
-            stack.bottomAnchor.constraint(equalTo: contentArea.bottomAnchor),
+        let antiIdleStringRow = NSView.createFormRow(
+            labelView: NSView.makeLabel(TTL("dialog.tcpip.antiIdleString"), alignment: .right),
+            control: antiIdleStringField)
+        let antiIdleIntervalRow = NSStackView(views: [
+            NSView.makeLabel(TTL("dialog.tcpip.antiIdleInterval"), alignment: .right),
+            antiIdleIntervalField,
+            NSView.makeLabel("sec", alignment: .left),
         ])
+        antiIdleIntervalRow.translatesAutoresizingMaskIntoConstraints = false
+        antiIdleIntervalRow.orientation = .horizontal
+        antiIdleIntervalRow.spacing = 8
+
+        let antiIdleStack = NSStackView(views: [
+            antiIdleCheck, antiIdleStringRow, antiIdleIntervalRow,
+        ])
+        antiIdleStack.translatesAutoresizingMaskIntoConstraints = false
+        antiIdleStack.orientation = .vertical
+        antiIdleStack.alignment = .leading
+        antiIdleStack.spacing = 8
+        antiIdleBox.contentView = antiIdleStack
+        // グループボックス内部の余白
+        if let cv = antiIdleBox.contentView {
+            NSLayoutConstraint.activate([
+                antiIdleStack.topAnchor.constraint(equalTo: cv.topAnchor, constant: 4),
+                antiIdleStack.leadingAnchor.constraint(equalTo: cv.leadingAnchor, constant: 8),
+                antiIdleStack.trailingAnchor.constraint(equalTo: cv.trailingAnchor, constant: -8),
+                antiIdleStack.bottomAnchor.constraint(equalTo: cv.bottomAnchor, constant: -4),
+            ])
+        }
+
+        // ── Telnet ──
+        let telnetBox = NSView.makeGroupBox(title: "Telnet")
+        telnetAutoDetectCheck = NSView.makeCheckbox(
+            TTL("dialog.tcpip.telnetAutoDetect"), checked: settings.telnetAutoDetect)
+        telnetBinaryOptionCheck = NSView.makeCheckbox(
+            TTL("dialog.tcpip.telnetBinaryOption"), checked: settings.telnetBinaryOption)
+        telnetBinaryModeCheck = NSView.makeCheckbox(
+            TTL("dialog.tcpip.telnetBinaryMode"), checked: settings.telnetBinaryMode)
+        telnetIgnoreDisconnectCheck = NSView.makeCheckbox(
+            TTL("dialog.tcpip.telnetIgnoreDisconnect"), checked: settings.telnetIgnoreDisconnect)
+
+        let telnetStack = NSStackView(views: [
+            telnetAutoDetectCheck, telnetBinaryOptionCheck,
+            telnetBinaryModeCheck, telnetIgnoreDisconnectCheck,
+        ])
+        telnetStack.translatesAutoresizingMaskIntoConstraints = false
+        telnetStack.orientation = .vertical
+        telnetStack.alignment = .leading
+        telnetStack.spacing = 6
+        telnetBox.contentView = telnetStack
+        if let cv = telnetBox.contentView {
+            NSLayoutConstraint.activate([
+                telnetStack.topAnchor.constraint(equalTo: cv.topAnchor, constant: 4),
+                telnetStack.leadingAnchor.constraint(equalTo: cv.leadingAnchor, constant: 8),
+                telnetStack.trailingAnchor.constraint(equalTo: cv.trailingAnchor, constant: -8),
+                telnetStack.bottomAnchor.constraint(equalTo: cv.bottomAnchor, constant: -4),
+            ])
+        }
+
+        // ── SSH Heartbeat ──
+        sshHeartbeatField = NSView.makeNumberField(
+            value: settings.sshHeartbeat, width: 70)
+        let sshHeartbeatRow = NSStackView(views: [
+            NSView.makeLabel(TTL("dialog.tcpip.sshHeartbeat"), alignment: .left),
+            sshHeartbeatField,
+            NSView.makeLabel("sec", alignment: .left),
+        ])
+        sshHeartbeatRow.translatesAutoresizingMaskIntoConstraints = false
+        sshHeartbeatRow.orientation = .horizontal
+        sshHeartbeatRow.spacing = 8
+
+        // ── 全体レイアウト（オリジナル TeraTerm の UI 順序に準拠）──
+        addFullWidthView(autoCloseCheck)
+        addFullWidthView(keepAliveCheck)
+        addFullWidthView(keepAliveRow)
+        addFullWidthView(historyRow)
+        addSectionSpacing()
+        addFullWidthView(antiIdleBox)
+        addSectionSpacing()
+        addFullWidthView(telnetBox)
+        addSectionSpacing()
+        addFullWidthView(sshHeartbeatRow)
     }
 
     override func applySettings() {
-        settings.hostname = hostField.stringValue
-        settings.defaultPort = portField.integerValue
+        settings.autoWindowClose = autoCloseCheck.state == .on
         settings.tcpKeepAlive = keepAliveCheck.state == .on
         settings.tcpKeepAliveInterval = keepAliveIntervalField.integerValue
-        settings.autoWindowClose = autoCloseCheck.state == .on
+        settings.hostHistorySize = max(1, historySizeField.integerValue)
+        settings.antiIdle = antiIdleCheck.state == .on
+        settings.antiIdleString = antiIdleStringField.stringValue
+        settings.antiIdleInterval = max(1, antiIdleIntervalField.integerValue)
+        settings.telnetAutoDetect = telnetAutoDetectCheck.state == .on
+        settings.telnetBinaryOption = telnetBinaryOptionCheck.state == .on
+        settings.telnetBinaryMode = telnetBinaryModeCheck.state == .on
+        settings.telnetIgnoreDisconnect = telnetIgnoreDisconnectCheck.state == .on
+        settings.sshHeartbeat = max(0, sshHeartbeatField.integerValue)
     }
 }
 

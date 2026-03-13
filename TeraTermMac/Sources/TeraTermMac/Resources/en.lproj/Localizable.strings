@@ -681,9 +681,19 @@
 "dialog.tcpip.title" = "TCP/IP setup";
 "dialog.tcpip.host" = "Host:";
 "dialog.tcpip.port" = "TCP Port#:";
-"dialog.tcpip.keepAlive" = "Telnet Keep alive";
-"dialog.tcpip.keepAliveInterval" = "Keep alive interval:";
-"dialog.tcpip.autoClose" = "Auto window close";
+"dialog.tcpip.keepAlive" = "TCP keepalive";
+"dialog.tcpip.keepAliveInterval" = "Keepalive interval:";
+"dialog.tcpip.autoClose" = "Auto window close on disconnect";
+"dialog.tcpip.historySize" = "History:";
+"dialog.tcpip.antiIdle" = "Anti-idle";
+"dialog.tcpip.antiIdleEnable" = "Enable anti-idle";
+"dialog.tcpip.antiIdleString" = "Send string:";
+"dialog.tcpip.antiIdleInterval" = "Interval:";
+"dialog.tcpip.telnetAutoDetect" = "Auto detect";
+"dialog.tcpip.telnetBinaryOption" = "Binary option";
+"dialog.tcpip.telnetBinaryMode" = "Binary mode";
+"dialog.tcpip.telnetIgnoreDisconnect" = "Ignore disconnect on close";
+"dialog.tcpip.sshHeartbeat" = "SSH heartbeat:";
 
 /* Window List Dialog (IDD_WINLISTDLG) */
 "dialog.windowList.title" = "Tera Term: Window list";
@@ -736,6 +746,7 @@
 "dialog.proxy.password" = "Password:";
 
 /* SSH Setup Dialog (IDD_SSHSETUP) */
+"dialog.ssh.title" = "SSH Setup";
 "dialog.sshSetup.title" = "SSH Setup";
 "dialog.sshSetup.cipherOrder" = "Preferred cipher order";
 "dialog.sshSetup.moveUp" = "Move Up";
@@ -777,6 +788,7 @@
 "dialog.sshAuthSetup.checkAuth" = "Check the enabled authentication methods before login (SSH2)";
 
 /* SSH Forwarding Setup Dialog (IDD_SSHFWDSETUP) */
+"dialog.sshForward.title" = "SSH Forwarding Setup";
 "dialog.sshFwd.title" = "SSH Forwarding Setup";
 "dialog.sshFwd.portForwarding" = "Port Forwarding";
 "dialog.sshFwd.add" = "Add…";
@@ -815,6 +827,7 @@
 "dialog.sshKeyGen.error" = "Key generation failed: %@";
 
 /* General Setup Dialog (IDD_GENDLG) */
+"dialog.general.title" = "General Setup";
 "dialog.generalSetup.title" = "General Setup";
 "dialog.generalSetup.language" = "Language:";
 "dialog.generalSetup.languageEnglish" = "English";

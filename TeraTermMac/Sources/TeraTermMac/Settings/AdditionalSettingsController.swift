@@ -36,10 +36,12 @@ final class AdditionalSettingsController: NSObject {
         super.init()
     }
 
-    func showAsSheet(on parent: NSWindow) {
-        if window != nil { return }
+    /// シートとして表示し、排他制御用にウィンドウを返す
+    @discardableResult
+    func showAsSheet(on parent: NSWindow) -> NSWindow? {
+        if window != nil { return window }
         buildWindow()
-        guard let win = window else { return }
+        guard let win = window else { return nil }
         parent.beginSheet(win) { [weak self] response in
             if response == .OK {
                 self?.applyAll()
@@ -47,6 +49,7 @@ final class AdditionalSettingsController: NSObject {
             }
             self?.window = nil
         }
+        return win
     }
 
     func showModal() {
