@@ -14,7 +14,7 @@ let package = Package(
             name: "TeraTermMac",
             path: "Sources/TeraTermMac",
             exclude: [
-                "Resources/Info.plist",
+                "Info.plist",
             ],
             resources: [
                 .process("Resources"),
