@@ -36,19 +36,36 @@ final class AdditionalSettingsController: NSObject {
         super.init()
     }
 
-    /// シートとして表示し、排他制御用にウィンドウを返す
+    /// モーダルウィンドウとして表示し、排他制御用にウィンドウを返す
     @discardableResult
     func showAsSheet(on parent: NSWindow) -> NSWindow? {
         if window != nil { return window }
         buildWindow()
         guard let win = window else { return nil }
-        parent.beginSheet(win) { [weak self] response in
-            if response == .OK {
-                self?.applyAll()
-                self?.onApply?()
-            }
-            self?.window = nil
+
+        // 親ウィンドウの中央に配置
+        win.layoutIfNeeded()
+        let parentFrame = parent.frame
+        let dialogSize = win.frame.size
+        let x = parentFrame.midX - dialogSize.width / 2
+        let y = parentFrame.midY - dialogSize.height / 2
+        win.setFrameOrigin(NSPoint(x: x, y: y))
+
+        // スクリーン内に収める
+        if let screen = parent.screen ?? NSScreen.main {
+            var frame = win.frame
+            let visible = screen.visibleFrame
+            frame.origin.x = max(visible.minX, min(frame.origin.x, visible.maxX - frame.width))
+            frame.origin.y = max(visible.minY, min(frame.origin.y, visible.maxY - frame.height))
+            win.setFrame(frame, display: true)
         }
+
+        let response = NSApplication.shared.runModal(for: win)
+        if response == .OK {
+            applyAll()
+            onApply?()
+        }
+        window = nil
         return win
     }
 

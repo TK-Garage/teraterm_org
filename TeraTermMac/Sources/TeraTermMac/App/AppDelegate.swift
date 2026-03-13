@@ -1926,16 +1926,23 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         }
     }
 
-    /// 現在開いている設定シートやフォントパネルをOK（値保存）で閉じる
+    /// 現在開いている設定ダイアログやフォントパネルをOK（値保存）で閉じる
     private func dismissCurrentSetupSheet() {
         // フォントパネルが開いていれば閉じる
         let fontPanel = NSFontPanel.shared
         if fontPanel.isVisible {
             fontPanel.orderOut(nil)
         }
-        // 設定シートが開いていればOKとして閉じる（applySettings + okHandler が呼ばれる）
-        if let sheet = currentSetupSheet, let parent = sheet.sheetParent {
-            parent.endSheet(sheet, returnCode: .OK)
+        // 設定ダイアログが開いていれば閉じる
+        if let sheet = currentSetupSheet {
+            if let parent = sheet.sheetParent {
+                // シートとして表示されている場合
+                parent.endSheet(sheet, returnCode: .OK)
+            } else if sheet.isVisible {
+                // モーダルウィンドウとして表示されている場合
+                NSApplication.shared.stopModal(withCode: .OK)
+                sheet.close()
+            }
         }
         currentSetupSheet = nil
     }
@@ -2031,7 +2038,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         }
         additionalSettingsController = controller
         if let win = activeWindowController?.window {
-            // 排他制御: showAsSheet の戻り値を currentSetupSheet に代入
+            // 排他制御: showAsSheet（モーダルウィンドウ）の戻り値を currentSetupSheet に代入
             currentSetupSheet = controller.showAsSheet(on: win)
         } else {
             controller.showModal()

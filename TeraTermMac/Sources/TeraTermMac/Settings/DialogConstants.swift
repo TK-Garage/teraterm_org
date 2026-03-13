@@ -531,7 +531,9 @@ class BaseSetupDialogController: NSViewController {
         self.view = container
     }
 
-    /// Present this dialog as a modal sheet on the given window.
+    /// Present this dialog as a modal window with a visible title bar.
+    /// The window is centered over the parent window and blocks until
+    /// the user clicks OK or Cancel.
     /// Returns the dialog window for tracking purposes.
     @discardableResult
     func presentAsSheet(on parentWindow: NSWindow) -> NSWindow {
@@ -548,12 +550,28 @@ class BaseSetupDialogController: NSViewController {
         dialogWindow.isReleasedWhenClosed = false
         dialogWindow.title = self.title ?? ""
 
-        parentWindow.beginSheet(dialogWindow) { [weak self] response in
-            if response == .OK {
-                self?.okHandler?()
-            } else {
-                self?.cancelHandler?()
-            }
+        // 親ウィンドウの中央に配置
+        dialogWindow.layoutIfNeeded()
+        let parentFrame = parentWindow.frame
+        let dialogSize = dialogWindow.frame.size
+        let x = parentFrame.midX - dialogSize.width / 2
+        let y = parentFrame.midY - dialogSize.height / 2
+        dialogWindow.setFrameOrigin(NSPoint(x: x, y: y))
+
+        // スクリーン内に収める
+        if let screen = parentWindow.screen ?? NSScreen.main {
+            var frame = dialogWindow.frame
+            let visible = screen.visibleFrame
+            frame.origin.x = max(visible.minX, min(frame.origin.x, visible.maxX - frame.width))
+            frame.origin.y = max(visible.minY, min(frame.origin.y, visible.maxY - frame.height))
+            dialogWindow.setFrame(frame, display: true)
+        }
+
+        let response = NSApplication.shared.runModal(for: dialogWindow)
+        if response == .OK {
+            okHandler?()
+        } else {
+            cancelHandler?()
         }
         return dialogWindow
     }
