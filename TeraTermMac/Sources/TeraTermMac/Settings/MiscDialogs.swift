@@ -910,16 +910,15 @@ final class TCPIPDialogController: BaseSetupDialogController {
         antiIdleStack.orientation = .vertical
         antiIdleStack.alignment = .leading
         antiIdleStack.spacing = 8
-        antiIdleBox.contentView = antiIdleStack
         // グループボックス内部の余白
-        if let cv = antiIdleBox.contentView {
-            NSLayoutConstraint.activate([
-                antiIdleStack.topAnchor.constraint(equalTo: cv.topAnchor, constant: 4),
-                antiIdleStack.leadingAnchor.constraint(equalTo: cv.leadingAnchor, constant: 8),
-                antiIdleStack.trailingAnchor.constraint(equalTo: cv.trailingAnchor, constant: -8),
-                antiIdleStack.bottomAnchor.constraint(equalTo: cv.bottomAnchor, constant: -4),
-            ])
-        }
+        let antiIdleCV = antiIdleBox.contentView!
+        antiIdleCV.addSubview(antiIdleStack)
+        NSLayoutConstraint.activate([
+            antiIdleStack.topAnchor.constraint(equalTo: antiIdleCV.topAnchor, constant: 4),
+            antiIdleStack.leadingAnchor.constraint(equalTo: antiIdleCV.leadingAnchor, constant: 8),
+            antiIdleStack.trailingAnchor.constraint(equalTo: antiIdleCV.trailingAnchor, constant: -8),
+            antiIdleStack.bottomAnchor.constraint(equalTo: antiIdleCV.bottomAnchor, constant: -4),
+        ])
 
         // ── Telnet ──
         let telnetBox = NSView.makeGroupBox(title: "Telnet")
@@ -940,15 +939,14 @@ final class TCPIPDialogController: BaseSetupDialogController {
         telnetStack.orientation = .vertical
         telnetStack.alignment = .leading
         telnetStack.spacing = 6
-        telnetBox.contentView = telnetStack
-        if let cv = telnetBox.contentView {
-            NSLayoutConstraint.activate([
-                telnetStack.topAnchor.constraint(equalTo: cv.topAnchor, constant: 4),
-                telnetStack.leadingAnchor.constraint(equalTo: cv.leadingAnchor, constant: 8),
-                telnetStack.trailingAnchor.constraint(equalTo: cv.trailingAnchor, constant: -8),
-                telnetStack.bottomAnchor.constraint(equalTo: cv.bottomAnchor, constant: -4),
-            ])
-        }
+        let telnetCV = telnetBox.contentView!
+        telnetCV.addSubview(telnetStack)
+        NSLayoutConstraint.activate([
+            telnetStack.topAnchor.constraint(equalTo: telnetCV.topAnchor, constant: 4),
+            telnetStack.leadingAnchor.constraint(equalTo: telnetCV.leadingAnchor, constant: 8),
+            telnetStack.trailingAnchor.constraint(equalTo: telnetCV.trailingAnchor, constant: -8),
+            telnetStack.bottomAnchor.constraint(equalTo: telnetCV.bottomAnchor, constant: -4),
+        ])
 
         // ── SSH Heartbeat ──
         sshHeartbeatField = NSView.makeNumberField(
