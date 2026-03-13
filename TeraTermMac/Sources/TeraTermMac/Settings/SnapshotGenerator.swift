@@ -124,8 +124,12 @@ final class SnapshotGenerator {
             // Host the view in an offscreen window so Auto Layout resolves
             let vc = NSViewController()
             vc.view = view
-            let window = NSWindow(contentViewController: vc)
-            window.styleMask = [.titled]
+            let window = NSWindow(
+                contentRect: NSRect(x: 0, y: 0, width: 400, height: 300),
+                styleMask: [.titled],
+                backing: .buffered,
+                defer: true)
+            window.contentViewController = vc
 
             // Force layout
             view.needsLayout = true

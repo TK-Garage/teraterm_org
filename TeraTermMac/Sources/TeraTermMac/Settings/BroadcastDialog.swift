@@ -181,8 +181,12 @@ final class BroadcastDialogController: NSObject {
         // Use content-driven sizing — window expands for longer localized labels
         let vc = NSViewController()
         vc.view = container
-        let win = NSWindow(contentViewController: vc)
-        win.styleMask = [.titled, .closable, .resizable]
+        let win = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 500, height: 400),
+            styleMask: [.titled, .closable, .resizable],
+            backing: .buffered,
+            defer: true)
+        win.contentViewController = vc
         win.title = TTL("dialog.broadcast.title")
         win.isReleasedWhenClosed = false
         win.minSize = NSSize(width: 400, height: 300)

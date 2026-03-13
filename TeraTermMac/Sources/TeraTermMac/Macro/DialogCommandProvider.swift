@@ -256,8 +256,12 @@ class DialogCommandProvider {
 
             let vc = NSViewController()
             vc.view = container
-            let panel = NSPanel(contentViewController: vc)
-            panel.styleMask = [.titled, .closable, .utilityWindow]
+            let panel = NSPanel(
+                contentRect: NSRect(x: 0, y: 0, width: 360, height: 80),
+                styleMask: [.titled, .closable, .utilityWindow],
+                backing: .buffered,
+                defer: true)
+            panel.contentViewController = vc
             panel.title = title
             panel.level = .floating
             panel.isReleasedWhenClosed = false

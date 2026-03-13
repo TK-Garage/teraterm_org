@@ -180,8 +180,12 @@ final class MacroStatusPanelController {
         // --- Panel (content-driven sizing) ---
         let vc = NSViewController()
         vc.view = container
-        let p = NSPanel(contentViewController: vc)
-        p.styleMask = [.titled, .closable, .utilityWindow]
+        let p = NSPanel(
+            contentRect: NSRect(x: 0, y: 0, width: 360, height: 200),
+            styleMask: [.titled, .closable, .utilityWindow],
+            backing: .buffered,
+            defer: true)
+        p.contentViewController = vc
         p.title = NSLocalizedString("macroStatus.title", comment: "")
         p.isFloatingPanel = true
         p.level = .floating

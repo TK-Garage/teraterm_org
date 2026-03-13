@@ -369,8 +369,12 @@ final class SCPProgressWindowController: NSWindowController {
 
         let vc = NSViewController()
         vc.view = container
-        let window = NSWindow(contentViewController: vc)
-        window.styleMask = [.titled, .closable, .miniaturizable]
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 380, height: 120),
+            styleMask: [.titled, .closable, .miniaturizable],
+            backing: .buffered,
+            defer: true)
+        window.contentViewController = vc
         window.title = send
             ? TTL("dialog.scp.progress.title.send")
             : TTL("dialog.scp.progress.title.receive")
@@ -1463,11 +1467,14 @@ final class SSHForwardingSetupDialogController: BaseSetupDialogController {
         guard let win = view.window else { return }
         let vc = SSHForwardingEditDialogController(rule: rule)
         vc.onSave = completion
-        let dialogWindow = NSWindow(contentViewController: vc)
-        dialogWindow.styleMask = [.titled, .closable]
+        let dialogWindow = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 400, height: 200),
+            styleMask: [.titled, .closable],
+            backing: .buffered,
+            defer: true)
+        dialogWindow.contentViewController = vc
         dialogWindow.title = TTL("dialog.sshFwdEdit.title")
         dialogWindow.isReleasedWhenClosed = false
-        dialogWindow.styleMask.remove(.resizable)
         win.beginSheet(dialogWindow) { _ in }
     }
 

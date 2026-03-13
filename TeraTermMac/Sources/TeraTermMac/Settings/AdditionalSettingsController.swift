@@ -129,13 +129,17 @@ final class AdditionalSettingsController: NSObject {
         ])
 
         // Content-driven sizing — the window sizes to fit Auto Layout content
+        // NSWindow(contentViewController:) は fullSizeContentView 相当を内部設定し
+        // タイトルバーが隠れるため、明示的に contentRect + styleMask で作成する。
         let vc = NSViewController()
         vc.view = container
-        let win = NSWindow(contentViewController: vc)
-        win.styleMask = [.titled, .closable]
+        let win = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 580, height: 500),
+            styleMask: [.titled, .closable],
+            backing: .buffered,
+            defer: true)
+        win.contentViewController = vc
         win.isReleasedWhenClosed = false
-        // レイアウト確定後にタイトルを設定（KVO バインディングによる上書きを防止）
-        win.contentView?.layoutSubtreeIfNeeded()
         win.title = TTL("dialog.additionalSettings.title")
         self.window = win
         self.tabView = tv

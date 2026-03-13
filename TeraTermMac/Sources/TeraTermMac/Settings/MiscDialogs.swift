@@ -645,12 +645,14 @@ final class PrintAbortDialog {
             container.widthAnchor.constraint(greaterThanOrEqualToConstant: 200),
         ])
 
-        let p = NSPanel(contentViewController: {
-            let vc = NSViewController()
-            vc.view = container
-            return vc
-        }())
-        p.styleMask = [.titled, .utilityWindow]
+        let vc = NSViewController()
+        vc.view = container
+        let p = NSPanel(
+            contentRect: NSRect(x: 0, y: 0, width: 200, height: 80),
+            styleMask: [.titled, .utilityWindow],
+            backing: .buffered,
+            defer: true)
+        p.contentViewController = vc
         p.title = TTL("Tera Term")
         p.isFloatingPanel = true
         p.isReleasedWhenClosed = false
@@ -703,12 +705,14 @@ final class StatusDialog {
             container.widthAnchor.constraint(greaterThanOrEqualToConstant: 160),
         ])
 
-        let p = NSPanel(contentViewController: {
-            let vc = NSViewController()
-            vc.view = container
-            return vc
-        }())
-        p.styleMask = [.titled, .utilityWindow]
+        let vc = NSViewController()
+        vc.view = container
+        let p = NSPanel(
+            contentRect: NSRect(x: 0, y: 0, width: 160, height: 60),
+            styleMask: [.titled, .utilityWindow],
+            backing: .buffered,
+            defer: true)
+        p.contentViewController = vc
         p.title = TTL("dialog.status.title")
         p.isFloatingPanel = true
         p.isReleasedWhenClosed = false

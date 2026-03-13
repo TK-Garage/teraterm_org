@@ -1232,8 +1232,12 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         // Content-driven panel sizing
         let vc = NSViewController()
         vc.view = contentView
-        let panel = NSPanel(contentViewController: vc)
-        panel.styleMask = [.titled, .closable, .utilityWindow, .nonactivatingPanel]
+        let panel = NSPanel(
+            contentRect: NSRect(x: 0, y: 0, width: 400, height: 80),
+            styleMask: [.titled, .closable, .utilityWindow, .nonactivatingPanel],
+            backing: .buffered,
+            defer: true)
+        panel.contentViewController = vc
         panel.title = L("menu.control.broadcast")
         panel.isFloatingPanel = true
         panel.becomesKeyOnlyIfNeeded = true

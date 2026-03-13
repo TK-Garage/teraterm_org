@@ -535,17 +535,18 @@ class BaseSetupDialogController: NSViewController {
     /// Returns the dialog window for tracking purposes.
     @discardableResult
     func presentAsSheet(on parentWindow: NSWindow) -> NSWindow {
-        let dialogWindow = NSWindow(contentViewController: self)
-        dialogWindow.styleMask = [.titled, .closable]
+        // NSWindow(contentViewController:) は内部で fullSizeContentView 相当の
+        // 設定を行い、コンテンツがタイトルバー背後に描画されてしまう。
+        // 明示的に contentRect + styleMask でウィンドウを作成し、
+        // contentViewController を後から設定することで回避する。
+        let dialogWindow = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 400, height: 300),
+            styleMask: [.titled, .closable],
+            backing: .buffered,
+            defer: true)
+        dialogWindow.contentViewController = self
         dialogWindow.isReleasedWhenClosed = false
-        dialogWindow.styleMask.remove(.resizable)
-
-        // Auto Layout 確定後にウィンドウサイズを決定
-        dialogWindow.contentView?.layoutSubtreeIfNeeded()
-
-        // タイトルは layoutSubtreeIfNeeded 後に設定（KVO バインディングによる上書きを防止）
-        let dialogTitle = self.title ?? ""
-        dialogWindow.title = dialogTitle
+        dialogWindow.title = self.title ?? ""
 
         parentWindow.beginSheet(dialogWindow) { [weak self] response in
             if response == .OK {
@@ -559,17 +560,14 @@ class BaseSetupDialogController: NSViewController {
 
     /// Present as application-modal dialog (when no parent window).
     func presentModal() -> NSApplication.ModalResponse {
-        let dialogWindow = NSWindow(contentViewController: self)
-        dialogWindow.styleMask = [.titled, .closable]
+        let dialogWindow = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 400, height: 300),
+            styleMask: [.titled, .closable],
+            backing: .buffered,
+            defer: true)
+        dialogWindow.contentViewController = self
         dialogWindow.isReleasedWhenClosed = false
-        dialogWindow.styleMask.remove(.resizable)
-
-        // Auto Layout 確定後にウィンドウサイズを決定
-        dialogWindow.contentView?.layoutSubtreeIfNeeded()
-
-        // タイトルは layoutSubtreeIfNeeded 後に設定（KVO バインディングによる上書きを防止）
-        let dialogTitle = self.title ?? ""
-        dialogWindow.title = dialogTitle
+        dialogWindow.title = self.title ?? ""
         dialogWindow.center()
 
         // スクリーン内に収める

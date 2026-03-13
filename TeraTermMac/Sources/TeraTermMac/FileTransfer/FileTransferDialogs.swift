@@ -337,8 +337,12 @@ final class ProtocolTransferPanel {
 
         let vc = NSViewController()
         vc.view = container
-        let p = NSPanel(contentViewController: vc)
-        p.styleMask = [.titled, .closable, .utilityWindow]
+        let p = NSPanel(
+            contentRect: NSRect(x: 0, y: 0, width: 340, height: 200),
+            styleMask: [.titled, .closable, .utilityWindow],
+            backing: .buffered,
+            defer: true)
+        p.contentViewController = vc
         p.title = TTL("dialog.prot.title")
         p.isFloatingPanel = true
         p.becomesKeyOnlyIfNeeded = true
@@ -529,8 +533,12 @@ final class FileTransferProgressPanel {
 
         let vc = NSViewController()
         vc.view = container
-        let p = NSPanel(contentViewController: vc)
-        p.styleMask = [.titled, .closable, .miniaturizable, .utilityWindow]
+        let p = NSPanel(
+            contentRect: NSRect(x: 0, y: 0, width: 440, height: 280),
+            styleMask: [.titled, .closable, .miniaturizable, .utilityWindow],
+            backing: .buffered,
+            defer: true)
+        p.contentViewController = vc
         p.title = TTL("dialog.ftrans.title")
         p.isFloatingPanel = false
         p.isReleasedWhenClosed = false
