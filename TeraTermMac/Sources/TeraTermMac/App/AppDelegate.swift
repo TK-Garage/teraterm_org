@@ -73,6 +73,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
     private var windowControllers: [TerminalWindowController] = []
     private var settings: TerminalSettings = TerminalSettings()
 
+    // Notification observer tokens for explicit removal
+    private var windowCloseObservers: [NSObjectProtocol] = []
+
     /// 現在開いている設定シート（排他制御用）
     private weak var currentSetupDialog: NSWindow?
 
@@ -102,6 +105,12 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
     func applicationWillTerminate(_ notification: Notification) {
         // Save settings
         settings.save()
+
+        // Remove all window-close notification observers
+        for token in windowCloseObservers {
+            NotificationCenter.default.removeObserver(token)
+        }
+        windowCloseObservers.removeAll()
 
         // Close all connections
         for wc in windowControllers {
@@ -142,13 +151,22 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         windowControllers.append(wc)
         wc.showWindow(self)
 
-        // Clean up when window closes
-        NotificationCenter.default.addObserver(
+        // Clean up when window closes — store token for explicit removal
+        var token: NSObjectProtocol?
+        token = NotificationCenter.default.addObserver(
             forName: NSWindow.willCloseNotification,
             object: wc.window,
             queue: .main
         ) { [weak self] notification in
             self?.windowControllers.removeAll { $0.window == notification.object as? NSWindow }
+            // Remove this observer itself to prevent accumulation
+            if let token = token {
+                NotificationCenter.default.removeObserver(token)
+                self?.windowCloseObservers.removeAll { $0 === token }
+            }
+        }
+        if let token = token {
+            windowCloseObservers.append(token)
         }
 
         return wc

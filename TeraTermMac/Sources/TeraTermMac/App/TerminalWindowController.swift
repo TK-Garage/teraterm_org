@@ -32,8 +32,9 @@ import AppKit
 // 原因2: TerminalWindowController に deinit がなく、windowWillClose で resizeHideTimer と
 //         macroRecvTimer の invalidate が漏れている。Timer リーク・再接続時の累積の可能性。要注意
 // 原因3: AppDelegate.swift:146 の NotificationCenter observer が addObserver(forName:object:queue:)
-//         形式で登録。戻り値を保持していないため removeObserver できないが、object が指定されているため
-//         ウィンドウ破棄時に自動解除される。要注意（重大ではない）
+//         形式で登録。戻り値を保持していないため removeObserver できなかった。→ 修正済み
+// 原因4: TelnetProtocol の binaryMode/echoMode/suppressGA が processIncoming()(メインスレッド)と
+//         escapeData()(sendQueue)から保護なく読み書きされていた → NSLock で保護済み
 
 // [KEY-INPUT-FIX-PLAN]
 // 修正1: TerminalWindowController.swift:859 キー送信をメインスレッドで同期実行 → 専用sendQueueで非同期送信
