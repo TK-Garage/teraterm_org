@@ -58,6 +58,9 @@ class TerminalLogger {
     // Strip ESC sequences for plain text logging
     private var escapeState: EscapeStripState = .normal
 
+    /// Tracks whether we are at the beginning of a new line (for timestamp insertion)
+    private var atLineStart: Bool = true
+
     enum EscapeStripState {
         case normal
         case escape
@@ -127,6 +130,7 @@ class TerminalLogger {
         state = .active
         bytesLogged = 0
         escapeState = .normal
+        atLineStart = true
         logStartTime = Date()
 
         // Write UTF-8 BOM if configured
@@ -175,8 +179,13 @@ class TerminalLogger {
 
         if options.plainText {
             let stripped = stripEscapeSequences(data)
-            writeToLog(stripped)
+            if options.addTimestamp {
+                writeWithTimestamp(stripped)
+            } else {
+                writeToLog(stripped)
+            }
         } else {
+            // Binary mode — write raw, no timestamp
             writeRawToLog(data)
         }
     }
@@ -237,6 +246,22 @@ class TerminalLogger {
     }
 
     // MARK: - Private Methods
+
+    /// Write text with timestamps prepended at line boundaries.
+    private func writeWithTimestamp(_ text: String) {
+        var output = ""
+        for ch in text {
+            if atLineStart {
+                output += "[\(formattedTimestamp())] "
+                atLineStart = false
+            }
+            output.append(ch)
+            if ch == "\n" {
+                atLineStart = true
+            }
+        }
+        writeToLog(output)
+    }
 
     private func writeToLog(_ string: String) {
         guard let data = string.data(using: .utf8) else { return }

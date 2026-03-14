@@ -508,9 +508,12 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         let vc = LogDialogController()
         vc.okHandler = { [weak wc, weak vc] in
             guard let result = vc?.result else { return }
-            // Apply log settings to window controller
-            _ = result
-            wc?.startLog()
+            let options = LogOptions(
+                addTimestamp: result.timestamp,
+                plainText: result.plainText && result.format == .text,
+                appendMode: result.append
+            )
+            wc?.startLog(path: result.filePath, options: options)
         }
         currentSetupDialog = vc.presentAsModal(on: win)
     }

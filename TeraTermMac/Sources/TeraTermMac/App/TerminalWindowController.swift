@@ -230,6 +230,11 @@ class TerminalWindowController: NSWindowController {
         }
     }
 
+    /// Start logging with a pre-selected path and options (called from LogDialog).
+    func startLog(path: String, options: LogOptions) {
+        _ = logger.startLogging(to: path, options: options)
+    }
+
     func stopLog() {
         logger.stopLogging()
     }
