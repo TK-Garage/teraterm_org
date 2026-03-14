@@ -180,7 +180,7 @@ filewriteln fh msg
 
 ; Test str2int
 test_num = test_num + 1
-str2int '42' val
+str2int val '42'
 if result = 1 then
   if val = 42 then
     sprintf2 msg 'PASS [%d] str2int: "42" -> 42' test_num
