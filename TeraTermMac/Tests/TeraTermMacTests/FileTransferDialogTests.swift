@@ -205,7 +205,7 @@ class KermitGetDialogControllerTests: XCTestCase {
 
     func testTitleIsSet() {
         let vc = KermitGetDialogController()
-        XCTAssertEqual(vc.title, "Tera Term: Kermit Get")
+        XCTAssertEqual(vc.title, TTL("dialog.kermitGet.title"))
     }
 }
 
@@ -216,7 +216,7 @@ class SendFileDialogControllerTests: XCTestCase {
     func testTitleIsSet() {
         let vc = SendFileDialogController()
         // タイトルはローカライズされる
-        XCTAssertEqual(vc.title, NSLocalizedString("dialog.sendFile.title", value: "Send file", comment: ""))
+        XCTAssertEqual(vc.title, TTL("dialog.sendFile.title"))
     }
 
     func testDelayTypeEnum() {
@@ -280,7 +280,7 @@ class RecvFileDialogControllerTests: XCTestCase {
     func testTitleIsSet() {
         let vc = RecvFileDialogController()
         // タイトルはローカライズされる
-        XCTAssertEqual(vc.title, NSLocalizedString("dialog.recvFile.title", value: "Receive file", comment: ""))
+        XCTAssertEqual(vc.title, TTL("dialog.recvFile.title"))
     }
 
     func testResultInitialization() {

@@ -214,6 +214,9 @@
 "Cancel" = "キャンセル";
 "Help" = "ヘルプ";
 "Close" = "閉じる";
+"No" = "いいえ";
+"..." = "...";
+"Tera Term" = "Tera Term";
 
 /* Paste Special Dialog */
 "dialog.pasteSpecial.title" = "特殊貼り付け";
@@ -405,6 +408,7 @@
 "dialog.prot.bytesTransferred" = "転送バイト数:";
 "dialog.prot.elapsed" = "経過時間:";
 "dialog.prot.cancel" = "キャンセル";
+"dialog.prot.title" = "Tera Term: ファイル転送";
 "dialog.ftrans.filename" = "ファイル名:";
 "dialog.ftrans.fullpath" = "フルパス:";
 "dialog.ftrans.bytesTransferred" = "転送バイト数:";
@@ -413,6 +417,7 @@
 "dialog.ftrans.pause" = "一時停止";
 "dialog.ftrans.resume" = "再開";
 "dialog.ftrans.help" = "ヘルプ";
+"dialog.ftrans.title" = "Tera Term: ファイル転送";
 
 /* Send File Dialog (IDD_SENDFILEDLG) */
 "dialog.sendFile.title" = "ファイル送信";
@@ -683,6 +688,7 @@
 
 /* File Menu - Print */
 "menu.file.print" = "印刷…";
+"menu.file.printTEK" = "TEK印刷…";
 
 /* Setup Menu - SSH related */
 "menu.setup.proxy" = "プロキシ…";

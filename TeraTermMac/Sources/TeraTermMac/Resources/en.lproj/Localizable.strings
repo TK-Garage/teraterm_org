@@ -214,6 +214,9 @@
 "Cancel" = "Cancel";
 "Help" = "Help";
 "Close" = "Close";
+"No" = "No";
+"..." = "...";
+"Tera Term" = "Tera Term";
 
 /* Paste Special Dialog */
 "dialog.pasteSpecial.title" = "Paste Special";
@@ -405,6 +408,7 @@
 "dialog.prot.bytesTransferred" = "Bytes transferred:";
 "dialog.prot.elapsed" = "Elapsed time:";
 "dialog.prot.cancel" = "Cancel";
+"dialog.prot.title" = "Tera Term: File Transfer";
 "dialog.ftrans.filename" = "Filename:";
 "dialog.ftrans.fullpath" = "Fullpath:";
 "dialog.ftrans.bytesTransferred" = "Bytes transferred:";
@@ -413,6 +417,7 @@
 "dialog.ftrans.pause" = "Pause";
 "dialog.ftrans.resume" = "Resume";
 "dialog.ftrans.help" = "Help";
+"dialog.ftrans.title" = "Tera Term: File Transfer";
 
 /* Send File Dialog (IDD_SENDFILEDLG) */
 "dialog.sendFile.title" = "Send file";
@@ -683,6 +688,7 @@
 
 /* File Menu - Print */
 "menu.file.print" = "Print…";
+"menu.file.printTEK" = "Print TEK…";
 
 /* Setup Menu - SSH related */
 "menu.setup.proxy" = "Proxy…";
