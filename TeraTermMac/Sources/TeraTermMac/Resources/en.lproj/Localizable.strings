@@ -145,6 +145,8 @@
 "dialog.keyboardSetup.title" = "Keyboard Setup";
 "dialog.keyboardSetup.bsKey" = "Backspace Key:";
 "dialog.keyboardSetup.deleteKey" = "Delete Key:";
+"dialog.keyboardSetup.bsOption" = "BS (0x08)";
+"dialog.keyboardSetup.delOption" = "DEL (0x7F)";
 "dialog.keyboardSetup.deleteEscSeq" = "ESC Sequence";
 "dialog.keyboardSetup.metaKey" = "Meta Key (Option):";
 "dialog.keyboardSetup.metaOff" = "Off";
@@ -175,6 +177,8 @@
 "dialog.serialPort.parityNone" = "None";
 "dialog.serialPort.parityOdd" = "Odd";
 "dialog.serialPort.parityEven" = "Even";
+"dialog.serialPort.parityMark" = "Mark";
+"dialog.serialPort.paritySpace" = "Space";
 "dialog.serialPort.flow" = "Flow:";
 "dialog.serialPort.flowNone" = "None";
 "dialog.serialPort.flowXonXoff" = "XON/XOFF";
@@ -191,6 +195,10 @@
 "dialog.termSetup.terminalId" = "Terminal ID:";
 "dialog.termSetup.answerback" = "Answerback:";
 "dialog.termSetup.autoSwitch" = "Auto switch (VT<->TEK)";
+"dialog.termSetup.newlineCR" = "CR";
+"dialog.termSetup.newlineCRLF" = "CR+LF";
+"dialog.termSetup.newlineLF" = "LF";
+"dialog.termSetup.newlineAuto" = "AUTO";
 
 /* Serial Port Setup Dialog (new ViewController keys - matching IDD_SERIALDLG) */
 "dialog.serialSetup.speed" = "Speed:";
@@ -624,6 +632,7 @@
 "dialog.localShell.homeChdir" = "cd to HOME";
 "dialog.localShell.env1" = "ENV 1:";
 "dialog.localShell.env2" = "ENV 2:";
+"dialog.localShell.envPlaceholder" = "KEY=VALUE";
 
 /* Additional Settings - Debug */
 "dialog.debug.charInfoPopup" = "Show character info popup";
@@ -663,6 +672,7 @@
 /* Log Dialog (IDD_LOGDLG) */
 "dialog.log.title" = "Log";
 "dialog.log.filename" = "Filename (drop file in this dialog):";
+"dialog.log.placeholder" = "teraterm.log";
 "dialog.log.writeMode" = "Write mode";
 "dialog.log.new" = "New / Overwrite";
 "dialog.log.appendMode" = "Append";
@@ -869,6 +879,8 @@
 "dialog.general.vtCompatTab" = "VT compatible tab";
 
 /* Additional Settings - Coding (new items) */
+"dialog.coding.narrow" = "1 (Narrow)";
+"dialog.coding.wide" = "2 (Wide)";
 "dialog.coding.emojiOverride" = "Override emoji width";
 "dialog.coding.fallbackCP932" = "Fallback to CP932 for undefined characters";
 
@@ -975,6 +987,7 @@
 
 /* Kermit Get Dialog */
 "dialog.kermitGet.title" = "Tera Term: Kermit Get";
+"dialog.kermitGet.placeholder" = "remote_file.txt";
 
 /* ANSI Color Names (tooltips) */
 "color.black" = "Black";

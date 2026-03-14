@@ -432,11 +432,11 @@ final class CodingTab: AdditionalSettingsTab {
         }
 
         let ambLabel = NSView.makeLabel(TTL("dialog.coding.ambiguousWidth"), alignment: .left)
-        ambiguousWidthPopup = NSView.makePopUpButton(items: ["1 (Narrow)", "2 (Wide)"], width: 120)
+        ambiguousWidthPopup = NSView.makePopUpButton(items: [TTL("dialog.coding.narrow"), TTL("dialog.coding.wide")], width: 120)
         ambiguousWidthPopup.selectItem(at: s.unicodeAmbiguousWidth == 2 ? 1 : 0)
 
         let emojiLabel = NSView.makeLabel(TTL("dialog.coding.emojiWidth"), alignment: .left)
-        emojiWidthPopup = NSView.makePopUpButton(items: ["1 (Narrow)", "2 (Wide)"], width: 120)
+        emojiWidthPopup = NSView.makePopUpButton(items: [TTL("dialog.coding.narrow"), TTL("dialog.coding.wide")], width: 120)
         emojiWidthPopup.selectItem(at: s.unicodeEmojiWidth == 2 ? 1 : 0)
 
         emojiOverrideCheck = NSView.makeCheckbox(
@@ -2031,13 +2031,13 @@ final class LocalShellTab: AdditionalSettingsTab {
         let env1Label = NSView.makeLabel(TTL("dialog.localShell.env1"), alignment: .right)
         env1Label.setContentCompressionResistancePriority(.required, for: .horizontal)
         env1Field = NSView.makeTextField(value: s.localShellEnv1)
-        env1Field.placeholderString = "KEY=VALUE"
+        env1Field.placeholderString = TTL("dialog.localShell.envPlaceholder")
         env1Field.widthAnchor.constraint(greaterThanOrEqualToConstant: 200).isActive = true
 
         let env2Label = NSView.makeLabel(TTL("dialog.localShell.env2"), alignment: .right)
         env2Label.setContentCompressionResistancePriority(.required, for: .horizontal)
         env2Field = NSView.makeTextField(value: s.localShellEnv2)
-        env2Field.placeholderString = "KEY=VALUE"
+        env2Field.placeholderString = TTL("dialog.localShell.envPlaceholder")
         env2Field.widthAnchor.constraint(greaterThanOrEqualToConstant: 200).isActive = true
 
         // Layout with NSGridView for 2-column form

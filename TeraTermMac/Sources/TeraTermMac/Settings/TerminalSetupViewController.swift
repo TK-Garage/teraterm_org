@@ -47,7 +47,10 @@ class TerminalSetupViewController: BaseSetupDialogController {
     private var autoSwitchCheck: NSButton!
 
     // New-line options matching Tera Term
-    private let newlineOptions = ["CR", "CR+LF", "LF", "AUTO"]
+    private var newlineOptions: [String] {
+        [TTL("dialog.termSetup.newlineCR"), TTL("dialog.termSetup.newlineCRLF"),
+         TTL("dialog.termSetup.newlineLF"), TTL("dialog.termSetup.newlineAuto")]
+    }
 
     init(settings: TerminalSettings) {
         self.settings = settings

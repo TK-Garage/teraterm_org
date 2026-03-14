@@ -101,7 +101,8 @@ class SerialPortSetupViewController: BaseSetupDialogController {
             items: [TTL("dialog.serialPort.parityNone"),
                     TTL("dialog.serialPort.parityOdd"),
                     TTL("dialog.serialPort.parityEven"),
-                    "Mark", "Space"],
+                    TTL("dialog.serialPort.parityMark"),
+                    TTL("dialog.serialPort.paritySpace")],
             width: popupWidth)
         parityPopup.selectItem(at: settings.parity.rawValue)
 

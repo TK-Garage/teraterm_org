@@ -600,7 +600,7 @@ final class KermitGetDialogController: BaseSetupDialogController {
         fnLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
 
         filenameField = NSView.makeTextField(value: "")
-        filenameField.placeholderString = "remote_file.txt"
+        filenameField.placeholderString = TTL("dialog.kermitGet.placeholder")
 
         let row = NSStackView(views: [fnLabel, filenameField])
         row.translatesAutoresizingMaskIntoConstraints = false

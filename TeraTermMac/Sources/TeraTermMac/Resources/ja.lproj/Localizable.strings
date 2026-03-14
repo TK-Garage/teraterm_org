@@ -145,6 +145,8 @@
 "dialog.keyboardSetup.title" = "キーボードの設定";
 "dialog.keyboardSetup.bsKey" = "Backspaceキー:";
 "dialog.keyboardSetup.deleteKey" = "Deleteキー:";
+"dialog.keyboardSetup.bsOption" = "BS (0x08)";
+"dialog.keyboardSetup.delOption" = "DEL (0x7F)";
 "dialog.keyboardSetup.deleteEscSeq" = "ESCシーケンス";
 "dialog.keyboardSetup.metaKey" = "Metaキー (Option):";
 "dialog.keyboardSetup.metaOff" = "オフ";
@@ -175,6 +177,8 @@
 "dialog.serialPort.parityNone" = "なし";
 "dialog.serialPort.parityOdd" = "奇数";
 "dialog.serialPort.parityEven" = "偶数";
+"dialog.serialPort.parityMark" = "マーク";
+"dialog.serialPort.paritySpace" = "スペース";
 "dialog.serialPort.flow" = "フロー:";
 "dialog.serialPort.flowNone" = "なし";
 "dialog.serialPort.flowXonXoff" = "XON/XOFF";
@@ -191,6 +195,10 @@
 "dialog.termSetup.terminalId" = "端末ID:";
 "dialog.termSetup.answerback" = "応答文字列:";
 "dialog.termSetup.autoSwitch" = "自動切替 (VT<->TEK)";
+"dialog.termSetup.newlineCR" = "CR";
+"dialog.termSetup.newlineCRLF" = "CR+LF";
+"dialog.termSetup.newlineLF" = "LF";
+"dialog.termSetup.newlineAuto" = "自動";
 
 /* Serial Port Setup Dialog (new ViewController keys - matching IDD_SERIALDLG) */
 "dialog.serialSetup.speed" = "速度:";
@@ -624,6 +632,7 @@
 "dialog.localShell.homeChdir" = "HOMEに移動";
 "dialog.localShell.env1" = "環境変数1:";
 "dialog.localShell.env2" = "環境変数2:";
+"dialog.localShell.envPlaceholder" = "キー=値";
 
 /* Additional Settings - Debug */
 "dialog.debug.charInfoPopup" = "文字情報ポップアップを表示する";
@@ -663,6 +672,7 @@
 /* Log Dialog (IDD_LOGDLG) */
 "dialog.log.title" = "ログ";
 "dialog.log.filename" = "ログファイル名 (このダイアログにファイルをドロップ):";
+"dialog.log.placeholder" = "teraterm.log";
 "dialog.log.writeMode" = "書き込みモード";
 "dialog.log.new" = "新規/上書き";
 "dialog.log.appendMode" = "追記";
@@ -869,6 +879,8 @@
 "dialog.general.vtCompatTab" = "VT互換タブ";
 
 /* その他の設定 - エンコーディング (新規項目) */
+"dialog.coding.narrow" = "1 (半角)";
+"dialog.coding.wide" = "2 (全角)";
 "dialog.coding.emojiOverride" = "絵文字幅を上書きする";
 "dialog.coding.fallbackCP932" = "未定義文字にCP932フォールバックを使用する";
 
@@ -975,6 +987,7 @@
 
 /* Kermit取得ダイアログ */
 "dialog.kermitGet.title" = "Tera Term: Kermit取得";
+"dialog.kermitGet.placeholder" = "リモートファイル名";
 
 /* ANSIカラー名（ツールチップ） */
 "color.black" = "黒";

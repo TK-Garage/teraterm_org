@@ -484,7 +484,7 @@ final class LogDialogController: BaseSetupDialogController {
         contentArea.widthAnchor.constraint(equalToConstant: 440).isActive = true
 
         let fnLabel = NSView.makeLabel(TTL("dialog.log.filename"), alignment: .left)
-        filenameField = NSView.makeTextField(value: "", placeholder: "teraterm.log")
+        filenameField = NSView.makeTextField(value: "", placeholder: TTL("dialog.log.placeholder"))
 
         let browseBtn = NSButton(title: "...", target: self, action: #selector(browseFile(_:)))
         browseBtn.translatesAutoresizingMaskIntoConstraints = false
@@ -767,11 +767,11 @@ final class KeyboardSetupDialogController: BaseSetupDialogController {
             kbTypePopup.selectItem(at: idx)
         }
 
-        bsPopup = NSView.makePopUpButton(items: ["BS (0x08)", "DEL (0x7F)"], width: kbPopupWidth)
+        bsPopup = NSView.makePopUpButton(items: [TTL("dialog.keyboardSetup.bsOption"), TTL("dialog.keyboardSetup.delOption")], width: kbPopupWidth)
         bsPopup.selectItem(at: settings.bsKey == 8 ? 0 : 1)
 
         delPopup = NSView.makePopUpButton(
-            items: ["DEL (0x7F)", "BS (0x08)", TTL("dialog.keyboardSetup.deleteEscSeq")],
+            items: [TTL("dialog.keyboardSetup.delOption"), TTL("dialog.keyboardSetup.bsOption"), TTL("dialog.keyboardSetup.deleteEscSeq")],
             width: kbPopupWidth)
         delPopup.selectItem(at: settings.deleteKey == 127 ? 0 : (settings.deleteKey == 8 ? 1 : 2))
 
