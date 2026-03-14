@@ -59,11 +59,15 @@ class TerminalView: NSView {
     // Content inset to avoid titlebar / window rounded corners
     var topInset: CGFloat = 0
 
-    // Left margin following macOS HIG (content should not touch window edge)
-    var leftInset: CGFloat = 4
+    // Horizontal margins following macOS HIG (NSTextView uses 5pt default)
+    var leftInset: CGFloat = 5
+    var rightInset: CGFloat = 5
 
     // Scroll
     private var scrollbackOffset: Int = 0
+
+    // Vertical scroller (shown when scrollback lines exceed visible area)
+    private var verticalScroller: NSScroller!
 
     // IME
     private var markedText: NSMutableAttributedString?
@@ -96,6 +100,15 @@ class TerminalView: NSView {
 
         // Build 256-color palette
         build256ColorPalette()
+
+        // Vertical scroller for scrollback
+        verticalScroller = NSScroller(frame: .zero)
+        verticalScroller.scrollerStyle = .overlay
+        verticalScroller.isEnabled = true
+        verticalScroller.target = self
+        verticalScroller.action = #selector(scrollerAction(_:))
+        verticalScroller.alphaValue = 0  // hidden until needed
+        addSubview(verticalScroller)
 
         updateFont()
         startCursorBlink()
@@ -149,7 +162,7 @@ class TerminalView: NSView {
 
     private func recalculateSize() {
         let availableHeight = bounds.height - topInset
-        let availableWidth = bounds.width - leftInset
+        let availableWidth = bounds.width - leftInset - rightInset
         let newCols = max(1, Int(availableWidth / cellWidth))
         let newRows = max(1, Int(availableHeight / cellHeight))
 
@@ -165,17 +178,73 @@ class TerminalView: NSView {
     }
 
     func preferredSize(columns: Int, rows: Int) -> NSSize {
-        return NSSize(width: CGFloat(columns) * cellWidth + leftInset, height: CGFloat(rows) * cellHeight + topInset)
+        return NSSize(width: CGFloat(columns) * cellWidth + leftInset + rightInset, height: CGFloat(rows) * cellHeight + topInset)
     }
 
     override func setFrameSize(_ newSize: NSSize) {
         super.setFrameSize(newSize)
+        layoutScroller()
         recalculateSize()
     }
 
     override func resize(withOldSuperviewSize oldSize: NSSize) {
         super.resize(withOldSuperviewSize: oldSize)
+        layoutScroller()
         recalculateSize()
+    }
+
+    // MARK: - Vertical Scroller
+
+    private func layoutScroller() {
+        let scrollerWidth = NSScroller.scrollerWidth(for: .regular, scrollerStyle: .overlay)
+        verticalScroller.frame = NSRect(
+            x: bounds.width - scrollerWidth,
+            y: topInset,
+            width: scrollerWidth,
+            height: bounds.height - topInset
+        )
+    }
+
+    /// Synchronize the scroller knob position / proportion with the buffer state.
+    func updateScroller() {
+        guard let buffer = buffer else {
+            verticalScroller.alphaValue = 0
+            return
+        }
+        let scrollbackLines = buffer.totalLines - buffer.height
+        if scrollbackLines <= 0 {
+            verticalScroller.alphaValue = 0
+            return
+        }
+        verticalScroller.alphaValue = 1
+        let proportion = Double(buffer.height) / Double(buffer.totalLines)
+        let position = 1.0 - Double(buffer.scrollOffset) / Double(scrollbackLines)
+        verticalScroller.knobProportion = CGFloat(proportion)
+        verticalScroller.doubleValue = position
+    }
+
+    @objc private func scrollerAction(_ sender: NSScroller) {
+        guard let buffer = buffer else { return }
+        let scrollbackLines = buffer.totalLines - buffer.height
+        guard scrollbackLines > 0 else { return }
+
+        switch sender.hitPart {
+        case .knob, .knobSlot:
+            let newOffset = Int(round((1.0 - sender.doubleValue) * Double(scrollbackLines)))
+            buffer.scrollOffset = max(0, min(newOffset, scrollbackLines))
+        case .decrementLine:
+            buffer.scrollOffset = min(buffer.scrollOffset + 1, scrollbackLines)
+        case .incrementLine:
+            buffer.scrollOffset = max(buffer.scrollOffset - 1, 0)
+        case .decrementPage:
+            buffer.scrollOffset = min(buffer.scrollOffset + buffer.height, scrollbackLines)
+        case .incrementPage:
+            buffer.scrollOffset = max(buffer.scrollOffset - buffer.height, 0)
+        default:
+            break
+        }
+        updateScroller()
+        needsDisplay = true
     }
 
     // MARK: - Drawing (port of vtdisp.c rendering)
@@ -211,6 +280,9 @@ class TerminalView: NSView {
         if let markedText = markedText, markedText.length > 0 {
             drawMarkedText(context: context, buffer: buffer, markedText: markedText)
         }
+
+        // Keep scroller in sync with buffer state
+        updateScroller()
     }
 
     private func drawMarkedText(context: CGContext, buffer: TerminalBuffer, markedText: NSAttributedString) {
@@ -823,6 +895,7 @@ class TerminalView: NSView {
                 } else {
                     buffer.scrollOffset = max(buffer.scrollOffset - lines, 0)
                 }
+                updateScroller()
                 needsDisplay = true
             }
         }
