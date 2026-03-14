@@ -51,15 +51,31 @@ enum DialogLayout {
 
 // MARK: - Localization Helper
 
-/// ローカライズ用バンドルを main.swift と同一ロジックで決定する。
+/// ローカライズ用バンドルとフォールバック辞書を管理する。
 ///
 /// 問題: Bundle.preferredLocalizations は実行時に UserDefaults へ書き込んだ
 /// AppleLanguages を反映しない（次回起動まで効かない）。そのため初回起動時に
 /// システム言語（英語等）が選ばれ、日本語表示されないケースがあった。
 ///
-/// 修正: TeraTermUILanguage 設定値を直接読み、対応する .lproj バンドルを
-/// 明示的にロードする。"Auto" 時のみシステム言語に従う。
-private let _localizedBundle: Bundle = {
+/// 対策:
+/// 1. TeraTermUILanguage 設定値を直接読み、対応する .lproj バンドルを
+///    明示的にロードする。"Auto" 時のみシステム言語に従う。
+/// 2. .lproj バンドルが見つからない場合も NSLocalizedString のロケール
+///    自動選択（＝ Bundle.main / Bundle.module に委ねる暗黙呼び出し）に
+///    フォールバックしない。代わりに .strings ファイルを直接パースした
+///    辞書から引く。これにより「未指定 NSLocalizedString」が存在しなくなる。
+/// 3. NSLocalizedString は本ファイル内の TTL() 経由でのみ使用し、
+///    必ず明示的な .lproj バンドルを渡す。
+
+/// .lproj バンドルの解決結果。
+/// - .bundle: .lproj ディレクトリを Bundle として読み込めた場合
+/// - .dictionary: バンドル解決に失敗し .strings ファイルを直接パースした場合
+private enum LocalizedSource {
+    case bundle(Bundle)
+    case dictionary([String: String])
+}
+
+private let _localizedSource: LocalizedSource = {
     #if SWIFT_PACKAGE
     let module = Bundle.module
     #else
@@ -71,32 +87,81 @@ private let _localizedBundle: Bundle = {
     let langCode: String
     switch savedLanguage {
     case "Auto":
-        // システム言語に従う
         let preferredLangs = Bundle.preferredLocalizations(from: module.localizations)
         langCode = preferredLangs.first ?? "ja"
     case "English":
         langCode = "en"
     default:
-        // "Japanese" およびその他 → 日本語
         langCode = "ja"
     }
 
+    // --- 戦略 1: path(forResource:ofType:) で .lproj を探す ---
     if let path = module.path(forResource: langCode, ofType: "lproj"),
        let bundle = Bundle(path: path) {
-        return bundle
+        return .bundle(bundle)
     }
 
-    // フォールバック: 日本語バンドルを直接試行
-    if let path = module.path(forResource: "ja", ofType: "lproj"),
-       let bundle = Bundle(path: path) {
-        return bundle
+    // --- 戦略 2: bundleURL 直下の .lproj ディレクトリを探す ---
+    let lprojURL = module.bundleURL.appendingPathComponent("\(langCode).lproj")
+    if FileManager.default.fileExists(atPath: lprojURL.path),
+       let bundle = Bundle(url: lprojURL) {
+        return .bundle(bundle)
     }
 
-    return module
+    // --- 戦略 3: デフォルト言語(ja)で再試行 ---
+    if langCode != "ja" {
+        if let path = module.path(forResource: "ja", ofType: "lproj"),
+           let bundle = Bundle(path: path) {
+            return .bundle(bundle)
+        }
+        let jaURL = module.bundleURL.appendingPathComponent("ja.lproj")
+        if FileManager.default.fileExists(atPath: jaURL.path),
+           let bundle = Bundle(url: jaURL) {
+            return .bundle(bundle)
+        }
+    }
+
+    // --- 戦略 4: .strings ファイルを直接パースして辞書化 ---
+    // NSLocalizedString を bundle 未指定で呼ぶことを完全に回避する。
+    let dict = _loadStringsFile(langCode: langCode, module: module)
+        ?? _loadStringsFile(langCode: "ja", module: module)
+    if let dict = dict, !dict.isEmpty {
+        NSLog("[TTL] .lproj bundle not found; using parsed .strings dictionary for '%@'", langCode)
+        return .dictionary(dict)
+    }
+
+    // 全戦略失敗 — ここに到達すべきではない
+    NSLog("[TTL] WARNING: No localization found for '%@'; keys will be returned as-is", langCode)
+    return .dictionary([:])
 }()
 
+/// Localizable.strings ファイルを直接パースして辞書として返す。
+private func _loadStringsFile(langCode: String, module: Bundle) -> [String: String]? {
+    // 候補パスを複数試行
+    let candidates = [
+        module.bundleURL.appendingPathComponent("\(langCode).lproj/Localizable.strings"),
+        module.resourceURL?.appendingPathComponent("\(langCode).lproj/Localizable.strings"),
+    ].compactMap { $0 }
+
+    for url in candidates {
+        if let dict = NSDictionary(contentsOf: url) as? [String: String] {
+            return dict
+        }
+    }
+    return nil
+}
+
+/// ローカライズ済み文字列を返す。
+/// NSLocalizedString は明示的に .lproj バンドルが解決できた場合のみ使用し、
+/// それ以外はパース済み辞書から直接引く。
 func TTL(_ key: String) -> String {
-    return NSLocalizedString(key, bundle: _localizedBundle, comment: "")
+    switch _localizedSource {
+    case .bundle(let bundle):
+        // 明示的な .lproj バンドルなので NSLocalizedString のロケール自動選択は発生しない
+        return bundle.localizedString(forKey: key, value: key, table: nil)
+    case .dictionary(let dict):
+        return dict[key] ?? key
+    }
 }
 
 func TTL(_ key: String, _ args: CVarArg...) -> String {
