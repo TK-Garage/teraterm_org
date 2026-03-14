@@ -519,8 +519,24 @@ class BaseSetupDialogController: NSViewController, NSWindowDelegate {
     let contentArea = NSView()
 
     /// Vertical stack view that fills the content area.
-    /// Subclasses can call `addRow(label:view:)` or add views directly.
-    private(set) var contentStackView: NSStackView!
+    /// Created lazily — only instantiated when subclasses call `addRow()`,
+    /// `addFullWidthView()`, `addFormGrid()`, or `addSectionSpacing()`.
+    /// Subclasses that add views directly to `contentArea` won't create this,
+    /// avoiding conflicting layout constraints.
+    private(set) lazy var contentStackView: NSStackView = {
+        let stack = NSView.createVerticalStack(
+            spacing: DialogLayout.rowSpacing,
+            alignment: .leading
+        )
+        contentArea.addSubview(stack)
+        NSLayoutConstraint.activate([
+            stack.topAnchor.constraint(equalTo: contentArea.topAnchor),
+            stack.leadingAnchor.constraint(equalTo: contentArea.leadingAnchor),
+            stack.trailingAnchor.constraint(equalTo: contentArea.trailingAnchor),
+            stack.bottomAnchor.constraint(equalTo: contentArea.bottomAnchor),
+        ])
+        return stack
+    }()
 
     /// Minimum width for the dialog content area (auto-expands if labels
     /// are longer in another language).
@@ -590,18 +606,10 @@ class BaseSetupDialogController: NSViewController, NSWindowDelegate {
         contentArea.translatesAutoresizingMaskIntoConstraints = false
         container.addSubview(contentArea)
 
-        // Build the content stack view inside the content area
-        contentStackView = NSView.createVerticalStack(
-            spacing: DialogLayout.rowSpacing,
-            alignment: .leading
-        )
-        contentArea.addSubview(contentStackView)
-        NSLayoutConstraint.activate([
-            contentStackView.topAnchor.constraint(equalTo: contentArea.topAnchor),
-            contentStackView.leadingAnchor.constraint(equalTo: contentArea.leadingAnchor),
-            contentStackView.trailingAnchor.constraint(equalTo: contentArea.trailingAnchor),
-            contentStackView.bottomAnchor.constraint(equalTo: contentArea.bottomAnchor),
-        ])
+        // contentStackView is created lazily when subclasses call
+        // addRow() / addFullWidthView() / addFormGrid() / addSectionSpacing().
+        // Subclasses that add views directly to contentArea won't trigger
+        // its creation, avoiding conflicting constraints.
 
         // Minimum width — expands automatically if labels are wider
         let wc = contentArea.widthAnchor.constraint(greaterThanOrEqualToConstant: minimumContentWidth)
