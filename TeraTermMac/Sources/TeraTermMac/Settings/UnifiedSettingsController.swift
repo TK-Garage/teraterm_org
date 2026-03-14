@@ -295,7 +295,7 @@ final class UnifiedSettingsController: NSObject, NSWindowDelegate {
             let item = NSTabViewItem(identifier: tab.rawValue)
             item.label = tab.localizedTitle
             vc.loadViewIfNeeded()
-            item.view = vc.view
+            item.view = wrapForTabView(vc.view)
             tv.addTabViewItem(item)
         }
 
@@ -306,7 +306,7 @@ final class UnifiedSettingsController: NSObject, NSWindowDelegate {
 
             let item = NSTabViewItem(identifier: tab.rawValue)
             item.label = tab.localizedTitle
-            item.view = tc.contentView
+            item.view = wrapForTabView(tc.contentView)
             tv.addTabViewItem(item)
         }
 
@@ -450,6 +450,57 @@ final class UnifiedSettingsController: NSObject, NSWindowDelegate {
         }
     }
 
+    // MARK: - Tab View Helpers
+
+    /// Wrap a content view in a scroll view for use in NSTabView.
+    /// NSTabView manages item views via frame-based layout. If the content
+    /// uses Auto Layout (`translatesAutoresizingMaskIntoConstraints = false`),
+    /// the tab view cannot resize it and content overflows the window.
+    /// This wrapper:
+    ///   1. Uses autoresizing masks so the tab view can set the frame
+    ///   2. Embeds an NSScrollView so tall content is scrollable
+    ///   3. Pins the Auto Layout content width to the scroll view
+    private func wrapForTabView(_ contentView: NSView) -> NSView {
+        let scrollView = NSScrollView()
+        scrollView.translatesAutoresizingMaskIntoConstraints = true
+        scrollView.autoresizingMask = [.width, .height]
+        scrollView.hasVerticalScroller = true
+        scrollView.hasHorizontalScroller = false
+        scrollView.borderType = .noBorder
+        scrollView.drawsBackground = false
+        scrollView.autohidesScrollers = true
+
+        // The document view (flipped so content starts at top)
+        let documentView = FlippedView()
+        documentView.translatesAutoresizingMaskIntoConstraints = false
+
+        // Ensure content uses Auto Layout
+        if contentView.translatesAutoresizingMaskIntoConstraints {
+            contentView.translatesAutoresizingMaskIntoConstraints = false
+        }
+        documentView.addSubview(contentView)
+
+        NSLayoutConstraint.activate([
+            contentView.topAnchor.constraint(equalTo: documentView.topAnchor),
+            contentView.leadingAnchor.constraint(equalTo: documentView.leadingAnchor),
+            contentView.trailingAnchor.constraint(equalTo: documentView.trailingAnchor),
+            contentView.bottomAnchor.constraint(equalTo: documentView.bottomAnchor),
+        ])
+
+        scrollView.documentView = documentView
+
+        // Pin the document view width to the scroll view's clip view
+        // so content never extends horizontally beyond the visible area.
+        // Height is free to grow — the scroll view handles it.
+        if let clipView = scrollView.contentView as? NSClipView {
+            NSLayoutConstraint.activate([
+                documentView.widthAnchor.constraint(equalTo: clipView.widthAnchor),
+            ])
+        }
+
+        return scrollView
+    }
+
     // MARK: - Animated Dismiss
 
     /// フェードアウトアニメーション付きでモーダルを終了する。
@@ -484,5 +535,13 @@ final class UnifiedSettingsController: NSObject, NSWindowDelegate {
             NSWorkspace.shared.open(url)
         }
     }
+}
+
+// MARK: - FlippedView
+
+/// NSView subclass with flipped coordinate system (origin at top-left).
+/// Used as the document view inside NSScrollView so content starts at the top.
+private class FlippedView: NSView {
+    override var isFlipped: Bool { true }
 }
 #endif

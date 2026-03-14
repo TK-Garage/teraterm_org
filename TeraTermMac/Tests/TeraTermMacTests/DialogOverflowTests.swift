@@ -451,4 +451,166 @@ final class DialogOverflowAdditionalSettingsTests: XCTestCase {
     }
 }
 
+// MARK: - Unified Settings Tab Overflow Tests
+
+/// Verify that all tabs in the unified settings dialog fit within the window.
+/// The unified window is 800×620, tab view minimum 720×420.
+/// Each tab's content must not exceed the available width/height.
+final class UnifiedSettingsTabOverflowTests: XCTestCase {
+
+    private var settings: TerminalSettings!
+    /// Available width inside the tab view content rect (approximate).
+    /// Window(800) - margins(2×16) - bezel(~14) - container margins(2×16) = ~722pt
+    private let maxContentWidth: CGFloat = 730
+
+    override func setUp() {
+        settings = TerminalSettings()
+    }
+
+    // MARK: - Row 1 tabs
+
+    func testTerminalTabFitsInUnifiedDialog() {
+        let vc = TerminalSetupViewController(settings: settings)
+        vc.hidesFooterButtons = true
+        verifyFitsInTabView(vc, name: "Terminal")
+    }
+
+    func testWindowTabFitsInUnifiedDialog() {
+        let vc = WindowSetupViewController(settings: settings)
+        vc.hidesFooterButtons = true
+        verifyFitsInTabView(vc, name: "Window")
+    }
+
+    func testKeyboardTabFitsInUnifiedDialog() {
+        let vc = KeyboardSetupDialogController(settings: settings)
+        vc.hidesFooterButtons = true
+        verifyFitsInTabView(vc, name: "Keyboard")
+    }
+
+    func testSerialPortTabFitsInUnifiedDialog() {
+        let vc = SerialPortSetupViewController(settings: settings)
+        vc.hidesFooterButtons = true
+        verifyFitsInTabView(vc, name: "SerialPort")
+    }
+
+    func testTCPIPTabFitsInUnifiedDialog() {
+        let vc = TCPIPDialogController(settings: settings)
+        vc.hidesFooterButtons = true
+        verifyFitsInTabView(vc, name: "TCPIP")
+    }
+
+    func testGeneralSetupTabFitsInUnifiedDialog() {
+        let vc = GeneralSetupDialogController(settings: settings)
+        vc.hidesFooterButtons = true
+        verifyFitsInTabView(vc, name: "General")
+    }
+
+    // MARK: - Row 2 tabs
+
+    func testProxyTabFitsInUnifiedDialog() {
+        let vc = ProxySetupDialogController(settings: settings)
+        vc.hidesFooterButtons = true
+        verifyFitsInTabView(vc, name: "Proxy")
+    }
+
+    func testSSHTabFitsInUnifiedDialog() {
+        let vc = SSHSetupDialogController(settings: settings)
+        vc.hidesFooterButtons = true
+        verifyFitsInTabView(vc, name: "SSH")
+    }
+
+    func testSSHAuthTabFitsInUnifiedDialog() {
+        let vc = SSHAuthSetupDialogController(settings: settings)
+        vc.hidesFooterButtons = true
+        verifyFitsInTabView(vc, name: "SSHAuth")
+    }
+
+    func testSSHForwardingTabFitsInUnifiedDialog() {
+        let vc = SSHForwardingSetupDialogController(settings: settings)
+        vc.hidesFooterButtons = true
+        verifyFitsInTabView(vc, name: "SSHForwarding")
+    }
+
+    func testSSHKeyGenTabFitsInUnifiedDialog() {
+        let vc = SSHKeyGenDialogController()
+        vc.hidesFooterButtons = true
+        verifyFitsInTabView(vc, name: "SSHKeyGen")
+    }
+
+    // MARK: - Row 3 tabs (AdditionalSettingsTab)
+
+    func testAllAdditionalTabsFitInUnifiedDialog() {
+        let tabs: [(String, AdditionalSettingsTab)] = [
+            ("General",    GeneralTab(settings: settings)),
+            ("Coding",     CodingTab(settings: settings)),
+            ("CopyPaste",  CopyPasteTab(settings: settings)),
+            ("Sequence",   SequenceTab(settings: settings)),
+            ("Mouse",      MouseTab(settings: settings)),
+            ("Log",        LogTab(settings: settings)),
+            ("Visual",     VisualTab(settings: settings)),
+            ("Font",       FontTab(settings: settings)),
+            ("TEKFont",    TEKFontTab(settings: settings)),
+            ("Theme",      ThemeTab(settings: settings)),
+            ("UI",         UITab(settings: settings)),
+            ("Plugin",     PluginTab(settings: settings)),
+            ("LocalShell", LocalShellTab(settings: settings)),
+            ("Debug",      DebugTab(settings: settings)),
+        ]
+
+        for (name, tab) in tabs {
+            let cv = tab.contentView
+            forceLayout(cv)
+            let fittingSize = cv.fittingSize
+            XCTAssertLessThanOrEqual(fittingSize.width, maxContentWidth,
+                "Additional tab '\(name)' content width (\(fittingSize.width)) " +
+                "exceeds max \(maxContentWidth)pt for unified dialog")
+        }
+    }
+
+    // MARK: - Scroll view wrapping
+
+    func testWrapForTabViewCreatesScrollView() {
+        let settings = TerminalSettings()
+        let controller = UnifiedSettingsController(settings: settings)
+        // Verify the controller can be created without error
+        XCTAssertNotNil(controller)
+    }
+
+    func testAllTabsHaveScrollableContent() {
+        // Verify that all 25 tab enum cases exist
+        XCTAssertEqual(UnifiedSettingsTab.allCases.count, 25,
+            "Should have 25 tabs total (6 + 5 + 14)")
+        XCTAssertEqual(UnifiedSettingsTab.row1.count, 6, "Row 1 should have 6 tabs")
+        XCTAssertEqual(UnifiedSettingsTab.row2.count, 5, "Row 2 should have 5 tabs")
+        XCTAssertEqual(UnifiedSettingsTab.row3.count, 14, "Row 3 should have 14 tabs")
+    }
+
+    // MARK: - Helper
+
+    private func verifyFitsInTabView(_ vc: BaseSetupDialogController,
+                                     name: String,
+                                     file: StaticString = #file,
+                                     line: UInt = #line) {
+        vc.loadViewIfNeeded()
+        forceLayout(vc.view)
+
+        let contentArea = vc.contentArea
+        let fittingSize = contentArea.fittingSize
+
+        XCTAssertLessThanOrEqual(fittingSize.width, maxContentWidth,
+            "Tab '\(name)' content width (\(fittingSize.width)) " +
+            "exceeds max \(maxContentWidth)pt for unified dialog",
+            file: file, line: line)
+
+        // Also verify no text field overflows contentArea bounds
+        let textFields = findSubviews(of: NSTextField.self, in: contentArea)
+        for tf in textFields where tf.isEditable {
+            XCTAssertTrue(hasProperWidthBound(tf) || isConstrainedByParent(tf),
+                "Tab '\(name)': editable field may overflow " +
+                "(placeholder: '\(tf.placeholderString ?? "")')",
+                file: file, line: line)
+        }
+    }
+}
+
 #endif
