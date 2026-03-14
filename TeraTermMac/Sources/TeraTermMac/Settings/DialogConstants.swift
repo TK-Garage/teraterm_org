@@ -51,9 +51,14 @@ enum DialogLayout {
 
 // MARK: - Localization Helper
 
-/// Bundle.module はメインアプリバンドルと異なるため、macOS のロケール解決が
-/// 正しく動作しない場合がある。明示的に言語に対応する .lproj バンドルを
-/// 読み込むことで確実にローカライズされた文字列を返す。
+/// ローカライズ用バンドルを main.swift と同一ロジックで決定する。
+///
+/// 問題: Bundle.preferredLocalizations は実行時に UserDefaults へ書き込んだ
+/// AppleLanguages を反映しない（次回起動まで効かない）。そのため初回起動時に
+/// システム言語（英語等）が選ばれ、日本語表示されないケースがあった。
+///
+/// 修正: TeraTermUILanguage 設定値を直接読み、対応する .lproj バンドルを
+/// 明示的にロードする。"Auto" 時のみシステム言語に従う。
 private let _localizedBundle: Bundle = {
     #if SWIFT_PACKAGE
     let module = Bundle.module
@@ -61,10 +66,22 @@ private let _localizedBundle: Bundle = {
     let module = Bundle.main
     #endif
 
-    // UserDefaults の AppleLanguages（main.swift で設定済み）から優先言語を取得
-    let preferredLangs = Bundle.preferredLocalizations(from: module.localizations)
-    if let preferred = preferredLangs.first,
-       let path = module.path(forResource: preferred, ofType: "lproj"),
+    // main.swift と同一ロジックで言語コードを決定
+    let savedLanguage = UserDefaults.standard.string(forKey: "TeraTermUILanguage") ?? "Japanese"
+    let langCode: String
+    switch savedLanguage {
+    case "Auto":
+        // システム言語に従う
+        let preferredLangs = Bundle.preferredLocalizations(from: module.localizations)
+        langCode = preferredLangs.first ?? "ja"
+    case "English":
+        langCode = "en"
+    default:
+        // "Japanese" およびその他 → 日本語
+        langCode = "ja"
+    }
+
+    if let path = module.path(forResource: langCode, ofType: "lproj"),
        let bundle = Bundle(path: path) {
         return bundle
     }

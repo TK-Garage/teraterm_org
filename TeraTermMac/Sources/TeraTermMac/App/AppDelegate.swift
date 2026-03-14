@@ -1083,7 +1083,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         let configManager = ConfigPersistenceManager()
         let dir = configManager.appSupportDirectory
         // Ensure directory exists before opening
-        _ = try? configManager.ensureDirectory()
+        try? configManager.ensureDirectory()
         NSWorkspace.shared.open(dir)
     }
 
