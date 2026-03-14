@@ -283,7 +283,8 @@ class WindowSetupViewController: BaseSetupDialogController {
         ])
 
         NSLayoutConstraint.activate([
-            colorBox.topAnchor.constraint(equalTo: cursorBox.bottomAnchor, constant: DialogLayout.innerMargin),
+            colorBox.topAnchor.constraint(greaterThanOrEqualTo: cursorBox.bottomAnchor, constant: DialogLayout.innerMargin),
+            colorBox.topAnchor.constraint(greaterThanOrEqualTo: checkStack.bottomAnchor, constant: DialogLayout.innerMargin),
             colorBox.leadingAnchor.constraint(equalTo: contentArea.leadingAnchor),
             colorBox.trailingAnchor.constraint(equalTo: contentArea.trailingAnchor),
         ])
