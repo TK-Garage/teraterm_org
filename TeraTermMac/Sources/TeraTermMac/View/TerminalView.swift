@@ -452,12 +452,14 @@ class TerminalView: NSView {
     /// Resolve foreground and background colors for a cell.
     ///
     /// Port of GetDrawAttr() in vtdisp.c.  Priority order:
+    ///  0. `useTextColor == true` → force theme fg/bg, ignore SGR/ANSI.
     ///  1. Selection overrides everything.
     ///  2. Attribute colors (URL > Underline > Bold > Blink > Normal/Reverse)
     ///     — only applied when the corresponding enable*Color flag is true.
-    ///  3. ANSI palette override — only when `enableANSIColor` is true AND
-    ///     the cell carries an explicit ANSI fg/bg.
+    ///  3. ANSI palette override — only when `enableANSIColor == true` AND
+    ///     `useTextColor == false` AND the cell carries an explicit ANSI fg/bg.
     ///  4. Reverse swaps fg/bg (XOR with DECSCNM reverseVideo).
+    ///  5. Dim reduces alpha.
     func resolveColors(_ cell: BufferCharacter, inSelection: Bool) -> (fg: NSColor, bg: NSColor) {
         // --- selection shortcut ---
         if inSelection {
@@ -477,49 +479,38 @@ class TerminalView: NSView {
             return (fg: bg, bg: bg)
         }
 
-        // --- Step 1: attribute-based base colors (port of vtdisp.c priority) ---
+        // --- Step 1: base theme colors + reverse handling ---
         var textColor: NSColor
         var backColor: NSColor
 
-        // Determine which attribute color to use (if any).
-        // Priority: URL > Underline > Bold > Blink > (none)
-        let attrColor: TerminalColor? = {
-            if settings.enableURLColor && attrs.contains(.url) { return settings.attrColorURL }
-            if settings.enableUnderlineColor && attrs.contains(.underline) { return settings.attrColorUnderline }
-            if settings.enableBoldColor && attrs.contains(.bold) { return settings.attrColorBold }
-            if settings.enableBlinkColor && attrs.contains(.blink) { return settings.attrColorBlink }
-            return nil
-        }()
-
-        let normalBG = nsColor(from: settings.colorTheme.background)
-
-        if let ac = attrColor {
-            if !reversed {
-                textColor = nsColor(from: ac)
-                backColor = normalBG
-            } else {
-                textColor = normalBG
-                backColor = nsColor(from: ac)
-            }
+        if !reversed {
+            textColor = nsColor(from: settings.colorTheme.foreground)
+            backColor = nsColor(from: settings.colorTheme.background)
         } else {
-            // No special attribute — normal or reverse color
-            if !reversed {
-                textColor = nsColor(from: settings.colorTheme.foreground)
-                backColor = nsColor(from: settings.colorTheme.background)
+            if settings.enableReverseColor {
+                textColor = nsColor(from: settings.attrColorReverse)
+                backColor = nsColor(from: settings.colorTheme.foreground)
             } else {
-                if settings.enableReverseColor {
-                    textColor = nsColor(from: settings.attrColorReverse)
-                    backColor = nsColor(from: settings.colorTheme.foreground)
-                } else {
-                    // Simple swap
-                    textColor = nsColor(from: settings.colorTheme.background)
-                    backColor = nsColor(from: settings.colorTheme.foreground)
-                }
+                textColor = nsColor(from: settings.colorTheme.background)
+                backColor = nsColor(from: settings.colorTheme.foreground)
             }
         }
 
-        // --- Step 2: ANSI color override (only when enableANSIColor) ---
-        if settings.enableANSIColor {
+        // --- Step 2: attribute color override (URL > Underline > Bold > Blink) ---
+        if let ac = resolveAttributeColor(attrs) {
+            if !reversed {
+                textColor = nsColor(from: ac)
+                backColor = nsColor(from: settings.colorTheme.background)
+            } else {
+                textColor = nsColor(from: settings.colorTheme.background)
+                backColor = nsColor(from: ac)
+            }
+        }
+
+        // --- Step 3: ANSI / SGR color override ---
+        // Skipped entirely when useTextColor is on (forces theme colors) or
+        // when enableANSIColor is off (disables ANSI palette).
+        if !settings.useTextColor && settings.enableANSIColor {
             // Foreground ANSI override
             if color.isFgRGB {
                 let c = nsColor(r: color.fgR, g: color.fgG, b: color.fgB)
@@ -534,20 +525,20 @@ class TerminalView: NSView {
                 if !reversed { textColor = c } else { backColor = c }
             }
 
-            // Background ANSI override
-            if color.isBgRGB {
-                let c = nsColor(r: color.bgR, g: color.bgG, b: color.bgB)
-                if !reversed { backColor = c } else { textColor = c }
-            } else if color.isBg256 || !color.isBgDefault {
-                let idx = Int(color.background)
-                let c = palette256Color(idx)
-                if !reversed { backColor = c } else { textColor = c }
+            // Background ANSI override (skip when useStandardBGColor forces theme bg)
+            if !settings.useStandardBGColor {
+                if color.isBgRGB {
+                    let c = nsColor(r: color.bgR, g: color.bgG, b: color.bgB)
+                    if !reversed { backColor = c } else { textColor = c }
+                } else if color.isBg256 || !color.isBgDefault {
+                    let idx = Int(color.background)
+                    let c = palette256Color(idx)
+                    if !reversed { backColor = c } else { textColor = c }
+                }
             }
         }
-        // When enableANSIColor == false, ANSI palette indices are ignored
-        // and the attribute / theme colors from Step 1 are used as-is.
 
-        // --- Step 3: dim attribute ---
+        // --- Step 4: dim attribute ---
         if attrs.contains(.dim) {
             textColor = textColor.withAlphaComponent(0.5)
         }
@@ -555,10 +546,24 @@ class TerminalView: NSView {
         return (fg: textColor, bg: backColor)
     }
 
+    /// Determine the attribute-specific foreground color, if any.
+    /// Priority: URL > Underline > Bold > Blink > nil
+    /// Separated for future extensibility (e.g. adding strikethrough color).
+    private func resolveAttributeColor(_ attrs: CharacterAttributes) -> TerminalColor? {
+        if settings.enableURLColor       && attrs.contains(.url)       { return settings.attrColorURL }
+        if settings.enableUnderlineColor && attrs.contains(.underline) { return settings.attrColorUnderline }
+        if settings.enableBoldColor      && attrs.contains(.bold)      { return settings.attrColorBold }
+        if settings.enableBlinkColor     && attrs.contains(.blink)     { return settings.attrColorBlink }
+        return nil
+    }
+
     /// Raw background color without attribute/ANSI logic (used for invisible text).
     private func resolveRawBackgroundColor(_ color: ColorIndex, reversed: Bool) -> NSColor {
+        // useTextColor → always theme colors, no ANSI
+        let ansiAllowed = !settings.useTextColor && settings.enableANSIColor
+
         if reversed {
-            if settings.enableANSIColor {
+            if ansiAllowed {
                 if color.isFgRGB {
                     return nsColor(r: color.fgR, g: color.fgG, b: color.fgB)
                 } else if color.isFg256 || !color.isFgDefault {
@@ -567,7 +572,7 @@ class TerminalView: NSView {
             }
             return nsColor(from: settings.colorTheme.foreground)
         }
-        if settings.enableANSIColor {
+        if ansiAllowed && !settings.useStandardBGColor {
             if color.isBgRGB {
                 return nsColor(r: color.bgR, g: color.bgG, b: color.bgB)
             } else if color.isBg256 || !color.isBgDefault {

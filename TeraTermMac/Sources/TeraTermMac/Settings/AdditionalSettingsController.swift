@@ -1087,6 +1087,7 @@ final class VisualTab: AdditionalSettingsTab {
     private var enableURLColorCheck: NSButton!
     private var enableURLUnderlineCheck: NSButton!
     private var enableANSIColorCheck: NSButton!
+    private var useTextColorCheck: NSButton!
     private var killFocusCursorCheck: NSButton!
     private var pcBoldColorCheck: NSButton!
 
@@ -1244,13 +1245,16 @@ final class VisualTab: AdditionalSettingsTab {
             TTL("dialog.visual.enableURLUnderline"), checked: s.enableURLUnderline)
         enableANSIColorCheck = NSView.makeCheckbox(
             TTL("dialog.visual.enableANSIColor"), checked: s.enableANSIColor)
+        useTextColorCheck = NSView.makeCheckbox(
+            TTL("dialog.visual.useTextColor"), checked: s.useTextColor)
 
         let acStack = NSStackView(views: [
             enableBoldColorCheck, enableBoldFontCheck,
             enableBlinkColorCheck, enableReverseColorCheck,
             enableUnderlineColorCheck, enableUnderlineDecorationCheck,
             enableURLColorCheck, enableURLUnderlineCheck,
-            enableANSIColorCheck
+            enableANSIColorCheck,
+            useTextColorCheck
         ])
         acStack.translatesAutoresizingMaskIntoConstraints = false
         acStack.orientation = .vertical
@@ -1379,6 +1383,7 @@ final class VisualTab: AdditionalSettingsTab {
         s.enableURLColor = enableURLColorCheck.state == .on
         s.enableURLUnderline = enableURLUnderlineCheck.state == .on
         s.enableANSIColor = enableANSIColorCheck.state == .on
+        s.useTextColor = useTextColorCheck.state == .on
 
         for i in 0..<min(16, colorWells.count) {
             let c = colorWells[i].color

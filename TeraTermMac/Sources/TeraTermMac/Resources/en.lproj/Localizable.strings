@@ -586,6 +586,7 @@
 "dialog.visual.enableURLColor" = "Enable URL attribute color";
 "dialog.visual.enableURLUnderline" = "Add underline to URL strings";
 "dialog.visual.enableANSIColor" = "Enable ANSI color";
+"dialog.visual.useTextColor" = "Use text color (ignore SGR/ANSI colors)";
 "dialog.visual.flickerlessMove" = "Disable theme during window move/resize";
 
 /* Additional Settings - Font */

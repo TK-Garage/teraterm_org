@@ -319,5 +319,79 @@ final class ColorResolutionTests: XCTestCase {
         let normalRed = view.settings.colorTheme.ansiColors[1]
         assertColorEqual(fg, tc(normalRed.r, normalRed.g, normalRed.b))
     }
+
+    // MARK: - useTextColor
+
+    func testUseTextColor_IgnoresANSIForeground() {
+        view.settings.useTextColor = true
+        view.settings.enableANSIColor = true
+        let cell = makeCell(fgIndex: 2) // ANSI green — should be ignored
+        let (fg, _) = view.resolveColors(cell, inSelection: false)
+        assertColorEqual(fg, tc(view.settings.colorTheme.foreground.r,
+                                view.settings.colorTheme.foreground.g,
+                                view.settings.colorTheme.foreground.b))
+    }
+
+    func testUseTextColor_IgnoresANSIBackground() {
+        view.settings.useTextColor = true
+        view.settings.enableANSIColor = true
+        let cell = makeCell(bgIndex: 4) // ANSI blue BG — should be ignored
+        let (_, bg) = view.resolveColors(cell, inSelection: false)
+        assertColorEqual(bg, tc(view.settings.colorTheme.background.r,
+                                view.settings.colorTheme.background.g,
+                                view.settings.colorTheme.background.b))
+    }
+
+    func testUseTextColor_IgnoresRGBTrueColor() {
+        view.settings.useTextColor = true
+        view.settings.enableANSIColor = true
+        let cell = makeCell(fgRGB: (128, 64, 32))
+        let (fg, _) = view.resolveColors(cell, inSelection: false)
+        assertColorEqual(fg, tc(view.settings.colorTheme.foreground.r,
+                                view.settings.colorTheme.foreground.g,
+                                view.settings.colorTheme.foreground.b))
+    }
+
+    func testUseTextColor_SelectionStillWorks() {
+        view.settings.useTextColor = true
+        view.settings.enableANSIColor = true
+        let cell = makeCell(fgIndex: 2)
+        let (fg, bg) = view.resolveColors(cell, inSelection: true)
+        assertColorEqual(fg, tc(view.settings.colorTheme.selectionForeground.r,
+                                view.settings.colorTheme.selectionForeground.g,
+                                view.settings.colorTheme.selectionForeground.b))
+        assertColorEqual(bg, tc(view.settings.colorTheme.selectionBackground.r,
+                                view.settings.colorTheme.selectionBackground.g,
+                                view.settings.colorTheme.selectionBackground.b))
+    }
+
+    func testUseTextColor_ReverseStillWorks() {
+        view.settings.useTextColor = true
+        view.settings.enableReverseColor = false
+        view.settings.enableANSIColor = true
+        view.modes.reverseVideo = false
+        let cell = makeCell(attrs: .reverse, fgIndex: 2)
+        let (fg, bg) = view.resolveColors(cell, inSelection: false)
+        // Reversed: fg gets background color, bg gets foreground color
+        // ANSI colors ignored due to useTextColor
+        assertColorEqual(fg, tc(view.settings.colorTheme.background.r,
+                                view.settings.colorTheme.background.g,
+                                view.settings.colorTheme.background.b))
+        assertColorEqual(bg, tc(view.settings.colorTheme.foreground.r,
+                                view.settings.colorTheme.foreground.g,
+                                view.settings.colorTheme.foreground.b))
+    }
+
+    func testUseTextColor_AttributeColorStillApplies() {
+        view.settings.useTextColor = true
+        view.settings.enableBoldColor = true
+        view.settings.enableANSIColor = true
+        let cell = makeCell(attrs: .bold, fgIndex: 2) // Bold + ANSI green
+        let (fg, _) = view.resolveColors(cell, inSelection: false)
+        // Attribute color (bold) should still apply, but ANSI green is ignored
+        assertColorEqual(fg, tc(view.settings.attrColorBold.r,
+                                view.settings.attrColorBold.g,
+                                view.settings.attrColorBold.b))
+    }
 }
 #endif

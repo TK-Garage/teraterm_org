@@ -586,6 +586,7 @@
 "dialog.visual.enableURLColor" = "URL属性色を有効にする";
 "dialog.visual.enableURLUnderline" = "URL文字列に下線を付加する";
 "dialog.visual.enableANSIColor" = "ANSIカラーを有効にする";
+"dialog.visual.useTextColor" = "テキスト色を使用 (SGR/ANSIカラーを無視)";
 "dialog.visual.flickerlessMove" = "ウインドウ移動/リサイズ時テーマを一時的に無効にする";
 
 /* Additional Settings - Font */

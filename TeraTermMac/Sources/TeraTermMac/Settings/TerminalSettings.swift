@@ -595,6 +595,7 @@ class TerminalSettings: Codable {
     var joinSplitURL: Bool = false                // Join split URLs across lines
     var joinSplitURLIgnoreEOLChar: String = "\\\\"  // EOL char to ignore when joining URLs
     var enableANSIColor: Bool = true
+    var useTextColor: Bool = false            // Force theme fg/bg, ignore SGR/ANSI colors
     var fontRenderingQuality: Int = 0  // 0=Default, 1=AntiAlias, 2=Subpixel
 
     // Window extended settings (port of IDD_WINDLG)
