@@ -1754,8 +1754,10 @@ final class SSHKeyGenDialogController: BaseSetupDialogController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        okButton.title = TTL("dialog.sshKeyGen.generate")
-        cancelButton.title = TTL("Cancel")
+        if !hidesFooterButtons {
+            okButton.title = TTL("dialog.sshKeyGen.generate")
+            cancelButton.title = TTL("Cancel")
+        }
         setupControls()
     }
 
@@ -1835,7 +1837,18 @@ final class SSHKeyGenDialogController: BaseSetupDialogController {
         saveRow.spacing = DialogLayout.buttonSpacing
 
         // ── Main stack ──
-        let mainStack = NSStackView(views: [keyTypeBox, grid, progressLabel, saveRow])
+        var stackItems: [NSView] = [keyTypeBox, grid]
+
+        // Generate button (only when embedded — standalone uses footer OK button)
+        if hidesFooterButtons {
+            let generateButton = NSView.makePushButton(TTL("dialog.sshKeyGen.generate"))
+            generateButton.target = self
+            generateButton.action = #selector(generateKeyAction(_:))
+            stackItems.append(generateButton)
+        }
+
+        stackItems.append(contentsOf: [progressLabel, saveRow])
+        let mainStack = NSStackView(views: stackItems)
         mainStack.translatesAutoresizingMaskIntoConstraints = false
         mainStack.orientation = .vertical
         mainStack.alignment = .leading
@@ -1853,7 +1866,14 @@ final class SSHKeyGenDialogController: BaseSetupDialogController {
     }
 
     override func applySettings() {
-        // Generate key using ssh-keygen
+        // Key generation is an action, not a settings change.
+        // When embedded in the unified settings dialog (hidesFooterButtons),
+        // do nothing — the user generates keys via the dedicated Generate button.
+        guard !hidesFooterButtons else { return }
+        generateKey()
+    }
+
+    private func generateKey() {
         let passphrase = passphraseField.stringValue
         let confirm = confirmField.stringValue
 
@@ -1928,6 +1948,10 @@ final class SSHKeyGenDialogController: BaseSetupDialogController {
                 }
             }
         }
+    }
+
+    @objc private func generateKeyAction(_ sender: Any?) {
+        generateKey()
     }
 
     private func sshKeygenType() -> String {

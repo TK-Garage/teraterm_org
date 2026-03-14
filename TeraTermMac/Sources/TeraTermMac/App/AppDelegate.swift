@@ -505,7 +505,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
 
     @objc func showLogDialog(_ sender: Any?) {
         guard let wc = activeWindowController, let win = wc.window else { return }
-        let vc = LogDialogController()
+        let vc = LogDialogController(settings: wc.settings)
         vc.okHandler = { [weak wc, weak vc] in
             guard let result = vc?.result, let wc = wc else { return }
             var options = LogOptions.from(wc.settings)

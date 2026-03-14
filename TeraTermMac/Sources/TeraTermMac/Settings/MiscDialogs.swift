@@ -467,7 +467,11 @@ final class LogDialogController: BaseSetupDialogController {
 
     private(set) var result: Result?
 
-    init() {
+    /// Settings used to pre-populate dialog controls.
+    private let settings: TerminalSettings?
+
+    init(settings: TerminalSettings? = nil) {
+        self.settings = settings
         super.init(nibName: nil, bundle: nil)
         self.title = TTL("dialog.log.title")
     }
@@ -483,7 +487,8 @@ final class LogDialogController: BaseSetupDialogController {
         setDialogContentWidth(440)
 
         let fnLabel = NSView.makeLabel(TTL("dialog.log.filename"), alignment: .left)
-        filenameField = NSView.makeTextField(value: "", placeholder: TTL("dialog.log.placeholder"))
+        let defaultPath = settings.map { TerminalLogger.defaultLogPath(settings: $0) } ?? ""
+        filenameField = NSView.makeTextField(value: defaultPath, placeholder: TTL("dialog.log.placeholder"))
 
         let browseBtn = NSButton(title: "...", target: self, action: #selector(browseFile(_:)))
         browseBtn.translatesAutoresizingMaskIntoConstraints = false
@@ -497,11 +502,13 @@ final class LogDialogController: BaseSetupDialogController {
 
         // Write mode
         let modeBox = NSView.makeGroupBox(title: TTL("dialog.log.writeMode"))
+        let appendDefault = settings?.logAppend ?? false
         newRadio = NSView.makeRadioButton(TTL("dialog.log.new"), tag: 0)
-        newRadio.state = .on
+        newRadio.state = appendDefault ? .off : .on
         newRadio.target = self
         newRadio.action = #selector(writeModeChanged(_:))
         appendRadio = NSView.makeRadioButton(TTL("dialog.log.appendMode"), tag: 1)
+        appendRadio.state = appendDefault ? .on : .off
         appendRadio.target = self
         appendRadio.action = #selector(writeModeChanged(_:))
         let modeStack = NSStackView(views: [newRadio, appendRadio])
@@ -537,8 +544,8 @@ final class LogDialogController: BaseSetupDialogController {
             formatStack.bottomAnchor.constraint(equalTo: fc.bottomAnchor, constant: -8),
         ])
 
-        timestampCheck = NSView.makeCheckbox(TTL("dialog.log.timestampOption"))
-        plainTextCheck = NSView.makeCheckbox(TTL("dialog.log.plainTextOption"), checked: true)
+        timestampCheck = NSView.makeCheckbox(TTL("dialog.log.timestampOption"), checked: settings?.logTimestamp ?? false)
+        plainTextCheck = NSView.makeCheckbox(TTL("dialog.log.plainTextOption"), checked: settings?.logPlainText ?? true)
 
         let stack = NSStackView(views: [fnLabel, fnRow, modeBox, formatBox, timestampCheck, plainTextCheck])
         stack.translatesAutoresizingMaskIntoConstraints = false
