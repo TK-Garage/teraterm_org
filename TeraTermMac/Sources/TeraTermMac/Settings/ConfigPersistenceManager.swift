@@ -394,7 +394,7 @@ struct TeraTermConfig {
         s.localEcho = localEcho
 
         // ── Cursor ──
-        s.cursorShape = cursorShape
+        s.cursorShape = CursorShape(rawValue: cursorShape) ?? .block
         s.cursorBlink = cursorBlink
         s.killFocusCursor = killFocusCursor
 
@@ -440,7 +440,7 @@ struct TeraTermConfig {
 
         // ── Font ──
         s.fontName = fontName
-        s.fontSize = fontSize
+        s.fontSize = Double(fontSize)
         s.enableBoldFont = enableBoldFont
         s.enableURLUnderline = enableURLUnderline
         s.enableUnderlineDecoration = enableUnderlineDecoration
