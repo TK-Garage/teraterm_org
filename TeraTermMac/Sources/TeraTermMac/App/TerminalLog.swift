@@ -312,6 +312,9 @@ class TerminalLogger {
             case .oscString:
                 if byte == 0x07 || byte == 0x9C {
                     escapeState = .normal
+                } else if byte == 0x1B {
+                    // ESC inside OSC — likely start of two-byte ST (ESC \)
+                    escapeState = .escape
                 }
             }
         }

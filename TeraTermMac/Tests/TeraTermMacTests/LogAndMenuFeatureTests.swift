@@ -190,6 +190,66 @@ final class TerminalLoggerStateTests: XCTestCase {
         XCTAssertFalse(data?.starts(with: [0xEF, 0xBB, 0xBF]) ?? true,
             "Log file should NOT start with BOM by default")
     }
+
+    // MARK: - Timestamp Tests
+
+    func testTimestampOnEveryLine() {
+        let opts = LogOptions(addTimestamp: true, plainText: true)
+        let logger = TerminalLogger(options: opts)
+        let path = tempPath("timestamp_multi.log")
+        _ = logger.startLogging(to: path, options: opts)
+
+        // Log multi-line data
+        logger.logData(Data("line1\r\nline2\r\nline3\r\n".utf8))
+        logger.stopLogging()
+
+        let content = try? String(contentsOfFile: path, encoding: .utf8)
+        XCTAssertNotNil(content)
+
+        // Split into lines and check non-header content lines have timestamps
+        let lines = content!.components(separatedBy: "\n").filter { !$0.isEmpty }
+        // Skip header ("=== Tera Term Mac Log Start ...") and footer
+        let dataLines = lines.filter { !$0.contains("=== Tera Term Mac Log") }
+        XCTAssertGreaterThanOrEqual(dataLines.count, 3,
+            "Should have at least 3 data lines")
+        for line in dataLines {
+            XCTAssertTrue(line.contains("[") && line.contains("]"),
+                "Each line should have a timestamp bracket: \(line)")
+        }
+    }
+
+    func testTimestampAfterOSCWithEscBackslashTerminator() {
+        let opts = LogOptions(addTimestamp: true, plainText: true)
+        let logger = TerminalLogger(options: opts)
+        let path = tempPath("timestamp_osc.log")
+        _ = logger.startLogging(to: path, options: opts)
+
+        // OSC sequence terminated with ESC \ (two-byte ST), then normal text
+        var data = Data()
+        data.append(contentsOf: [0x1B, 0x5D])           // ESC ] (OSC start)
+        data.append(contentsOf: "0;window title".utf8)   // OSC payload
+        data.append(contentsOf: [0x1B, 0x5C])            // ESC \ (ST terminator)
+        data.append(contentsOf: "line1\r\n".utf8)
+        data.append(contentsOf: "line2\r\n".utf8)
+        logger.logData(data)
+        logger.stopLogging()
+
+        let content = try? String(contentsOfFile: path, encoding: .utf8)
+        XCTAssertNotNil(content)
+
+        // Both line1 and line2 should appear in the log (not consumed by OSC)
+        XCTAssertTrue(content!.contains("line1"), "line1 should not be consumed by OSC parser")
+        XCTAssertTrue(content!.contains("line2"), "line2 should not be consumed by OSC parser")
+
+        // Both lines should have timestamps
+        let lines = content!.components(separatedBy: "\n").filter { !$0.isEmpty }
+        let dataLines = lines.filter { $0.contains("line") }
+        XCTAssertEqual(dataLines.count, 2, "Should have 2 data lines")
+        for line in dataLines {
+            XCTAssertTrue(line.contains("[") && line.contains("]"),
+                "Each line should have a timestamp: \(line)")
+        }
+    }
 }
 
 // MARK: - LogProgressPanel Tests
