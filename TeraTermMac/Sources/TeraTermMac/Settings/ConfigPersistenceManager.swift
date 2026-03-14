@@ -553,10 +553,13 @@ class ConfigPersistenceManager {
 
     /// Load configuration from `TERATERM.INI`.
     ///
-    /// - If the file does not exist, creates a fresh one with defaults.
+    /// - If the file does not exist, creates a fresh one with comments and defaults.
+    /// - If the file exists but cannot be read, renames it with a date prefix
+    ///   and creates a fresh default file.
     /// - If the file exists but has no version or an outdated version,
-    ///   deletes it and recreates with defaults.
+    ///   renames it with a date prefix and recreates with defaults.
     /// - Otherwise reads and returns the stored configuration.
+    ///   Any settings missing from the file use their default values.
     func loadConfig() -> TeraTermConfig {
         do {
             try ensureDirectory()
@@ -569,9 +572,9 @@ class ConfigPersistenceManager {
         let path = iniFileURL
 
         guard fm.fileExists(atPath: path.path) else {
-            // First launch – create defaults
+            // First launch – create defaults with comments
             let config = TeraTermConfig()
-            saveConfig(config)
+            saveDefaultConfigWithComments(config)
             return config
         }
 
@@ -580,11 +583,11 @@ class ConfigPersistenceManager {
         // for compatibility with Windows-originated TERATERM.INI files.
         guard let data = fm.contents(atPath: path.path),
               let text = Self.decodeText(data) else {
-            // Unreadable – recreate
+            // Unreadable – rename with date prefix and recreate
             NSLog("[ConfigPersistence] %@", TTL("debug.config.oldFormat"))
-            try? fm.removeItem(at: path)
+            renameWithDatePrefix(path)
             let config = TeraTermConfig()
-            saveConfig(config)
+            saveDefaultConfigWithComments(config)
             return config
         }
 
@@ -606,14 +609,44 @@ class ConfigPersistenceManager {
 
         if !isVersionCurrent(fileVersion) {
             NSLog("[ConfigPersistence] %@", TTL("debug.config.oldFormat"))
-            try? fm.removeItem(at: path)
+            renameWithDatePrefix(path)
             let config = TeraTermConfig()
-            saveConfig(config)
+            saveDefaultConfigWithComments(config)
             return config
         }
 
-        // Parse into config
+        // Parse into config (missing keys use TeraTermConfig default values)
         return decode(sections: sections)
+    }
+
+    // MARK: - Corrupt File Rename
+
+    /// Rename an existing INI file by adding a date prefix (e.g. "20260314_TERATERM.INI")
+    /// so that the user can inspect the old file later.
+    private func renameWithDatePrefix(_ fileURL: URL) {
+        let fm = FileManager.default
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyyMMdd"
+        let dateStr = formatter.string(from: Date())
+        let dir = fileURL.deletingLastPathComponent()
+        let originalName = fileURL.lastPathComponent
+        var renamedURL = dir.appendingPathComponent("\(dateStr)_\(originalName)")
+
+        // If a file with the same dated name already exists, add a sequence number
+        var seq = 1
+        while fm.fileExists(atPath: renamedURL.path) {
+            renamedURL = dir.appendingPathComponent("\(dateStr)_\(seq)_\(originalName)")
+            seq += 1
+        }
+
+        do {
+            try fm.moveItem(at: fileURL, to: renamedURL)
+            NSLog("[ConfigPersistence] Renamed corrupt INI to %@", renamedURL.lastPathComponent)
+        } catch {
+            NSLog("[ConfigPersistence] Failed to rename corrupt INI: %@", "\(error)")
+            // Fallback: try to remove the corrupt file so a new one can be created
+            try? fm.removeItem(at: fileURL)
+        }
     }
 
     // MARK: - Encoding Auto-Detection
@@ -685,6 +718,43 @@ class ConfigPersistenceManager {
         } catch {
             NSLog("[ConfigPersistence] %@", TTL("debug.config.saveFailed", "\(error)"))
             // Clean up temp
+            try? FileManager.default.removeItem(at: tmpURL)
+        }
+    }
+
+    // MARK: - Save with Comments (Default INI Generation)
+
+    /// Write a fully commented INI file with all default values.
+    /// Each setting has a description comment above it.
+    /// Used when creating a new INI file for the first time or after
+    /// renaming a corrupt file.
+    func saveDefaultConfigWithComments(_ config: TeraTermConfig) {
+        do {
+            try ensureDirectory()
+        } catch {
+            NSLog("[ConfigPersistence] %@", TTL("debug.config.dirCreateFailed", "\(error)"))
+            return
+        }
+
+        let sections = encodeWithComments(config)
+        let text = INISerializer.serializeCommented(sections, lineEnding: .lf)
+
+        guard let data = text.data(using: .utf8) else { return }
+
+        let dest = iniFileURL
+        let tmpURL = dest.deletingLastPathComponent()
+            .appendingPathComponent(".\(Self.iniFileName).tmp")
+
+        do {
+            try data.write(to: tmpURL, options: .atomic)
+            let fm = FileManager.default
+            if fm.fileExists(atPath: dest.path) {
+                _ = try fm.replaceItemAt(dest, withItemAt: tmpURL)
+            } else {
+                try fm.moveItem(at: tmpURL, to: dest)
+            }
+        } catch {
+            NSLog("[ConfigPersistence] %@", TTL("debug.config.saveFailed", "\(error)"))
             try? FileManager.default.removeItem(at: tmpURL)
         }
     }
@@ -1269,6 +1339,674 @@ class ConfigPersistenceManager {
             (key: "ProxyUser",         value: config.proxyUser),
             (key: "ProxyPass",         value: config.proxyPass),
         ]))
+
+        return sections
+    }
+
+    // MARK: - Encode with Comments
+
+    /// Build commented INI sections from a `TeraTermConfig`.
+    /// Each setting includes a description comment above it.
+    func encodeWithComments(_ config: TeraTermConfig) -> [INISerializer.CommentedSection] {
+        typealias CP = INISerializer.CommentedPair
+        var sections: [INISerializer.CommentedSection] = []
+
+        // ── [Tera Term] ──────────────────────────────────────
+        var mainPairs: [CP] = [
+            CP(key: Self.versionKey, value: config.version,
+               comment: "INI format version (do not edit)"),
+            CP(key: "Port", value: config.port,
+               comment: "Default connection type: \"tcpip\" or \"serial\""),
+
+            // Terminal Emulation
+            CP(key: "TerminalID", value: config.terminalID,
+               comment: "Terminal ID string (e.g. VT100, VT220, VT382, VT520)"),
+            CP(key: "TerminalWidth", value: String(config.terminalWidth),
+               comment: "Terminal width in columns"),
+            CP(key: "TerminalHeight", value: String(config.terminalHeight),
+               comment: "Terminal height in rows"),
+            CP(key: "TermIsWin", value: onOff(config.termIsWin),
+               comment: "Use window size for terminal size (on/off)"),
+            CP(key: "AutoWinResize", value: onOff(config.autoWinResize),
+               comment: "Auto resize window when terminal size changes (on/off)"),
+            CP(key: "TermType", value: config.termType,
+               comment: "TERM environment variable value (e.g. xterm, vt100)"),
+            CP(key: "Answerback", value: config.answerback,
+               comment: "Answerback string sent in response to ENQ"),
+            CP(key: "TerminalUID", value: config.terminalUID,
+               comment: "Terminal unique ID (hex string)"),
+            CP(key: "TerminalSpeed", value: config.terminalSpeed,
+               comment: "Terminal speed reported to host"),
+
+            // New-line
+            CP(key: "CRReceive", value: String(config.crReceive),
+               comment: "Receive new-line mode: 0=CR, 1=CR+LF, 2=LF, 3=AUTO"),
+            CP(key: "CRSend", value: String(config.crSend),
+               comment: "Send new-line mode: 0=CR, 1=CR+LF, 2=LF"),
+
+            // Character Encoding
+            CP(key: "Encoding", value: config.encoding,
+               comment: "Character encoding (e.g. UTF-8, SJIS, EUC-JP)"),
+            CP(key: "KanjiSend", value: config.sendEncoding,
+               comment: "Send character encoding (empty = same as Encoding)"),
+            CP(key: "KatakanaReceive", value: config.katakanaReceive,
+               comment: "Katakana receive mode: 7=7-bit, 8=8-bit"),
+            CP(key: "KatakanaSend", value: config.katakanaSend,
+               comment: "Katakana send mode: 7=7-bit, 8=8-bit"),
+            CP(key: "KanjiIn", value: config.kanjiIn,
+               comment: "ISO-2022 Kanji-in designator (e.g. B, @)"),
+            CP(key: "KanjiOut", value: config.kanjiOut,
+               comment: "ISO-2022 Kanji-out designator (e.g. J, B)"),
+
+            // Local Echo
+            CP(key: "LocalEcho", value: onOff(config.localEcho),
+               comment: "Enable local echo (on/off)"),
+        ]
+
+        // Cursor, Window, Scroll
+        mainPairs += [
+            CP(key: "CursorShape", value: String(config.cursorShape),
+               comment: "Cursor shape: 0=block, 1=vertical line, 2=horizontal line"),
+            CP(key: "CursorBlink", value: onOff(config.cursorBlink),
+               comment: "Cursor blink (on/off)"),
+            CP(key: "KillFocusCursor", value: onOff(config.killFocusCursor),
+               comment: "Show cursor when window loses focus (on/off)"),
+            CP(key: "Title", value: config.title,
+               comment: "Window title string"),
+            CP(key: "TitleFormat", value: String(config.titleFormat),
+               comment: "Title format flags (bitmask)"),
+            CP(key: "SaveVTWinPos", value: onOff(config.saveVTWinPos),
+               comment: "Save VT window position (on/off)"),
+            CP(key: "EnableScrollBuffer", value: onOff(config.enableScrollBuffer),
+               comment: "Enable scroll-back buffer (on/off)"),
+            CP(key: "ScrollBuffSize", value: String(config.scrollBufferSize),
+               comment: "Scroll-back buffer size in lines"),
+            CP(key: "MaxBuffSize", value: String(config.scrollBufferMax),
+               comment: "Maximum scroll-back buffer size in lines"),
+            CP(key: "ScrollThreshold", value: String(config.scrollThreshold),
+               comment: "Scroll threshold (lines before auto-scroll triggers)"),
+            CP(key: "ScrollWindowClearScreen", value: onOff(config.scrollWindowClearScreen),
+               comment: "Scroll window on clear screen (on/off)"),
+        ]
+
+        // Color
+        mainPairs += [
+            CP(key: "VTColor", value: config.vtColor,
+               comment: "VT text color: \"FG_R,FG_G,FG_B BG_R,BG_G,BG_B\""),
+            CP(key: "VTBoldColor", value: config.vtBoldColor,
+               comment: "Bold text color: \"FG_R,FG_G,FG_B,BG_R,BG_G,BG_B\""),
+            CP(key: "VTBlinkColor", value: config.vtBlinkColor,
+               comment: "Blink text color: \"FG_R,FG_G,FG_B,BG_R,BG_G,BG_B\""),
+            CP(key: "VTReverseColor", value: config.vtReverseColor,
+               comment: "Reverse text color: \"FG_R,FG_G,FG_B,BG_R,BG_G,BG_B\""),
+            CP(key: "VTUnderlineColor", value: config.vtUnderlineColor,
+               comment: "Underline text color: \"FG_R,FG_G,FG_B,BG_R,BG_G,BG_B\""),
+            CP(key: "URLColor", value: config.urlColor,
+               comment: "URL highlight color: \"FG_R,FG_G,FG_B,BG_R,BG_G,BG_B\""),
+            CP(key: "TEKColor", value: config.tekColor,
+               comment: "TEK window color: \"FG_R,FG_G,FG_B,BG_R,BG_G,BG_B\""),
+            CP(key: "ANSIColor", value: config.ansiColor,
+               comment: "Custom ANSI color palette (empty = default)"),
+            CP(key: "EnableBoldAttrColor", value: onOff(config.enableBoldColor),
+               comment: "Use separate color for bold text (on/off)"),
+            CP(key: "EnableBlinkAttrColor", value: onOff(config.enableBlinkColor),
+               comment: "Use separate color for blink text (on/off)"),
+            CP(key: "EnableReverseAttrColor", value: onOff(config.enableReverseColor),
+               comment: "Use separate color for reverse text (on/off)"),
+            CP(key: "EnableURLColor", value: onOff(config.enableURLColor),
+               comment: "Use separate color for URLs (on/off)"),
+            CP(key: "EnableANSIColor", value: onOff(config.enableANSIColor),
+               comment: "Enable ANSI color sequences (on/off)"),
+            CP(key: "PcBoldColor", value: onOff(config.pcBoldColor),
+               comment: "Use PC-style bold color mapping (on/off)"),
+            CP(key: "Aixterm16Color", value: onOff(config.enableAixtermColors),
+               comment: "Enable AIXterm 16 color extension (on/off)"),
+            CP(key: "Xterm256Color", value: onOff(config.enableXterm256Colors),
+               comment: "Enable xterm 256 color extension (on/off)"),
+            CP(key: "UseTextColor", value: onOff(config.useTextColor),
+               comment: "Use text color from system (on/off)"),
+            CP(key: "UseNormalBGColor", value: onOff(config.useStandardBGColor),
+               comment: "Use standard background color (on/off)"),
+            CP(key: "TEKColorEmulation", value: onOff(config.tekColorEmulation),
+               comment: "TEK color emulation mode (on/off)"),
+        ]
+
+        // Font
+        mainPairs += [
+            CP(key: "FontName", value: config.fontName,
+               comment: "Font name (e.g. Menlo, Courier New)"),
+            CP(key: "FontSize", value: String(config.fontSize),
+               comment: "Font size in points"),
+            CP(key: "TEKFont", value: config.tekFont,
+               comment: "TEK window font name (empty = use default)"),
+            CP(key: "EnableBold", value: onOff(config.enableBoldFont),
+               comment: "Enable bold font rendering (on/off)"),
+            CP(key: "URLUnderline", value: onOff(config.enableURLUnderline),
+               comment: "Underline URLs (on/off)"),
+            CP(key: "UnderlineAttrFont", value: onOff(config.enableUnderlineDecoration),
+               comment: "Enable underline decoration for underline attribute (on/off)"),
+            CP(key: "UnderlineAttrColor", value: onOff(config.enableUnderlineColor),
+               comment: "Enable separate color for underline attribute (on/off)"),
+            CP(key: "VTFontSpace", value: config.vtFontSpace,
+               comment: "Font spacing adjustment: \"left,right,top,bottom\""),
+            CP(key: "FontQuality", value: config.fontQuality,
+               comment: "Font rendering quality (default, nonantialiased, antialiased, cleartype)"),
+            CP(key: "FontScaling", value: onOff(config.fontScaling),
+               comment: "Enable font scaling (on/off)"),
+            CP(key: "DrawingResizedFont", value: onOff(config.drawingResizedFont),
+               comment: "Draw resized font for character width adjustment (on/off)"),
+            CP(key: "DlgFont", value: config.dialogFont,
+               comment: "Dialog font name (empty = system default)"),
+            CP(key: "VTDrawAPI", value: config.drawingAPI,
+               comment: "Drawing API: Auto, GDI, DirectWrite"),
+            CP(key: "VTDrawACP", value: String(config.codePage),
+               comment: "Code page for drawing (0 = auto)"),
+        ]
+
+        // Keyboard
+        mainPairs += [
+            CP(key: "BSKey", value: String(config.bsKey),
+               comment: "Backspace key code (8=BS, 127=DEL)"),
+            CP(key: "DeleteKey", value: String(config.deleteKey),
+               comment: "Delete key code (127=DEL, 8=BS)"),
+            CP(key: "MetaKey", value: String(config.metaKey),
+               comment: "Meta key assignment: 0=off, 1=on, 2=left, 3=right"),
+            CP(key: "Meta8Bit", value: config.meta8Bit,
+               comment: "Meta key sends 8-bit character (on/off)"),
+            CP(key: "DisableAppKeypad", value: onOff(config.disableAppKeypad),
+               comment: "Disable application keypad mode (on/off)"),
+            CP(key: "DisableAppCursor", value: onOff(config.disableAppCursor),
+               comment: "Disable application cursor keys mode (on/off)"),
+            CP(key: "StrictKeyMapping", value: onOff(config.strictKeyMapping),
+               comment: "Strict keyboard mapping (on/off)"),
+            CP(key: "RussKeyb", value: config.russKeyb,
+               comment: "Russian keyboard layout name (empty = none)"),
+            CP(key: "IMERelatedCursor", value: onOff(config.cursorChangeIME),
+               comment: "Change cursor shape based on IME state (on/off)"),
+        ]
+
+        // Beep
+        mainPairs += [
+            CP(key: "Beep", value: String(config.beep),
+               comment: "Beep type: 0=off, 1=system beep, 2=visual bell"),
+            CP(key: "BeepOnConnect", value: onOff(config.beepOnConnect),
+               comment: "Beep on successful connection (on/off)"),
+            CP(key: "BeepOverUsedCount", value: String(config.beepOverUsedCount),
+               comment: "Suppress beep after this many in rapid succession"),
+            CP(key: "BeepOverUsedTime", value: String(config.beepOverUsedTime),
+               comment: "Time window (sec) for beep over-use detection"),
+            CP(key: "BeepSuppressTime", value: String(config.beepSuppressTime),
+               comment: "Duration (sec) to suppress beeps after over-use"),
+            CP(key: "BeepVBellWait", value: String(config.beepVBellWait),
+               comment: "Visual bell display duration (msec / 10)"),
+            CP(key: "NotifySound", value: onOff(config.notifySound),
+               comment: "Play notification sound (on/off)"),
+        ]
+
+        // Connection
+        mainPairs += [
+            CP(key: "Telnet", value: onOff(config.telnet),
+               comment: "Use Telnet protocol (on/off)"),
+            CP(key: "TCPPort", value: String(config.tcpPort),
+               comment: "TCP port number for connection"),
+            CP(key: "TelPort", value: String(config.telPort),
+               comment: "Telnet port number"),
+            CP(key: "AutoWinClose", value: onOff(config.autoWindowClose),
+               comment: "Auto close window on disconnect (on/off)"),
+            CP(key: "HistoryList", value: onOff(config.hostHistory),
+               comment: "Remember host connection history (on/off)"),
+            CP(key: "ConnectingTimeout", value: String(config.connectingTimeout),
+               comment: "Connection timeout in seconds (0 = no timeout)"),
+            CP(key: "TelAutoDetect", value: onOff(config.telAutoDetect),
+               comment: "Auto-detect Telnet protocol (on/off)"),
+            CP(key: "TelBin", value: onOff(config.telBin),
+               comment: "Telnet binary mode (on/off)"),
+            CP(key: "TelEcho", value: onOff(config.telEcho),
+               comment: "Telnet echo option (on/off)"),
+            CP(key: "TelKeepAliveInterval", value: String(config.tcpKeepAliveInterval),
+               comment: "TCP keep-alive interval in seconds"),
+            CP(key: "TCPLocalEcho", value: onOff(config.tcpLocalEcho),
+               comment: "TCP local echo (on/off)"),
+            CP(key: "TCPCRSend", value: config.tcpCRSend,
+               comment: "TCP CR send mode (empty = default)"),
+            CP(key: "DisableTCPEchoCR", value: onOff(config.disableTCPEchoCR),
+               comment: "Disable TCP echo CR (on/off)"),
+        ]
+
+        // Serial
+        mainPairs += [
+            CP(key: "DelayPerChar", value: String(config.serialDelayPerChar),
+               comment: "Serial send delay per character (msec)"),
+            CP(key: "DelayPerLine", value: String(config.serialDelayPerLine),
+               comment: "Serial send delay per line (msec)"),
+            CP(key: "ClearComBuffOnOpen", value: onOff(config.clearComBuffOnOpen),
+               comment: "Clear COM buffer on open (on/off)"),
+            CP(key: "WaitCom", value: onOff(config.waitCom),
+               comment: "Wait for COM port to be ready (on/off)"),
+            CP(key: "AutoComPortReconnect", value: onOff(config.autoComPortReconnect),
+               comment: "Auto reconnect serial port (on/off)"),
+            CP(key: "AutoComPortReconnectDelayNormal", value: String(config.autoComPortReconnectDelayNormal),
+               comment: "Normal reconnect delay (msec)"),
+            CP(key: "AutoComPortReconnectDelayIllegal", value: String(config.autoComPortReconnectDelayIllegal),
+               comment: "Reconnect delay after illegal state (msec)"),
+            CP(key: "AutoComPortReconnectRetryInterval", value: String(config.autoComPortReconnectRetryInterval),
+               comment: "Reconnect retry interval (msec)"),
+            CP(key: "AutoComPortReconnectRetryCount", value: String(config.autoComPortReconnectRetryCount),
+               comment: "Reconnect retry count"),
+        ]
+
+        // Log
+        mainPairs += [
+            CP(key: "LogAutoStart", value: onOff(config.logAutoStart),
+               comment: "Auto start logging on connection (on/off)"),
+            CP(key: "LogDefaultName", value: config.logDefaultName,
+               comment: "Default log file name"),
+            CP(key: "LogDefaultPath", value: config.logDefaultPath,
+               comment: "Default log file directory (empty = user home)"),
+            CP(key: "LogTimestamp", value: onOff(config.logTimestamp),
+               comment: "Add timestamp to log (on/off)"),
+            CP(key: "LogTimestampFormat", value: config.logTimestampFormat,
+               comment: "Timestamp format (strftime-style, %N = nanoseconds)"),
+            CP(key: "LogTimestampType", value: config.logTimestampType,
+               comment: "Timestamp type: Local, UTC, Elapsed"),
+            CP(key: "LogTypePlainText", value: onOff(config.logPlainText),
+               comment: "Log as plain text (on/off)"),
+            CP(key: "LogBinary", value: onOff(config.logBinary),
+               comment: "Log in binary mode (on/off)"),
+            CP(key: "LogAppend", value: onOff(config.logAppend),
+               comment: "Append to existing log file (on/off)"),
+            CP(key: "LogHideDialog", value: onOff(config.logHideDialog),
+               comment: "Hide log dialog (on/off)"),
+            CP(key: "LogIncludeScreenBuffer", value: onOff(config.logIncludeScreenBuffer),
+               comment: "Include screen buffer in log (on/off)"),
+            CP(key: "LogRotate", value: String(config.logRotateEnabled),
+               comment: "Log rotation: 0=off, 1=on"),
+            CP(key: "LogRotateSize", value: String(config.logRotateSize),
+               comment: "Log rotation file size threshold"),
+            CP(key: "LogRotateSizeType", value: String(config.logRotateSizeType),
+               comment: "Log rotation size unit: 0=bytes, 1=KB, 2=MB"),
+            CP(key: "LogRotateStep", value: String(config.logRotateStep),
+               comment: "Number of rotated log files to keep"),
+            CP(key: "DeferredLogWriteMode", value: onOff(config.deferredLogWriteMode),
+               comment: "Deferred log write for performance (on/off)"),
+            CP(key: "ViewlogEditor", value: config.logViewEditor,
+               comment: "Log viewer command (e.g. open, vi)"),
+            CP(key: "ViewlogEditorArg", value: config.logEditorArguments,
+               comment: "Additional arguments for log viewer"),
+            CP(key: "LogBOM", value: onOff(config.logBOM),
+               comment: "Write BOM at beginning of log file (on/off)"),
+        ]
+
+        // File Transfer
+        mainPairs += [
+            CP(key: "TransBin", value: onOff(config.transBin),
+               comment: "Binary file transfer mode (on/off)"),
+            CP(key: "XmodemOpt", value: config.xmodemOption,
+               comment: "XMODEM error check: checksum, crc, 1k"),
+            CP(key: "XmodemBin", value: onOff(config.xmodemBin),
+               comment: "XMODEM binary mode (on/off)"),
+            CP(key: "XModemRcvCommand", value: config.xModemRcvCommand,
+               comment: "XMODEM receive command (empty = default)"),
+            CP(key: "YModemRcvCommand", value: config.yModemRcvCommand,
+               comment: "YMODEM receive command"),
+            CP(key: "ZmodemDataLen", value: String(config.zmodemDataLen),
+               comment: "ZMODEM data sub-packet length"),
+            CP(key: "ZmodemWinSize", value: String(config.zmodemWindowSize),
+               comment: "ZMODEM window size"),
+            CP(key: "ZModemRcvCommand", value: config.zModemRcvCommand,
+               comment: "ZMODEM receive command"),
+            CP(key: "ZmodemAuto", value: onOff(config.zmodemAutoReceive),
+               comment: "Auto-receive ZMODEM (on/off)"),
+            CP(key: "ZmodemEscCtl", value: onOff(config.zmodemEscCtl),
+               comment: "ZMODEM escape control characters (on/off)"),
+            CP(key: "FileDir", value: config.fileTransferFolder,
+               comment: "Default file transfer directory (empty = current)"),
+            CP(key: "FileSendFilter", value: config.fileSendFilter,
+               comment: "File send filter pattern (empty = all files)"),
+            CP(key: "ScpSendDir", value: config.scpSendDir,
+               comment: "SCP send destination directory"),
+            CP(key: "FTHideDialog", value: onOff(config.ftHideDialog),
+               comment: "Hide file transfer dialog (on/off)"),
+            CP(key: "AutoFileRename", value: onOff(config.autoFileRename),
+               comment: "Auto rename on file name conflict (on/off)"),
+            CP(key: "ConfirmFileDragAndDrop", value: onOff(config.confirmFileDragAndDrop),
+               comment: "Confirm file drag and drop (on/off)"),
+            CP(key: "XmodemTimeouts", value: config.xmodemTimeouts,
+               comment: "XMODEM timeout values (comma-separated, sec)"),
+            CP(key: "YmodemTimeouts", value: config.ymodemTimeouts,
+               comment: "YMODEM timeout values (comma-separated, sec)"),
+            CP(key: "ZmodemTimeouts", value: config.zmodemTimeouts,
+               comment: "ZMODEM timeout values (comma-separated, sec)"),
+        ]
+
+        // Control Sequences
+        mainPairs += [
+            CP(key: "Accept8BitCtrl", value: onOff(config.accept8BitCtrl),
+               comment: "Accept 8-bit control sequences (on/off)"),
+            CP(key: "AllowWrongSequence", value: onOff(config.allowWrongSequence),
+               comment: "Allow wrong escape sequences (on/off)"),
+            CP(key: "AcceptTitleChangeRequest", value: config.titleChangeRequest,
+               comment: "Title change request: overwrite, ignore, ahead, last"),
+            CP(key: "WindowCtrlSequence", value: onOff(config.windowControlSequence),
+               comment: "Accept window control sequences (on/off)"),
+            CP(key: "CursorCtrlSequence", value: onOff(config.cursorControlSequence),
+               comment: "Accept cursor control sequences (on/off)"),
+            CP(key: "WindowReportSequence", value: onOff(config.windowInfoReportSequence),
+               comment: "Accept window info report sequences (on/off)"),
+            CP(key: "TitleReportSequence", value: config.titleReportRequest,
+               comment: "Title report response: Empty, accept, ignore"),
+            CP(key: "ClipboardAccessFromRemote", value: config.clipboardAccessFromRemote,
+               comment: "Clipboard access from remote: off, read, write, readwrite"),
+            CP(key: "NotifyClipboardAccess", value: onOff(config.notifyClipboardAccess),
+               comment: "Notify on clipboard access from remote (on/off)"),
+            CP(key: "ClearScrollBufferFromRemote", value: onOff(config.acceptScrollBufferClear),
+               comment: "Accept scroll buffer clear from remote (on/off)"),
+            CP(key: "ClearOnResize", value: onOff(config.clearOnResize),
+               comment: "Clear screen on resize (on/off)"),
+            CP(key: "AlternateScreenBuffer", value: onOff(config.alternateScreenBuffer),
+               comment: "Enable alternate screen buffer (on/off)"),
+            CP(key: "EnableStatusLine", value: onOff(config.enableStatusLine),
+               comment: "Enable status line (on/off)"),
+            CP(key: "EnableLineMode", value: onOff(config.enableLineMode),
+               comment: "Enable line mode (on/off)"),
+            CP(key: "PrinterCtrlSequence", value: onOff(!config.disablePrintSequence),
+               comment: "Accept printer control sequences (on/off)"),
+            CP(key: "UseInvalidDECRQSSResponse", value: onOff(config.useInvalidDECRQSSResponse),
+               comment: "Use invalid DECRQSS response (on/off)"),
+            CP(key: "TabStopModifySequence", value: config.tabStopModifySequence,
+               comment: "Tab stop modify sequence: on/off"),
+            CP(key: "ISO2022ShiftFunction", value: config.iso2022ShiftFunction,
+               comment: "ISO-2022 shift function: on/off"),
+            CP(key: "MaxOSCBufferSize", value: String(config.maxOSCBufferSize),
+               comment: "Maximum OSC (Operating System Command) buffer size"),
+            CP(key: "Send8BitCtrl", value: onOff(config.send8BitCtrl),
+               comment: "Send 8-bit control sequences (on/off)"),
+        ]
+
+        // Copy & Paste
+        mainPairs += [
+            CP(key: "AutoTextCopy", value: onOff(config.autoTextCopy),
+               comment: "Auto copy selected text to clipboard (on/off)"),
+            CP(key: "EnableContinuedLineCopy", value: onOff(config.continuedLineCopy),
+               comment: "Copy continued lines as single line (on/off)"),
+            CP(key: "SelectOnlyByLButton", value: onOff(config.leftClickOnlySelection),
+               comment: "Select text only by left mouse button (on/off)"),
+            CP(key: "SelectOnActivate", value: onOff(config.enableSelectionOnActivate),
+               comment: "Enable text selection on window activate (on/off)"),
+            CP(key: "DisablePasteMouseRButton", value: onOff(config.disableRightClickPaste),
+               comment: "Disable paste by right click (on/off)"),
+            CP(key: "DisablePasteMouseMButton", value: onOff(config.disableMiddleClickPaste),
+               comment: "Disable paste by middle click (on/off)"),
+            CP(key: "ConfirmPasteMouseRButton", value: onOff(config.confirmRightClickPaste),
+               comment: "Confirm paste by right click (on/off)"),
+            CP(key: "ConfirmChangePaste", value: onOff(config.clipboardConfirmPaste),
+               comment: "Confirm paste when clipboard content has changed (on/off)"),
+            CP(key: "ConfirmChangePasteCR", value: onOff(config.confirmPasteNewLine),
+               comment: "Confirm paste when content contains new-line (on/off)"),
+            CP(key: "ConfirmChangePasteStringFile", value: config.dangerousKeywordFile,
+               comment: "File containing dangerous keywords for paste confirmation"),
+            CP(key: "TrimTrailingNLonPaste", value: onOff(config.trimTrailingNewline),
+               comment: "Trim trailing new-line on paste (on/off)"),
+            CP(key: "PasteDelayPerLine", value: String(config.pasteDelay),
+               comment: "Paste delay per line (msec)"),
+            CP(key: "DelimList", value: config.delimiterList,
+               comment: "Word delimiter characters for double-click selection"),
+            CP(key: "DelimDBCS", value: onOff(config.delimDBCS),
+               comment: "Use DBCS delimiters (on/off)"),
+            CP(key: "MouseSelectStartDelay", value: String(config.mouseSelectStartDelay),
+               comment: "Mouse selection start delay (msec, 0 = immediate)"),
+        ]
+
+        // Mouse
+        mainPairs += [
+            CP(key: "MouseEventTracking", value: onOff(config.mouseTracking),
+               comment: "Enable mouse event tracking (on/off)"),
+            CP(key: "MouseWheelScrollLine", value: String(config.mouseWheelScrollLines),
+               comment: "Number of lines to scroll per mouse wheel notch"),
+            CP(key: "MouseCursor", value: config.mouseCursorType,
+               comment: "Mouse cursor type: ARROW, IBEAM, CROSS, HAND"),
+            CP(key: "TranslateWheelToCursor", value: onOff(config.translateWheelToCursor),
+               comment: "Translate mouse wheel to cursor keys (on/off)"),
+            CP(key: "DisableMouseTrackingByCtrl", value: onOff(config.disableControlKeyMouseEvent),
+               comment: "Disable mouse tracking when Ctrl is held (on/off)"),
+            CP(key: "DisableWheelToCursorByCtrl", value: onOff(config.disableWheelToCursorByCtrl),
+               comment: "Disable wheel-to-cursor when Ctrl is held (on/off)"),
+        ]
+
+        // Window Opacity, Broadcast, Debug, URL, Unicode
+        mainPairs += [
+            CP(key: "AlphaBlend", value: String(config.windowOpacityInactive),
+               comment: "Window opacity when inactive (0-255, 255=opaque)"),
+            CP(key: "AlphaBlendActive", value: String(config.windowOpacityActive),
+               comment: "Window opacity when active (0-255, 255=opaque)"),
+            CP(key: "BroadcastCommandHistory", value: onOff(config.broadcastHistory),
+               comment: "Save broadcast command history (on/off)"),
+            CP(key: "AcceptBroadcast", value: onOff(config.acceptBroadcast),
+               comment: "Accept broadcast messages (on/off)"),
+            CP(key: "MaxBroadcatHistory", value: String(config.maxBroadcastHistory),
+               comment: "Maximum broadcast history entries"),
+            CP(key: "Debug", value: onOff(config.debugCharInfoPopup),
+               comment: "Enable debug character info popup (on/off)"),
+            CP(key: "DebugModes", value: config.debugModes,
+               comment: "Debug modes: all, none, or comma-separated list"),
+            CP(key: "EnableClickableUrl", value: onOff(config.enableClickableUrl),
+               comment: "Enable clickable URLs (on/off)"),
+            CP(key: "JoinSplitURL", value: onOff(config.joinSplitURL),
+               comment: "Join split URLs across lines (on/off)"),
+            CP(key: "JoinSplitURLIgnoreEOLChar", value: config.joinSplitURLIgnoreEOLChar,
+               comment: "End-of-line character to ignore when joining URLs"),
+            CP(key: "UnicodeAmbiguousWidth", value: String(config.unicodeAmbiguousWidth),
+               comment: "Unicode ambiguous character width: 0=narrow, 1=wide"),
+            CP(key: "UnicodeEmojiOverride", value: onOff(config.unicodeEmojiOverride),
+               comment: "Override emoji character width (on/off)"),
+            CP(key: "UnicodeEmojiWidth", value: String(config.unicodeEmojiWidth),
+               comment: "Emoji width: 0=narrow, 1=wide"),
+            CP(key: "UnicodeToDecSpMapping", value: String(config.unicodeToDecSpMapping),
+               comment: "Unicode to DEC Special mapping: 0=off, 1=on, 2=auto, 3=auto+box"),
+            CP(key: "DecSpMappingDir", value: String(config.decSpMappingDir),
+               comment: "DEC Special mapping direction: 0=both, 1=send, 2=receive"),
+        ]
+
+        // Sendfile, Receivefile, Language, Protocol Logs, misc
+        mainPairs += [
+            CP(key: "SendfileDelayType", value: config.sendfileDelayType,
+               comment: "Send file delay type: NoDelay, PerChar, PerLine"),
+            CP(key: "SendfileDelayTick", value: String(config.sendfileDelayTick),
+               comment: "Send file delay tick (msec)"),
+            CP(key: "SendfileSize", value: String(config.sendfileSize),
+               comment: "Send file buffer size (bytes)"),
+            CP(key: "SendfileSequential", value: onOff(config.sendfileSequential),
+               comment: "Send file sequentially (on/off)"),
+            CP(key: "SendfileSkipOptionDialog", value: onOff(config.sendfileSkipOptionDialog),
+               comment: "Skip send file option dialog (on/off)"),
+            CP(key: "FileReceiveFilter", value: config.fileReceiveFilter,
+               comment: "File receive filter pattern"),
+            CP(key: "ReceivefileSkipOptionDialog", value: onOff(config.receivefileSkipOptionDialog),
+               comment: "Skip receive file option dialog (on/off)"),
+            CP(key: "ReceivefileAutoStopWaitTime", value: String(config.receivefileAutoStopWaitTime),
+               comment: "Receive file auto stop wait time (sec)"),
+            CP(key: "UILanguageFile", value: config.language,
+               comment: "UI language file (empty = default Japanese)"),
+            CP(key: "TelLog", value: onOff(config.telLog),
+               comment: "Enable Telnet protocol log (on/off)"),
+            CP(key: "XmodemLog", value: onOff(config.xmodemLog),
+               comment: "Enable XMODEM protocol log (on/off)"),
+            CP(key: "YmodemLog", value: onOff(config.ymodemLog),
+               comment: "Enable YMODEM protocol log (on/off)"),
+            CP(key: "ZmodemLog", value: onOff(config.zmodemLog),
+               comment: "Enable ZMODEM protocol log (on/off)"),
+            CP(key: "KmtLog", value: onOff(config.kmtLog),
+               comment: "Enable Kermit protocol log (on/off)"),
+            CP(key: "KmtLongPacket", value: onOff(config.kmtLongPacket),
+               comment: "Kermit long packet support (on/off)"),
+            CP(key: "KmtFileAttr", value: onOff(config.kmtFileAttr),
+               comment: "Kermit file attribute support (on/off)"),
+            CP(key: "BPAuto", value: onOff(config.bpAuto),
+               comment: "B-Plus auto receive (on/off)"),
+            CP(key: "BPEscCtl", value: onOff(config.bpEscCtl),
+               comment: "B-Plus escape control characters (on/off)"),
+            CP(key: "BPLog", value: onOff(config.bpLog),
+               comment: "Enable B-Plus protocol log (on/off)"),
+            CP(key: "QVLog", value: onOff(config.qvLog),
+               comment: "Enable Quick-VAN protocol log (on/off)"),
+            CP(key: "QVWinSize", value: String(config.qvWinSize),
+               comment: "Quick-VAN window size"),
+            CP(key: "AutoWinSwitch", value: onOff(config.autoWinSwitch),
+               comment: "Auto window switch (on/off)"),
+            CP(key: "CtrlInKanji", value: onOff(config.ctrlInKanji),
+               comment: "Accept control characters inside Kanji (on/off)"),
+            CP(key: "FixedJIS", value: onOff(config.fixedJIS),
+               comment: "Fixed JIS mode (on/off)"),
+            CP(key: "BackWrap", value: onOff(config.backWrap),
+               comment: "Back-wrap at left margin (on/off)"),
+            CP(key: "AutoInvoke", value: onOff(config.autoInvoke),
+               comment: "Auto invoke TEK mode (on/off)"),
+            CP(key: "ConfirmDisconnect", value: onOff(config.confirmOnDisconnect),
+               comment: "Confirm on disconnect (on/off)"),
+            CP(key: "VTCompatTab", value: onOff(config.vtCompatTab),
+               comment: "VT compatible tab handling (on/off)"),
+            CP(key: "TEKIcon", value: config.tekIcon,
+               comment: "TEK window icon: Default or custom icon name"),
+            CP(key: "TEKGINMouseCode", value: String(config.tekGINMouseCode),
+               comment: "TEK GIN mode mouse button code"),
+            CP(key: "SendBreakTime", value: String(config.sendBreakTime),
+               comment: "Send break signal duration (msec)"),
+            CP(key: "Wait4allMacroCommand", value: onOff(config.wait4allMacroCommand),
+               comment: "Wait for all macro commands to complete (on/off)"),
+            CP(key: "ClearScreenOnCloseConnection", value: onOff(config.clearScreenOnCloseConnection),
+               comment: "Clear screen on close connection (on/off)"),
+            CP(key: "FileSendHighSpeedMode", value: onOff(config.fileSendHighSpeedMode),
+               comment: "High speed file send mode (on/off)"),
+            CP(key: "FallbackToCP932", value: onOff(config.fallbackToCP932),
+               comment: "Fallback to CP932 encoding (on/off)"),
+            CP(key: "StartupMacro", value: config.startupMacro,
+               comment: "Macro file to run on startup (empty = none)"),
+            CP(key: "AutoScrollOnlyInBottomLine", value: onOff(config.autoScrollOnlyInBottomLine),
+               comment: "Auto scroll only when at bottom line (on/off)"),
+            CP(key: "LockTUID", value: onOff(config.lockTUID),
+               comment: "Lock terminal UID (on/off)"),
+            CP(key: "WindowCornerDontround", value: onOff(config.cornerRounding),
+               comment: "Disable window corner rounding (on/off)"),
+            CP(key: "IniAutoBackup", value: onOff(config.iniAutoBackup),
+               comment: "Auto backup INI file before saving (on/off)"),
+            CP(key: "BracketedSupport", value: onOff(config.bracketedPasteMode),
+               comment: "Enable bracketed paste mode (on/off)"),
+            CP(key: "BracketedControlOnly", value: onOff(config.bracketedControlOnly),
+               comment: "Bracketed paste only for control characters (on/off)"),
+            CP(key: "AutoWrap", value: onOff(config.autoWrap),
+               comment: "Auto wrap at right margin (on/off)"),
+            CP(key: "TEKPos", value: config.tekPos,
+               comment: "TEK window position: \"x,y\""),
+            CP(key: "TEKPPI", value: config.tekPPI,
+               comment: "TEK pixels per inch: \"x_ppi,y_ppi\" (0=auto)"),
+        ]
+
+        sections.append(.init(name: Self.mainSection, pairs: mainPairs,
+                              headerComment: "Tera Term main settings"))
+
+        // ── [TCP/IP] ─────────────────────────────────────────
+        sections.append(.init(name: "TCP/IP", pairs: [
+            CP(key: "HostName", value: config.hostName,
+               comment: "Default host name or IP address"),
+            CP(key: "TCPPort", value: String(config.tcpPort),
+               comment: "TCP port number"),
+            CP(key: "Telnet", value: onOff(config.telnet),
+               comment: "Use Telnet protocol (on/off)"),
+            CP(key: "PortType", value: String(config.portType),
+               comment: "Port type: 0=TCP/IP, 1=Serial"),
+        ], headerComment: "TCP/IP connection settings"))
+
+        // ── [Serial] ─────────────────────────────────────────
+        sections.append(.init(name: "Serial", pairs: [
+            CP(key: "SerialPort", value: config.serialPort,
+               comment: "Serial port device path (e.g. /dev/cu.usbserial)"),
+            CP(key: "BaudRate", value: String(config.baudRate),
+               comment: "Baud rate (e.g. 9600, 19200, 38400, 115200)"),
+            CP(key: "DataBits", value: String(config.dataBits),
+               comment: "Data bits: 7 or 8"),
+            CP(key: "Parity", value: String(config.parity),
+               comment: "Parity: 0=none, 1=odd, 2=even, 3=mark, 4=space"),
+            CP(key: "StopBits", value: String(config.stopBits),
+               comment: "Stop bits: 1 or 2"),
+            CP(key: "FlowControl", value: String(config.flowControl),
+               comment: "Flow control: 0=none, 1=Xon/Xoff, 2=RTS/CTS, 3=DSR/DTR"),
+        ], headerComment: "Serial port settings"))
+
+        // ── [BG] ─────────────────────────────────────────────
+        sections.append(.init(name: "BG", pairs: [
+            CP(key: "BGEnable", value: String(config.bgEnable),
+               comment: "Enable background image: 0=off, 1=on"),
+            CP(key: "BGThemeFile", value: config.bgThemeFile,
+               comment: "Background theme file path"),
+            CP(key: "BGSPIPath", value: config.bgSPIPath,
+               comment: "Susie plug-in path for background image"),
+            CP(key: "BGFastSizeMove", value: String(config.bgFastSizeMove),
+               comment: "Fast size/move with background: 0=off, 1=on"),
+            CP(key: "BGNoFrame", value: String(config.bgNoFrame),
+               comment: "No frame with background: 0=off, 1=on"),
+        ], headerComment: "Background theme settings"))
+
+        // ── [TTSSH] ──────────────────────────────────────────
+        sections.append(.init(name: "TTSSH", pairs: [
+            CP(key: "SSHVersion", value: String(config.sshVersion),
+               comment: "SSH protocol version: 1 or 2"),
+            CP(key: "DefaultAuthMethod", value: String(config.sshDefaultAuthMethod),
+               comment: "Default auth method: 0=password, 1=RSA/DSA, 2=rhosts, 3=TIS, 4=keyboard-interactive"),
+            CP(key: "DefaultUserName", value: config.sshDefaultUserName,
+               comment: "Default SSH user name"),
+            CP(key: "DefaultUserNameMode", value: String(config.sshDefaultUserNameMode),
+               comment: "User name auto-fill mode: 0=off, 1=on"),
+            CP(key: "DefaultForwarding", value: config.sshDefaultForwarding,
+               comment: "Default port forwarding rules"),
+            CP(key: "HeartBeat", value: String(config.sshHeartBeat),
+               comment: "SSH keep-alive interval in seconds (0=off)"),
+            CP(key: "ForwardAgent", value: onOff(config.sshForwardAgent),
+               comment: "SSH agent forwarding (on/off)"),
+            CP(key: "ConfirmForwardAgent", value: onOff(config.sshConfirmForwardAgent),
+               comment: "Confirm SSH agent forwarding (on/off)"),
+            CP(key: "NotifyForwardAgent", value: onOff(config.sshNotifyForwardAgent),
+               comment: "Notify on SSH agent forwarding (on/off)"),
+            CP(key: "VerifyHostKeyDNS", value: onOff(config.sshVerifyHostKeyDNS),
+               comment: "Verify host key via DNS (SSHFP) (on/off)"),
+            CP(key: "KnownHostsFile", value: config.sshKnownHostsFile,
+               comment: "Known hosts file path (empty = default)"),
+            CP(key: "KnownHostsReadOnlyFile", value: config.sshKnownHostsReadOnlyFile,
+               comment: "Read-only known hosts file path"),
+            CP(key: "HostKeyRotation", value: String(config.sshHostKeyRotation),
+               comment: "Host key rotation: 0=off, 1=on"),
+            CP(key: "LogLevel", value: String(config.sshLogLevel),
+               comment: "SSH log level (0=none)"),
+            CP(key: "CompressionLevel", value: String(config.sshCompressionLevel),
+               comment: "SSH compression level (0=off, 1-9)"),
+            CP(key: "XForwarding", value: onOff(config.sshXForwarding),
+               comment: "X11 forwarding (on/off)"),
+            CP(key: "CheckAuthBeforeLogin", value: onOff(config.sshCheckAuthBeforeLogin),
+               comment: "Check auth methods before login dialog (on/off)"),
+            CP(key: "CipherOrder", value: config.sshCipherOrder,
+               comment: "SSH cipher preference order (empty = default)"),
+            CP(key: "KexOrder", value: config.sshKexOrder,
+               comment: "SSH key exchange algorithm preference order"),
+            CP(key: "HostKeyOrder", value: config.sshHostKeyOrder,
+               comment: "SSH host key algorithm preference order"),
+            CP(key: "MACOrder", value: config.sshMACOrder,
+               comment: "SSH MAC algorithm preference order"),
+            CP(key: "CompOrder", value: config.sshCompOrder,
+               comment: "SSH compression algorithm preference order"),
+        ], headerComment: "SSH (TTSSH) settings"))
+
+        // ── [Proxy] ──────────────────────────────────────────
+        sections.append(.init(name: "Proxy", pairs: [
+            CP(key: "ProxyType", value: String(config.proxyType),
+               comment: "Proxy type: 0=none, 1=HTTP, 2=SOCKS4, 3=SOCKS5, 4=Telnet"),
+            CP(key: "ProxyHost", value: config.proxyHost,
+               comment: "Proxy host name or IP address"),
+            CP(key: "ProxyPort", value: String(config.proxyPort),
+               comment: "Proxy port number"),
+            CP(key: "ProxyUser", value: config.proxyUser,
+               comment: "Proxy authentication user name"),
+            CP(key: "ProxyPass", value: config.proxyPass,
+               comment: "Proxy authentication password"),
+        ], headerComment: "Proxy settings"))
 
         return sections
     }

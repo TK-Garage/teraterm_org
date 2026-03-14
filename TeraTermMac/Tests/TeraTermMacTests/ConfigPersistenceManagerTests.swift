@@ -1468,6 +1468,316 @@ final class ExtendedConfigRoundTripTests: XCTestCase {
     }
 }
 
+// MARK: - INI File Lifecycle Tests (Comments, Date-Prefix Rename, Default Values)
+
+final class INIFileLifecycleTests: XCTestCase {
+
+    var testDir: URL!
+
+    override func setUp() {
+        super.setUp()
+        testDir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("INILifecycleTest-\(UUID().uuidString)")
+    }
+
+    override func tearDown() {
+        try? FileManager.default.removeItem(at: testDir)
+        super.tearDown()
+    }
+
+    private func makeManager() -> TestableConfigManager {
+        return TestableConfigManager(directory: testDir)
+    }
+
+    // MARK: - Commented INI Serialization
+
+    func testSerializeCommentedIncludesComments() {
+        let sections: [INISerializer.CommentedSection] = [
+            .init(name: "Main", pairs: [
+                .init(key: "Key1", value: "Value1", comment: "Description of Key1"),
+                .init(key: "Key2", value: "Value2", comment: "Description of Key2"),
+            ], headerComment: "Main section settings"),
+        ]
+
+        let text = INISerializer.serializeCommented(sections, lineEnding: .lf)
+
+        // Should contain section header comment
+        XCTAssertTrue(text.contains("; Main section settings"))
+        // Should contain key comments
+        XCTAssertTrue(text.contains("; Description of Key1"))
+        XCTAssertTrue(text.contains("; Description of Key2"))
+        // Should contain key=value lines
+        XCTAssertTrue(text.contains("Key1=Value1"))
+        XCTAssertTrue(text.contains("Key2=Value2"))
+        // Should contain section header
+        XCTAssertTrue(text.contains("[Main]"))
+    }
+
+    func testSerializeCommentedWithoutComments() {
+        let sections: [INISerializer.CommentedSection] = [
+            .init(name: "Test", pairs: [
+                .init(key: "A", value: "B"),
+            ]),
+        ]
+
+        let text = INISerializer.serializeCommented(sections, lineEnding: .lf)
+
+        XCTAssertTrue(text.contains("[Test]"))
+        XCTAssertTrue(text.contains("A=B"))
+        // No comment lines expected
+        XCTAssertFalse(text.contains(";"))
+    }
+
+    func testSerializeCommentedMultilineComment() {
+        let sections: [INISerializer.CommentedSection] = [
+            .init(name: "S", pairs: [
+                .init(key: "K", value: "V", comment: "Line1\nLine2"),
+            ]),
+        ]
+
+        let text = INISerializer.serializeCommented(sections, lineEnding: .lf)
+
+        XCTAssertTrue(text.contains("; Line1\n; Line2\n"))
+    }
+
+    // MARK: - New File Generation with Comments
+
+    func testNewInstallCreatesFileWithComments() {
+        let mgr = makeManager()
+
+        // Load triggers file creation
+        let _ = mgr.loadConfig()
+
+        // Read the generated file
+        let data = FileManager.default.contents(atPath: mgr.iniFileURL.path)!
+        let text = String(data: data, encoding: .utf8)!
+
+        // File should contain comment lines
+        XCTAssertTrue(text.contains("; "), "Generated INI should contain comment lines")
+        // File should contain section headers
+        XCTAssertTrue(text.contains("[Tera Term]"))
+        XCTAssertTrue(text.contains("[TCP/IP]"))
+        XCTAssertTrue(text.contains("[Serial]"))
+        XCTAssertTrue(text.contains("[TTSSH]"))
+        XCTAssertTrue(text.contains("[Proxy]"))
+        // File should contain default values
+        XCTAssertTrue(text.contains("FontName=Menlo"))
+        XCTAssertTrue(text.contains("FontSize=14"))
+        XCTAssertTrue(text.contains("TerminalWidth=80"))
+    }
+
+    func testNewInstallCommentedFileIsReadable() {
+        let mgr = makeManager()
+
+        // Create default file with comments
+        let _ = mgr.loadConfig()
+
+        // Load again - should parse correctly despite comments
+        let config = mgr.loadConfig()
+
+        XCTAssertEqual(config.version, TeraTermConfig.currentVersion)
+        XCTAssertEqual(config.terminalWidth, 80)
+        XCTAssertEqual(config.terminalHeight, 24)
+        XCTAssertEqual(config.fontName, "Menlo")
+        XCTAssertEqual(config.fontSize, 14)
+    }
+
+    // MARK: - Missing Settings Use Default Values
+
+    func testMissingSettingsUseDefaults() {
+        let mgr = makeManager()
+        try! mgr.ensureDirectory()
+
+        // Write a minimal INI with only Version key
+        let minimalINI = """
+        [Tera Term]
+        Version=5.6
+        FontName=CustomFont
+        """
+        try! minimalINI.write(to: mgr.iniFileURL, atomically: true, encoding: .utf8)
+
+        let config = mgr.loadConfig()
+
+        // Specified value should be read
+        XCTAssertEqual(config.fontName, "CustomFont")
+        // Missing values should use defaults
+        XCTAssertEqual(config.terminalWidth, 80)
+        XCTAssertEqual(config.terminalHeight, 24)
+        XCTAssertEqual(config.fontSize, 14)
+        XCTAssertEqual(config.cursorShape, 0)
+        XCTAssertTrue(config.cursorBlink)
+        XCTAssertEqual(config.scrollBufferSize, 10000)
+        XCTAssertEqual(config.bsKey, 8)
+        XCTAssertEqual(config.tcpPort, 23)
+    }
+
+    func testPartialSectionsMergeWithDefaults() {
+        let mgr = makeManager()
+        try! mgr.ensureDirectory()
+
+        // Write INI with only some sections
+        let partialINI = """
+        [Tera Term]
+        Version=5.6
+        FontName=Monaco
+        FontSize=16
+
+        [TCP/IP]
+        HostName=example.com
+        """
+        try! partialINI.write(to: mgr.iniFileURL, atomically: true, encoding: .utf8)
+
+        let config = mgr.loadConfig()
+
+        // Specified values
+        XCTAssertEqual(config.fontName, "Monaco")
+        XCTAssertEqual(config.fontSize, 16)
+        XCTAssertEqual(config.hostName, "example.com")
+        // Missing serial defaults
+        XCTAssertEqual(config.baudRate, 9600)
+        XCTAssertEqual(config.dataBits, 8)
+        // Missing SSH defaults
+        XCTAssertEqual(config.sshVersion, 2)
+        XCTAssertEqual(config.sshHeartBeat, 60)
+        // Missing proxy defaults
+        XCTAssertEqual(config.proxyType, 0)
+    }
+
+    // MARK: - Corrupt File Renamed with Date Prefix
+
+    func testCorruptFileIsRenamedWithDatePrefix() {
+        let mgr = makeManager()
+        try! mgr.ensureDirectory()
+
+        // Write invalid binary data that can't be decoded as text
+        let corruptData = Data([0x80, 0x81, 0x82, 0xFE, 0xFF, 0x80, 0x81])
+        try! corruptData.write(to: mgr.iniFileURL)
+
+        let config = mgr.loadConfig()
+
+        // Should return defaults
+        XCTAssertEqual(config.version, TeraTermConfig.currentVersion)
+        XCTAssertEqual(config.fontName, "Menlo")
+
+        // Original file should have been renamed
+        let fm = FileManager.default
+        let files = try! fm.contentsOfDirectory(atPath: mgr.appSupportDirectory.path)
+        let renamedFiles = files.filter { $0.contains("_TERATERM.INI") && $0 != "TERATERM.INI" }
+        XCTAssertEqual(renamedFiles.count, 1, "Corrupt file should be renamed with date prefix")
+
+        // Renamed file should have date prefix format: YYYYMMDD_TERATERM.INI
+        let renamedName = renamedFiles.first!
+        let datePrefix = String(renamedName.prefix(8))
+        XCTAssertNotNil(Int(datePrefix), "Prefix should be a numeric date string")
+
+        // New default file should exist
+        XCTAssertTrue(fm.fileExists(atPath: mgr.iniFileURL.path))
+    }
+
+    func testOldVersionFileIsRenamedNotDeleted() {
+        let mgr = makeManager()
+        try! mgr.ensureDirectory()
+
+        // Write a file with an old version
+        let oldINI = """
+        [Tera Term]
+        Version=4.0
+        FontName=Courier
+        FontSize=12
+        """
+        try! oldINI.write(to: mgr.iniFileURL, atomically: true, encoding: .utf8)
+
+        let config = mgr.loadConfig()
+
+        // Should get defaults
+        XCTAssertEqual(config.fontName, "Menlo")
+
+        // Old file should be renamed, not deleted
+        let fm = FileManager.default
+        let files = try! fm.contentsOfDirectory(atPath: mgr.appSupportDirectory.path)
+        let renamedFiles = files.filter { $0.contains("_TERATERM.INI") && $0 != "TERATERM.INI" }
+        XCTAssertEqual(renamedFiles.count, 1, "Old version file should be renamed")
+
+        // Verify the renamed file still has the old content
+        let renamedPath = mgr.appSupportDirectory.appendingPathComponent(renamedFiles.first!)
+        let renamedContent = try! String(contentsOf: renamedPath, encoding: .utf8)
+        XCTAssertTrue(renamedContent.contains("FontName=Courier"))
+    }
+
+    func testMultipleCorruptFilesGetUniqueNames() {
+        let mgr = makeManager()
+        try! mgr.ensureDirectory()
+
+        let fm = FileManager.default
+
+        // First corrupt file
+        let corrupt1 = Data([0x80, 0x81, 0x82, 0xFE, 0xFF, 0x80, 0x81])
+        try! corrupt1.write(to: mgr.iniFileURL)
+        let _ = mgr.loadConfig()
+
+        // Second corrupt file (overwrite the new default)
+        let corrupt2 = Data([0x90, 0x91, 0x92, 0xFE, 0xFF, 0x90, 0x91])
+        try! corrupt2.write(to: mgr.iniFileURL)
+        let _ = mgr.loadConfig()
+
+        // Should have two renamed files plus the current TERATERM.INI
+        let files = try! fm.contentsOfDirectory(atPath: mgr.appSupportDirectory.path)
+        let renamedFiles = files.filter { $0.contains("_TERATERM.INI") && $0 != "TERATERM.INI" }
+        XCTAssertEqual(renamedFiles.count, 2, "Each corrupt file should get a unique renamed name")
+    }
+
+    // MARK: - Encode with Comments Round-Trip
+
+    func testEncodeWithCommentsRoundTrip() {
+        let mgr = makeManager()
+        var config = TeraTermConfig()
+        config.fontName = "SF Mono"
+        config.fontSize = 16
+        config.terminalWidth = 132
+        config.terminalHeight = 48
+
+        // Generate commented INI
+        let sections = mgr.encodeWithComments(config)
+        let text = INISerializer.serializeCommented(sections, lineEnding: .lf)
+
+        // Parse it back (comments should be ignored)
+        let (parsed, _) = INISerializer.parse(text)
+        let decoded = mgr.decode(sections: parsed)
+
+        XCTAssertEqual(decoded.fontName, "SF Mono")
+        XCTAssertEqual(decoded.fontSize, 16)
+        XCTAssertEqual(decoded.terminalWidth, 132)
+        XCTAssertEqual(decoded.terminalHeight, 48)
+    }
+
+    func testEncodeWithCommentsContainsAllSections() {
+        let mgr = makeManager()
+        let sections = mgr.encodeWithComments(TeraTermConfig())
+
+        let sectionNames = sections.map { $0.name }
+        XCTAssertTrue(sectionNames.contains("Tera Term"))
+        XCTAssertTrue(sectionNames.contains("TCP/IP"))
+        XCTAssertTrue(sectionNames.contains("Serial"))
+        XCTAssertTrue(sectionNames.contains("BG"))
+        XCTAssertTrue(sectionNames.contains("TTSSH"))
+        XCTAssertTrue(sectionNames.contains("Proxy"))
+    }
+
+    func testEncodeWithCommentsEveryPairHasComment() {
+        let mgr = makeManager()
+        let sections = mgr.encodeWithComments(TeraTermConfig())
+
+        for section in sections {
+            for pair in section.pairs {
+                XCTAssertNotNil(pair.comment,
+                    "Key '\(pair.key)' in section [\(section.name)] should have a comment")
+                XCTAssertFalse(pair.comment?.isEmpty ?? true,
+                    "Key '\(pair.key)' in section [\(section.name)] comment should not be empty")
+            }
+        }
+    }
+}
+
 // MARK: - Testable Subclass
 
 /// Overrides the directory to a temp location for isolated testing.

@@ -24,6 +24,22 @@ struct INISerializer {
         var pairs: [(key: String, value: String)]
     }
 
+    /// A key-value pair with an optional inline comment placed above the line.
+    struct CommentedPair {
+        var key: String
+        var value: String
+        /// Comment line(s) placed above this key=value line (each prefixed with "; ").
+        var comment: String? = nil
+    }
+
+    /// A section that carries per-key comments (used for generating documented INI files).
+    struct CommentedSection {
+        var name: String
+        var pairs: [CommentedPair]
+        /// Optional comment placed before the section header.
+        var headerComment: String? = nil
+    }
+
     /// Detected (or desired) line ending style.
     enum LineEnding: String {
         case crlf = "\r\n"
@@ -89,6 +105,34 @@ struct INISerializer {
                 out += "[\(section.name)]" + nl
             }
             for pair in section.pairs {
+                out += "\(pair.key)=\(pair.value)" + nl
+            }
+        }
+        return out
+    }
+
+    /// Serialize commented sections to an INI string with documentation comments.
+    static func serializeCommented(_ sections: [CommentedSection], lineEnding: LineEnding = .lf) -> String {
+        let nl = lineEnding.rawValue
+        var out = ""
+
+        for (i, section) in sections.enumerated() {
+            if !section.name.isEmpty {
+                if i > 0 { out += nl }
+                // Section header comment
+                if let hc = section.headerComment {
+                    for line in hc.components(separatedBy: "\n") {
+                        out += "; \(line)" + nl
+                    }
+                }
+                out += "[\(section.name)]" + nl
+            }
+            for pair in section.pairs {
+                if let comment = pair.comment {
+                    for line in comment.components(separatedBy: "\n") {
+                        out += "; \(line)" + nl
+                    }
+                }
                 out += "\(pair.key)=\(pair.value)" + nl
             }
         }
