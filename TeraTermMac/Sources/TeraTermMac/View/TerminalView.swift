@@ -101,10 +101,10 @@ class TerminalView: NSView {
         // Build 256-color palette
         build256ColorPalette()
 
-        // Vertical scroller for scrollback – use legacy style so the
-        // scrollbar is always visible, matching the original Tera Term behavior.
+        // Vertical scroller for scrollback – use the system default scroller
+        // style so that scrollbar width matches OS standard.
         verticalScroller = NSScroller(frame: .zero)
-        verticalScroller.scrollerStyle = .legacy
+        verticalScroller.scrollerStyle = NSScroller.preferredScrollerStyle
         verticalScroller.isEnabled = true
         verticalScroller.target = self
         verticalScroller.action = #selector(scrollerAction(_:))
@@ -113,10 +113,26 @@ class TerminalView: NSView {
 
         updateFont()
         startCursorBlink()
+
+        // Re-layout when the system scroller style preference changes
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(scrollerStyleDidChange(_:)),
+            name: NSScroller.preferredScrollerStyleDidChangeNotification,
+            object: nil
+        )
     }
 
     deinit {
         cursorBlinkTimer?.invalidate()
+        NotificationCenter.default.removeObserver(self)
+    }
+
+    @objc private func scrollerStyleDidChange(_ note: Notification) {
+        verticalScroller.scrollerStyle = NSScroller.preferredScrollerStyle
+        layoutScroller()
+        recalculateSize()
+        needsDisplay = true
     }
 
     // MARK: - Font Setup (port of vtdisp.c font handling)
@@ -197,10 +213,14 @@ class TerminalView: NSView {
 
     // MARK: - Vertical Scroller
 
-    /// Width of the legacy scroller track, used to reserve space for the
-    /// persistent scrollbar so that terminal text does not render beneath it.
+    /// Width of the scroller track.  For overlay scrollers this is 0 (they
+    /// float over content), for legacy scrollers it reserves track space.
     var scrollerWidth: CGFloat {
-        return NSScroller.scrollerWidth(for: .regular, scrollerStyle: .legacy)
+        let style = verticalScroller.scrollerStyle
+        if style == .overlay {
+            return 0
+        }
+        return NSScroller.scrollerWidth(for: .regular, scrollerStyle: style)
     }
 
     private func layoutScroller() {
@@ -211,6 +231,18 @@ class TerminalView: NSView {
             width: sw,
             height: bounds.height - topInset
         )
+    }
+
+    /// Update scroller appearance to match the terminal background brightness
+    /// so the scrollbar knob stays visible on dark or light backgrounds.
+    private func updateScrollerAppearance() {
+        let bg = backgroundColor
+        var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0
+        let converted = bg.usingColorSpace(.sRGB) ?? bg
+        converted.getRed(&r, green: &g, blue: &b, alpha: nil)
+        let luminance = 0.299 * r + 0.587 * g + 0.114 * b
+        let name: NSAppearance.Name = luminance < 0.5 ? .darkAqua : .aqua
+        verticalScroller.appearance = NSAppearance(named: name)
     }
 
     /// Synchronize the scroller knob position / proportion with the buffer state.
@@ -263,14 +295,24 @@ class TerminalView: NSView {
         guard let context = NSGraphicsContext.current?.cgContext else { return }
         guard let buffer = buffer else {
             // Draw empty screen
-            context.setFillColor(backgroundColor.cgColor)
+            let bg = backgroundColor
+            context.setFillColor(bg.cgColor)
             context.fill(dirtyRect)
+            layer?.backgroundColor = bg.cgColor
+            updateScrollerAppearance()
             return
         }
 
-        // Draw background
-        context.setFillColor(backgroundColor.cgColor)
+        // Draw background – fill entire bounds so right/bottom edges match
+        // the terminal background color even when text grid doesn't cover
+        // the full view area.
+        let bg = backgroundColor
+        context.setFillColor(bg.cgColor)
         context.fill(bounds)
+
+        // Also set the layer background to match, preventing any edge
+        // color mismatch when the window composites layers.
+        layer?.backgroundColor = bg.cgColor
 
         // Draw each visible row
         for row in 0..<rows {
@@ -293,6 +335,7 @@ class TerminalView: NSView {
 
         // Keep scroller in sync with buffer state
         updateScroller()
+        updateScrollerAppearance()
     }
 
     private func drawMarkedText(context: CGContext, buffer: TerminalBuffer, markedText: NSAttributedString) {
