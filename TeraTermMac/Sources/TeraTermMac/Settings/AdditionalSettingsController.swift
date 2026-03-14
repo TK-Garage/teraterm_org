@@ -22,7 +22,7 @@ import UniformTypeIdentifiers
 
 // MARK: - Additional Settings Window Controller
 
-final class AdditionalSettingsController: NSObject {
+final class AdditionalSettingsController: NSObject, NSWindowDelegate {
 
     private var window: NSWindow?
     private var tabView: NSTabView?
@@ -158,8 +158,15 @@ final class AdditionalSettingsController: NSObject {
         win.contentViewController = vc
         win.isReleasedWhenClosed = false
         win.title = TTL("dialog.additionalSettings.title")
+        win.delegate = self
         self.window = win
         self.tabView = tv
+    }
+
+    // MARK: - NSWindowDelegate
+
+    func windowWillClose(_ notification: Notification) {
+        NSApplication.shared.stopModal(withCode: .cancel)
     }
 
     @objc private func okAction(_ sender: Any?) {

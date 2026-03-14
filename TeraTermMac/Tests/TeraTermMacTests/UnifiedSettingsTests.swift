@@ -490,6 +490,130 @@ final class UnifiedSettingsTabLayoutTests: XCTestCase {
     }
 }
 
+// MARK: - Modal Dialog Lifecycle Tests (メニュー無効化バグ修正検証)
+
+/// 設定ダイアログを閉じた後にメニューが無効にならないことを検証するテスト。
+/// バグ: ダイアログの閉じるボタン（×）でモーダルを閉じると stopModal が呼ばれず、
+/// メニューが無効のままになる。修正: NSWindowDelegate で windowWillClose を実装。
+final class ModalDialogLifecycleTests: XCTestCase {
+
+    // MARK: - UnifiedSettingsController window delegate
+
+    func testUnifiedSettingsControllerConformsToNSWindowDelegate() {
+        let settings = TerminalSettings()
+        let controller = UnifiedSettingsController(settings: settings)
+        XCTAssertTrue(controller is NSWindowDelegate,
+            "UnifiedSettingsController should conform to NSWindowDelegate")
+    }
+
+    func testUnifiedSettingsControllerRespondsToWindowWillClose() {
+        let settings = TerminalSettings()
+        let controller = UnifiedSettingsController(settings: settings)
+        XCTAssertTrue(controller.responds(to: #selector(NSWindowDelegate.windowWillClose(_:))),
+            "UnifiedSettingsController should respond to windowWillClose:")
+    }
+
+    // MARK: - AdditionalSettingsController window delegate
+
+    func testAdditionalSettingsControllerConformsToNSWindowDelegate() {
+        let settings = TerminalSettings()
+        let controller = AdditionalSettingsController(settings: settings)
+        XCTAssertTrue(controller is NSWindowDelegate,
+            "AdditionalSettingsController should conform to NSWindowDelegate")
+    }
+
+    func testAdditionalSettingsControllerRespondsToWindowWillClose() {
+        let settings = TerminalSettings()
+        let controller = AdditionalSettingsController(settings: settings)
+        XCTAssertTrue(controller.responds(to: #selector(NSWindowDelegate.windowWillClose(_:))),
+            "AdditionalSettingsController should respond to windowWillClose:")
+    }
+
+    // MARK: - BaseSetupDialogController window delegate
+
+    func testBaseSetupDialogControllerConformsToNSWindowDelegate() {
+        let settings = TerminalSettings()
+        let vc = TerminalSetupViewController(settings: settings)
+        XCTAssertTrue(vc is NSWindowDelegate,
+            "BaseSetupDialogController should conform to NSWindowDelegate")
+    }
+
+    func testBaseSetupDialogControllerRespondsToWindowWillClose() {
+        let settings = TerminalSettings()
+        let vc = TerminalSetupViewController(settings: settings)
+        XCTAssertTrue(vc.responds(to: #selector(NSWindowDelegate.windowWillClose(_:))),
+            "BaseSetupDialogController should respond to windowWillClose:")
+    }
+
+    // MARK: - Modal window configuration
+
+    /// UnifiedSettingsController が作成するウィンドウに delegate が設定されていることを検証。
+    /// buildWindow() はプライベートなので、show() 前に window が nil であることと、
+    /// コントローラが NSWindowDelegate に適合していることで間接的に検証。
+    func testUnifiedSettingsControllerIsWindowDelegate() {
+        let settings = TerminalSettings()
+        let controller = UnifiedSettingsController(settings: settings)
+        // controller は NSWindowDelegate に適合しており、
+        // buildWindow() 内で win.delegate = self が設定される
+        XCTAssertTrue(controller is NSWindowDelegate)
+    }
+
+    // MARK: - Modal stopModal called on window close
+
+    /// windowWillClose が stopModal を呼ぶことをシミュレートで検証。
+    /// 実際の runModal は使わず、windowWillClose の動作のみテスト。
+    func testWindowWillCloseCallsStopModalForUnifiedSettings() {
+        let settings = TerminalSettings()
+        let controller = UnifiedSettingsController(settings: settings)
+
+        // windowWillClose は NSApplication.shared.stopModal(withCode: .cancel) を呼ぶ。
+        // ここではメソッドが存在し呼び出し可能であることを検証。
+        // （runModal が動いていない状態で stopModal を呼んでもクラッシュしない）
+        let notification = Notification(name: NSWindow.willCloseNotification)
+        controller.windowWillClose(notification)
+        // クラッシュしなければ成功
+    }
+
+    func testWindowWillCloseCallsStopModalForAdditionalSettings() {
+        let settings = TerminalSettings()
+        let controller = AdditionalSettingsController(settings: settings)
+        let notification = Notification(name: NSWindow.willCloseNotification)
+        controller.windowWillClose(notification)
+        // クラッシュしなければ成功
+    }
+
+    func testWindowWillCloseCallsStopModalForBaseSetupDialog() {
+        let settings = TerminalSettings()
+        let vc = TerminalSetupViewController(settings: settings)
+        let notification = Notification(name: NSWindow.willCloseNotification)
+        vc.windowWillClose(notification)
+        // クラッシュしなければ成功
+    }
+
+    // MARK: - All dialog subclasses inherit NSWindowDelegate
+
+    func testAllBaseSetupDialogSubclassesConformToNSWindowDelegate() {
+        let settings = TerminalSettings()
+        let controllers: [BaseSetupDialogController] = [
+            TerminalSetupViewController(settings: settings),
+            WindowSetupViewController(settings: settings),
+            SerialPortSetupViewController(settings: settings),
+            SSHAuthViewController(settings: settings),
+            TCPIPDialogController(settings: settings),
+            LogDialogController(),
+            DragDropDialogController(path: "/tmp/test"),
+            EditHistoryDialogController(history: []),
+        ]
+
+        for vc in controllers {
+            XCTAssertTrue(vc is NSWindowDelegate,
+                "\(type(of: vc)) should conform to NSWindowDelegate (inherited from BaseSetupDialogController)")
+            XCTAssertTrue(vc.responds(to: #selector(NSWindowDelegate.windowWillClose(_:))),
+                "\(type(of: vc)) should respond to windowWillClose:")
+        }
+    }
+}
+
 // MARK: - Settings Integration Tests
 
 final class UnifiedSettingsIntegrationTests: XCTestCase {

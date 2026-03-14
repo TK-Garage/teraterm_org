@@ -506,7 +506,7 @@ enum DialogButtonBar {
 
 // MARK: - Base Dialog ViewController
 
-class BaseSetupDialogController: NSViewController {
+class BaseSetupDialogController: NSViewController, NSWindowDelegate {
     var okHandler: (() -> Void)?
     var cancelHandler: (() -> Void)?
 
@@ -671,6 +671,7 @@ class BaseSetupDialogController: NSViewController {
         dialogWindow.contentViewController = self
         dialogWindow.isReleasedWhenClosed = false
         dialogWindow.title = self.title ?? ""
+        dialogWindow.delegate = self
 
         // 親ウィンドウの中央に配置
         dialogWindow.layoutIfNeeded()
@@ -695,6 +696,10 @@ class BaseSetupDialogController: NSViewController {
         } else {
             cancelHandler?()
         }
+
+        // モーダル終了後、親ウィンドウをキーウィンドウに復帰させる
+        parentWindow.makeKeyAndOrderFront(nil)
+
         return dialogWindow
     }
 
@@ -708,6 +713,7 @@ class BaseSetupDialogController: NSViewController {
         dialogWindow.contentViewController = self
         dialogWindow.isReleasedWhenClosed = false
         dialogWindow.title = self.title ?? ""
+        dialogWindow.delegate = self
         dialogWindow.center()
 
         // スクリーン内に収める
@@ -720,6 +726,13 @@ class BaseSetupDialogController: NSViewController {
         }
 
         return NSApplication.shared.runModal(for: dialogWindow)
+    }
+
+    // MARK: - NSWindowDelegate
+
+    /// 閉じるボタン（×）でウィンドウが閉じられた場合にモーダルを終了する
+    func windowWillClose(_ notification: Notification) {
+        NSApplication.shared.stopModal(withCode: .cancel)
     }
 
     @objc private func okAction(_ sender: Any?) {

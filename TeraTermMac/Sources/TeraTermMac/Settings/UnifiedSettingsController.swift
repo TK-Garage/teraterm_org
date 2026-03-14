@@ -110,7 +110,7 @@ enum UnifiedSettingsTab: String, CaseIterable {
 
 // MARK: - Unified Settings Controller
 
-final class UnifiedSettingsController: NSObject {
+final class UnifiedSettingsController: NSObject, NSWindowDelegate {
 
     private var window: NSWindow?
     private var tabView: NSTabView?
@@ -172,6 +172,10 @@ final class UnifiedSettingsController: NSObject {
         window = nil
         viewControllers.removeAll()
         additionalTabs.removeAll()
+
+        // モーダル終了後、親ウィンドウをキーウィンドウに復帰させる
+        parent.makeKeyAndOrderFront(nil)
+
         return win
     }
 
@@ -293,8 +297,17 @@ final class UnifiedSettingsController: NSObject {
         win.contentViewController = contentVC
         win.isReleasedWhenClosed = false
         win.title = TTL("dialog.unifiedSettings.title")
+        win.delegate = self
         self.window = win
         self.tabView = tv
+    }
+
+    // MARK: - NSWindowDelegate
+
+    /// ウィンドウの閉じるボタン（×）が押された場合にモーダルセッションを終了する。
+    /// これがないと runModal が終了せず、メニューが無効のまま残る。
+    func windowWillClose(_ notification: Notification) {
+        NSApplication.shared.stopModal(withCode: .cancel)
     }
 
     // MARK: - Create View Controllers
