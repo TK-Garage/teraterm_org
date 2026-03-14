@@ -322,19 +322,30 @@ final class UnifiedSettingsController: NSObject, NSWindowDelegate, NSTabViewDele
         let oldHeight = tabViewHeightConstraint?.constant ?? 420
         guard abs(contentHeight - oldHeight) > 1 else { return }
 
-        tabViewHeightConstraint?.constant = contentHeight
-
         let heightDelta = contentHeight - oldHeight
         var newFrame = win.frame
         // Grow/shrink from the top (keep bottom edge stable)
         newFrame.size.height += heightDelta
         newFrame.origin.y -= heightDelta
 
-        NSAnimationContext.runAnimationGroup { context in
+        let isGrowing = heightDelta > 0
+
+        // When growing: set constraint first so content expands into the enlarging window.
+        // When shrinking: defer constraint update until after the window finishes shrinking,
+        // otherwise the content area collapses instantly before the window catches up.
+        if isGrowing {
+            tabViewHeightConstraint?.constant = contentHeight
+        }
+
+        NSAnimationContext.runAnimationGroup({ context in
             context.duration = 0.25
             context.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
             win.animator().setFrame(newFrame, display: true)
-        }
+        }, completionHandler: { [weak self] in
+            if !isGrowing {
+                self?.tabViewHeightConstraint?.constant = contentHeight
+            }
+        })
     }
 
     // MARK: - Apply All
