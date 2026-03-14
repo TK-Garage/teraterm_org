@@ -381,10 +381,10 @@ final class UnifiedSettingsController: NSObject, NSWindowDelegate {
 
     // MARK: - NSWindowDelegate
 
-    /// ウィンドウの閉じるボタン（×）が押された場合にモーダルセッションを終了する。
-    /// これがないと runModal が終了せず、メニューが無効のまま残る。
-    func windowWillClose(_ notification: Notification) {
-        NSApplication.shared.stopModal(withCode: .cancel)
+    /// 閉じるボタン（×）をインターセプトしてアニメーション付きで閉じる。
+    func windowShouldClose(_ sender: NSWindow) -> Bool {
+        dismissAnimated(code: .cancel)
+        return false
     }
 
     // MARK: - Create View Controllers
@@ -450,24 +450,33 @@ final class UnifiedSettingsController: NSObject, NSWindowDelegate {
         }
     }
 
+    // MARK: - Animated Dismiss
+
+    /// フェードアウトアニメーション付きでモーダルを終了する。
+    private func dismissAnimated(code: NSApplication.ModalResponse) {
+        guard let win = window else { return }
+        if let parent = win.sheetParent {
+            parent.endSheet(win, returnCode: code)
+            return
+        }
+        NSAnimationContext.runAnimationGroup({ context in
+            context.duration = 0.15
+            win.animator().alphaValue = 0
+        }, completionHandler: {
+            NSApplication.shared.stopModal(withCode: code)
+            win.orderOut(nil)
+            win.alphaValue = 1
+        })
+    }
+
     // MARK: - Actions
 
     @objc private func okAction(_ sender: Any?) {
-        if let sheet = window, let parent = sheet.sheetParent {
-            parent.endSheet(sheet, returnCode: .OK)
-        } else if let win = window {
-            NSApplication.shared.stopModal(withCode: .OK)
-            win.close()
-        }
+        dismissAnimated(code: .OK)
     }
 
     @objc private func cancelAction(_ sender: Any?) {
-        if let sheet = window, let parent = sheet.sheetParent {
-            parent.endSheet(sheet, returnCode: .cancel)
-        } else if let win = window {
-            NSApplication.shared.stopModal(withCode: .cancel)
-            win.close()
-        }
+        dismissAnimated(code: .cancel)
     }
 
     @objc private func helpAction(_ sender: Any?) {

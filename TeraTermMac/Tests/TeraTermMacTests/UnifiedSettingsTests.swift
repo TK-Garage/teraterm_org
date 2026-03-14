@@ -506,11 +506,11 @@ final class ModalDialogLifecycleTests: XCTestCase {
             "UnifiedSettingsController should conform to NSWindowDelegate")
     }
 
-    func testUnifiedSettingsControllerRespondsToWindowWillClose() {
+    func testUnifiedSettingsControllerRespondsToWindowShouldClose() {
         let settings = TerminalSettings()
         let controller = UnifiedSettingsController(settings: settings)
-        XCTAssertTrue(controller.responds(to: #selector(NSWindowDelegate.windowWillClose(_:))),
-            "UnifiedSettingsController should respond to windowWillClose:")
+        XCTAssertTrue(controller.responds(to: #selector(NSWindowDelegate.windowShouldClose(_:))),
+            "UnifiedSettingsController should respond to windowShouldClose:")
     }
 
     // MARK: - AdditionalSettingsController window delegate
@@ -522,11 +522,11 @@ final class ModalDialogLifecycleTests: XCTestCase {
             "AdditionalSettingsController should conform to NSWindowDelegate")
     }
 
-    func testAdditionalSettingsControllerRespondsToWindowWillClose() {
+    func testAdditionalSettingsControllerRespondsToWindowShouldClose() {
         let settings = TerminalSettings()
         let controller = AdditionalSettingsController(settings: settings)
-        XCTAssertTrue(controller.responds(to: #selector(NSWindowDelegate.windowWillClose(_:))),
-            "AdditionalSettingsController should respond to windowWillClose:")
+        XCTAssertTrue(controller.responds(to: #selector(NSWindowDelegate.windowShouldClose(_:))),
+            "AdditionalSettingsController should respond to windowShouldClose:")
     }
 
     // MARK: - BaseSetupDialogController window delegate
@@ -538,11 +538,11 @@ final class ModalDialogLifecycleTests: XCTestCase {
             "BaseSetupDialogController should conform to NSWindowDelegate")
     }
 
-    func testBaseSetupDialogControllerRespondsToWindowWillClose() {
+    func testBaseSetupDialogControllerRespondsToWindowShouldClose() {
         let settings = TerminalSettings()
         let vc = TerminalSetupViewController(settings: settings)
-        XCTAssertTrue(vc.responds(to: #selector(NSWindowDelegate.windowWillClose(_:))),
-            "BaseSetupDialogController should respond to windowWillClose:")
+        XCTAssertTrue(vc.responds(to: #selector(NSWindowDelegate.windowShouldClose(_:))),
+            "BaseSetupDialogController should respond to windowShouldClose:")
     }
 
     // MARK: - Modal window configuration
@@ -560,34 +560,33 @@ final class ModalDialogLifecycleTests: XCTestCase {
 
     // MARK: - Modal stopModal called on window close
 
-    /// windowWillClose が stopModal を呼ぶことをシミュレートで検証。
-    /// 実際の runModal は使わず、windowWillClose の動作のみテスト。
-    func testWindowWillCloseCallsStopModalForUnifiedSettings() {
+    /// windowShouldClose がアニメーション付きで dismiss を行うことを検証。
+    /// 実際の runModal は使わず、windowShouldClose の動作のみテスト。
+    func testWindowShouldCloseReturnsFalseForUnifiedSettings() {
         let settings = TerminalSettings()
         let controller = UnifiedSettingsController(settings: settings)
 
-        // windowWillClose は NSApplication.shared.stopModal(withCode: .cancel) を呼ぶ。
-        // ここではメソッドが存在し呼び出し可能であることを検証。
-        // （runModal が動いていない状態で stopModal を呼んでもクラッシュしない）
-        let notification = Notification(name: NSWindow.willCloseNotification)
-        controller.windowWillClose(notification)
-        // クラッシュしなければ成功
+        // windowShouldClose は false を返し、dismissAnimated で非同期にモーダルを終了する。
+        // ウィンドウが無い状態でも安全に呼び出せることを検証。
+        let dummyWindow = NSWindow()
+        let result = controller.windowShouldClose(dummyWindow)
+        XCTAssertFalse(result, "windowShouldClose should return false to prevent immediate close")
     }
 
-    func testWindowWillCloseCallsStopModalForAdditionalSettings() {
+    func testWindowShouldCloseReturnsFalseForAdditionalSettings() {
         let settings = TerminalSettings()
         let controller = AdditionalSettingsController(settings: settings)
-        let notification = Notification(name: NSWindow.willCloseNotification)
-        controller.windowWillClose(notification)
-        // クラッシュしなければ成功
+        let dummyWindow = NSWindow()
+        let result = controller.windowShouldClose(dummyWindow)
+        XCTAssertFalse(result, "windowShouldClose should return false to prevent immediate close")
     }
 
-    func testWindowWillCloseCallsStopModalForBaseSetupDialog() {
+    func testWindowShouldCloseReturnsFalseForBaseSetupDialog() {
         let settings = TerminalSettings()
         let vc = TerminalSetupViewController(settings: settings)
-        let notification = Notification(name: NSWindow.willCloseNotification)
-        vc.windowWillClose(notification)
-        // クラッシュしなければ成功
+        let dummyWindow = NSWindow()
+        let result = vc.windowShouldClose(dummyWindow)
+        XCTAssertFalse(result, "windowShouldClose should return false to prevent immediate close")
     }
 
     // MARK: - All dialog subclasses inherit NSWindowDelegate
@@ -608,8 +607,8 @@ final class ModalDialogLifecycleTests: XCTestCase {
         for vc in controllers {
             XCTAssertTrue(vc is NSWindowDelegate,
                 "\(type(of: vc)) should conform to NSWindowDelegate (inherited from BaseSetupDialogController)")
-            XCTAssertTrue(vc.responds(to: #selector(NSWindowDelegate.windowWillClose(_:))),
-                "\(type(of: vc)) should respond to windowWillClose:")
+            XCTAssertTrue(vc.responds(to: #selector(NSWindowDelegate.windowShouldClose(_:))),
+                "\(type(of: vc)) should respond to windowShouldClose:")
         }
     }
 }

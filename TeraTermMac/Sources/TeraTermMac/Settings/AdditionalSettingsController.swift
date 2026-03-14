@@ -165,26 +165,35 @@ final class AdditionalSettingsController: NSObject, NSWindowDelegate {
 
     // MARK: - NSWindowDelegate
 
-    func windowWillClose(_ notification: Notification) {
-        NSApplication.shared.stopModal(withCode: .cancel)
+    func windowShouldClose(_ sender: NSWindow) -> Bool {
+        dismissAnimated(code: .cancel)
+        return false
+    }
+
+    // MARK: - Animated Dismiss
+
+    private func dismissAnimated(code: NSApplication.ModalResponse) {
+        guard let win = window else { return }
+        if let parent = win.sheetParent {
+            parent.endSheet(win, returnCode: code)
+            return
+        }
+        NSAnimationContext.runAnimationGroup({ context in
+            context.duration = 0.15
+            win.animator().alphaValue = 0
+        }, completionHandler: {
+            NSApplication.shared.stopModal(withCode: code)
+            win.orderOut(nil)
+            win.alphaValue = 1
+        })
     }
 
     @objc private func okAction(_ sender: Any?) {
-        if let sheet = window, let parent = sheet.sheetParent {
-            parent.endSheet(sheet, returnCode: .OK)
-        } else if let win = window {
-            NSApplication.shared.stopModal(withCode: .OK)
-            win.close()
-        }
+        dismissAnimated(code: .OK)
     }
 
     @objc private func cancelAction(_ sender: Any?) {
-        if let sheet = window, let parent = sheet.sheetParent {
-            parent.endSheet(sheet, returnCode: .cancel)
-        } else if let win = window {
-            NSApplication.shared.stopModal(withCode: .cancel)
-            win.close()
-        }
+        dismissAnimated(code: .cancel)
     }
 
     @objc private func helpAction(_ sender: Any?) {
