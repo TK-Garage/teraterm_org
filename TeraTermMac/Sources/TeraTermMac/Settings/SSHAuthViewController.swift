@@ -76,7 +76,7 @@ class SSHAuthViewController: BaseSetupDialogController {
 
     private func setupControls() {
         let dialogWidth: CGFloat = 420
-        contentArea.widthAnchor.constraint(equalToConstant: dialogWidth).isActive = true
+        setDialogContentWidth(dialogWidth)
 
         // ── Username / Passphrase grid ──
         let userLabel = NSView.makeLabel(TTL("dialog.sshAuth.username"))

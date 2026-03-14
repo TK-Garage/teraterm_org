@@ -532,6 +532,16 @@ class BaseSetupDialogController: NSViewController, NSWindowDelegate {
     /// inside a tabbed container that provides its own buttons.
     var hidesFooterButtons: Bool = false
 
+    /// Set the preferred width for the dialog content area.
+    /// When embedded in a tabbed container (`hidesFooterButtons == true`),
+    /// the constraint uses a lower priority so the tab view can resize freely.
+    /// When standalone, the constraint is high-priority for proper window sizing.
+    func setDialogContentWidth(_ width: CGFloat) {
+        let c = contentArea.widthAnchor.constraint(equalToConstant: width)
+        c.priority = hidesFooterButtons ? .fittingSizeCompression : .defaultHigh
+        c.isActive = true
+    }
+
     // MARK: - Convenience: Add Form Row
 
     /// Add a labelled form row to the content stack.
@@ -541,7 +551,7 @@ class BaseSetupDialogController: NSViewController, NSWindowDelegate {
     /// This is the primary API for subclasses building form-style dialogs.
     ///
     /// - Parameters:
-    ///   - labelKey: Localization key (passed through `TTL()`).
+    ///   - label: Localization key (passed through `TTL()`).
     ///   - view: The control placed next to the label.
     func addRow(label labelKey: String, view control: NSView) {
         let row = NSView.createFormRow(label: labelKey, control: control)

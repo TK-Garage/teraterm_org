@@ -140,7 +140,7 @@ class SerialPortSetupViewController: BaseSetupDialogController {
 
         // ── Layout ──
         let dialogWidth: CGFloat = 360
-        contentArea.widthAnchor.constraint(equalToConstant: dialogWidth).isActive = true
+        setDialogContentWidth(dialogWidth)
 
         // Build label-popup grid rows
         var previousAnchor = contentArea.topAnchor

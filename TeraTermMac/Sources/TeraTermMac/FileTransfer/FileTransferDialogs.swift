@@ -592,7 +592,7 @@ final class KermitGetDialogController: BaseSetupDialogController {
     }
 
     private func setupControls() {
-        contentArea.widthAnchor.constraint(equalToConstant: 340).isActive = true
+        setDialogContentWidth(340)
 
         let fnLabel = NSView.makeLabel(
             TTL("dialog.kermitGet.filename"),
@@ -873,7 +873,7 @@ final class SendFileDialogController: BaseSetupDialogController {
     }
 
     private func setupControls() {
-        contentArea.widthAnchor.constraint(equalToConstant: 420).isActive = true
+        setDialogContentWidth(420)
 
         // --- Filename row ---
         let fnLabel = NSView.makeLabel(
@@ -1061,7 +1061,7 @@ final class RecvFileDialogController: BaseSetupDialogController {
     }
 
     private func setupControls() {
-        contentArea.widthAnchor.constraint(equalToConstant: 420).isActive = true
+        setDialogContentWidth(420)
 
         // --- Filename row ---
         let fnLabel = NSView.makeLabel(

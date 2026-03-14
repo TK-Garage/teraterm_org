@@ -148,7 +148,7 @@ class TerminalSetupViewController: BaseSetupDialogController {
 
         // Dialog content width (expanded for macOS standard control sizes)
         let dialogWidth: CGFloat = 500
-        contentArea.widthAnchor.constraint(equalToConstant: dialogWidth).isActive = true
+        setDialogContentWidth(dialogWidth)
 
         // ── Size Box: top-left ──
         NSLayoutConstraint.activate([

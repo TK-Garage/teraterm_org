@@ -101,7 +101,7 @@ final class DragDropDialogController: BaseSetupDialogController {
     }
 
     private func setupControls() {
-        contentArea.widthAnchor.constraint(equalToConstant: 440).isActive = true
+        setDialogContentWidth(440)
 
         let pathLabel = NSView.makeLabel(TTL("dialog.dragDrop.filePath"), alignment: .left)
         pathField = NSView.makeTextField(value: droppedPath)
@@ -228,7 +228,7 @@ final class EditHistoryDialogController: BaseSetupDialogController {
     }
 
     private func setupControls() {
-        contentArea.widthAnchor.constraint(equalToConstant: 400).isActive = true
+        setDialogContentWidth(400)
 
         let hostLabel = NSView.makeLabel(TTL("dialog.editHistory.host"), alignment: .left)
         hostField = NSView.makeTextField(value: "")
@@ -480,7 +480,7 @@ final class LogDialogController: BaseSetupDialogController {
     }
 
     private func setupControls() {
-        contentArea.widthAnchor.constraint(equalToConstant: 440).isActive = true
+        setDialogContentWidth(440)
 
         let fnLabel = NSView.makeLabel(TTL("dialog.log.filename"), alignment: .left)
         filenameField = NSView.makeTextField(value: "", placeholder: TTL("dialog.log.placeholder"))

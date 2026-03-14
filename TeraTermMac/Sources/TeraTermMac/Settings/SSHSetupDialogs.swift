@@ -54,7 +54,7 @@ final class SCPDialogController: BaseSetupDialogController {
 
     private func setupControls() {
         let dialogWidth: CGFloat = 460
-        contentArea.widthAnchor.constraint(equalToConstant: dialogWidth).isActive = true
+        setDialogContentWidth(dialogWidth)
 
         // ── Send section ──
         let sendFromLabel = NSView.makeLabel(TTL("dialog.scp.sendFrom"))
@@ -541,7 +541,7 @@ final class ProxySetupDialogController: BaseSetupDialogController {
 
     private func setupControls() {
         let dialogWidth: CGFloat = 380
-        contentArea.widthAnchor.constraint(equalToConstant: dialogWidth).isActive = true
+        setDialogContentWidth(dialogWidth)
 
         let typeLabel = NSView.makeLabel(TTL("dialog.proxy.type"))
         typePopup = NSView.makePopUpButton(items: [
@@ -643,7 +643,7 @@ final class SSHSetupDialogController: BaseSetupDialogController {
 
     private func setupControls() {
         let dialogWidth: CGFloat = 640
-        contentArea.widthAnchor.constraint(equalToConstant: dialogWidth).isActive = true
+        setDialogContentWidth(dialogWidth)
 
         // ═══════════════════════════════════════════════════
         // Top row: Cipher | KEX | Host Key (3 columns)
@@ -1095,7 +1095,7 @@ final class SSHAuthSetupDialogController: BaseSetupDialogController {
 
     private func setupControls() {
         let dialogWidth: CGFloat = 440
-        contentArea.widthAnchor.constraint(equalToConstant: dialogWidth).isActive = true
+        setDialogContentWidth(dialogWidth)
 
         let bannerLabel = NSView.makeLabel(TTL("dialog.sshAuthSetup.banner"), alignment: .left)
 
@@ -1352,7 +1352,7 @@ final class SSHForwardingSetupDialogController: BaseSetupDialogController {
 
     private func setupControls() {
         let dialogWidth: CGFloat = 440
-        contentArea.widthAnchor.constraint(equalToConstant: dialogWidth).isActive = true
+        setDialogContentWidth(dialogWidth)
 
         // ── Port forwarding group ──
         let fwdBox = NSView.makeGroupBox(title: TTL("dialog.sshFwd.portForwarding"))
@@ -1534,7 +1534,7 @@ final class SSHForwardingEditDialogController: BaseSetupDialogController {
 
     private func setupControls() {
         let dialogWidth: CGFloat = 460
-        contentArea.widthAnchor.constraint(equalToConstant: dialogWidth).isActive = true
+        setDialogContentWidth(dialogWidth)
 
         let bannerLabel = NSView.makeLabel(TTL("dialog.sshFwdEdit.banner"), alignment: .left)
 
@@ -1761,7 +1761,7 @@ final class SSHKeyGenDialogController: BaseSetupDialogController {
 
     private func setupControls() {
         let dialogWidth: CGFloat = 420
-        contentArea.widthAnchor.constraint(equalToConstant: dialogWidth).isActive = true
+        setDialogContentWidth(dialogWidth)
 
         // ── Key type group ──
         let keyTypeBox = NSView.makeGroupBox(title: TTL("dialog.sshKeyGen.keyType"))
@@ -1994,7 +1994,7 @@ final class GeneralSetupDialogController: BaseSetupDialogController {
 
     private func setupControls() {
         let dialogWidth: CGFloat = 380
-        contentArea.widthAnchor.constraint(equalToConstant: dialogWidth).isActive = true
+        setDialogContentWidth(dialogWidth)
 
         let langLabel = NSView.makeLabel(TTL("dialog.generalSetup.language"))
         let autoLabel = TTL("dialog.generalSetup.languageAuto")

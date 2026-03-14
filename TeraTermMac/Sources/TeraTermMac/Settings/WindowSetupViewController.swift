@@ -94,7 +94,7 @@ class WindowSetupViewController: BaseSetupDialogController {
 
     private func setupControls() {
         let dialogWidth: CGFloat = 460
-        contentArea.widthAnchor.constraint(equalToConstant: dialogWidth).isActive = true
+        setDialogContentWidth(dialogWidth)
 
         // ── Title row: [Title:] [___________] ──
         let titleLabel = NSView.makeLabel(TTL("dialog.windowSetup.title_label"))
