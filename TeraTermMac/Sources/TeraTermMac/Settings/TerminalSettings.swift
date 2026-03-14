@@ -608,13 +608,15 @@ class TerminalSettings: Codable {
     var enableAixtermColors: Bool = false     // aixterm 16 color mode
     var enableXterm256Colors: Bool = true     // xterm 256 color mode
     var useStandardBGColor: Bool = false      // Always use standard background color
-    // Attribute-specific colors (Normal/Bold/Blink/Reverse/URL/Underline)
+    // Attribute-specific colors (Normal/Bold/Blink/Reverse/URL/Underline/Strikethrough)
     var attrColorNormal: TerminalColor = TerminalColor(r: 255, g: 255, b: 255)
     var attrColorBold: TerminalColor = TerminalColor(r: 255, g: 255, b: 0)
     var attrColorBlink: TerminalColor = TerminalColor(r: 255, g: 128, b: 0)
     var attrColorReverse: TerminalColor = TerminalColor(r: 0, g: 255, b: 255)
     var attrColorURL: TerminalColor = TerminalColor(r: 0, g: 128, b: 255)
     var attrColorUnderline: TerminalColor = TerminalColor(r: 0, g: 255, b: 0)
+    var enableStrikethroughColor: Bool = false
+    var attrColorStrikethrough: TerminalColor = TerminalColor(r: 255, g: 64, b: 64)
 
     // Font extended settings
     var resizeFontToFitWidth: Bool = false   // Resize font to fit drawing width

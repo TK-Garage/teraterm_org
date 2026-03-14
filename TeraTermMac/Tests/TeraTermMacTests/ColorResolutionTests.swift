@@ -393,5 +393,51 @@ final class ColorResolutionTests: XCTestCase {
                                 view.settings.attrColorBold.g,
                                 view.settings.attrColorBold.b))
     }
+
+    // MARK: - Strikethrough Attribute Color
+
+    func testStrikethroughAttribute_UsesAttrColorStrikethrough() {
+        view.settings.enableStrikethroughColor = true
+        view.settings.enableANSIColor = false
+        let cell = makeCell(attrs: .strikethrough)
+        let (fg, _) = view.resolveColors(cell, inSelection: false)
+        assertColorEqual(fg, tc(view.settings.attrColorStrikethrough.r,
+                                view.settings.attrColorStrikethrough.g,
+                                view.settings.attrColorStrikethrough.b))
+    }
+
+    func testStrikethroughAttribute_Disabled_UsesNormalColor() {
+        view.settings.enableStrikethroughColor = false
+        view.settings.enableANSIColor = false
+        let cell = makeCell(attrs: .strikethrough)
+        let (fg, _) = view.resolveColors(cell, inSelection: false)
+        assertColorEqual(fg, tc(view.settings.colorTheme.foreground.r,
+                                view.settings.colorTheme.foreground.g,
+                                view.settings.colorTheme.foreground.b))
+    }
+
+    func testPriority_StrikethroughOverBold() {
+        view.settings.enableStrikethroughColor = true
+        view.settings.enableBoldColor = true
+        view.settings.enableANSIColor = false
+        let cell = makeCell(attrs: [.strikethrough, .bold])
+        let (fg, _) = view.resolveColors(cell, inSelection: false)
+        // Strikethrough has higher priority than Bold
+        assertColorEqual(fg, tc(view.settings.attrColorStrikethrough.r,
+                                view.settings.attrColorStrikethrough.g,
+                                view.settings.attrColorStrikethrough.b))
+    }
+
+    func testPriority_UnderlineOverStrikethrough() {
+        view.settings.enableUnderlineColor = true
+        view.settings.enableStrikethroughColor = true
+        view.settings.enableANSIColor = false
+        let cell = makeCell(attrs: [.underline, .strikethrough])
+        let (fg, _) = view.resolveColors(cell, inSelection: false)
+        // Underline has higher priority than Strikethrough
+        assertColorEqual(fg, tc(view.settings.attrColorUnderline.r,
+                                view.settings.attrColorUnderline.g,
+                                view.settings.attrColorUnderline.b))
+    }
 }
 #endif

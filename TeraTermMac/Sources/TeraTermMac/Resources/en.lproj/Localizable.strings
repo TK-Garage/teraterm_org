@@ -585,6 +585,7 @@
 "dialog.visual.enableUnderlineDecoration" = "Add underline to underline attribute";
 "dialog.visual.enableURLColor" = "Enable URL attribute color";
 "dialog.visual.enableURLUnderline" = "Add underline to URL strings";
+"dialog.visual.enableStrikethroughColor" = "Enable strikethrough attribute color";
 "dialog.visual.enableANSIColor" = "Enable ANSI color";
 "dialog.visual.useTextColor" = "Use text color (ignore SGR/ANSI colors)";
 "dialog.visual.flickerlessMove" = "Disable theme during window move/resize";
@@ -916,6 +917,7 @@
 "dialog.visual.colorReverse" = "Reverse:";
 "dialog.visual.colorURL" = "URL:";
 "dialog.visual.colorUnderline" = "Underline:";
+"dialog.visual.colorStrikethrough" = "Strikethrough:";
 "dialog.visual.enableBoldDisplay" = "Enable bold text rendering";
 "dialog.visual.hideWindowFrame" = "Frameless window display";
 "dialog.visual.aixtermColors" = "aixterm 16 color mode";

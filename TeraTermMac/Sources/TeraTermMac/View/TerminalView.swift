@@ -547,13 +547,13 @@ class TerminalView: NSView {
     }
 
     /// Determine the attribute-specific foreground color, if any.
-    /// Priority: URL > Underline > Bold > Blink > nil
-    /// Separated for future extensibility (e.g. adding strikethrough color).
-    private func resolveAttributeColor(_ attrs: CharacterAttributes) -> TerminalColor? {
-        if settings.enableURLColor       && attrs.contains(.url)       { return settings.attrColorURL }
-        if settings.enableUnderlineColor && attrs.contains(.underline) { return settings.attrColorUnderline }
-        if settings.enableBoldColor      && attrs.contains(.bold)      { return settings.attrColorBold }
-        if settings.enableBlinkColor     && attrs.contains(.blink)     { return settings.attrColorBlink }
+    /// Priority: URL > Underline > Strikethrough > Bold > Blink > nil
+    private func resolveAttributeColor(_ attrs: CharAttributes) -> TerminalColor? {
+        if settings.enableURLColor            && attrs.contains(.url)           { return settings.attrColorURL }
+        if settings.enableUnderlineColor      && attrs.contains(.underline)     { return settings.attrColorUnderline }
+        if settings.enableStrikethroughColor  && attrs.contains(.strikethrough) { return settings.attrColorStrikethrough }
+        if settings.enableBoldColor           && attrs.contains(.bold)          { return settings.attrColorBold }
+        if settings.enableBlinkColor          && attrs.contains(.blink)         { return settings.attrColorBlink }
         return nil
     }
 

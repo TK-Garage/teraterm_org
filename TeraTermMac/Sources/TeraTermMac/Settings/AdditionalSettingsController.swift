@@ -1097,6 +1097,7 @@ final class VisualTab: AdditionalSettingsTab {
     private var enableAixtermColorsCheck: NSButton!
     private var enableXterm256ColorsCheck: NSButton!
     private var useStandardBGColorCheck: NSButton!
+    private var enableStrikethroughColorCheck: NSButton!
     // Attribute color wells
     private var attrColorNormalWell: NSColorWell!
     private var attrColorBoldWell: NSColorWell!
@@ -1104,6 +1105,7 @@ final class VisualTab: AdditionalSettingsTab {
     private var attrColorReverseWell: NSColorWell!
     private var attrColorURLWell: NSColorWell!
     private var attrColorUnderlineWell: NSColorWell!
+    private var attrColorStrikethroughWell: NSColorWell!
 
     init(settings: TerminalSettings) {
         contentView.translatesAutoresizingMaskIntoConstraints = false
@@ -1247,12 +1249,25 @@ final class VisualTab: AdditionalSettingsTab {
             TTL("dialog.visual.enableANSIColor"), checked: s.enableANSIColor)
         useTextColorCheck = NSView.makeCheckbox(
             TTL("dialog.visual.useTextColor"), checked: s.useTextColor)
+        enableStrikethroughColorCheck = NSView.makeCheckbox(
+            TTL("dialog.visual.enableStrikethroughColor"), checked: s.enableStrikethroughColor)
+
+        // Mutual exclusion: useTextColor disables enableANSIColor and vice versa
+        useTextColorCheck.target = self
+        useTextColorCheck.action = #selector(useTextColorChanged(_:))
+        enableANSIColorCheck.target = self
+        enableANSIColorCheck.action = #selector(enableANSIColorChanged(_:))
+        // Set initial enabled state
+        if s.useTextColor {
+            enableANSIColorCheck.isEnabled = false
+        }
 
         let acStack = NSStackView(views: [
             enableBoldColorCheck, enableBoldFontCheck,
             enableBlinkColorCheck, enableReverseColorCheck,
             enableUnderlineColorCheck, enableUnderlineDecorationCheck,
             enableURLColorCheck, enableURLUnderlineCheck,
+            enableStrikethroughColorCheck,
             enableANSIColorCheck,
             useTextColorCheck
         ])
@@ -1316,6 +1331,7 @@ final class VisualTab: AdditionalSettingsTab {
         attrColorReverseWell = colorWell(for: s.attrColorReverse)
         attrColorURLWell = colorWell(for: s.attrColorURL)
         attrColorUnderlineWell = colorWell(for: s.attrColorUnderline)
+        attrColorStrikethroughWell = colorWell(for: s.attrColorStrikethrough)
 
         let attrColorGrid = NSGridView(views: [
             [NSView.makeLabel(TTL("dialog.visual.colorNormal"), alignment: .right), attrColorNormalWell,
@@ -1324,6 +1340,8 @@ final class VisualTab: AdditionalSettingsTab {
              NSView.makeLabel(TTL("dialog.visual.colorReverse"), alignment: .right), attrColorReverseWell],
             [NSView.makeLabel(TTL("dialog.visual.colorURL"), alignment: .right), attrColorURLWell,
              NSView.makeLabel(TTL("dialog.visual.colorUnderline"), alignment: .right), attrColorUnderlineWell],
+            [NSView.makeLabel(TTL("dialog.visual.colorStrikethrough"), alignment: .right), attrColorStrikethroughWell,
+             NSView(), NSView()],
         ])
         attrColorGrid.translatesAutoresizingMaskIntoConstraints = false
         attrColorGrid.rowSpacing = 8
@@ -1361,6 +1379,19 @@ final class VisualTab: AdditionalSettingsTab {
     }
     @objc private func inactiveSliderChanged(_ sender: NSSlider) {
         opacityInactiveLabel.stringValue = "\(Int(sender.doubleValue))%"
+    }
+
+    @objc private func useTextColorChanged(_ sender: NSButton) {
+        let useText = sender.state == .on
+        enableANSIColorCheck.isEnabled = !useText
+        if useText {
+            enableANSIColorCheck.state = .off
+        }
+    }
+
+    @objc private func enableANSIColorChanged(_ sender: NSButton) {
+        // No-op for now; enableANSIColor doesn't disable useTextColor
+        // but useTextColor=true already disables this checkbox
     }
 
     func apply(to s: TerminalSettings) {
@@ -1420,6 +1451,8 @@ final class VisualTab: AdditionalSettingsTab {
         s.attrColorReverse = extractColor(attrColorReverseWell)
         s.attrColorURL = extractColor(attrColorURLWell)
         s.attrColorUnderline = extractColor(attrColorUnderlineWell)
+        s.enableStrikethroughColor = enableStrikethroughColorCheck.state == .on
+        s.attrColorStrikethrough = extractColor(attrColorStrikethroughWell)
         s.killFocusCursor = killFocusCursorCheck.state == .on
         s.pcBoldColor = pcBoldColorCheck.state == .on
     }

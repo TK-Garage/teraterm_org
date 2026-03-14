@@ -376,6 +376,121 @@ struct TeraTermConfig {
 
     // ── Legacy compat (kept for encode/decode) ────────────────
     var autoWrap: Bool = true
+
+    // MARK: - Apply to TerminalSettings
+
+    /// INI 設定 (TeraTermConfig) を TerminalSettings に反映する。
+    /// 既存の JSON ベース設定を INI 側の値で上書きする。
+    func apply(to s: inout TerminalSettings) {
+        // ── Terminal ──
+        s.terminalWidth = terminalWidth
+        s.terminalHeight = terminalHeight
+        s.termIsWin = termIsWin
+        s.autoWinResize = autoWinResize
+        s.termType = termType
+        s.answerback = answerback
+        s.crReceive = NewLineMode(rawValue: crReceive) ?? .auto_
+        s.crSend = NewLineMode(rawValue: crSend) ?? .cr
+        s.localEcho = localEcho
+
+        // ── Cursor ──
+        s.cursorShape = cursorShape
+        s.cursorBlink = cursorBlink
+        s.killFocusCursor = killFocusCursor
+
+        // ── Window ──
+        s.title = title
+
+        // ── Scroll ──
+        s.enableScrollBuffer = enableScrollBuffer
+        s.scrollBufferSize = scrollBufferSize
+
+        // ── Color flags ──
+        s.enableBoldColor = enableBoldColor
+        s.enableBlinkColor = enableBlinkColor
+        s.enableReverseColor = enableReverseColor
+        s.enableURLColor = enableURLColor
+        s.enableANSIColor = enableANSIColor
+        s.useTextColor = useTextColor
+        s.useStandardBGColor = useStandardBGColor
+        s.pcBoldColor = pcBoldColor
+        s.enableAixtermColors = enableAixtermColors
+        s.enableXterm256Colors = enableXterm256Colors
+
+        // ── Color values (parse INI color strings) ──
+        if let (fg, bg) = Self.parseVTColor(vtColor) {
+            s.colorTheme.foreground = fg
+            s.colorTheme.background = bg
+        }
+        if let (fg, _) = Self.parseAttrColor(vtBoldColor) {
+            s.attrColorBold = fg
+        }
+        if let (fg, _) = Self.parseAttrColor(vtBlinkColor) {
+            s.attrColorBlink = fg
+        }
+        if let (fg, _) = Self.parseAttrColor(vtReverseColor) {
+            s.attrColorReverse = fg
+        }
+        if let (fg, _) = Self.parseAttrColor(vtUnderlineColor) {
+            s.attrColorUnderline = fg
+        }
+        if let (fg, _) = Self.parseAttrColor(urlColor) {
+            s.attrColorURL = fg
+        }
+
+        // ── Font ──
+        s.fontName = fontName
+        s.fontSize = fontSize
+        s.enableBoldFont = enableBoldFont
+        s.enableURLUnderline = enableURLUnderline
+        s.enableUnderlineDecoration = enableUnderlineDecoration
+        s.enableUnderlineColor = enableUnderlineColor
+
+        // ── Keyboard ──
+        s.bsKey = bsKey
+        s.deleteKey = deleteKey
+        s.metaKey = metaKey
+        s.disableAppKeypad = disableAppKeypad
+        s.disableAppCursor = disableAppCursor
+
+        // ── Window opacity (INI: 0-255, TerminalSettings: 0-100) ──
+        s.windowOpacityActive = Int((Double(windowOpacityActive) / 255.0 * 100.0).rounded())
+
+        // ── URL ──
+        s.joinSplitURL = joinSplitURL
+        s.joinSplitURLIgnoreEOLChar = joinSplitURLIgnoreEOLChar
+
+        // ── Unicode ──
+        s.unicodeAmbiguousWidth = unicodeAmbiguousWidth
+        s.unicodeEmojiOverride = unicodeEmojiOverride
+        s.unicodeEmojiWidth = unicodeEmojiWidth
+    }
+
+    // MARK: - Color Parsing Helpers
+
+    /// Parse "R,G,B R,G,B" format (VTColor: fg space bg).
+    static func parseVTColor(_ str: String) -> (TerminalColor, TerminalColor)? {
+        let parts = str.split(separator: " ")
+        guard parts.count == 2,
+              let fg = parseRGB(String(parts[0])),
+              let bg = parseRGB(String(parts[1])) else { return nil }
+        return (fg, bg)
+    }
+
+    /// Parse "R1,G1,B1,R2,G2,B2" format (attr colors: fg,bg in 6 comma values).
+    static func parseAttrColor(_ str: String) -> (TerminalColor, TerminalColor)? {
+        let nums = str.split(separator: ",").compactMap { UInt8($0.trimmingCharacters(in: .whitespaces)) }
+        guard nums.count == 6 else { return nil }
+        return (TerminalColor(r: nums[0], g: nums[1], b: nums[2]),
+                TerminalColor(r: nums[3], g: nums[4], b: nums[5]))
+    }
+
+    /// Parse "R,G,B" into a TerminalColor.
+    private static func parseRGB(_ str: String) -> TerminalColor? {
+        let nums = str.split(separator: ",").compactMap { UInt8($0.trimmingCharacters(in: .whitespaces)) }
+        guard nums.count == 3 else { return nil }
+        return TerminalColor(r: nums[0], g: nums[1], b: nums[2])
+    }
 }
 
 // MARK: - ConfigPersistenceManager

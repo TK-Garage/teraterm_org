@@ -585,6 +585,7 @@
 "dialog.visual.enableUnderlineDecoration" = "下線属性に下線を付加する";
 "dialog.visual.enableURLColor" = "URL属性色を有効にする";
 "dialog.visual.enableURLUnderline" = "URL文字列に下線を付加する";
+"dialog.visual.enableStrikethroughColor" = "取り消し線属性色を有効にする";
 "dialog.visual.enableANSIColor" = "ANSIカラーを有効にする";
 "dialog.visual.useTextColor" = "テキスト色を使用 (SGR/ANSIカラーを無視)";
 "dialog.visual.flickerlessMove" = "ウインドウ移動/リサイズ時テーマを一時的に無効にする";
@@ -916,6 +917,7 @@
 "dialog.visual.colorReverse" = "反転:";
 "dialog.visual.colorURL" = "URL:";
 "dialog.visual.colorUnderline" = "下線:";
+"dialog.visual.colorStrikethrough" = "取り消し線:";
 "dialog.visual.enableBoldDisplay" = "太字テキストの描画を有効にする";
 "dialog.visual.hideWindowFrame" = "フレームなしのウインドウ表示";
 "dialog.visual.aixtermColors" = "aixterm 16色モード";
