@@ -138,13 +138,35 @@ final class UnifiedSettingsController: NSObject, NSWindowDelegate, NSTabViewDele
     /// Minimum height for the tab view content
     private let minTabViewHeight: CGFloat = 300
 
+    /// Parent window reference (for modeless operation)
+    private weak var parentWindow: NSWindow?
+
     init(settings: TerminalSettings) {
         self.settings = settings
         super.init()
+        // ターミナルウィンドウのリサイズ通知を監視して設定値を更新する
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(terminalDidResize(_:)),
+            name: TerminalWindowController.terminalDidResizeNotification,
+            object: nil
+        )
     }
 
-    /// Show the unified settings dialog with the specified tab selected.
-    /// Returns the dialog window for exclusive control.
+    deinit {
+        NotificationCenter.default.removeObserver(self)
+    }
+
+    @objc private func terminalDidResize(_ notification: Notification) {
+        guard let userInfo = notification.userInfo,
+              let columns = userInfo["columns"] as? Int,
+              let rows = userInfo["rows"] as? Int else { return }
+        notifyTerminalResize(columns: columns, rows: rows)
+    }
+
+    /// Show the unified settings dialog as a modeless window.
+    /// The parent terminal window remains interactive (resizable) while
+    /// this dialog is open. Returns the dialog window.
     @discardableResult
     func show(on parent: NSWindow, selectedTab: UnifiedSettingsTab = .terminal) -> NSWindow? {
         if let existingWindow = window {
@@ -154,6 +176,7 @@ final class UnifiedSettingsController: NSObject, NSWindowDelegate, NSTabViewDele
             return existingWindow
         }
 
+        parentWindow = parent
         buildWindow()
         guard let win = window else { return nil }
 
@@ -179,22 +202,14 @@ final class UnifiedSettingsController: NSObject, NSWindowDelegate, NSTabViewDele
             win.setFrame(frame, display: true)
         }
 
-        let response = NSApplication.shared.runModal(for: win)
-        if response == .OK {
-            applyAll()
-            onApply?()
-        }
-        window = nil
-        viewControllers.removeAll()
-        additionalTabs.removeAll()
-
-        // モーダル終了後、親ウィンドウをキーウィンドウに復帰させる
-        parent.makeKeyAndOrderFront(nil)
+        // Show as modeless — parent window stays interactive (resizable)
+        win.level = .floating
+        win.makeKeyAndOrderFront(nil)
 
         return win
     }
 
-    /// Show without a parent window
+    /// Show without a parent window (still modeless)
     func showModal(selectedTab: UnifiedSettingsTab = .terminal) {
         if window != nil { return }
         buildWindow()
@@ -202,14 +217,23 @@ final class UnifiedSettingsController: NSObject, NSWindowDelegate, NSTabViewDele
         selectTab(selectedTab)
         setHeightToFitSelectedTab()
         win.center()
-        let response = NSApplication.shared.runModal(for: win)
-        if response == .OK {
-            applyAll()
-            onApply?()
-        }
+        win.level = .floating
+        win.makeKeyAndOrderFront(nil)
+    }
+
+    /// Clean up after the dialog is closed.
+    private func cleanUp() {
         window = nil
         viewControllers.removeAll()
         additionalTabs.removeAll()
+        parentWindow = nil
+    }
+
+    /// Notify the TerminalSetupViewController (if visible) of a terminal resize.
+    func notifyTerminalResize(columns: Int, rows: Int) {
+        if let termVC = viewControllers[.terminal] as? TerminalSetupViewController {
+            termVC.updateTerminalSize(columns: columns, rows: rows)
+        }
     }
 
     // MARK: - Tab Selection
@@ -620,20 +644,27 @@ final class UnifiedSettingsController: NSObject, NSWindowDelegate, NSTabViewDele
 
     // MARK: - Animated Dismiss
 
-    /// フェードアウトアニメーション付きでモーダルを終了する。
+    /// フェードアウトアニメーション付きでダイアログを閉じる。
     private func dismissAnimated(code: NSApplication.ModalResponse) {
         guard let win = window else { return }
         if let parent = win.sheetParent {
             parent.endSheet(win, returnCode: code)
             return
         }
+        let parent = parentWindow
         NSAnimationContext.runAnimationGroup({ context in
             context.duration = 0.15
             win.animator().alphaValue = 0
-        }, completionHandler: {
-            NSApplication.shared.stopModal(withCode: code)
+        }, completionHandler: { [weak self] in
+            if code == .OK {
+                self?.applyAll()
+                self?.onApply?()
+            }
             win.orderOut(nil)
             win.alphaValue = 1
+            self?.cleanUp()
+            // ダイアログ終了後、親ウィンドウをキーウィンドウに復帰させる
+            parent?.makeKeyAndOrderFront(nil)
         })
     }
 

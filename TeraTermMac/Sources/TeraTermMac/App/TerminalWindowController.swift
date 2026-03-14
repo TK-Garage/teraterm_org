@@ -530,6 +530,10 @@ class TerminalWindowController: NSWindowController {
 
     // MARK: - Resize handling
 
+    /// Notification posted when the terminal window is resized.
+    /// `userInfo` contains "columns" and "rows" as Int values.
+    static let terminalDidResizeNotification = Notification.Name("TerminalWindowControllerDidResize")
+
     private func handleResize() {
         let size = terminalView.terminalSize
         guard size.columns > 0 && size.rows > 0 else { return }
@@ -547,6 +551,13 @@ class TerminalWindowController: NSWindowController {
         }
 
         terminalView.refresh()
+
+        // 設定ダイアログが開いている場合にサイズ変更を通知する
+        NotificationCenter.default.post(
+            name: Self.terminalDidResizeNotification,
+            object: self,
+            userInfo: ["columns": size.columns, "rows": size.rows]
+        )
     }
 }
 

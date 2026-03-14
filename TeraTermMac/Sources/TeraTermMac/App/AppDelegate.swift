@@ -1945,12 +1945,12 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
                 // シートとして表示されている場合
                 parent.endSheet(sheet, returnCode: .OK)
             } else if sheet.isVisible {
-                // モーダルウィンドウとして表示されている場合
-                NSApplication.shared.stopModal(withCode: .OK)
+                // モードレスウィンドウとして表示されている場合
                 sheet.close()
             }
         }
         currentSetupDialog = nil
+        unifiedSettingsController = nil
     }
 
     // MARK: - Unified Settings Dialog

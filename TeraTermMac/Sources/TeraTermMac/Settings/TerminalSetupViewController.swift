@@ -239,6 +239,16 @@ class TerminalSetupViewController: BaseSetupDialogController {
         ])
     }
 
+    // MARK: - External Update
+
+    /// Called when the terminal window is resized while this dialog is open.
+    /// Updates the width/height fields to reflect the current terminal size.
+    func updateTerminalSize(columns: Int, rows: Int) {
+        guard isViewLoaded else { return }
+        widthField?.integerValue = columns
+        heightField?.integerValue = rows
+    }
+
     // MARK: - Apply
 
     override func applySettings() {
