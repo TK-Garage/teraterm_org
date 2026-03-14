@@ -855,7 +855,7 @@ class LocalShellConnection: Connection {
         let pid = forkpty(&masterFD, nil, nil, &ws)
 
         if pid < 0 {
-            state = .error("forkpty failed")
+            state = .error(TTL("error.connection.ptyFailed"))
             delegate?.connectionDidFail(error: ConnectionError.ptyCreationFailed)
             return
         }
@@ -1050,7 +1050,7 @@ class LocalShellConnection: Connection {
                                 // 子プロセスが既に終了 (execvp 失敗等)
                                 DispatchQueue.main.async { [weak self] in
                                     guard let self = self else { return }
-                                    self.state = .error("Shell launch failed")
+                                    self.state = .error(TTL("error.connection.shellLaunchFailed"))
                                     self.delegate?.connectionDidFail(
                                         error: ConnectionError.ptyCreationFailed)
                                     self.disconnect()
@@ -1066,7 +1066,7 @@ class LocalShellConnection: Connection {
                     DispatchQueue.main.async { [weak self] in
                         guard let self = self else { return }
                         if !wasConnected {
-                            self.state = .error("Shell launch failed")
+                            self.state = .error(TTL("error.connection.shellLaunchFailed"))
                             self.delegate?.connectionDidFail(
                                 error: ConnectionError.ptyCreationFailed)
                         }
@@ -1079,7 +1079,7 @@ class LocalShellConnection: Connection {
                     DispatchQueue.main.async { [weak self] in
                         guard let self = self else { return }
                         if !wasConnected {
-                            self.state = .error("Shell exited immediately")
+                            self.state = .error(TTL("error.connection.shellExitedImmediately"))
                             self.delegate?.connectionDidFail(
                                 error: ConnectionError.ptyCreationFailed)
                         }

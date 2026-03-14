@@ -335,7 +335,7 @@ class TTLInterpreter {
         let handleResult: (Bool) -> Void = { [weak self] shouldStop in
             guard let self = self else { return }
             if shouldStop {
-                let fullMsg = "Error at line \(lineNo): \(msg)"
+                let fullMsg = TTL("macro.error.atLine", lineNo) + ": \(msg)"
                 self.onError?(fullMsg, lineNo)
                 self.stop()
             } else {

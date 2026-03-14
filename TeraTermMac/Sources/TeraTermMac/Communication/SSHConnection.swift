@@ -501,11 +501,11 @@ class SSHConnection: Connection {
                     DispatchQueue.main.async { [weak self] in
                         if !wasConnected {
                             // 接続完了前にエラー → 失敗通知
-                            self?.state = .error("SSH connection failed")
+                            self?.state = .error(TTL("error.connection.sshFailed", self?.host ?? "", self?.port ?? 0))
                             self?.delegate?.connectionDidFail(
                                 error: ConnectionError.sshConnectionFailed(
                                     host: self?.host ?? "", port: self?.port ?? 0,
-                                    detail: "PTY read error before connection established"))
+                                    detail: TTL("error.ssh.ptyReadError")))
                         }
                         self?.handleSSHExit()
                     }
@@ -515,11 +515,11 @@ class SSHConnection: Connection {
                     let wasConnected = self._hasNotifiedConnect
                     DispatchQueue.main.async { [weak self] in
                         if !wasConnected {
-                            self?.state = .error("SSH connection failed")
+                            self?.state = .error(TTL("error.connection.sshFailed", self?.host ?? "", self?.port ?? 0))
                             self?.delegate?.connectionDidFail(
                                 error: ConnectionError.sshConnectionFailed(
                                     host: self?.host ?? "", port: self?.port ?? 0,
-                                    detail: "SSH process exited before connection established"))
+                                    detail: TTL("error.ssh.processExited")))
                         }
                         self?.handleSSHExit()
                     }
@@ -552,13 +552,13 @@ class SSHConnection: Connection {
                 // SSH general error (connection refused, auth failed, etc.)
                 error = .sshConnectionFailed(
                     host: host, port: port,
-                    detail: "SSH connection terminated (exit code 255)")
+                    detail: TTL("error.ssh.terminated255"))
             case 127:
                 error = .sshNotFound
             default:
                 error = .sshConnectionFailed(
                     host: host, port: port,
-                    detail: "SSH exited with code \(exitStatus)")
+                    detail: TTL("error.ssh.exitedWithCode", exitStatus))
             }
             state = .error(error.localizedDescription)
             delegate?.connectionDidFail(error: error)

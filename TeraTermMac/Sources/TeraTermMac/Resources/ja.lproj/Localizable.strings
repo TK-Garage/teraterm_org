@@ -1037,3 +1037,52 @@
 
 /* マクロ - パスワードダイアログ */
 "dialog.macro.password" = "パスワード";
+
+/* マクロエラーメッセージ */
+"macro.error.closeParen" = "\")\" が必要です。";
+"macro.error.cantCall" = "サブルーチンを呼び出せません。";
+"macro.error.cantConnect" = "マクロをリンクできません。";
+"macro.error.cantOpen" = "ファイルを開けません。";
+"macro.error.divByZero" = "ゼロ除算です。";
+"macro.error.invalidCtl" = "無効な制御です。";
+"macro.error.labelAlreadyDef" = "ラベルが既に定義されています。";
+"macro.error.labelReq" = "ラベルが必要です。";
+"macro.error.linkFirst" = "先にマクロをリンクしてください。'connect' マクロを使用してください。";
+"macro.error.stackOver" = "スタックオーバーフローです。";
+"macro.error.syntax" = "構文エラーです。";
+"macro.error.tooManyLabels" = "ラベルが多すぎます。";
+"macro.error.tooManyVar" = "変数が多すぎます。";
+"macro.error.typeMismatch" = "型が一致しません。";
+"macro.error.varNotInit" = "変数が初期化されていません。";
+"macro.error.closeComment" = "\"*/\" が必要です。";
+"macro.error.outOfRange" = "インデックスが範囲外です。";
+"macro.error.closeBracket" = "\"]\" が必要です。";
+"macro.error.fewMemory" = "メモリを確保できません。";
+"macro.error.notSupported" = "不明なコマンドです。";
+"macro.error.cantExec" = "コマンドを実行できません。";
+"macro.error.atLine" = "%d 行目のエラー";
+
+/* キーマップエラーメッセージ */
+"error.keymap.fileNotFound" = "キーボード設定ファイルが見つかりません: %@";
+"error.keymap.encodingFailed" = "キーボード設定ファイルの文字エンコーディングを検出できませんでした。";
+"error.keymap.parseError" = "キーボード設定ファイルの解析エラー: %@";
+
+/* ファイル転送エラーメッセージ */
+"transfer.error.noFile" = "ファイルが指定されていません。";
+"transfer.error.cannotOpen" = "ファイルを開けません。";
+"transfer.error.tooManyRetries" = "リトライ回数が上限に達しました。";
+"transfer.error.fileNotFound" = "ファイルが見つかりません。";
+"transfer.error.kermit" = "Kermitエラー: %@";
+"transfer.error.bplusRemoteFailure" = "B-Plus: リモート側で障害が発生しました。";
+"transfer.error.quickvanRetries" = "Quick-VAN: リトライ回数が上限に達しました。";
+"transfer.error.quickvanNaks" = "Quick-VAN: NAK回数が上限に達しました。";
+
+/* 接続エラーメッセージ (追加) */
+"error.connection.shellLaunchFailed" = "シェルの起動に失敗しました。";
+"error.connection.shellExitedImmediately" = "シェルが直ちに終了しました。";
+
+/* SSHエラーメッセージ (追加) */
+"error.ssh.ptyReadError" = "接続確立前にPTY読み取りエラーが発生しました。";
+"error.ssh.processExited" = "接続確立前にSSHプロセスが終了しました。";
+"error.ssh.terminated255" = "SSH接続が終了しました (終了コード 255)。";
+"error.ssh.exitedWithCode" = "SSHが終了コード %d で終了しました。";

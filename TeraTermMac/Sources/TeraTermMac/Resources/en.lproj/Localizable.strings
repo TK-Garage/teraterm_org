@@ -1037,3 +1037,52 @@
 
 /* Macro - Password Dialog */
 "dialog.macro.password" = "Password";
+
+/* Macro Error Messages */
+"macro.error.closeParen" = "\")\" expected.";
+"macro.error.cantCall" = "Can't call sub.";
+"macro.error.cantConnect" = "Can't link macro.";
+"macro.error.cantOpen" = "Can't open file.";
+"macro.error.divByZero" = "Divide by zero.";
+"macro.error.invalidCtl" = "Invalid control.";
+"macro.error.labelAlreadyDef" = "Label already defined.";
+"macro.error.labelReq" = "Label required.";
+"macro.error.linkFirst" = "Link macro first. Use 'connect' macro.";
+"macro.error.stackOver" = "Stack overflow.";
+"macro.error.syntax" = "Syntax error.";
+"macro.error.tooManyLabels" = "Too many labels.";
+"macro.error.tooManyVar" = "Too many variables.";
+"macro.error.typeMismatch" = "Type mismatch.";
+"macro.error.varNotInit" = "Variable not initialized.";
+"macro.error.closeComment" = "\"*/\" expected.";
+"macro.error.outOfRange" = "Index out of range.";
+"macro.error.closeBracket" = "\"]\" expected.";
+"macro.error.fewMemory" = "Can't allocate memory.";
+"macro.error.notSupported" = "Unknown command.";
+"macro.error.cantExec" = "Can't execute command.";
+"macro.error.atLine" = "Error at line %d";
+
+/* Keymap Error Messages */
+"error.keymap.fileNotFound" = "Keyboard setup file not found: %@";
+"error.keymap.encodingFailed" = "Failed to detect character encoding of keyboard setup file";
+"error.keymap.parseError" = "Error parsing keyboard setup file: %@";
+
+/* File Transfer Error Messages */
+"transfer.error.noFile" = "No file specified";
+"transfer.error.cannotOpen" = "Cannot open file";
+"transfer.error.tooManyRetries" = "Too many retries";
+"transfer.error.fileNotFound" = "File not found";
+"transfer.error.kermit" = "Kermit error: %@";
+"transfer.error.bplusRemoteFailure" = "B-Plus: remote failure";
+"transfer.error.quickvanRetries" = "Quick-VAN: too many retries";
+"transfer.error.quickvanNaks" = "Quick-VAN: too many NAKs";
+
+/* Connection Error Messages (additional) */
+"error.connection.shellLaunchFailed" = "Shell launch failed.";
+"error.connection.shellExitedImmediately" = "Shell exited immediately.";
+
+/* SSH Error Messages (additional) */
+"error.ssh.ptyReadError" = "PTY read error before connection established.";
+"error.ssh.processExited" = "SSH process exited before connection established.";
+"error.ssh.terminated255" = "SSH connection terminated (exit code 255).";
+"error.ssh.exitedWithCode" = "SSH exited with code %d.";

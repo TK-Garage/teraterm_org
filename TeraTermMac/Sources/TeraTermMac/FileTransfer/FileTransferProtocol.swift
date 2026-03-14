@@ -141,12 +141,12 @@ class XMODEMProtocol: FileTransferProtocol {
 
     private func startSend() {
         guard let path = filePath else {
-            updateState(.failed(error: "No file specified"))
+            updateState(.failed(error: TTL("transfer.error.noFile")))
             return
         }
 
         guard let handle = FileHandle(forReadingAtPath: path) else {
-            updateState(.failed(error: "Cannot open file"))
+            updateState(.failed(error: TTL("transfer.error.cannotOpen")))
             return
         }
 
@@ -218,7 +218,7 @@ class XMODEMProtocol: FileTransferProtocol {
                 retryCount += 1
                 if retryCount > maxRetries {
                     sendData(Data([CAN, CAN]))
-                    updateState(.failed(error: "Too many retries"))
+                    updateState(.failed(error: TTL("transfer.error.tooManyRetries")))
                     return
                 }
                 sendData(Data([NAK]))
@@ -565,7 +565,7 @@ class YMODEMProtocol: FileTransferProtocol {
             retryCount += 1
             if retryCount > maxRetries {
                 sendCancel()
-                updateState(.failed(error: "Too many retries"))
+                updateState(.failed(error: TTL("transfer.error.tooManyRetries")))
                 return
             }
             sendData(Data([NAK]))
@@ -582,7 +582,7 @@ class YMODEMProtocol: FileTransferProtocol {
             retryCount += 1
             if retryCount > maxRetries {
                 sendCancel()
-                updateState(.failed(error: "Too many retries"))
+                updateState(.failed(error: TTL("transfer.error.tooManyRetries")))
                 return
             }
             sendData(Data([NAK]))
@@ -666,7 +666,7 @@ class YMODEMProtocol: FileTransferProtocol {
                     retryCount += 1
                     if retryCount > maxRetries {
                         sendCancel()
-                        updateState(.failed(error: "Too many retries"))
+                        updateState(.failed(error: TTL("transfer.error.tooManyRetries")))
                         return
                     }
                     sendBlock0()
@@ -691,7 +691,7 @@ class YMODEMProtocol: FileTransferProtocol {
                     retryCount += 1
                     if retryCount > maxRetries {
                         sendCancel()
-                        updateState(.failed(error: "Too many retries"))
+                        updateState(.failed(error: TTL("transfer.error.tooManyRetries")))
                         return
                     }
                 } else if response == CAN {
@@ -1029,11 +1029,11 @@ class ZMODEMProtocol: FileTransferProtocol {
             sendZRINIT()
         } else {
             guard let path = filePath else {
-                updateState(.failed(error: "No file specified"))
+                updateState(.failed(error: TTL("transfer.error.noFile")))
                 return
             }
             guard FileManager.default.fileExists(atPath: path) else {
-                updateState(.failed(error: "File not found"))
+                updateState(.failed(error: TTL("transfer.error.fileNotFound")))
                 return
             }
             zState = .sendInit
@@ -2129,7 +2129,7 @@ class KermitProtocol: FileTransferProtocol {
             let dataOffset = isLongPacket ? 7 : 4
             let errorMsg = packet.count > dataOffset ?
                 String(data: Data(packet[dataOffset...]), encoding: .ascii) ?? "Unknown" : "Unknown"
-            updateState(.failed(error: "Kermit error: \(errorMsg)"))
+            updateState(.failed(error: TTL("transfer.error.kermit", errorMsg)))
         case "R": // Receive-Init (file request)
             handleReceiveInit(packet)
         default:
@@ -3020,7 +3020,7 @@ class BPlusProtocol: FileTransferProtocol {
         case "N":  // Data packet
             handleDataPacket(pktData, seq: seqChar)
         case "F":  // Failure
-            updateState(.failed(error: "B-Plus: remote failure"))
+            updateState(.failed(error: TTL("transfer.error.bplusRemoteFailure")))
             bpState = .failure
         default:
             break
@@ -3468,7 +3468,7 @@ class QuickVANProtocol: FileTransferProtocol {
             retryCount -= 1
             if retryCount <= 0 {
                 sendData(Data([QuickVANProtocol.CAN_QV]))
-                updateState(.failed(error: "Quick-VAN: too many retries"))
+                updateState(.failed(error: TTL("transfer.error.quickvanRetries")))
                 return
             }
             sendData(Data([QuickVANProtocol.NAK_QV]))
@@ -3514,7 +3514,7 @@ class QuickVANProtocol: FileTransferProtocol {
             retryCount -= 1
             if retryCount <= 0 {
                 sendData(Data([QuickVANProtocol.CAN_QV]))
-                updateState(.failed(error: "Quick-VAN: too many NAKs"))
+                updateState(.failed(error: TTL("transfer.error.quickvanNaks")))
             }
 
         case QuickVANProtocol.VSTAT:

@@ -147,11 +147,11 @@ struct KeymapLoader {
         var errorDescription: String? {
             switch self {
             case .fileNotFound(let path):
-                return "Keyboard setup file not found: \(path)"
+                return TTL("error.keymap.fileNotFound", path)
             case .encodingDetectionFailed:
-                return "Failed to detect character encoding of keyboard setup file"
+                return TTL("error.keymap.encodingFailed")
             case .parseError(let msg):
-                return "Error parsing keyboard setup file: \(msg)"
+                return TTL("error.keymap.parseError", msg)
             }
         }
     }

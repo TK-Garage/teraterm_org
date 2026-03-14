@@ -172,27 +172,27 @@ enum TTLError: Int, Error {
 
     var message: String {
         switch self {
-        case .closeParen:      return "\")\" expected."
-        case .cantCall:        return "Can't call sub."
-        case .cantConnect:     return "Can't link macro."
-        case .cantOpen:        return "Can't open file."
-        case .divByZero:       return "Divide by zero."
-        case .invalidCtl:      return "Invalid control."
-        case .labelAlreadyDef: return "Label already defined."
-        case .labelReq:        return "Label required."
-        case .linkFirst:       return "Link macro first. Use 'connect' macro."
-        case .stackOver:       return "Stack overflow."
-        case .syntax:          return "Syntax error."
-        case .tooManyLabels:   return "Too many labels."
-        case .tooManyVar:      return "Too many variables."
-        case .typeMismatch:    return "Type mismatch."
-        case .varNotInit:      return "Variable not initialized."
-        case .closeComment:    return "\"*/\" expected."
-        case .outOfRange:      return "Index out of range."
-        case .closeBracket:    return "\"]\" expected."
-        case .fewMemory:       return "Can't allocate memory."
-        case .notSupported:    return "Unknown command."
-        case .cantExec:        return "Can't execute command."
+        case .closeParen:      return TTL("macro.error.closeParen")
+        case .cantCall:        return TTL("macro.error.cantCall")
+        case .cantConnect:     return TTL("macro.error.cantConnect")
+        case .cantOpen:        return TTL("macro.error.cantOpen")
+        case .divByZero:       return TTL("macro.error.divByZero")
+        case .invalidCtl:      return TTL("macro.error.invalidCtl")
+        case .labelAlreadyDef: return TTL("macro.error.labelAlreadyDef")
+        case .labelReq:        return TTL("macro.error.labelReq")
+        case .linkFirst:       return TTL("macro.error.linkFirst")
+        case .stackOver:       return TTL("macro.error.stackOver")
+        case .syntax:          return TTL("macro.error.syntax")
+        case .tooManyLabels:   return TTL("macro.error.tooManyLabels")
+        case .tooManyVar:      return TTL("macro.error.tooManyVar")
+        case .typeMismatch:    return TTL("macro.error.typeMismatch")
+        case .varNotInit:      return TTL("macro.error.varNotInit")
+        case .closeComment:    return TTL("macro.error.closeComment")
+        case .outOfRange:      return TTL("macro.error.outOfRange")
+        case .closeBracket:    return TTL("macro.error.closeBracket")
+        case .fewMemory:       return TTL("macro.error.fewMemory")
+        case .notSupported:    return TTL("macro.error.notSupported")
+        case .cantExec:        return TTL("macro.error.cantExec")
         }
     }
 }
