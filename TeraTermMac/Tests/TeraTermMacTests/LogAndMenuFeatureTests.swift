@@ -250,6 +250,113 @@ final class TerminalLoggerStateTests: XCTestCase {
                 "Each line should have a timestamp: \(line)")
         }
     }
+
+    // MARK: - Timestamp with various newline types
+
+    /// Helper: start logger with timestamp, log data, stop, return content lines (excluding header/footer)
+    private func logAndGetDataLines(_ input: Data, file: StaticString = #file, line: UInt = #line) -> [String] {
+        let opts = LogOptions(addTimestamp: true, plainText: true)
+        let logger = TerminalLogger(options: opts)
+        let path = tempPath("ts_\(UUID().uuidString).log")
+        _ = logger.startLogging(to: path, options: opts)
+        logger.logData(input)
+        logger.stopLogging()
+
+        let content = try! String(contentsOfFile: path, encoding: .utf8)
+        let lines = content.components(separatedBy: "\n").filter { !$0.isEmpty }
+        return lines.filter { !$0.contains("=== Tera Term Mac Log") }
+    }
+
+    func testTimestampWithLFOnly() {
+        let dataLines = logAndGetDataLines(Data("line1\nline2\nline3\n".utf8))
+        XCTAssertEqual(dataLines.count, 3, "Should have 3 data lines for LF input")
+        for line in dataLines {
+            XCTAssertTrue(line.hasPrefix("["), "Each line should start with timestamp: \(line)")
+        }
+    }
+
+    func testTimestampWithCROnly() {
+        let dataLines = logAndGetDataLines(Data("line1\rline2\rline3\r".utf8))
+        XCTAssertEqual(dataLines.count, 3, "Should have 3 data lines for CR input")
+        for line in dataLines {
+            XCTAssertTrue(line.hasPrefix("["), "Each line should start with timestamp: \(line)")
+        }
+    }
+
+    func testTimestampWithCRLF() {
+        let dataLines = logAndGetDataLines(Data("line1\r\nline2\r\nline3\r\n".utf8))
+        XCTAssertEqual(dataLines.count, 3, "Should have 3 data lines for CRLF input")
+        for line in dataLines {
+            XCTAssertTrue(line.hasPrefix("["), "Each line should start with timestamp: \(line)")
+        }
+    }
+
+    func testTimestampWithMixedNewlines() {
+        // Mix of CR, LF, and CRLF in a single chunk
+        let dataLines = logAndGetDataLines(Data("crLine\rlfLine\ncrlfLine\r\nend\n".utf8))
+        XCTAssertEqual(dataLines.count, 4, "Should have 4 data lines for mixed newlines")
+        for line in dataLines {
+            XCTAssertTrue(line.hasPrefix("["), "Each line should start with timestamp: \(line)")
+        }
+        XCTAssertTrue(dataLines[0].contains("crLine"))
+        XCTAssertTrue(dataLines[1].contains("lfLine"))
+        XCTAssertTrue(dataLines[2].contains("crlfLine"))
+        XCTAssertTrue(dataLines[3].contains("end"))
+    }
+
+    func testTimestampWithCRLFSplitAcrossChunks() {
+        // CR at end of chunk 1, LF at start of chunk 2 — should be single newline
+        let opts = LogOptions(addTimestamp: true, plainText: true)
+        let logger = TerminalLogger(options: opts)
+        let path = tempPath("ts_split.log")
+        _ = logger.startLogging(to: path, options: opts)
+
+        logger.logData(Data("line1\r".utf8))   // CR at end
+        logger.logData(Data("\nline2\n".utf8))  // LF at start (part of CRLF)
+        logger.stopLogging()
+
+        let content = try! String(contentsOfFile: path, encoding: .utf8)
+        let lines = content.components(separatedBy: "\n").filter { !$0.isEmpty }
+        let dataLines = lines.filter { !$0.contains("=== Tera Term Mac Log") }
+
+        XCTAssertEqual(dataLines.count, 2, "Split CRLF should produce 2 lines, not 3")
+        XCTAssertTrue(dataLines[0].contains("line1"))
+        XCTAssertTrue(dataLines[1].contains("line2"))
+        for line in dataLines {
+            XCTAssertTrue(line.hasPrefix("["), "Each line should start with timestamp: \(line)")
+        }
+    }
+
+    func testTimestampWithCRSplitAcrossChunks() {
+        // Standalone CR at end of chunk, next chunk starts with non-LF
+        let opts = LogOptions(addTimestamp: true, plainText: true)
+        let logger = TerminalLogger(options: opts)
+        let path = tempPath("ts_cr_split.log")
+        _ = logger.startLogging(to: path, options: opts)
+
+        logger.logData(Data("line1\r".utf8))    // standalone CR
+        logger.logData(Data("line2\r\n".utf8))  // next chunk, not starting with LF
+        logger.stopLogging()
+
+        let content = try! String(contentsOfFile: path, encoding: .utf8)
+        let lines = content.components(separatedBy: "\n").filter { !$0.isEmpty }
+        let dataLines = lines.filter { !$0.contains("=== Tera Term Mac Log") }
+
+        XCTAssertEqual(dataLines.count, 2, "Standalone CR + CRLF should produce 2 lines")
+        XCTAssertTrue(dataLines[0].contains("line1"))
+        XCTAssertTrue(dataLines[1].contains("line2"))
+        for line in dataLines {
+            XCTAssertTrue(line.hasPrefix("["), "Each line should start with timestamp: \(line)")
+        }
+    }
+
+    func testTimestampNoDoubleNewlineFromCRLF() {
+        // Verify CRLF doesn't produce two newlines (and thus a spurious blank timestamp line)
+        let dataLines = logAndGetDataLines(Data("hello\r\nworld\r\n".utf8))
+        XCTAssertEqual(dataLines.count, 2, "CRLF should not produce extra blank lines")
+        XCTAssertTrue(dataLines[0].contains("hello"))
+        XCTAssertTrue(dataLines[1].contains("world"))
+    }
 }
 
 // MARK: - LogProgressPanel Tests
