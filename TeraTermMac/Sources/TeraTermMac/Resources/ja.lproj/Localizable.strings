@@ -401,6 +401,7 @@
 "dialog.xmodem.receiveTitle" = "Tera Term: XMODEM 受信";
 "dialog.multi.sendTitle" = "Tera Term: %@ 送信";
 "dialog.multi.receiveTitle" = "Tera Term: %@ 受信";
+"dialog.multi.protocolDefault" = "ファイル転送";
 "dialog.kermitGet.filename" = "ファイル名:";
 "dialog.prot.filename" = "ファイル名:";
 "dialog.prot.protocol" = "プロトコル:";

@@ -417,7 +417,7 @@ final class FileTransferProgressPanel {
                 let rate = byteCount / Int64(elapsed)
                 let rateStr: String
                 if rate < 1200 {
-                    rateStr = "\(rate)Bytes/s"
+                    rateStr = "\(rate)B/s"
                 } else if rate < 1_200_000 {
                     rateStr = String(format: "%d.%02dKB/s", rate / 1000, rate / 10 % 100)
                 } else {
@@ -727,7 +727,7 @@ enum FileTransferDialogHelper {
         case .kermit:   protoName = "Kermit"
         case .bplus:    protoName = "B-Plus"
         case .quickVAN: protoName = "Quick-VAN"
-        default:        protoName = "File Transfer"
+        default:        protoName = TTL("dialog.multi.protocolDefault")
         }
         panel.title = String(format: TTL("dialog.multi.sendTitle"), protoName)
 
@@ -758,7 +758,7 @@ enum FileTransferDialogHelper {
         case .kermit:   protoName = "Kermit"
         case .bplus:    protoName = "B-Plus"
         case .quickVAN: protoName = "Quick-VAN"
-        default:        protoName = "File Transfer"
+        default:        protoName = TTL("dialog.multi.protocolDefault")
         }
         panel.title = String(format: TTL("dialog.multi.receiveTitle"), protoName)
 
