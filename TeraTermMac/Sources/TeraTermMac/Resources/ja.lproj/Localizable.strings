@@ -82,7 +82,7 @@
 /* Control Menu */
 "menu.control" = "制御";
 "menu.control.resetTerminal" = "端末リセット";
-"menu.control.areYouThere" = "Are You There";
+"menu.control.areYouThere" = "Are You There (AYT)";
 "menu.control.sendBreak" = "ブレーク送信";
 "menu.control.resetPort" = "ポートリセット";
 "menu.control.macro" = "マクロ…";
@@ -468,6 +468,9 @@
 "dialog.general.cursorIME" = "IMEの状態によってカーソル形状を変更する";
 "dialog.general.defaultPort" = "デフォルトポート:";
 "dialog.general.titleFormat" = "タイトル形式";
+"dialog.general.titleTCPIP" = "TCP/IP";
+"dialog.general.titleSerial" = "シリアル";
+"dialog.general.titleSession" = "セッション番号";
 "dialog.general.notifySound" = "通知音";
 "dialog.general.fileTransferFolder" = "ファイル転送フォルダ:";
 
@@ -538,6 +541,8 @@
 "dialog.log.hideDialog" = "ダイアログを非表示";
 "dialog.log.screenBuffer" = "スクリーンバッファを含める";
 "dialog.log.timestamp" = "タイムスタンプ";
+"dialog.log.bom" = "BOM";
+"dialog.log.timestampType" = "タイムスタンプ種別:";
 "dialog.log.logRotate" = "ログのローテート";
 "dialog.log.rotateEnabled" = "ローテートを有効にする";
 "dialog.log.rotateSize" = "サイズ:";
@@ -549,6 +554,11 @@
 "dialog.visual.inactive" = "非アクティブ時:";
 "dialog.visual.ansiColorPalette" = "ANSIカラーパレット";
 "dialog.visual.charAttributes" = "文字属性";
+"dialog.visual.attrBold" = "太字";
+"dialog.visual.attrBlink" = "点滅";
+"dialog.visual.attrReverse" = "反転";
+"dialog.visual.attrUnderline" = "下線";
+"dialog.visual.attrStrikethrough" = "取消線";
 "dialog.visual.mouseCursor" = "マウスカーソル:";
 "dialog.visual.cursorArrow" = "矢印";
 "dialog.visual.cursorIBeam" = "I-Beam";
@@ -642,6 +652,7 @@
 "dialog.editHistory.remove" = "削除";
 "dialog.editHistory.up" = "上へ";
 "dialog.editHistory.down" = "下へ";
+"dialog.editHistory.hostColumn" = "ホスト";
 
 /* Macro Error Dialog (IDD_ERRDLG) */
 "dialog.macroError.title" = "マクロエラー";
@@ -683,6 +694,7 @@
 "dialog.windowList.title" = "Tera Term: ウィンドウのリスト";
 "dialog.windowList.open" = "開く";
 "dialog.windowList.closeWindow" = "閉じる";
+"dialog.windowList.windowColumn" = "ウィンドウ";
 
 /* File Menu - SSH SCP */
 "menu.file.sshSCP" = "SSH SCP…";
@@ -702,12 +714,12 @@
 
 /* SSH SCP Dialog (IDD_SSHSCP) */
 "dialog.scp.title" = "Tera Term: Secure Copy Protocol (SCP)";
-"dialog.scp.sendFrom" = "From:";
-"dialog.scp.sendTo" = "To:";
+"dialog.scp.sendFrom" = "送信元:";
+"dialog.scp.sendTo" = "送信先:";
 "dialog.scp.dragNote" = "このウィンドウにファイルをドラッグできます";
 "dialog.scp.send" = "送信";
-"dialog.scp.receiveFrom" = "From:";
-"dialog.scp.receiveTo" = "To:";
+"dialog.scp.receiveFrom" = "受信元:";
+"dialog.scp.receiveTo" = "受信先:";
 "dialog.scp.receive" = "受信";
 "dialog.scp.selectFile" = "送信ファイル選択";
 "dialog.scp.selectDest" = "受信フォルダ選択";
@@ -952,6 +964,7 @@
 "dialog.printAbort.printing" = "印刷中...";
 
 /* ステータスダイアログ */
+"dialog.status.title" = "Tera Term: ステータス";
 "dialog.status.processing" = "処理中...";
 
 /* TEKウィンドウ */

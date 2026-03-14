@@ -468,6 +468,9 @@
 "dialog.general.cursorIME" = "Change cursor shape by IME state";
 "dialog.general.defaultPort" = "Default port:";
 "dialog.general.titleFormat" = "Title Format";
+"dialog.general.titleTCPIP" = "TCP/IP";
+"dialog.general.titleSerial" = "Serial";
+"dialog.general.titleSession" = "Session No.";
 "dialog.general.notifySound" = "Notification sound";
 "dialog.general.fileTransferFolder" = "File transfer folder:";
 
@@ -538,6 +541,8 @@
 "dialog.log.hideDialog" = "Hide dialog";
 "dialog.log.screenBuffer" = "Include screen buffer";
 "dialog.log.timestamp" = "Timestamp";
+"dialog.log.bom" = "BOM";
+"dialog.log.timestampType" = "Timestamp type:";
 "dialog.log.logRotate" = "Log Rotate";
 "dialog.log.rotateEnabled" = "Enable rotation";
 "dialog.log.rotateSize" = "Size:";
@@ -549,6 +554,11 @@
 "dialog.visual.inactive" = "Inactive:";
 "dialog.visual.ansiColorPalette" = "ANSI Color Palette";
 "dialog.visual.charAttributes" = "Character Attributes";
+"dialog.visual.attrBold" = "Bold";
+"dialog.visual.attrBlink" = "Blink";
+"dialog.visual.attrReverse" = "Reverse";
+"dialog.visual.attrUnderline" = "Underline";
+"dialog.visual.attrStrikethrough" = "Strikethrough";
 "dialog.visual.mouseCursor" = "Mouse cursor:";
 "dialog.visual.cursorArrow" = "Arrow";
 "dialog.visual.cursorIBeam" = "I-Beam";
@@ -642,6 +652,7 @@
 "dialog.editHistory.remove" = "Remove";
 "dialog.editHistory.up" = "Up";
 "dialog.editHistory.down" = "Down";
+"dialog.editHistory.hostColumn" = "Host";
 
 /* Macro Error Dialog (IDD_ERRDLG) */
 "dialog.macroError.title" = "Macro Error";
@@ -683,6 +694,7 @@
 "dialog.windowList.title" = "Tera Term: Window list";
 "dialog.windowList.open" = "Open";
 "dialog.windowList.closeWindow" = "Close window";
+"dialog.windowList.windowColumn" = "Window";
 
 /* File Menu - SSH SCP */
 "menu.file.sshSCP" = "SSH SCP…";
@@ -952,6 +964,7 @@
 "dialog.printAbort.printing" = "Printing...";
 
 /* Status Dialog */
+"dialog.status.title" = "Tera Term: Status";
 "dialog.status.processing" = "Processing...";
 
 /* TEK Window */
