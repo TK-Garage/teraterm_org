@@ -66,10 +66,8 @@ class TerminalView: NSView {
     // Scroll
     private var scrollbackOffset: Int = 0
 
-    // Vertical scroller – hidden by default, shown on scroll or mouse hover
+    // Vertical scroller – always visible (legacy style)
     private var verticalScroller: NSScroller!
-    private var scrollerHideTimer: Timer?
-    private var scrollerTrackingArea: NSTrackingArea?
 
     // IME
     private var markedText: NSMutableAttributedString?
@@ -103,15 +101,14 @@ class TerminalView: NSView {
         // Build 256-color palette
         build256ColorPalette()
 
-        // Vertical scroller for scrollback – overlay style, hidden by default.
-        // Shown on scroll wheel and when mouse approaches the right edge.
+        // Vertical scroller for scrollback – legacy style, always visible.
         verticalScroller = NSScroller(frame: .zero)
-        verticalScroller.scrollerStyle = .overlay
+        verticalScroller.scrollerStyle = .legacy
         verticalScroller.isEnabled = true
         verticalScroller.target = self
         verticalScroller.action = #selector(scrollerAction(_:))
         verticalScroller.knobProportion = 1.0
-        verticalScroller.alphaValue = 0
+        verticalScroller.alphaValue = 1
         addSubview(verticalScroller)
 
         updateFont()
@@ -120,7 +117,6 @@ class TerminalView: NSView {
 
     deinit {
         cursorBlinkTimer?.invalidate()
-        scrollerHideTimer?.invalidate()
     }
 
     // MARK: - Font Setup (port of vtdisp.c font handling)
@@ -201,18 +197,19 @@ class TerminalView: NSView {
 
     // MARK: - Vertical Scroller
 
-    /// Overlay scrollers float over content, so no space is reserved.
-    var scrollerWidth: CGFloat { 0 }
+    /// Legacy scrollers reserve space beside the terminal content.
+    var scrollerWidth: CGFloat {
+        NSScroller.scrollerWidth(for: .regular, scrollerStyle: .legacy)
+    }
 
     private func layoutScroller() {
-        let sw = NSScroller.scrollerWidth(for: .regular, scrollerStyle: .overlay)
+        let sw = scrollerWidth
         verticalScroller.frame = NSRect(
             x: bounds.width - sw,
             y: topInset,
             width: sw,
             height: bounds.height - topInset
         )
-        updateScrollerTrackingArea()
     }
 
     /// Update scroller appearance to match the terminal background brightness
@@ -225,72 +222,6 @@ class TerminalView: NSView {
         let luminance = 0.299 * r + 0.587 * g + 0.114 * b
         let name: NSAppearance.Name = luminance < 0.5 ? .darkAqua : .aqua
         verticalScroller.appearance = NSAppearance(named: name)
-    }
-
-    // MARK: - Scroller Show / Hide
-
-    /// Show the scroller with fade-in, then auto-hide after a delay.
-    private func flashScroller() {
-        scrollerHideTimer?.invalidate()
-        NSAnimationContext.runAnimationGroup { ctx in
-            ctx.duration = 0.15
-            verticalScroller.animator().alphaValue = 1
-        }
-        scrollerHideTimer = Timer.scheduledTimer(withTimeInterval: 1.2, repeats: false) { [weak self] _ in
-            self?.hideScroller()
-        }
-    }
-
-    /// Fade out the scroller.
-    private func hideScroller() {
-        scrollerHideTimer?.invalidate()
-        scrollerHideTimer = nil
-        NSAnimationContext.runAnimationGroup { ctx in
-            ctx.duration = 0.3
-            verticalScroller.animator().alphaValue = 0
-        }
-    }
-
-    /// Install a tracking area on the right edge so the scroller appears
-    /// when the mouse approaches.
-    private func updateScrollerTrackingArea() {
-        if let old = scrollerTrackingArea {
-            removeTrackingArea(old)
-        }
-        let sw = NSScroller.scrollerWidth(for: .regular, scrollerStyle: .overlay)
-        let hoverWidth = max(sw, 20)  // at least 20pt hover zone
-        let rect = NSRect(
-            x: bounds.width - hoverWidth,
-            y: topInset,
-            width: hoverWidth,
-            height: bounds.height - topInset
-        )
-        let area = NSTrackingArea(
-            rect: rect,
-            options: [.mouseEnteredAndExited, .activeInActiveApp],
-            owner: self,
-            userInfo: ["scrollerHover": true]
-        )
-        addTrackingArea(area)
-        scrollerTrackingArea = area
-    }
-
-    override func mouseEntered(with event: NSEvent) {
-        if let info = event.trackingArea?.userInfo as? [String: Bool],
-           info["scrollerHover"] == true {
-            flashScroller()
-            return
-        }
-        super.mouseEntered(with: event)
-    }
-
-    override func mouseExited(with event: NSEvent) {
-        if let info = event.trackingArea?.userInfo as? [String: Bool],
-           info["scrollerHover"] == true {
-            hideScroller()
-            return
-        }
-        super.mouseExited(with: event)
     }
 
     /// Synchronize the scroller knob position / proportion with the buffer state.
@@ -334,7 +265,6 @@ class TerminalView: NSView {
             break
         }
         updateScroller()
-        flashScroller()
         needsDisplay = true
     }
 
@@ -998,7 +928,6 @@ class TerminalView: NSView {
                     buffer.scrollOffset = max(buffer.scrollOffset - lines, 0)
                 }
                 updateScroller()
-                flashScroller()
                 needsDisplay = true
             }
         }
