@@ -80,6 +80,10 @@ class TerminalSetupViewController: BaseSetupDialogController {
         autoResizeCheck = NSView.makeCheckbox(
             TTL("dialog.termSetup.autoResize"), checked: settings.autoWinResize)
 
+        // Ensure checkboxes resist compression so the group box expands for long labels
+        termIsWinCheck.setContentCompressionResistancePriority(.required, for: .horizontal)
+        autoResizeCheck.setContentCompressionResistancePriority(.required, for: .horizontal)
+
         for v: NSView in [widthField, xLabel, heightField, termIsWinCheck, autoResizeCheck] {
             sizeBox.contentView!.addSubview(v)
         }
@@ -147,14 +151,14 @@ class TerminalSetupViewController: BaseSetupDialogController {
         let rs = DialogLayout.rowSpacing
 
         // Dialog content width (expanded for macOS standard control sizes)
-        let dialogWidth: CGFloat = 500
+        let dialogWidth: CGFloat = 540
         setDialogContentWidth(dialogWidth)
 
         // ── Size Box: top-left ──
         NSLayoutConstraint.activate([
             sizeBox.topAnchor.constraint(equalTo: contentArea.topAnchor),
             sizeBox.leadingAnchor.constraint(equalTo: contentArea.leadingAnchor),
-            sizeBox.widthAnchor.constraint(equalToConstant: 220),
+            sizeBox.widthAnchor.constraint(greaterThanOrEqualToConstant: 260),
         ])
 
         // Size box content
