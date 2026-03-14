@@ -938,7 +938,7 @@ final class SendFileDialogController: BaseSetupDialogController {
             TTL("dialog.sendFile.sendSize"))
         sizeLabel.alignment = .left
 
-        let sizeItems = ["All", "80", "160", "320", "640", "1280", "2560", "5120", "10240"]
+        let sizeItems = [TTL("dialog.sendFile.sizeAll"), "80", "160", "320", "640", "1280", "2560", "5120", "10240"]
         sendSizePopup = NSView.makePopUpButton(items: sizeItems, width: 140)
 
         let sizeRow = NSStackView(views: [sizeLabel, sendSizePopup])
@@ -1007,8 +1007,8 @@ final class SendFileDialogController: BaseSetupDialogController {
 
         let delayType = DelayType(rawValue: delayTypePopup.indexOfSelectedItem) ?? .noDelay
 
-        let sizeStr = sendSizePopup.titleOfSelectedItem ?? "All"
-        let sendSize = (sizeStr == "All") ? 0 : (Int(sizeStr) ?? 0)
+        let sizeStr = sendSizePopup.titleOfSelectedItem ?? ""
+        let sendSize = (Int(sizeStr) == nil) ? 0 : (Int(sizeStr) ?? 0)
 
         let delayMs = Int(delayTimeField.stringValue) ?? 0
 

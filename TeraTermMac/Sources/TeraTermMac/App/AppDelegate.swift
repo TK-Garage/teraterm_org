@@ -11,16 +11,6 @@
 import AppKit
 import UniformTypeIdentifiers
 
-// MARK: - Localization Helper
-
-private func L(_ key: String) -> String {
-    #if SWIFT_PACKAGE
-    return NSLocalizedString(key, bundle: Bundle.module, comment: "")
-    #else
-    return NSLocalizedString(key, bundle: Bundle.main, comment: "")
-    #endif
-}
-
 // MARK: - Connection Dialog Helper (radio button group controller)
 
 private class ConnectionDialogHelper: NSObject {
@@ -132,11 +122,11 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         let activeConnections = windowControllers.filter { $0.connectionManager.state != .disconnected }
         if !activeConnections.isEmpty && settings.confirmOnDisconnect {
             let alert = NSAlert()
-            alert.messageText = L("dialog.quit.title")
-            alert.informativeText = String(format: L("dialog.quit.message"), activeConnections.count)
+            alert.messageText = TTL("dialog.quit.title")
+            alert.informativeText = String(format: TTL("dialog.quit.message"), activeConnections.count)
             alert.alertStyle = .warning
-            alert.addButton(withTitle: L("dialog.quit.quit"))
-            alert.addButton(withTitle: L("dialog.quit.cancel"))
+            alert.addButton(withTitle: TTL("dialog.quit.quit"))
+            alert.addButton(withTitle: TTL("dialog.quit.cancel"))
             if alert.runModal() == .alertSecondButtonReturn {
                 return .terminateCancel
             }
@@ -187,275 +177,275 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         let appMenu = NSMenu()
         appMenuItem.submenu = appMenu
 
-        let aboutItem = appMenu.addItem(withTitle: L("menu.app.about"), action: #selector(showAbout(_:)), keyEquivalent: "")
+        let aboutItem = appMenu.addItem(withTitle: TTL("menu.app.about"), action: #selector(showAbout(_:)), keyEquivalent: "")
         setSymbol("info.circle", for: aboutItem)
         appMenu.addItem(NSMenuItem.separator())
-        let prefItem = appMenu.addItem(withTitle: L("menu.app.preferences"), action: #selector(showPreferences(_:)), keyEquivalent: ",")
+        let prefItem = appMenu.addItem(withTitle: TTL("menu.app.preferences"), action: #selector(showPreferences(_:)), keyEquivalent: ",")
         setSymbol("gearshape", for: prefItem)
         appMenu.addItem(NSMenuItem.separator())
-        let hideItem = appMenu.addItem(withTitle: L("menu.app.hide"), action: #selector(NSApplication.hide(_:)), keyEquivalent: "h")
+        let hideItem = appMenu.addItem(withTitle: TTL("menu.app.hide"), action: #selector(NSApplication.hide(_:)), keyEquivalent: "h")
         setSymbol("eye.slash", for: hideItem)
-        let hideOthers = NSMenuItem(title: L("menu.app.hideOthers"), action: #selector(NSApplication.hideOtherApplications(_:)), keyEquivalent: "h")
+        let hideOthers = NSMenuItem(title: TTL("menu.app.hideOthers"), action: #selector(NSApplication.hideOtherApplications(_:)), keyEquivalent: "h")
         hideOthers.keyEquivalentModifierMask = [.command, .option]
         setSymbol("eye.slash.circle", for: hideOthers)
         appMenu.addItem(hideOthers)
-        let showAllItem = appMenu.addItem(withTitle: L("menu.app.showAll"), action: #selector(NSApplication.unhideAllApplications(_:)), keyEquivalent: "")
+        let showAllItem = appMenu.addItem(withTitle: TTL("menu.app.showAll"), action: #selector(NSApplication.unhideAllApplications(_:)), keyEquivalent: "")
         setSymbol("eye", for: showAllItem)
         appMenu.addItem(NSMenuItem.separator())
-        let quitItem = appMenu.addItem(withTitle: L("menu.app.quit"), action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+        let quitItem = appMenu.addItem(withTitle: TTL("menu.app.quit"), action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
         setSymbol("power", for: quitItem)
 
         // File menu
         let fileMenuItem = NSMenuItem()
         mainMenu.addItem(fileMenuItem)
-        let fileMenu = NSMenu(title: L("menu.file"))
+        let fileMenu = NSMenu(title: TTL("menu.file"))
         fileMenuItem.submenu = fileMenu
 
-        let newConnItem = fileMenu.addItem(withTitle: L("menu.file.newConnection"), action: #selector(newConnection(_:)), keyEquivalent: "n")
+        let newConnItem = fileMenu.addItem(withTitle: TTL("menu.file.newConnection"), action: #selector(newConnection(_:)), keyEquivalent: "n")
         setSymbol("network", for: newConnItem)
-        let newWinItem = fileMenu.addItem(withTitle: L("menu.file.newWindow"), action: #selector(newWindow(_:)), keyEquivalent: "t")
+        let newWinItem = fileMenu.addItem(withTitle: TTL("menu.file.newWindow"), action: #selector(newWindow(_:)), keyEquivalent: "t")
         setSymbol("macwindow.badge.plus", for: newWinItem)
-        let dupItem = fileMenu.addItem(withTitle: L("menu.file.duplicateSession"), action: #selector(duplicateSession(_:)), keyEquivalent: "d")
+        let dupItem = fileMenu.addItem(withTitle: TTL("menu.file.duplicateSession"), action: #selector(duplicateSession(_:)), keyEquivalent: "d")
         setSymbol("doc.on.doc", for: dupItem)
         fileMenu.addItem(NSMenuItem.separator())
-        let sendFileItem = fileMenu.addItem(withTitle: L("menu.file.sendFile"), action: #selector(showSendFileDialog(_:)), keyEquivalent: "")
+        let sendFileItem = fileMenu.addItem(withTitle: TTL("menu.file.sendFile"), action: #selector(showSendFileDialog(_:)), keyEquivalent: "")
         setSymbol("arrow.up.doc", for: sendFileItem)
-        let recvFileItem = fileMenu.addItem(withTitle: L("menu.file.receiveFile"), action: #selector(showRecvFileDialog(_:)), keyEquivalent: "")
+        let recvFileItem = fileMenu.addItem(withTitle: TTL("menu.file.receiveFile"), action: #selector(showRecvFileDialog(_:)), keyEquivalent: "")
         setSymbol("arrow.down.doc", for: recvFileItem)
         fileMenu.addItem(NSMenuItem.separator())
-        let logItem = fileMenu.addItem(withTitle: L("menu.file.log"), action: #selector(showLogDialog(_:)), keyEquivalent: "")
+        let logItem = fileMenu.addItem(withTitle: TTL("menu.file.log"), action: #selector(showLogDialog(_:)), keyEquivalent: "")
         setSymbol("doc.text", for: logItem)
-        let pauseLogItem = fileMenu.addItem(withTitle: L("menu.file.pauseLog"), action: #selector(pauseLog(_:)), keyEquivalent: "")
+        let pauseLogItem = fileMenu.addItem(withTitle: TTL("menu.file.pauseLog"), action: #selector(pauseLog(_:)), keyEquivalent: "")
         setSymbol("pause.circle", for: pauseLogItem)
-        let commentLogItem = fileMenu.addItem(withTitle: L("menu.file.commentToLog"), action: #selector(commentToLog(_:)), keyEquivalent: "")
+        let commentLogItem = fileMenu.addItem(withTitle: TTL("menu.file.commentToLog"), action: #selector(commentToLog(_:)), keyEquivalent: "")
         setSymbol("text.bubble", for: commentLogItem)
-        let viewLogItem = fileMenu.addItem(withTitle: L("menu.file.viewLog"), action: #selector(viewLog(_:)), keyEquivalent: "")
+        let viewLogItem = fileMenu.addItem(withTitle: TTL("menu.file.viewLog"), action: #selector(viewLog(_:)), keyEquivalent: "")
         setSymbol("eye.circle", for: viewLogItem)
-        let showLogDlgItem = fileMenu.addItem(withTitle: L("menu.file.showLogDialog"), action: #selector(showLogProgressDialog(_:)), keyEquivalent: "")
+        let showLogDlgItem = fileMenu.addItem(withTitle: TTL("menu.file.showLogDialog"), action: #selector(showLogProgressDialog(_:)), keyEquivalent: "")
         setSymbol("chart.bar.doc.horizontal", for: showLogDlgItem)
-        let stopLogItem = fileMenu.addItem(withTitle: L("menu.file.stopLog"), action: #selector(stopLog(_:)), keyEquivalent: "")
+        let stopLogItem = fileMenu.addItem(withTitle: TTL("menu.file.stopLog"), action: #selector(stopLog(_:)), keyEquivalent: "")
         setSymbol("doc.text.fill", for: stopLogItem)
         fileMenu.addItem(NSMenuItem.separator())
-        let changeDirItem = fileMenu.addItem(withTitle: L("menu.file.changeDir"), action: #selector(showChangeDir(_:)), keyEquivalent: "")
+        let changeDirItem = fileMenu.addItem(withTitle: TTL("menu.file.changeDir"), action: #selector(showChangeDir(_:)), keyEquivalent: "")
         setSymbol("folder", for: changeDirItem)
         fileMenu.addItem(NSMenuItem.separator())
 
         // File transfer submenu
-        let transferMenu = NSMenu(title: L("menu.file.fileTransfer"))
-        let transferMenuItem = NSMenuItem(title: L("menu.file.fileTransfer"), action: nil, keyEquivalent: "")
+        let transferMenu = NSMenu(title: TTL("menu.file.fileTransfer"))
+        let transferMenuItem = NSMenuItem(title: TTL("menu.file.fileTransfer"), action: nil, keyEquivalent: "")
         setSymbol("arrow.left.arrow.right", for: transferMenuItem)
         transferMenuItem.submenu = transferMenu
         fileMenu.addItem(transferMenuItem)
 
-        let xmSend = transferMenu.addItem(withTitle: L("menu.file.xmodemSend"), action: #selector(xmodemSend(_:)), keyEquivalent: "")
+        let xmSend = transferMenu.addItem(withTitle: TTL("menu.file.xmodemSend"), action: #selector(xmodemSend(_:)), keyEquivalent: "")
         setSymbol("arrow.up.doc", for: xmSend)
-        let xmRecv = transferMenu.addItem(withTitle: L("menu.file.xmodemReceive"), action: #selector(xmodemRecv(_:)), keyEquivalent: "")
+        let xmRecv = transferMenu.addItem(withTitle: TTL("menu.file.xmodemReceive"), action: #selector(xmodemRecv(_:)), keyEquivalent: "")
         setSymbol("arrow.down.doc", for: xmRecv)
         transferMenu.addItem(NSMenuItem.separator())
-        let zmSend = transferMenu.addItem(withTitle: L("menu.file.zmodemSend"), action: #selector(zmodemSend(_:)), keyEquivalent: "")
+        let zmSend = transferMenu.addItem(withTitle: TTL("menu.file.zmodemSend"), action: #selector(zmodemSend(_:)), keyEquivalent: "")
         setSymbol("arrow.up.doc", for: zmSend)
-        let zmRecv = transferMenu.addItem(withTitle: L("menu.file.zmodemReceive"), action: #selector(zmodemRecv(_:)), keyEquivalent: "")
+        let zmRecv = transferMenu.addItem(withTitle: TTL("menu.file.zmodemReceive"), action: #selector(zmodemRecv(_:)), keyEquivalent: "")
         setSymbol("arrow.down.doc", for: zmRecv)
         transferMenu.addItem(NSMenuItem.separator())
-        let kmSend = transferMenu.addItem(withTitle: L("menu.file.kermitSend"), action: #selector(kermitSend(_:)), keyEquivalent: "")
+        let kmSend = transferMenu.addItem(withTitle: TTL("menu.file.kermitSend"), action: #selector(kermitSend(_:)), keyEquivalent: "")
         setSymbol("arrow.up.doc", for: kmSend)
-        let kmRecv = transferMenu.addItem(withTitle: L("menu.file.kermitReceive"), action: #selector(kermitRecv(_:)), keyEquivalent: "")
+        let kmRecv = transferMenu.addItem(withTitle: TTL("menu.file.kermitReceive"), action: #selector(kermitRecv(_:)), keyEquivalent: "")
         setSymbol("arrow.down.doc", for: kmRecv)
-        let kmGet = transferMenu.addItem(withTitle: L("menu.file.kermitGet"), action: #selector(kermitGet(_:)), keyEquivalent: "")
+        let kmGet = transferMenu.addItem(withTitle: TTL("menu.file.kermitGet"), action: #selector(kermitGet(_:)), keyEquivalent: "")
         setSymbol("arrow.down.to.line", for: kmGet)
-        let kmFinish = transferMenu.addItem(withTitle: L("menu.file.kermitFinish"), action: #selector(kermitFinish(_:)), keyEquivalent: "")
+        let kmFinish = transferMenu.addItem(withTitle: TTL("menu.file.kermitFinish"), action: #selector(kermitFinish(_:)), keyEquivalent: "")
         setSymbol("stop.circle", for: kmFinish)
         transferMenu.addItem(NSMenuItem.separator())
-        let ymSend = transferMenu.addItem(withTitle: L("menu.file.ymodemSend"), action: #selector(ymodemSend(_:)), keyEquivalent: "")
+        let ymSend = transferMenu.addItem(withTitle: TTL("menu.file.ymodemSend"), action: #selector(ymodemSend(_:)), keyEquivalent: "")
         setSymbol("arrow.up.doc", for: ymSend)
-        let ymRecv = transferMenu.addItem(withTitle: L("menu.file.ymodemReceive"), action: #selector(ymodemRecv(_:)), keyEquivalent: "")
+        let ymRecv = transferMenu.addItem(withTitle: TTL("menu.file.ymodemReceive"), action: #selector(ymodemRecv(_:)), keyEquivalent: "")
         setSymbol("arrow.down.doc", for: ymRecv)
         transferMenu.addItem(NSMenuItem.separator())
-        let bpSend = transferMenu.addItem(withTitle: L("menu.file.bplusSend"), action: #selector(bplusSend(_:)), keyEquivalent: "")
+        let bpSend = transferMenu.addItem(withTitle: TTL("menu.file.bplusSend"), action: #selector(bplusSend(_:)), keyEquivalent: "")
         setSymbol("arrow.up.doc", for: bpSend)
-        let bpRecv = transferMenu.addItem(withTitle: L("menu.file.bplusReceive"), action: #selector(bplusRecv(_:)), keyEquivalent: "")
+        let bpRecv = transferMenu.addItem(withTitle: TTL("menu.file.bplusReceive"), action: #selector(bplusRecv(_:)), keyEquivalent: "")
         setSymbol("arrow.down.doc", for: bpRecv)
         transferMenu.addItem(NSMenuItem.separator())
-        let qvSend = transferMenu.addItem(withTitle: L("menu.file.quickvanSend"), action: #selector(quickvanSend(_:)), keyEquivalent: "")
+        let qvSend = transferMenu.addItem(withTitle: TTL("menu.file.quickvanSend"), action: #selector(quickvanSend(_:)), keyEquivalent: "")
         setSymbol("arrow.up.doc", for: qvSend)
-        let qvRecv = transferMenu.addItem(withTitle: L("menu.file.quickvanReceive"), action: #selector(quickvanRecv(_:)), keyEquivalent: "")
+        let qvRecv = transferMenu.addItem(withTitle: TTL("menu.file.quickvanReceive"), action: #selector(quickvanRecv(_:)), keyEquivalent: "")
         setSymbol("arrow.down.doc", for: qvRecv)
 
         fileMenu.addItem(NSMenuItem.separator())
-        let scpItem = fileMenu.addItem(withTitle: L("menu.file.sshSCP"), action: #selector(showSCPDialog(_:)), keyEquivalent: "")
+        let scpItem = fileMenu.addItem(withTitle: TTL("menu.file.sshSCP"), action: #selector(showSCPDialog(_:)), keyEquivalent: "")
         setSymbol("lock.doc", for: scpItem)
         fileMenu.addItem(NSMenuItem.separator())
-        let printItem = fileMenu.addItem(withTitle: L("menu.file.print"), action: #selector(printTerminal(_:)), keyEquivalent: "p")
+        let printItem = fileMenu.addItem(withTitle: TTL("menu.file.print"), action: #selector(printTerminal(_:)), keyEquivalent: "p")
         setSymbol("printer", for: printItem)
-        let tekPrintItem = fileMenu.addItem(withTitle: L("menu.file.printTEK"), action: #selector(printTEKWindow(_:)), keyEquivalent: "")
+        let tekPrintItem = fileMenu.addItem(withTitle: TTL("menu.file.printTEK"), action: #selector(printTEKWindow(_:)), keyEquivalent: "")
         setSymbol("printer", for: tekPrintItem)
         fileMenu.addItem(NSMenuItem.separator())
-        let disconnItem = fileMenu.addItem(withTitle: L("menu.file.disconnect"), action: #selector(doDisconnect(_:)), keyEquivalent: "")
+        let disconnItem = fileMenu.addItem(withTitle: TTL("menu.file.disconnect"), action: #selector(doDisconnect(_:)), keyEquivalent: "")
         setSymbol("xmark.circle", for: disconnItem)
         fileMenu.addItem(NSMenuItem.separator())
-        let quitAllItem = fileMenu.addItem(withTitle: L("menu.file.quitAll"), action: #selector(quitAllTeraTerm(_:)), keyEquivalent: "")
+        let quitAllItem = fileMenu.addItem(withTitle: TTL("menu.file.quitAll"), action: #selector(quitAllTeraTerm(_:)), keyEquivalent: "")
         setSymbol("xmark.square.fill", for: quitAllItem)
-        let closeItem = fileMenu.addItem(withTitle: L("menu.file.close"), action: #selector(NSWindow.performClose(_:)), keyEquivalent: "w")
+        let closeItem = fileMenu.addItem(withTitle: TTL("menu.file.close"), action: #selector(NSWindow.performClose(_:)), keyEquivalent: "w")
         setSymbol("xmark.square", for: closeItem)
 
         // Edit menu
         let editMenuItem = NSMenuItem()
         mainMenu.addItem(editMenuItem)
-        let editMenu = NSMenu(title: L("menu.edit"))
+        let editMenu = NSMenu(title: TTL("menu.edit"))
         editMenuItem.submenu = editMenu
 
-        let copyItem = editMenu.addItem(withTitle: L("menu.edit.copy"), action: #selector(NSText.copy(_:)), keyEquivalent: "c")
+        let copyItem = editMenu.addItem(withTitle: TTL("menu.edit.copy"), action: #selector(NSText.copy(_:)), keyEquivalent: "c")
         setSymbol("doc.on.doc", for: copyItem)
-        let copyTableItem = editMenu.addItem(withTitle: L("menu.edit.copyAsTable"), action: #selector(copyAsTable(_:)), keyEquivalent: "")
+        let copyTableItem = editMenu.addItem(withTitle: TTL("menu.edit.copyAsTable"), action: #selector(copyAsTable(_:)), keyEquivalent: "")
         setSymbol("tablecells", for: copyTableItem)
-        let pasteItem = editMenu.addItem(withTitle: L("menu.edit.paste"), action: #selector(NSText.paste(_:)), keyEquivalent: "v")
+        let pasteItem = editMenu.addItem(withTitle: TTL("menu.edit.paste"), action: #selector(NSText.paste(_:)), keyEquivalent: "v")
         setSymbol("doc.on.clipboard", for: pasteItem)
-        let pasteSpecialItem = editMenu.addItem(withTitle: L("menu.edit.pasteSpecial"), action: #selector(pasteSpecial(_:)), keyEquivalent: "")
+        let pasteSpecialItem = editMenu.addItem(withTitle: TTL("menu.edit.pasteSpecial"), action: #selector(pasteSpecial(_:)), keyEquivalent: "")
         setSymbol("doc.on.clipboard.fill", for: pasteSpecialItem)
-        let pasteCRItem = editMenu.addItem(withTitle: L("menu.edit.pasteCR"), action: #selector(pasteCR(_:)), keyEquivalent: "")
+        let pasteCRItem = editMenu.addItem(withTitle: TTL("menu.edit.pasteCR"), action: #selector(pasteCR(_:)), keyEquivalent: "")
         setSymbol("return", for: pasteCRItem)
         editMenu.addItem(NSMenuItem.separator())
-        let clsItem = editMenu.addItem(withTitle: L("menu.edit.clearScreen"), action: #selector(clearScreen(_:)), keyEquivalent: "")
+        let clsItem = editMenu.addItem(withTitle: TTL("menu.edit.clearScreen"), action: #selector(clearScreen(_:)), keyEquivalent: "")
         setSymbol("rectangle.slash", for: clsItem)
-        let clbItem = editMenu.addItem(withTitle: L("menu.edit.clearBuffer"), action: #selector(clearBuffer(_:)), keyEquivalent: "")
+        let clbItem = editMenu.addItem(withTitle: TTL("menu.edit.clearBuffer"), action: #selector(clearBuffer(_:)), keyEquivalent: "")
         setSymbol("trash", for: clbItem)
         editMenu.addItem(NSMenuItem.separator())
-        let selAllItem = editMenu.addItem(withTitle: L("menu.edit.selectAll"), action: #selector(NSText.selectAll(_:)), keyEquivalent: "a")
+        let selAllItem = editMenu.addItem(withTitle: TTL("menu.edit.selectAll"), action: #selector(NSText.selectAll(_:)), keyEquivalent: "a")
         setSymbol("selection.pin.in.out", for: selAllItem)
-        let deselectItem = editMenu.addItem(withTitle: L("menu.edit.deselect"), action: #selector(deselect(_:)), keyEquivalent: "")
+        let deselectItem = editMenu.addItem(withTitle: TTL("menu.edit.deselect"), action: #selector(deselect(_:)), keyEquivalent: "")
         setSymbol("xmark.rectangle", for: deselectItem)
-        let selectScreenItem = editMenu.addItem(withTitle: L("menu.edit.selectScreen"), action: #selector(selectScreen(_:)), keyEquivalent: "")
+        let selectScreenItem = editMenu.addItem(withTitle: TTL("menu.edit.selectScreen"), action: #selector(selectScreen(_:)), keyEquivalent: "")
         setSymbol("rectangle.dashed", for: selectScreenItem)
         editMenu.addItem(NSMenuItem.separator())
-        let editHistoryItem = editMenu.addItem(withTitle: L("menu.edit.editHistory"), action: #selector(showEditHistory(_:)), keyEquivalent: "")
+        let editHistoryItem = editMenu.addItem(withTitle: TTL("menu.edit.editHistory"), action: #selector(showEditHistory(_:)), keyEquivalent: "")
         setSymbol("clock.arrow.circlepath", for: editHistoryItem)
 
         // Setup menu
         let setupMenuItem = NSMenuItem()
         mainMenu.addItem(setupMenuItem)
-        let setupMenu = NSMenu(title: L("menu.setup"))
+        let setupMenu = NSMenu(title: TTL("menu.setup"))
         setupMenuItem.submenu = setupMenu
 
-        let termItem = setupMenu.addItem(withTitle: L("menu.setup.terminal"), action: #selector(setupTerminal(_:)), keyEquivalent: "")
+        let termItem = setupMenu.addItem(withTitle: TTL("menu.setup.terminal"), action: #selector(setupTerminal(_:)), keyEquivalent: "")
         setSymbol("terminal", for: termItem)
-        let winItem = setupMenu.addItem(withTitle: L("menu.setup.window"), action: #selector(setupWindow(_:)), keyEquivalent: "")
+        let winItem = setupMenu.addItem(withTitle: TTL("menu.setup.window"), action: #selector(setupWindow(_:)), keyEquivalent: "")
         setSymbol("macwindow", for: winItem)
-        let fontItem = setupMenu.addItem(withTitle: L("menu.setup.font"), action: #selector(setupFont(_:)), keyEquivalent: "")
+        let fontItem = setupMenu.addItem(withTitle: TTL("menu.setup.font"), action: #selector(setupFont(_:)), keyEquivalent: "")
         setSymbol("textformat.size", for: fontItem)
-        let kbItem = setupMenu.addItem(withTitle: L("menu.setup.keyboard"), action: #selector(setupKeyboard(_:)), keyEquivalent: "")
+        let kbItem = setupMenu.addItem(withTitle: TTL("menu.setup.keyboard"), action: #selector(setupKeyboard(_:)), keyEquivalent: "")
         setSymbol("keyboard", for: kbItem)
-        let serialItem = setupMenu.addItem(withTitle: L("menu.setup.serialPort"), action: #selector(setupSerialPort(_:)), keyEquivalent: "")
+        let serialItem = setupMenu.addItem(withTitle: TTL("menu.setup.serialPort"), action: #selector(setupSerialPort(_:)), keyEquivalent: "")
         setSymbol("cable.connector", for: serialItem)
-        let tcpipItem = setupMenu.addItem(withTitle: L("menu.setup.tcpip"), action: #selector(setupTCPIP(_:)), keyEquivalent: "")
+        let tcpipItem = setupMenu.addItem(withTitle: TTL("menu.setup.tcpip"), action: #selector(setupTCPIP(_:)), keyEquivalent: "")
         setSymbol("network", for: tcpipItem)
         setupMenu.addItem(NSMenuItem.separator())
-        let proxyItem = setupMenu.addItem(withTitle: L("menu.setup.proxy"), action: #selector(setupProxy(_:)), keyEquivalent: "")
+        let proxyItem = setupMenu.addItem(withTitle: TTL("menu.setup.proxy"), action: #selector(setupProxy(_:)), keyEquivalent: "")
         setSymbol("globe", for: proxyItem)
-        let sshSetupItem = setupMenu.addItem(withTitle: L("menu.setup.ssh"), action: #selector(setupSSH(_:)), keyEquivalent: "")
+        let sshSetupItem = setupMenu.addItem(withTitle: TTL("menu.setup.ssh"), action: #selector(setupSSH(_:)), keyEquivalent: "")
         setSymbol("lock.shield", for: sshSetupItem)
-        let sshAuthSetupItem = setupMenu.addItem(withTitle: L("menu.setup.sshAuth"), action: #selector(setupSSHAuth(_:)), keyEquivalent: "")
+        let sshAuthSetupItem = setupMenu.addItem(withTitle: TTL("menu.setup.sshAuth"), action: #selector(setupSSHAuth(_:)), keyEquivalent: "")
         setSymbol("person.badge.key", for: sshAuthSetupItem)
-        let sshFwdItem = setupMenu.addItem(withTitle: L("menu.setup.sshForward"), action: #selector(setupSSHForwarding(_:)), keyEquivalent: "")
+        let sshFwdItem = setupMenu.addItem(withTitle: TTL("menu.setup.sshForward"), action: #selector(setupSSHForwarding(_:)), keyEquivalent: "")
         setSymbol("arrow.triangle.branch", for: sshFwdItem)
-        let sshKeyGenItem = setupMenu.addItem(withTitle: L("menu.setup.sshKeyGen"), action: #selector(setupSSHKeyGen(_:)), keyEquivalent: "")
+        let sshKeyGenItem = setupMenu.addItem(withTitle: TTL("menu.setup.sshKeyGen"), action: #selector(setupSSHKeyGen(_:)), keyEquivalent: "")
         setSymbol("key", for: sshKeyGenItem)
         setupMenu.addItem(NSMenuItem.separator())
-        let generalItem = setupMenu.addItem(withTitle: L("menu.setup.general"), action: #selector(setupGeneral(_:)), keyEquivalent: "")
+        let generalItem = setupMenu.addItem(withTitle: TTL("menu.setup.general"), action: #selector(setupGeneral(_:)), keyEquivalent: "")
         setSymbol("gearshape", for: generalItem)
         setupMenu.addItem(NSMenuItem.separator())
-        let additionalItem = setupMenu.addItem(withTitle: L("menu.setup.additionalSettings"), action: #selector(setupAdditional(_:)), keyEquivalent: "")
+        let additionalItem = setupMenu.addItem(withTitle: TTL("menu.setup.additionalSettings"), action: #selector(setupAdditional(_:)), keyEquivalent: "")
         setSymbol("slider.horizontal.3", for: additionalItem)
         setupMenu.addItem(NSMenuItem.separator())
-        let loadKeymapItem = setupMenu.addItem(withTitle: L("menu.setup.loadKeymap"), action: #selector(loadKeymap(_:)), keyEquivalent: "")
+        let loadKeymapItem = setupMenu.addItem(withTitle: TTL("menu.setup.loadKeymap"), action: #selector(loadKeymap(_:)), keyEquivalent: "")
         setSymbol("doc.text", for: loadKeymapItem)
-        let saveItem = setupMenu.addItem(withTitle: L("menu.setup.saveSetup"), action: #selector(saveSetup(_:)), keyEquivalent: "")
+        let saveItem = setupMenu.addItem(withTitle: TTL("menu.setup.saveSetup"), action: #selector(saveSetup(_:)), keyEquivalent: "")
         setSymbol("square.and.arrow.down", for: saveItem)
-        let restoreItem = setupMenu.addItem(withTitle: L("menu.setup.restoreSetup"), action: #selector(restoreSetup(_:)), keyEquivalent: "")
+        let restoreItem = setupMenu.addItem(withTitle: TTL("menu.setup.restoreSetup"), action: #selector(restoreSetup(_:)), keyEquivalent: "")
         setSymbol("square.and.arrow.up", for: restoreItem)
         setupMenu.addItem(NSMenuItem.separator())
-        let openConfigItem = setupMenu.addItem(withTitle: L("menu.setup.openConfigFolder"), action: #selector(openConfigFolder(_:)), keyEquivalent: "")
+        let openConfigItem = setupMenu.addItem(withTitle: TTL("menu.setup.openConfigFolder"), action: #selector(openConfigFolder(_:)), keyEquivalent: "")
         setSymbol("folder", for: openConfigItem)
 
         // Code menu (encoding selection)
         let codeMenuItem = NSMenuItem()
         mainMenu.addItem(codeMenuItem)
-        let codeMenu = NSMenu(title: L("menu.code"))
+        let codeMenu = NSMenu(title: TTL("menu.code"))
         codeMenuItem.submenu = codeMenu
         buildCodeMenu(codeMenu)
 
         // Control menu
         let controlMenuItem = NSMenuItem()
         mainMenu.addItem(controlMenuItem)
-        let controlMenu = NSMenu(title: L("menu.control"))
+        let controlMenu = NSMenu(title: TTL("menu.control"))
         controlMenuItem.submenu = controlMenu
 
-        let resetItem = controlMenu.addItem(withTitle: L("menu.control.resetTerminal"), action: #selector(resetTerminal(_:)), keyEquivalent: "")
+        let resetItem = controlMenu.addItem(withTitle: TTL("menu.control.resetTerminal"), action: #selector(resetTerminal(_:)), keyEquivalent: "")
         setSymbol("arrow.counterclockwise", for: resetItem)
-        let aytItem = controlMenu.addItem(withTitle: L("menu.control.areYouThere"), action: #selector(areYouThere(_:)), keyEquivalent: "")
+        let aytItem = controlMenu.addItem(withTitle: TTL("menu.control.areYouThere"), action: #selector(areYouThere(_:)), keyEquivalent: "")
         setSymbol("questionmark.circle", for: aytItem)
-        let breakItem = controlMenu.addItem(withTitle: L("menu.control.sendBreak"), action: #selector(sendBreak(_:)), keyEquivalent: "")
+        let breakItem = controlMenu.addItem(withTitle: TTL("menu.control.sendBreak"), action: #selector(sendBreak(_:)), keyEquivalent: "")
         setSymbol("exclamationmark.triangle", for: breakItem)
-        let portResetItem = controlMenu.addItem(withTitle: L("menu.control.resetPort"), action: #selector(resetPort(_:)), keyEquivalent: "")
+        let portResetItem = controlMenu.addItem(withTitle: TTL("menu.control.resetPort"), action: #selector(resetPort(_:)), keyEquivalent: "")
         setSymbol("arrow.triangle.2.circlepath", for: portResetItem)
 
         controlMenu.addItem(NSMenuItem.separator())
 
-        let macroItem = controlMenu.addItem(withTitle: L("menu.control.macro"), action: #selector(runMacro(_:)), keyEquivalent: "m")
+        let macroItem = controlMenu.addItem(withTitle: TTL("menu.control.macro"), action: #selector(runMacro(_:)), keyEquivalent: "m")
         macroItem.keyEquivalentModifierMask = [.command, .shift]
         setSymbol("applescript", for: macroItem)
-        let stopMacroItem = controlMenu.addItem(withTitle: L("menu.control.stopMacro"), action: #selector(stopMacro(_:)), keyEquivalent: "")
+        let stopMacroItem = controlMenu.addItem(withTitle: TTL("menu.control.stopMacro"), action: #selector(stopMacro(_:)), keyEquivalent: "")
         setSymbol("stop.circle", for: stopMacroItem)
-        let replayItem = controlMenu.addItem(withTitle: L("menu.control.replayLog"), action: #selector(replayLog(_:)), keyEquivalent: "")
+        let replayItem = controlMenu.addItem(withTitle: TTL("menu.control.replayLog"), action: #selector(replayLog(_:)), keyEquivalent: "")
         setSymbol("play.rectangle", for: replayItem)
 
         controlMenu.addItem(NSMenuItem.separator())
 
-        let resetTitleItem = controlMenu.addItem(withTitle: L("menu.control.resetRemoteTitle"), action: #selector(resetRemoteTitle(_:)), keyEquivalent: "")
+        let resetTitleItem = controlMenu.addItem(withTitle: TTL("menu.control.resetRemoteTitle"), action: #selector(resetRemoteTitle(_:)), keyEquivalent: "")
         setSymbol("textformat", for: resetTitleItem)
-        let tekItem = controlMenu.addItem(withTitle: L("menu.control.tekWindow"), action: #selector(toggleTEKWindow(_:)), keyEquivalent: "")
+        let tekItem = controlMenu.addItem(withTitle: TTL("menu.control.tekWindow"), action: #selector(toggleTEKWindow(_:)), keyEquivalent: "")
         setSymbol("rectangle.on.rectangle", for: tekItem)
-        let showMacroItem = controlMenu.addItem(withTitle: L("menu.control.showMacroWindow"), action: #selector(showMacroWindow(_:)), keyEquivalent: "")
+        let showMacroItem = controlMenu.addItem(withTitle: TTL("menu.control.showMacroWindow"), action: #selector(showMacroWindow(_:)), keyEquivalent: "")
         setSymbol("text.rectangle", for: showMacroItem)
 
         controlMenu.addItem(NSMenuItem.separator())
 
-        let broadcastItem = controlMenu.addItem(withTitle: L("menu.control.broadcast"), action: #selector(toggleBroadcast(_:)), keyEquivalent: "")
+        let broadcastItem = controlMenu.addItem(withTitle: TTL("menu.control.broadcast"), action: #selector(toggleBroadcast(_:)), keyEquivalent: "")
         setSymbol("antenna.radiowaves.left.and.right", for: broadcastItem)
 
         // Window menu
         let windowMenuItem = NSMenuItem()
         mainMenu.addItem(windowMenuItem)
-        let windowMenu = NSMenu(title: L("menu.window"))
+        let windowMenu = NSMenu(title: TTL("menu.window"))
         windowMenuItem.submenu = windowMenu
 
-        let minItem = windowMenu.addItem(withTitle: L("menu.window.minimize"), action: #selector(NSWindow.performMiniaturize(_:)), keyEquivalent: "m")
+        let minItem = windowMenu.addItem(withTitle: TTL("menu.window.minimize"), action: #selector(NSWindow.performMiniaturize(_:)), keyEquivalent: "m")
         setSymbol("minus.square", for: minItem)
-        let zoomItem = windowMenu.addItem(withTitle: L("menu.window.zoom"), action: #selector(NSWindow.performZoom(_:)), keyEquivalent: "")
+        let zoomItem = windowMenu.addItem(withTitle: TTL("menu.window.zoom"), action: #selector(NSWindow.performZoom(_:)), keyEquivalent: "")
         setSymbol("arrow.up.left.and.arrow.down.right", for: zoomItem)
         windowMenu.addItem(NSMenuItem.separator())
         windowMenu.addItem(NSMenuItem.separator())
-        let minAllItem = windowMenu.addItem(withTitle: L("menu.window.minimizeAll"), action: #selector(minimizeAllWindows(_:)), keyEquivalent: "")
+        let minAllItem = windowMenu.addItem(withTitle: TTL("menu.window.minimizeAll"), action: #selector(minimizeAllWindows(_:)), keyEquivalent: "")
         setSymbol("arrow.down.to.line.compact", for: minAllItem)
-        let cascadeItem = windowMenu.addItem(withTitle: L("menu.window.cascade"), action: #selector(cascadeAllWindows(_:)), keyEquivalent: "")
+        let cascadeItem = windowMenu.addItem(withTitle: TTL("menu.window.cascade"), action: #selector(cascadeAllWindows(_:)), keyEquivalent: "")
         setSymbol("square.on.square", for: cascadeItem)
-        let tileVItem = windowMenu.addItem(withTitle: L("menu.window.tileVertical"), action: #selector(tileWindowsVertically(_:)), keyEquivalent: "")
+        let tileVItem = windowMenu.addItem(withTitle: TTL("menu.window.tileVertical"), action: #selector(tileWindowsVertically(_:)), keyEquivalent: "")
         setSymbol("rectangle.split.1x2", for: tileVItem)
-        let tileHItem = windowMenu.addItem(withTitle: L("menu.window.tileHorizontal"), action: #selector(tileWindowsHorizontally(_:)), keyEquivalent: "")
+        let tileHItem = windowMenu.addItem(withTitle: TTL("menu.window.tileHorizontal"), action: #selector(tileWindowsHorizontally(_:)), keyEquivalent: "")
         setSymbol("rectangle.split.2x1", for: tileHItem)
-        let restoreAllItem = windowMenu.addItem(withTitle: L("menu.window.restoreAll"), action: #selector(restoreAllWindows(_:)), keyEquivalent: "")
+        let restoreAllItem = windowMenu.addItem(withTitle: TTL("menu.window.restoreAll"), action: #selector(restoreAllWindows(_:)), keyEquivalent: "")
         setSymbol("arrow.up.to.line.compact", for: restoreAllItem)
         windowMenu.addItem(NSMenuItem.separator())
-        let winListItem = windowMenu.addItem(withTitle: L("menu.window.windowList"), action: #selector(showWindowList(_:)), keyEquivalent: "")
+        let winListItem = windowMenu.addItem(withTitle: TTL("menu.window.windowList"), action: #selector(showWindowList(_:)), keyEquivalent: "")
         setSymbol("list.bullet.rectangle", for: winListItem)
         NSApp.windowsMenu = windowMenu
 
         // Help menu
         let helpMenuItem = NSMenuItem()
         mainMenu.addItem(helpMenuItem)
-        let helpMenu = NSMenu(title: L("menu.help"))
+        let helpMenu = NSMenu(title: TTL("menu.help"))
         helpMenuItem.submenu = helpMenu
 
-        let helpItem = helpMenu.addItem(withTitle: L("menu.help.help"), action: #selector(showHelp(_:)), keyEquivalent: "?")
+        let helpItem = helpMenu.addItem(withTitle: TTL("menu.help.help"), action: #selector(showHelp(_:)), keyEquivalent: "?")
         setSymbol("questionmark.circle", for: helpItem)
         NSApp.helpMenu = helpMenu
 
@@ -466,10 +456,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
 
     @objc func showAbout(_ sender: Any?) {
         let alert = NSAlert()
-        alert.messageText = L("dialog.about.title")
-        alert.informativeText = L("dialog.about.message")
+        alert.messageText = TTL("dialog.about.title")
+        alert.informativeText = TTL("dialog.about.message")
         alert.alertStyle = .informational
-        alert.addButton(withTitle: L("dialog.about.ok"))
+        alert.addButton(withTitle: TTL("dialog.about.ok"))
         alert.runModal()
     }
 
@@ -550,12 +540,12 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         guard logger.state == .active || logger.state == .paused else { return }
 
         let alert = NSAlert()
-        alert.messageText = L("dialog.logComment.title")
-        alert.informativeText = L("dialog.logComment.message")
-        alert.addButton(withTitle: L("dialog.logComment.ok"))
-        alert.addButton(withTitle: L("dialog.logComment.cancel"))
+        alert.messageText = TTL("dialog.logComment.title")
+        alert.informativeText = TTL("dialog.logComment.message")
+        alert.addButton(withTitle: TTL("dialog.logComment.ok"))
+        alert.addButton(withTitle: TTL("dialog.logComment.cancel"))
 
-        let textField = NSView.makeTextField(value: "", placeholder: L("dialog.logComment.placeholder"))
+        let textField = NSView.makeTextField(value: "", placeholder: TTL("dialog.logComment.placeholder"))
         textField.font = NSFont.monospacedSystemFont(ofSize: 13, weight: .regular)
         textField.widthAnchor.constraint(greaterThanOrEqualToConstant: 300).isActive = true
         alert.accessoryView = textField
@@ -620,11 +610,11 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
 
         // Confirm before closing all windows
         let alert = NSAlert()
-        alert.messageText = L("dialog.quitAll.title")
-        alert.informativeText = String(format: L("dialog.quitAll.message"), count)
+        alert.messageText = TTL("dialog.quitAll.title")
+        alert.informativeText = String(format: TTL("dialog.quitAll.message"), count)
         alert.alertStyle = .warning
-        alert.addButton(withTitle: L("dialog.quitAll.quit"))
-        alert.addButton(withTitle: L("dialog.quitAll.cancel"))
+        alert.addButton(withTitle: TTL("dialog.quitAll.quit"))
+        alert.addButton(withTitle: TTL("dialog.quitAll.cancel"))
 
         if alert.runModal() == .alertSecondButtonReturn { return }
 
@@ -789,13 +779,13 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
             styleMask: [.titled, .closable],
             backing: .buffered,
             defer: true)
-        panel.title = L("dialog.pasteSpecial.title")
+        panel.title = TTL("dialog.pasteSpecial.title")
         panel.isReleasedWhenClosed = false
 
         guard let root = panel.contentView else { return }
 
         // 説明ラベル
-        let messageLabel = NSTextField(labelWithString: L("dialog.pasteSpecial.message"))
+        let messageLabel = NSTextField(labelWithString: TTL("dialog.pasteSpecial.message"))
         messageLabel.translatesAutoresizingMaskIntoConstraints = false
         messageLabel.font = NSFont.systemFont(ofSize: 13)
         messageLabel.lineBreakMode = .byWordWrapping
@@ -830,8 +820,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         root.addSubview(separator)
 
         // ボタンバー: [spacer] [Cancel] [Send]
-        let sendButton = NSView.makePushButton(L("dialog.pasteSpecial.send"), keyEquivalent: "\r")
-        let cancelButton = NSView.makePushButton(L("Cancel"), keyEquivalent: "\u{1b}")
+        let sendButton = NSView.makePushButton(TTL("dialog.pasteSpecial.send"), keyEquivalent: "\r")
+        let cancelButton = NSView.makePushButton(TTL("Cancel"), keyEquivalent: "\u{1b}")
 
         let buttonSpacer = NSView()
         buttonSpacer.translatesAutoresizingMaskIntoConstraints = false
@@ -1043,8 +1033,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         let panel = NSOpenPanel()
         let cnfType = UTType(filenameExtension: "cnf") ?? .plainText
         panel.allowedContentTypes = [cnfType, .plainText]
-        panel.title = L("dialog.loadKeymap.title")
-        panel.message = L("dialog.loadKeymap.message")
+        panel.title = TTL("dialog.loadKeymap.title")
+        panel.message = TTL("dialog.loadKeymap.message")
         panel.beginSheetModal(for: win) { [weak self] response in
             guard response == .OK, let url = panel.url else { return }
             self?.performLoadKeymap(from: url, parentWindow: win)
@@ -1062,16 +1052,16 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
             if keyMap.warnings.isEmpty {
                 let alert = NSAlert()
                 alert.alertStyle = .informational
-                alert.messageText = L("dialog.loadKeymap.success")
+                alert.messageText = TTL("dialog.loadKeymap.success")
                 alert.informativeText = String(
-                    format: L("dialog.loadKeymap.successDetail"),
+                    format: TTL("dialog.loadKeymap.successDetail"),
                     assignedCount, userKeyCount
                 )
                 alert.beginSheetModal(for: parentWindow)
             } else {
                 let alert = NSAlert()
                 alert.alertStyle = .warning
-                alert.messageText = L("dialog.loadKeymap.warning")
+                alert.messageText = TTL("dialog.loadKeymap.warning")
                 alert.informativeText = keyMap.warnings.joined(separator: "\n")
                 alert.beginSheetModal(for: parentWindow)
             }
@@ -1083,7 +1073,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         } catch {
             let alert = NSAlert()
             alert.alertStyle = .critical
-            alert.messageText = L("dialog.loadKeymap.error")
+            alert.messageText = TTL("dialog.loadKeymap.error")
             alert.informativeText = error.localizedDescription
             alert.beginSheetModal(for: parentWindow)
         }
@@ -1119,8 +1109,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         // .ttl ファイルを選択可能にするためカスタムUTTypeを追加
         let ttlType = UTType(filenameExtension: "ttl") ?? .plainText
         panel.allowedContentTypes = [ttlType, .plainText]
-        panel.title = L("dialog.macro.title")
-        panel.message = L("dialog.macro.message")
+        panel.title = TTL("dialog.macro.title")
+        panel.message = TTL("dialog.macro.message")
         panel.beginSheetModal(for: wc.window!) { response in
             guard response == .OK, let url = panel.url else { return }
             wc.runMacro(at: url)
@@ -1168,7 +1158,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         guard let wc = activeWindowController else { return }
         let panel = NSOpenPanel()
         panel.allowedContentTypes = [.plainText, .log]
-        panel.title = L("dialog.replayLog.title")
+        panel.title = TTL("dialog.replayLog.title")
         panel.beginSheetModal(for: wc.window!) { response in
             guard response == .OK, let url = panel.url else { return }
             wc.replayLog(at: url)
@@ -1194,21 +1184,21 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         contentView.translatesAutoresizingMaskIntoConstraints = false
         contentView.widthAnchor.constraint(greaterThanOrEqualToConstant: 400).isActive = true
 
-        let label = NSTextField(labelWithString: L("dialog.broadcast.label"))
+        let label = NSTextField(labelWithString: TTL("dialog.broadcast.label"))
         label.translatesAutoresizingMaskIntoConstraints = false
         label.font = NSFont.systemFont(ofSize: NSFont.smallSystemFontSize)
         label.setContentHuggingPriority(.defaultHigh, for: .vertical)
 
         let textField = NSTextField()
         textField.translatesAutoresizingMaskIntoConstraints = false
-        textField.placeholderString = L("dialog.broadcast.placeholder")
+        textField.placeholderString = TTL("dialog.broadcast.placeholder")
         textField.font = NSFont.monospacedSystemFont(ofSize: 13, weight: .regular)
         textField.target = self
         textField.action = #selector(broadcastFieldAction(_:))
         textField.setContentHuggingPriority(.defaultLow, for: .horizontal)
         broadcastTextField = textField
 
-        let sendButton = NSButton(title: L("dialog.broadcast.send"), target: self, action: #selector(broadcastSendAction(_:)))
+        let sendButton = NSButton(title: TTL("dialog.broadcast.send"), target: self, action: #selector(broadcastSendAction(_:)))
         sendButton.translatesAutoresizingMaskIntoConstraints = false
         sendButton.bezelStyle = .rounded
         sendButton.keyEquivalent = "\r"
@@ -1249,7 +1239,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
             backing: .buffered,
             defer: true)
         panel.contentViewController = vc
-        panel.title = L("menu.control.broadcast")
+        panel.title = TTL("menu.control.broadcast")
         panel.isFloatingPanel = true
         panel.becomesKeyOnlyIfNeeded = true
         panel.isReleasedWhenClosed = false
@@ -1291,19 +1281,19 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
 
     private func buildCodeMenu(_ menu: NSMenu) {
         // "Send & Receive" submenu (changes both)
-        let bothItem = NSMenuItem(title: L("menu.code.both"), action: nil, keyEquivalent: "")
+        let bothItem = NSMenuItem(title: TTL("menu.code.both"), action: nil, keyEquivalent: "")
         setSymbol("arrow.left.arrow.right", for: bothItem)
         bothItem.submenu = makeEncodingSubmenu(direction: 0)
         menu.addItem(bothItem)
 
         // "Receive" submenu
-        let recvItem = NSMenuItem(title: L("menu.code.receive"), action: nil, keyEquivalent: "")
+        let recvItem = NSMenuItem(title: TTL("menu.code.receive"), action: nil, keyEquivalent: "")
         setSymbol("arrow.down.circle", for: recvItem)
         recvItem.submenu = makeEncodingSubmenu(direction: 1)
         menu.addItem(recvItem)
 
         // "Send" submenu
-        let sendItem = NSMenuItem(title: L("menu.code.send"), action: nil, keyEquivalent: "")
+        let sendItem = NSMenuItem(title: TTL("menu.code.send"), action: nil, keyEquivalent: "")
         setSymbol("arrow.up.circle", for: sendItem)
         sendItem.submenu = makeEncodingSubmenu(direction: 2)
         menu.addItem(sendItem)
@@ -1316,12 +1306,12 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
             .unicode, .japanese, .chinese, .korean, .western, .dosWindows
         ]
         let groupNames: [CharacterEncoding.Group: String] = [
-            .unicode:    L("menu.code.group.unicode"),
-            .japanese:   L("menu.code.group.japanese"),
-            .chinese:    L("menu.code.group.chinese"),
-            .korean:     L("menu.code.group.korean"),
-            .western:    L("menu.code.group.western"),
-            .dosWindows: L("menu.code.group.dosWindows"),
+            .unicode:    TTL("menu.code.group.unicode"),
+            .japanese:   TTL("menu.code.group.japanese"),
+            .chinese:    TTL("menu.code.group.chinese"),
+            .korean:     TTL("menu.code.group.korean"),
+            .western:    TTL("menu.code.group.western"),
+            .dosWindows: TTL("menu.code.group.dosWindows"),
         ]
 
         for (index, group) in groupOrder.enumerated() {
@@ -1405,9 +1395,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         // Control menu: TEK window toggle - update title based on state
         case #selector(toggleTEKWindow(_:)):
             if tekWindowController?.window?.isVisible == true {
-                menuItem.title = L("menu.control.closeTekWindow")
+                menuItem.title = TTL("menu.control.closeTekWindow")
             } else {
-                menuItem.title = L("menu.control.tekWindow")
+                menuItem.title = TTL("menu.control.tekWindow")
             }
             return true
 
@@ -1415,9 +1405,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         case #selector(pauseLog(_:)):
             let logState = activeWindowController?.logger.state ?? .inactive
             if logState == .paused {
-                menuItem.title = L("menu.file.resumeLog")
+                menuItem.title = TTL("menu.file.resumeLog")
             } else {
-                menuItem.title = L("menu.file.pauseLog")
+                menuItem.title = TTL("menu.file.pauseLog")
             }
             return logState == .active || logState == .paused
         case #selector(commentToLog(_:)):
@@ -1483,7 +1473,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
             styleMask: [.titled, .closable],
             backing: .buffered,
             defer: true)
-        panel.title = L("dialog.connection.title")
+        panel.title = TTL("dialog.connection.title")
         panel.isReleasedWhenClosed = false
 
         guard let root = panel.contentView else { return }
@@ -1494,19 +1484,19 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         // ── TCP/IP セクション ──
 
         // Row 1: [TCP/IP radio] [Host:] [combobox]
-        let tcpRadio = NSView.makeRadioButton(L("dialog.connection.tcpip"), tag: 0)
+        let tcpRadio = NSView.makeRadioButton(TTL("dialog.connection.tcpip"), tag: 0)
         tcpRadio.target = helper
         tcpRadio.action = #selector(ConnectionDialogHelper.connectionTypeChanged(_:))
         tcpRadio.state = (settings.portType == .tcpip || settings.portType == .file || settings.portType == .namedPipe) ? .on : .off
 
-        let hostLabel = NSView.makeLabel(L("dialog.connection.host"))
+        let hostLabel = NSView.makeLabel(TTL("dialog.connection.host"))
 
         let hostCombo = NSComboBox()
         hostCombo.translatesAutoresizingMaskIntoConstraints = false
         hostCombo.isEditable = true
         hostCombo.completes = true
         hostCombo.stringValue = settings.hostname
-        hostCombo.placeholderString = L("dialog.connection.hostPlaceholder")
+        hostCombo.placeholderString = TTL("dialog.connection.hostPlaceholder")
         hostCombo.setContentHuggingPriority(.defaultLow, for: .horizontal)
         for h in settings.hostHistory {
             hostCombo.addItem(withObjectValue: h)
@@ -1519,15 +1509,15 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         hostRow.alignment = .firstBaseline
 
         // Row 2: [Service:] [Telnet radio]  [TCP port#:] [port field]
-        let serviceLabel = NSView.makeLabel(L("dialog.connection.service"))
+        let serviceLabel = NSView.makeLabel(TTL("dialog.connection.service"))
 
-        let telnetRadio = NSView.makeRadioButton(L("dialog.connection.telnet"), tag: 0)
+        let telnetRadio = NSView.makeRadioButton(TTL("dialog.connection.telnet"), tag: 0)
         telnetRadio.target = helper
         telnetRadio.action = #selector(ConnectionDialogHelper.serviceChanged(_:))
         telnetRadio.state = (settings.serviceType == .telnet) ? .on : .off
         helper.telnetRadio = telnetRadio
 
-        let tcpPortLabel = NSView.makeLabel(L("dialog.connection.tcpPort"))
+        let tcpPortLabel = NSView.makeLabel(TTL("dialog.connection.tcpPort"))
 
         let tcpPortField = NSView.makeNumberField(value: settings.defaultPort, width: DialogLayout.narrowFieldWidth)
         helper.tcpPortField = tcpPortField
@@ -1557,7 +1547,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         sshRadio.state = (settings.serviceType == .ssh) ? .on : .off
         helper.sshRadio = sshRadio
 
-        let sshVerLabel = NSView.makeLabel(L("dialog.connection.sshVersion"))
+        let sshVerLabel = NSView.makeLabel(TTL("dialog.connection.sshVersion"))
         sshVerLabel.isEnabled = (settings.serviceType == .ssh)
         helper.sshVersionLabel = sshVerLabel
 
@@ -1586,13 +1576,13 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         row3.alignment = .firstBaseline
 
         // Row 4: [Other radio]  [IP version:] [popup]
-        let otherRadio = NSView.makeRadioButton(L("dialog.connection.other"), tag: 2)
+        let otherRadio = NSView.makeRadioButton(TTL("dialog.connection.other"), tag: 2)
         otherRadio.target = helper
         otherRadio.action = #selector(ConnectionDialogHelper.serviceChanged(_:))
         otherRadio.state = (settings.serviceType == .other) ? .on : .off
         helper.otherRadio = otherRadio
 
-        let ipVerLabel = NSView.makeLabel(L("dialog.connection.ipVersion"))
+        let ipVerLabel = NSView.makeLabel(TTL("dialog.connection.ipVersion"))
 
         let ipVerPopup = NSView.makePopUpButton(
             items: ProtocolFamily.allCases.map { $0.displayName },
@@ -1667,13 +1657,13 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         helper.tcpRadio = tcpRadio
 
         // ── Serial セクション ──
-        let serialRadio = NSView.makeRadioButton(L("dialog.connection.serial"), tag: 1)
+        let serialRadio = NSView.makeRadioButton(TTL("dialog.connection.serial"), tag: 1)
         serialRadio.target = helper
         serialRadio.action = #selector(ConnectionDialogHelper.connectionTypeChanged(_:))
         serialRadio.state = (settings.portType == .serial) ? .on : .off
         helper.serialRadio = serialRadio
 
-        let serialPortLabel = NSView.makeLabel(L("dialog.connection.serialPort"))
+        let serialPortLabel = NSView.makeLabel(TTL("dialog.connection.serialPort"))
 
         let serialPortPopup = NSPopUpButton()
         serialPortPopup.translatesAutoresizingMaskIntoConstraints = false
@@ -1683,7 +1673,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
             serialPortPopup.addItem(withTitle: port)
         }
         if serialPorts.isEmpty {
-            serialPortPopup.addItem(withTitle: L("dialog.serialPort.noPortsFound"))
+            serialPortPopup.addItem(withTitle: TTL("dialog.serialPort.noPortsFound"))
         }
         if !settings.serialPort.isEmpty {
             serialPortPopup.selectItem(withTitle: settings.serialPort)
@@ -1711,13 +1701,13 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         helper.serialControls = [serialPortLabel, serialPortPopup]
 
         // ── Local Shell セクション ──
-        let shellRadio = NSView.makeRadioButton(L("dialog.connection.localShell"), tag: 2)
+        let shellRadio = NSView.makeRadioButton(TTL("dialog.connection.localShell"), tag: 2)
         shellRadio.target = helper
         shellRadio.action = #selector(ConnectionDialogHelper.connectionTypeChanged(_:))
         shellRadio.state = (settings.portType == .localShell) ? .on : .off
         helper.shellRadio = shellRadio
 
-        let shellPathLabel = NSView.makeLabel(L("dialog.connection.shellPath"))
+        let shellPathLabel = NSView.makeLabel(TTL("dialog.connection.shellPath"))
         let defaultShell = ProcessInfo.processInfo.environment["SHELL"] ?? "/bin/zsh"
         let shellPathField = NSView.makeTextField(
             value: settings.localShellPath.isEmpty ? defaultShell : settings.localShellPath)
@@ -1753,8 +1743,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         root.addSubview(separator)
 
         // ── ボタンバー: [spacer] [Cancel] [OK] ──
-        let okButton = NSView.makePushButton(L("dialog.connection.ok"), keyEquivalent: "\r")
-        let cancelButton = NSView.makePushButton(L("dialog.connection.cancel"), keyEquivalent: "\u{1b}")
+        let okButton = NSView.makePushButton(TTL("dialog.connection.ok"), keyEquivalent: "\r")
+        let cancelButton = NSView.makePushButton(TTL("dialog.connection.cancel"), keyEquivalent: "\u{1b}")
 
         let buttonSpacer = NSView()
         buttonSpacer.translatesAutoresizingMaskIntoConstraints = false
@@ -2151,9 +2141,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         // 安全キャストで SSH 接続を取得（失敗時は警告表示）
         guard let ssh = wc.connectionManager.currentConnection as? SSHConnection else {
             let alert = NSAlert()
-            alert.messageText = L("dialog.scp.error.notConnected")
+            alert.messageText = TTL("dialog.scp.error.notConnected")
             alert.alertStyle = .warning
-            alert.addButton(withTitle: L("OK"))
+            alert.addButton(withTitle: TTL("OK"))
             if let win = wc.window {
                 alert.beginSheetModal(for: win, completionHandler: nil)
             } else {
@@ -2190,7 +2180,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         alert.messageText = "SCP"  // protocol name, not localized
         alert.informativeText = detail
         alert.alertStyle = .warning
-        alert.addButton(withTitle: L("OK"))
+        alert.addButton(withTitle: TTL("OK"))
         alert.runModal()
     }
 

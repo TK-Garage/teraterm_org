@@ -11,16 +11,6 @@
 import AppKit
 import CoreText
 
-// MARK: - Localization Helper
-
-private func L(_ key: String) -> String {
-    #if SWIFT_PACKAGE
-    return NSLocalizedString(key, bundle: Bundle.module, comment: "")
-    #else
-    return NSLocalizedString(key, bundle: Bundle.main, comment: "")
-    #endif
-}
-
 // MARK: - Terminal View Delegate
 
 protocol TerminalViewDelegate: AnyObject {
@@ -789,11 +779,11 @@ class TerminalView: NSView {
         } else {
             // Show context menu with SF Symbols
             let menu = NSMenu()
-            let copyItem = menu.addItem(withTitle: L("contextMenu.copy"), action: #selector(copyText(_:)), keyEquivalent: "c")
-            let pasteItem = menu.addItem(withTitle: L("contextMenu.paste"), action: #selector(pasteText(_:)), keyEquivalent: "v")
+            let copyItem = menu.addItem(withTitle: TTL("contextMenu.copy"), action: #selector(copyText(_:)), keyEquivalent: "c")
+            let pasteItem = menu.addItem(withTitle: TTL("contextMenu.paste"), action: #selector(pasteText(_:)), keyEquivalent: "v")
             menu.addItem(NSMenuItem.separator())
-            let selItem = menu.addItem(withTitle: L("contextMenu.selectAll"), action: #selector(selectAllText(_:)), keyEquivalent: "a")
-            let clrItem = menu.addItem(withTitle: L("contextMenu.clearBuffer"), action: #selector(clearBuffer(_:)), keyEquivalent: "")
+            let selItem = menu.addItem(withTitle: TTL("contextMenu.selectAll"), action: #selector(selectAllText(_:)), keyEquivalent: "a")
+            let clrItem = menu.addItem(withTitle: TTL("contextMenu.clearBuffer"), action: #selector(clearBuffer(_:)), keyEquivalent: "")
             if #available(macOS 11.0, *) {
                 copyItem.image = NSImage(systemSymbolName: "doc.on.doc", accessibilityDescription: nil)
                 pasteItem.image = NSImage(systemSymbolName: "doc.on.clipboard", accessibilityDescription: nil)

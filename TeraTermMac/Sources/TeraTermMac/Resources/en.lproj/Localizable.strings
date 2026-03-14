@@ -426,6 +426,7 @@
 "dialog.sendFile.delayPerChar" = "Per character";
 "dialog.sendFile.delayPerLine" = "Per line";
 "dialog.sendFile.sendSize" = "Send size(bytes):";
+"dialog.sendFile.sizeAll" = "All";
 "dialog.sendFile.delayTime" = "Delay time(ms):";
 
 /* Receive File Dialog (IDD_RECVFILEDLG) */

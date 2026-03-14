@@ -9,21 +9,6 @@
 
 import Foundation
 
-// MARK: - Localization Helper
-
-private func L(_ key: String) -> String {
-    #if SWIFT_PACKAGE
-    return NSLocalizedString(key, bundle: Bundle.module, comment: "")
-    #else
-    return NSLocalizedString(key, bundle: Bundle.main, comment: "")
-    #endif
-}
-
-private func L(_ key: String, _ args: CVarArg...) -> String {
-    let fmt = L(key)
-    return String(format: fmt, arguments: args)
-}
-
 // MARK: - Connection State
 
 enum ConnectionState: Equatable {
@@ -1126,37 +1111,37 @@ enum ConnectionError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .streamCreationFailed(let host, let port):
-            return L("error.connection.streamFailed", host, port)
+            return TTL("error.connection.streamFailed", host, port)
         case .connectionFailed(let host, let port, let detail):
-            let base = L("error.connection.failed", host, port)
+            let base = TTL("error.connection.failed", host, port)
             if let detail = detail { return "\(base)\n\(detail)" }
             return base
         case .connectionRefused(let host, let port):
-            return L("error.connection.refused", host, port)
+            return TTL("error.connection.refused", host, port)
         case .connectionTimeout(let host, let port):
-            return L("error.connection.timeout", host, port)
+            return TTL("error.connection.timeout", host, port)
         case .hostNotFound(let host):
-            return L("error.connection.hostNotFound", host)
+            return TTL("error.connection.hostNotFound", host)
         case .sshNotSupported(let host, let port):
-            return L("error.connection.sshNotSupported", host, port)
+            return TTL("error.connection.sshNotSupported", host, port)
         case .sshConnectionFailed(let host, let port, let detail):
-            let base = L("error.connection.sshFailed", host, port)
+            let base = TTL("error.connection.sshFailed", host, port)
             if let detail = detail { return "\(base)\n\(detail)" }
             return base
         case .sshForkFailed(let detail):
-            let base = L("error.connection.sshProcessFailed")
+            let base = TTL("error.connection.sshProcessFailed")
             if let detail = detail { return "\(base)\n\(detail)" }
             return base
         case .sshNotFound:
-            return L("error.connection.sshNotFound")
+            return TTL("error.connection.sshNotFound")
         case .serialPortOpenFailed(let device, let detail):
-            let base = L("error.connection.serialFailed", device)
+            let base = TTL("error.connection.serialFailed", device)
             if let detail = detail { return "\(base)\n\(detail)" }
             return base
         case .ptyCreationFailed:
-            return L("error.connection.ptyFailed")
+            return TTL("error.connection.ptyFailed")
         case .sendFailed:
-            return L("error.connection.sendFailed")
+            return TTL("error.connection.sendFailed")
         }
     }
 
@@ -1164,19 +1149,19 @@ enum ConnectionError: LocalizedError {
     var alertTitle: String {
         switch self {
         case .hostNotFound:
-            return L("error.connection.title.dns")
+            return TTL("error.connection.title.dns")
         case .connectionRefused:
-            return L("error.connection.title.refused")
+            return TTL("error.connection.title.refused")
         case .connectionTimeout:
-            return L("error.connection.title.timeout")
+            return TTL("error.connection.title.timeout")
         case .sshNotSupported:
-            return L("error.connection.title.ssh")
+            return TTL("error.connection.title.ssh")
         case .sshConnectionFailed, .sshForkFailed, .sshNotFound:
-            return L("error.connection.title.sshError")
+            return TTL("error.connection.title.sshError")
         case .serialPortOpenFailed:
-            return L("error.connection.title.serial")
+            return TTL("error.connection.title.serial")
         default:
-            return L("error.connection.title")
+            return TTL("error.connection.title")
         }
     }
 }

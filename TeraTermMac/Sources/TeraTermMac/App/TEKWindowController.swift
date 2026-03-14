@@ -10,14 +10,6 @@
 #if canImport(AppKit)
 import AppKit
 
-private func L(_ key: String) -> String {
-    #if SWIFT_PACKAGE
-    return NSLocalizedString(key, bundle: Bundle.module, comment: "")
-    #else
-    return NSLocalizedString(key, bundle: Bundle.main, comment: "")
-    #endif
-}
-
 // MARK: - TEK Window Controller (port of CTEKWindow)
 
 /// Minimal TEK 4014 graphics terminal window.
@@ -40,7 +32,7 @@ class TEKWindowController: NSWindowController {
             backing: .buffered,
             defer: false
         )
-        window.title = L("dialog.tek.title")
+        window.title = TTL("dialog.tek.title")
         window.minSize = NSSize(width: 320, height: 240)
         window.isReleasedWhenClosed = false
         super.init(window: window)

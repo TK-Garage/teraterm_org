@@ -426,6 +426,7 @@
 "dialog.sendFile.delayPerChar" = "文字毎";
 "dialog.sendFile.delayPerLine" = "行毎";
 "dialog.sendFile.sendSize" = "送信サイズ(バイト):";
+"dialog.sendFile.sizeAll" = "すべて";
 "dialog.sendFile.delayTime" = "ディレイ時間(ミリ秒):";
 
 /* Receive File Dialog (IDD_RECVFILEDLG) */

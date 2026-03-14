@@ -10,16 +10,6 @@
 #if canImport(AppKit)
 import AppKit
 
-// MARK: - Localization Helper
-
-private func L(_ key: String) -> String {
-    #if SWIFT_PACKAGE
-    return NSLocalizedString(key, bundle: Bundle.module, comment: "")
-    #else
-    return NSLocalizedString(key, bundle: Bundle.main, comment: "")
-    #endif
-}
-
 // MARK: - Terminal Window Controller (port of CVTWindow)
 
 class TerminalWindowController: NSWindowController {
@@ -212,7 +202,7 @@ class TerminalWindowController: NSWindowController {
         if isConnected {
             if let conn = connectionManager.currentConnection {
                 if conn is LocalShellConnection {
-                    title += " - " + L("window.title.localShell")
+                    title += " - " + TTL("window.title.localShell")
                 } else if let ssh = conn as? SSHConnection {
                     title += " - \(ssh.username)@\(ssh.host):\(ssh.port) (SSH)"
                 } else if let tcp = conn as? TCPConnection {
@@ -222,7 +212,7 @@ class TerminalWindowController: NSWindowController {
                 }
             }
         } else {
-            title += " - [\(L("window.title.disconnected"))]"
+            title += " - [\(TTL("window.title.disconnected"))]"
         }
         window?.title = title
     }
@@ -482,10 +472,10 @@ class TerminalWindowController: NSWindowController {
             try interpreter.loadScript(from: url)
         } catch {
             let alert = NSAlert()
-            alert.messageText = L("macro.error.title")
+            alert.messageText = TTL("macro.error.title")
             alert.informativeText = error.localizedDescription
             alert.alertStyle = .warning
-            alert.addButton(withTitle: L("OK"))
+            alert.addButton(withTitle: TTL("OK"))
             if let win = window { alert.beginSheetModal(for: win) }
             return
         }
@@ -800,7 +790,7 @@ extension TerminalWindowController: ConnectionDelegate {
         // errors, presented via CommDlgProc / PostMessage in commlib.c.
         // macOS equivalent: NSAlert sheet modal with .warning style.
         let alert = NSAlert()
-        alert.addButton(withTitle: L("error.connection.ok"))
+        alert.addButton(withTitle: TTL("error.connection.ok"))
 
         if let connError = error as? ConnectionError {
             alert.messageText = connError.alertTitle
@@ -818,7 +808,7 @@ extension TerminalWindowController: ConnectionDelegate {
                 alert.alertStyle = .warning
             }
         } else {
-            alert.messageText = L("error.connection.title")
+            alert.messageText = TTL("error.connection.title")
             alert.informativeText = error.localizedDescription
             alert.alertStyle = .warning
         }
@@ -930,15 +920,15 @@ extension TerminalWindowController: FileTransferDelegate {
                     bytesTransferred: bytes,
                     totalBytes: total)
                 let progress = total.map { "\(bytes)/\($0)" } ?? "\(bytes) bytes"
-                self.window?.title = String(format: L("window.title.transfer"), name, progress)
+                self.window?.title = String(format: TTL("window.title.transfer"), name, progress)
             case .completed(let name, let bytes):
                 self.protocolTransferPanel.close()
                 self.updateWindowTitle()
                 let alert = NSAlert()
-                alert.messageText = L("transfer.complete.title")
-                alert.informativeText = String(format: L("transfer.complete.message"), name, bytes)
+                alert.messageText = TTL("transfer.complete.title")
+                alert.informativeText = String(format: TTL("transfer.complete.message"), name, bytes)
                 alert.alertStyle = .informational
-                alert.addButton(withTitle: L("transfer.ok"))
+                alert.addButton(withTitle: TTL("transfer.ok"))
                 if let win = self.window {
                     alert.beginSheetModal(for: win)
                 }
@@ -946,10 +936,10 @@ extension TerminalWindowController: FileTransferDelegate {
                 self.protocolTransferPanel.close()
                 self.updateWindowTitle()
                 let alert = NSAlert()
-                alert.messageText = L("transfer.failed.title")
+                alert.messageText = TTL("transfer.failed.title")
                 alert.informativeText = error
                 alert.alertStyle = .warning
-                alert.addButton(withTitle: L("transfer.ok"))
+                alert.addButton(withTitle: TTL("transfer.ok"))
                 if let win = self.window {
                     alert.beginSheetModal(for: win)
                 }
@@ -1100,7 +1090,7 @@ extension TerminalWindowController: TTLInterpreterDelegate {
     func ttlShowError(_ message: String, line: Int, lineText: String, fileName: String, completion: @escaping (Bool) -> Void) {
         DispatchQueue.main.async { [weak self] in
             let alert = NSAlert()
-            alert.messageText = L("macro.error.title")
+            alert.messageText = TTL("macro.error.title")
             // Build informative text like the original: filename:line: error message + line content
             var info = "\(fileName):\(line): \(message)"
             if !lineText.isEmpty {
@@ -1109,8 +1099,8 @@ extension TerminalWindowController: TTLInterpreterDelegate {
             alert.informativeText = info
             alert.alertStyle = .warning
             // Original Tera Term buttons: Stop (IDOK), Continue (IDCANCEL)
-            alert.addButton(withTitle: L("macro.error.stop"))      // First button (returnCode 1000)
-            alert.addButton(withTitle: L("macro.error.continue"))  // Second button (returnCode 1001)
+            alert.addButton(withTitle: TTL("macro.error.stop"))      // First button (returnCode 1000)
+            alert.addButton(withTitle: TTL("macro.error.continue"))  // Second button (returnCode 1001)
             if let win = self?.window {
                 alert.beginSheetModal(for: win) { response in
                     // NSApplication.ModalResponse.alertFirstButtonReturn = 1000 = Stop
