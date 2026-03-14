@@ -96,7 +96,7 @@ class TerminalWindowController: NSWindowController {
 
         fileTransferManager = FileTransferManager()
 
-        logger = TerminalLogger()
+        logger = TerminalLogger(options: LogOptions.from(settings))
     }
 
     private func setupTerminalView() {
@@ -225,8 +225,9 @@ class TerminalWindowController: NSWindowController {
         panel.allowedContentTypes = [.plainText]
 
         panel.beginSheetModal(for: window!) { [weak self] response in
-            guard response == .OK, let url = panel.url else { return }
-            _ = self?.logger.startLogging(to: url.path)
+            guard response == .OK, let url = panel.url, let self = self else { return }
+            let opts = LogOptions.from(self.settings)
+            _ = self.logger.startLogging(to: url.path, options: opts)
         }
     }
 
@@ -1049,7 +1050,7 @@ extension TerminalWindowController: TTLInterpreterDelegate {
     }
 
     func ttlLogOpen(_ path: String, append: Bool) {
-        var opts = LogOptions()
+        var opts = LogOptions.from(settings)
         opts.appendMode = append
         _ = logger.startLogging(to: path, options: opts)
     }

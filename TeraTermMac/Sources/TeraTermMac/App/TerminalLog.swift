@@ -31,6 +31,53 @@ struct LogOptions {
     var includeScreenBuffer: Bool = false
     var writeBOM: Bool = false           // Write UTF-8 BOM at start
     var timestampType: LogTimestampType = .local  // Timestamp type: local/UTC/elapsed
+
+    /// Build LogOptions from TerminalSettings, applying all log-related settings.
+    static func from(_ s: TerminalSettings) -> LogOptions {
+        LogOptions(
+            addTimestamp: s.logTimestamp,
+            timestampFormat: LogOptions.convertStrftimeToDateFormat(s.logTimestampFormat),
+            plainText: s.logPlainText,
+            appendMode: s.logAppend,
+            autoStart: s.logAutoStart,
+            includeScreenBuffer: s.logIncludeScreenBuffer,
+            writeBOM: s.logBOM,
+            timestampType: LogTimestampType(rawValue: s.logTimestampType) ?? .local
+        )
+    }
+
+    /// Convert C strftime format (e.g. "%Y-%m-%d %H:%M:%S.%N") to Swift DateFormatter format.
+    static func convertStrftimeToDateFormat(_ strftime: String) -> String {
+        var result = ""
+        var i = strftime.startIndex
+        while i < strftime.endIndex {
+            if strftime[i] == "%" {
+                let next = strftime.index(after: i)
+                guard next < strftime.endIndex else {
+                    result.append("%")
+                    break
+                }
+                switch strftime[next] {
+                case "Y": result += "yyyy"
+                case "m": result += "MM"
+                case "d": result += "dd"
+                case "H": result += "HH"
+                case "M": result += "mm"
+                case "S": result += "ss"
+                case "N": result += "SSS"   // milliseconds
+                case "%": result += "%"
+                default:
+                    result.append("%")
+                    result.append(strftime[next])
+                }
+                i = strftime.index(after: next)
+            } else {
+                result.append(strftime[i])
+                i = strftime.index(after: i)
+            }
+        }
+        return result
+    }
 }
 
 // MARK: - Terminal Logger (port of filesys_log.cpp)

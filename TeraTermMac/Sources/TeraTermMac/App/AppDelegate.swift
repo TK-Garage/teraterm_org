@@ -507,13 +507,12 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         guard let wc = activeWindowController, let win = wc.window else { return }
         let vc = LogDialogController()
         vc.okHandler = { [weak wc, weak vc] in
-            guard let result = vc?.result else { return }
-            let options = LogOptions(
-                addTimestamp: result.timestamp,
-                plainText: result.plainText && result.format == .text,
-                appendMode: result.append
-            )
-            wc?.startLog(path: result.filePath, options: options)
+            guard let result = vc?.result, let wc = wc else { return }
+            var options = LogOptions.from(wc.settings)
+            options.addTimestamp = result.timestamp
+            options.plainText = result.plainText && result.format == .text
+            options.appendMode = result.append
+            wc.startLog(path: result.filePath, options: options)
         }
         currentSetupDialog = vc.presentAsModal(on: win)
     }
