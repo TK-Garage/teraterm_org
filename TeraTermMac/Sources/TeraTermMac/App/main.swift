@@ -39,12 +39,21 @@ app.setActivationPolicy(.regular)
 // OS標準の外観モード（ライト/ダーク）に追従する
 // app.appearance を設定しないことでシステム設定を尊重する
 
-// SwiftPM ビルドでは Info.plist が埋め込まれないため、
-// CFBundleIconFile が参照されず汎用アイコンになる。
-// バンドル内の AppIcon.icns をプログラムで設定する。
-if let iconURL = Bundle.main.url(forResource: "AppIcon", withExtension: "icns"),
-   let icon = NSImage(contentsOf: iconURL) {
-    app.applicationIconImage = icon
+// アプリアイコンをプログラムで設定する。
+// ・SwiftPM: Info.plist が埋め込まれないため CFBundleIconFile が効かない。
+//   リソースは Bundle.module に配置される。
+// ・Xcode:  Info.plist + Asset Catalog で設定されるが、念のため同じ処理を行う。
+//   リソースは Bundle.main に配置される。
+do {
+    #if SWIFT_PACKAGE
+    let resourceBundle = Bundle.module
+    #else
+    let resourceBundle = Bundle.main
+    #endif
+    if let iconURL = resourceBundle.url(forResource: "AppIcon", withExtension: "icns"),
+       let icon = NSImage(contentsOf: iconURL) {
+        app.applicationIconImage = icon
+    }
 }
 
 let delegate = AppDelegate()
