@@ -1,0 +1,13 @@
+; test_appcontrol.ttl - App control commands test
+; Tests: closett, getttver, connect (auto-launch)
+
+; getttver - get TeraTermMac version
+; In XPC mode, this calls getAppVersion via XPC
+; getttver
+
+; closett - request TeraTermMac to terminate
+; WARNING: This will actually close TeraTermMac if connected via XPC
+; closett
+
+; For testing purposes, just verify the commands parse correctly
+end

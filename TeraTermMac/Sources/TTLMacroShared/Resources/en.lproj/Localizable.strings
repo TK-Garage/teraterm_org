@@ -1,0 +1,37 @@
+/* TTLMacro Shared - English */
+
+/* Macro Open Dialog */
+"macro.open.title" = "Select Macro File";
+"macro.open.prompt" = "Run";
+"macro.open.cancel" = "Cancel";
+
+/* Macro Status */
+"macro.status.running" = "Running macro...";
+"macro.status.paused" = "Macro paused";
+
+/* Macro Errors */
+"macro.error.noFile" = "File not found";
+"macro.error.cancelled" = "Cancelled";
+"macro.error.syntaxError" = "Syntax error";
+
+/* Macro Menu */
+"macro.menu.running" = "▶ Running";
+"macro.menu.paused" = "⏸ Paused";
+"macro.menu.lineNumber" = "Line: %d";
+"macro.menu.pause" = "Pause";
+"macro.menu.resume" = "Resume";
+"macro.menu.stop" = "Stop";
+"macro.menu.open" = "Open Macro...";
+"macro.menu.quit" = "Quit TTLMacro";
+
+/* Stop Confirmation */
+"macro.stop.confirm.title" = "Stop macro?";
+"macro.stop.confirm.message" = "The running macro will be stopped.";
+"macro.stop.confirm.stop" = "Stop";
+"macro.stop.confirm.cancel" = "Cancel";
+
+/* Common Dialog Buttons */
+"dialog.ok" = "OK";
+"dialog.cancel" = "Cancel";
+"dialog.yes" = "Yes";
+"dialog.no" = "No";

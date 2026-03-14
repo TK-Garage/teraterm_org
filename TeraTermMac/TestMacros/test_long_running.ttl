@@ -1,0 +1,19 @@
+; test_long_running.ttl - Long running macro for pause/stop testing
+; This macro runs in a loop, useful for testing:
+; - stopMacro() to interrupt
+; - pauseMacro() / resumeMacro() to pause and resume
+
+count = 0
+
+:loop_start
+count = count + 1
+
+; Small delay to simulate work
+mpause 100
+
+; Loop forever (until externally stopped)
+if count < 10000
+  goto loop_start
+endif
+
+end

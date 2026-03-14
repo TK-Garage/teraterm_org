@@ -1,0 +1,13 @@
+; test_wait.ttl - Wait commands test
+; Tests: pause, mpause
+
+; pause for 1 second
+pause 1
+
+; mpause for 100 milliseconds
+mpause 100
+
+; Note: wait, waitln, waitmatch require a terminal connection
+; These commands are tested via XPC integration tests
+
+end

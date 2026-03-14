@@ -1,0 +1,80 @@
+; test_string.ttl - String operation commands test
+; Tests: send, sendln, sendtext, strconcat, strlen, strscan, strsplit
+;        strtrim, toupper, tolower, strreplace, sprintf
+
+; String variables
+mystr = 'Hello World'
+result_str = ''
+
+; strlen
+strlen mystr
+; result should be 11
+
+; strconcat
+strconcat result_str 'Hello'
+strconcat result_str ' World'
+; result_str should be 'Hello World'
+
+; strscan - search for substring
+strscan mystr 'World'
+; result should be 7
+
+; toupper / tolower
+upper_str = 'hello'
+toupper upper_str
+; upper_str should be 'HELLO'
+
+lower_str = 'HELLO'
+tolower lower_str
+; lower_str should be 'hello'
+
+; strtrim
+trim_str = '  hello  '
+strtrim trim_str
+; trim_str should be 'hello'
+
+; strreplace
+rep_str = 'foo bar foo'
+strreplace rep_str 'foo' 'baz'
+; rep_str should be 'baz bar foo' (first match only)
+
+; sprintf
+sprintf '%d items' 42
+; inputstr should be '42 items'
+
+; strcopy
+src = 'Hello World'
+strcopy dst src 7 5
+; dst should be 'World'
+
+; strcompare
+strcompare 'abc' 'abc'
+; result should be 0
+
+strcompare 'abc' 'xyz'
+; result should be < 0
+
+; int2str / str2int
+num = 42
+int2str numstr num
+; numstr should be '42'
+
+str2int backnum numstr
+; backnum should be 42
+
+; strsplit
+splitstr = 'a,b,c'
+strsplit splitstr ','
+; result should be 3
+
+; strinsert
+ins_str = 'Hello World'
+strinsert ins_str 6 'Beautiful '
+; ins_str should be 'Hello Beautiful World'
+
+; strremove
+rem_str = 'Hello World'
+strremove rem_str 6 6
+; rem_str should be 'Hello'
+
+end

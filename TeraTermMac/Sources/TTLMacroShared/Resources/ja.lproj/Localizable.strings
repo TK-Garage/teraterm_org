@@ -1,0 +1,37 @@
+/* TTLMacro Shared - Japanese */
+
+/* Macro Open Dialog */
+"macro.open.title" = "マクロファイルを選択";
+"macro.open.prompt" = "実行";
+"macro.open.cancel" = "キャンセル";
+
+/* Macro Status */
+"macro.status.running" = "マクロ実行中...";
+"macro.status.paused" = "マクロ一時停止中";
+
+/* Macro Errors */
+"macro.error.noFile" = "ファイルが見つかりません";
+"macro.error.cancelled" = "キャンセルされました";
+"macro.error.syntaxError" = "構文エラー";
+
+/* Macro Menu */
+"macro.menu.running" = "▶ マクロ実行中";
+"macro.menu.paused" = "⏸ 一時停止中";
+"macro.menu.lineNumber" = "実行行数: %d 行目";
+"macro.menu.pause" = "一時停止";
+"macro.menu.resume" = "再開";
+"macro.menu.stop" = "中断";
+"macro.menu.open" = "マクロを開く...";
+"macro.menu.quit" = "TTLMacro を終了";
+
+/* Stop Confirmation */
+"macro.stop.confirm.title" = "マクロを中断しますか？";
+"macro.stop.confirm.message" = "実行中のマクロを中断します。";
+"macro.stop.confirm.stop" = "中断";
+"macro.stop.confirm.cancel" = "キャンセル";
+
+/* Common Dialog Buttons */
+"dialog.ok" = "OK";
+"dialog.cancel" = "キャンセル";
+"dialog.yes" = "はい";
+"dialog.no" = "いいえ";

@@ -1,0 +1,22 @@
+; test_error.ttl - Error handling test
+; Tests: syntax errors, undefined commands, type errors, division by zero
+
+; This file intentionally contains errors for testing the parser's
+; error reporting capabilities.
+
+; The following lines should each generate specific errors when uncommented:
+
+; Syntax error: missing endif
+; if 1
+
+; Division by zero
+; x = 1 / 0
+
+; Type mismatch
+; x = 'hello' + 5
+
+; Undefined command
+; nonexistentcommand
+
+; For now, just end cleanly
+end

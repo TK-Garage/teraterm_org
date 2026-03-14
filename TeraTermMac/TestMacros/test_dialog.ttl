@@ -1,0 +1,20 @@
+; test_dialog.ttl - Dialog commands test
+; Tests: messagebox, inputbox, yesnobox, passwordbox, statusbox, closesbox
+
+; messagebox
+messagebox 'Test message' 'Test Title'
+
+; yesnobox
+yesnobox 'Continue?' 'Question'
+
+; inputbox
+inputbox 'Enter value:' 'Input' 'default'
+
+; statusbox / closesbox
+statusbox 'Processing...' 'Status'
+closesbox
+
+; setdlgpos
+setdlgpos 100 200
+
+end
