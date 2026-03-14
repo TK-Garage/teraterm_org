@@ -750,7 +750,7 @@ class TerminalSettings: Codable {
             try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
             try data.write(to: fileURL)
         } catch {
-            print("Failed to save settings: \(error)")
+            NSLog("[TerminalSettings] %@", TTL("debug.settings.saveFailed", "\(error)"))
         }
     }
 

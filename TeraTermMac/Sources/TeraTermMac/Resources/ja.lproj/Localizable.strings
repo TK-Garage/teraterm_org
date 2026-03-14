@@ -1086,3 +1086,22 @@
 "error.ssh.processExited" = "接続確立前にSSHプロセスが終了しました。";
 "error.ssh.terminated255" = "SSH接続が終了しました (終了コード 255)。";
 "error.ssh.exitedWithCode" = "SSHが終了コード %d で終了しました。";
+
+/* デバッグ / コンソールログメッセージ */
+"debug.config.dirCreateFailed" = "ディレクトリの作成に失敗しました: %@";
+"debug.config.oldFormat" = "古い設定形式を検出しました。再作成します…";
+"debug.config.unknownKey" = "不明なキーをスキップ [%@] %@=%@";
+"debug.config.saveFailed" = "設定の保存に失敗しました: %@";
+"debug.settings.saveFailed" = "設定の保存に失敗しました: %@";
+"debug.keymap.warnings" = "キーマップ警告: %@";
+"debug.keymap.loadFailed" = "キーマップの読み込みに失敗しました: %@";
+"debug.tcp.writeRetryExceeded" = "send: 書き込みリトライ上限超過 (%d 回リトライ, %d/%d バイト送信済み)";
+"debug.snapshot.zeroSize" = "ビューのサイズがゼロです – スキップ %@";
+"debug.snapshot.bitmapFailed" = "%@ のビットマップ作成に失敗しました";
+"debug.snapshot.dirFailed" = "ディレクトリを作成できません: %@";
+"debug.snapshot.pngFailed" = "%@ のPNGエンコードに失敗しました";
+"debug.snapshot.saved" = "保存しました: %@";
+"debug.snapshot.writeFailed" = "書き込みに失敗しました: %@";
+"debug.snapshot.allGenerated" = "すべてのスナップショットを生成しました。";
+"debug.snapshot.allValidationGenerated" = "%d 個の検証スナップショットをすべて生成しました。";
+"debug.snapshot.sizeExceeds" = "警告: %@ の fittingSize (%dx%d) が境界 (%dx%d) を超えています";

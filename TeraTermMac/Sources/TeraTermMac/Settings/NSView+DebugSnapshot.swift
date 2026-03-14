@@ -35,7 +35,7 @@ extension NSView {
 
         let bounds = self.bounds
         guard bounds.width > 0 && bounds.height > 0 else {
-            NSLog("[DebugSnapshot] View has zero size – skipping \(name)")
+            NSLog("[DebugSnapshot] %@", TTL("debug.snapshot.zeroSize", name))
             return
         }
 
@@ -54,7 +54,7 @@ extension NSView {
             bytesPerRow: 0,
             bitsPerPixel: 0
         ) else {
-            NSLog("[DebugSnapshot] Failed to create bitmap for \(name)")
+            NSLog("[DebugSnapshot] %@", TTL("debug.snapshot.bitmapFailed", name))
             return
         }
 
@@ -110,7 +110,7 @@ extension NSView {
             try FileManager.default.createDirectory(
                 at: desktopURL, withIntermediateDirectories: true)
         } catch {
-            NSLog("[DebugSnapshot] Cannot create directory: \(error)")
+            NSLog("[DebugSnapshot] %@", TTL("debug.snapshot.dirFailed", "\(error)"))
             return
         }
 
@@ -118,15 +118,15 @@ extension NSView {
             .appendingPathComponent("\(name)_\(dateStr).png")
 
         guard let pngData = bitmapRep.representation(using: .png, properties: [:]) else {
-            NSLog("[DebugSnapshot] PNG encoding failed for \(name)")
+            NSLog("[DebugSnapshot] %@", TTL("debug.snapshot.pngFailed", name))
             return
         }
 
         do {
             try pngData.write(to: fileURL, options: .atomic)
-            NSLog("[DebugSnapshot] Saved: \(fileURL.path)")
+            NSLog("[DebugSnapshot] %@", TTL("debug.snapshot.saved", fileURL.path))
         } catch {
-            NSLog("[DebugSnapshot] Write failed: \(error)")
+            NSLog("[DebugSnapshot] %@", TTL("debug.snapshot.writeFailed", "\(error)"))
         }
     }
 

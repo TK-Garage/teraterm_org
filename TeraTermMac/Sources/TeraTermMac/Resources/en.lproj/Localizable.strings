@@ -1086,3 +1086,22 @@
 "error.ssh.processExited" = "SSH process exited before connection established.";
 "error.ssh.terminated255" = "SSH connection terminated (exit code 255).";
 "error.ssh.exitedWithCode" = "SSH exited with code %d.";
+
+/* Debug / Console Log Messages */
+"debug.config.dirCreateFailed" = "Failed to create directory: %@";
+"debug.config.oldFormat" = "Old configuration format detected. Recreating...";
+"debug.config.unknownKey" = "Skipping unknown key [%@] %@=%@";
+"debug.config.saveFailed" = "Failed to save configuration: %@";
+"debug.settings.saveFailed" = "Failed to save settings: %@";
+"debug.keymap.warnings" = "KeyMap warnings: %@";
+"debug.keymap.loadFailed" = "Failed to load keymap: %@";
+"debug.tcp.writeRetryExceeded" = "send: write retry limit exceeded (%d retries, %d/%d bytes sent)";
+"debug.snapshot.zeroSize" = "View has zero size – skipping %@";
+"debug.snapshot.bitmapFailed" = "Failed to create bitmap for %@";
+"debug.snapshot.dirFailed" = "Cannot create directory: %@";
+"debug.snapshot.pngFailed" = "PNG encoding failed for %@";
+"debug.snapshot.saved" = "Saved: %@";
+"debug.snapshot.writeFailed" = "Write failed: %@";
+"debug.snapshot.allGenerated" = "All snapshots generated.";
+"debug.snapshot.allValidationGenerated" = "All %d validation snapshots generated.";
+"debug.snapshot.sizeExceeds" = "WARNING: %@ fittingSize (%dx%d) exceeds bounds (%dx%d)";

@@ -48,7 +48,6 @@ app.activate(ignoringOtherApps: true)
 app.run()
 #else
 import Foundation
-print("Tera Term Mac requires macOS with AppKit.")
-print("Please build and run on macOS 14.0 or later.")
+print("Tera Term Mac requires macOS with AppKit. Please build and run on macOS 14.0 or later.")
 Foundation.exit(1)
 #endif

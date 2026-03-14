@@ -446,7 +446,7 @@ class ConfigPersistenceManager {
         do {
             try ensureDirectory()
         } catch {
-            print("ConfigPersistenceManager: Failed to create directory: \(error)")
+            NSLog("[ConfigPersistence] %@", TTL("debug.config.dirCreateFailed", "\(error)"))
             return TeraTermConfig()
         }
 
@@ -466,7 +466,7 @@ class ConfigPersistenceManager {
         guard let data = fm.contents(atPath: path.path),
               let text = Self.decodeText(data) else {
             // Unreadable – recreate
-            print("Old configuration format detected. Recreating...")
+            NSLog("[ConfigPersistence] %@", TTL("debug.config.oldFormat"))
             try? fm.removeItem(at: path)
             let config = TeraTermConfig()
             saveConfig(config)
@@ -480,8 +480,8 @@ class ConfigPersistenceManager {
         // with the next line.
         let (sections, skipped) = filterUnknownKeys(rawSections)
         for entry in skipped {
-            print("ConfigPersistenceManager: Skipping unknown key " +
-                  "[\(entry.section)] \(entry.key)=\(entry.value)")
+            NSLog("[ConfigPersistence] %@",
+                  TTL("debug.config.unknownKey", entry.section, entry.key, entry.value))
         }
 
         // Version check
@@ -490,7 +490,7 @@ class ConfigPersistenceManager {
         )
 
         if !isVersionCurrent(fileVersion) {
-            print("Old configuration format detected. Recreating...")
+            NSLog("[ConfigPersistence] %@", TTL("debug.config.oldFormat"))
             try? fm.removeItem(at: path)
             let config = TeraTermConfig()
             saveConfig(config)
@@ -543,7 +543,7 @@ class ConfigPersistenceManager {
         do {
             try ensureDirectory()
         } catch {
-            print("ConfigPersistenceManager: Failed to create directory: \(error)")
+            NSLog("[ConfigPersistence] %@", TTL("debug.config.dirCreateFailed", "\(error)"))
             return
         }
 
@@ -568,7 +568,7 @@ class ConfigPersistenceManager {
                 try fm.moveItem(at: tmpURL, to: dest)
             }
         } catch {
-            print("ConfigPersistenceManager: Failed to save: \(error)")
+            NSLog("[ConfigPersistence] %@", TTL("debug.config.saveFailed", "\(error)"))
             // Clean up temp
             try? FileManager.default.removeItem(at: tmpURL)
         }

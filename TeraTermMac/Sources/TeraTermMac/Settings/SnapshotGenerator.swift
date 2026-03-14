@@ -42,7 +42,7 @@ final class SnapshotGenerator {
         ]
 
         renderSpecs(specs, outputDir: outputDir)
-        NSLog("[SnapshotGenerator] All snapshots generated.")
+        NSLog("[SnapshotGenerator] %@", TTL("debug.snapshot.allGenerated"))
     }
 
     // MARK: - Comprehensive Validation
@@ -111,7 +111,7 @@ final class SnapshotGenerator {
 
         renderSpecs(allSpecs, outputDir: outputDir)
 
-        NSLog("[SnapshotGenerator] All \(allSpecs.count) validation snapshots generated.")
+        NSLog("[SnapshotGenerator] %@", TTL("debug.snapshot.allValidationGenerated", allSpecs.count))
     }
 
     // MARK: - Private Rendering
@@ -143,9 +143,10 @@ final class SnapshotGenerator {
             let bounds = view.bounds
             if bounds.width > 0 && bounds.height > 0 {
                 if fitting.width > bounds.width + 2 || fitting.height > bounds.height + 2 {
-                    NSLog("[SnapshotGenerator] WARNING: \(spec.name) fittingSize "
-                        + "(\(Int(fitting.width))x\(Int(fitting.height))) exceeds bounds "
-                        + "(\(Int(bounds.width))x\(Int(bounds.height)))")
+                    NSLog("[SnapshotGenerator] %@",
+                        TTL("debug.snapshot.sizeExceeds", spec.name,
+                            Int(fitting.width), Int(fitting.height),
+                            Int(bounds.width), Int(bounds.height)))
                 }
             }
         }

@@ -1266,10 +1266,10 @@ extension TerminalWindowController: TTLInterpreterDelegate {
             let keyMap = try KeymapLoader.load(from: url)
             applyKeyMap(keyMap)
             if !keyMap.warnings.isEmpty {
-                print("KeyMap warnings: \(keyMap.warnings.joined(separator: ", "))")
+                NSLog("[KeyMap] %@", TTL("debug.keymap.warnings", keyMap.warnings.joined(separator: ", ")))
             }
         } catch {
-            print("Failed to load keymap: \(error.localizedDescription)")
+            NSLog("[KeyMap] %@", TTL("debug.keymap.loadFailed", error.localizedDescription))
         }
     }
 

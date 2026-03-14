@@ -417,8 +417,8 @@ class TCPConnection: Connection {
                         retries += 1
                         if retries > TCPConnection.sendMaxRetries {
                             // リトライ上限到達 → 送信失敗として切断・通知
-                            NSLog("[TCPConnection] send: write retry limit exceeded (%d retries, %d/%d bytes sent)",
-                                  retries, offset, total)
+                            NSLog("[TCPConnection] %@",
+                                  TTL("debug.tcp.writeRetryExceeded", retries, offset, total))
                             DispatchQueue.main.async { [weak self] in
                                 self?.delegate?.connectionDidFail(error: ConnectionError.sendFailed)
                                 self?.disconnect()
