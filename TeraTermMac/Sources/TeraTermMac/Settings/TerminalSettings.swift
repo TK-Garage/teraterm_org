@@ -635,7 +635,7 @@ class TerminalSettings: Codable {
     var susiePath: String = ""
 
     // UI
-    var language: String = "Auto"
+    var language: String = "Japanese"
     var dialogFontName: String = ""
     var dialogFontSize: Double = 0
     var dialogFontProportional: Bool = false

@@ -51,12 +51,35 @@ enum DialogLayout {
 
 // MARK: - Localization Helper
 
-func TTL(_ key: String) -> String {
+/// Bundle.module はメインアプリバンドルと異なるため、macOS のロケール解決が
+/// 正しく動作しない場合がある。明示的に言語に対応する .lproj バンドルを
+/// 読み込むことで確実にローカライズされた文字列を返す。
+private let _localizedBundle: Bundle = {
     #if SWIFT_PACKAGE
-    return NSLocalizedString(key, bundle: Bundle.module, comment: "")
+    let module = Bundle.module
     #else
-    return NSLocalizedString(key, bundle: Bundle.main, comment: "")
+    let module = Bundle.main
     #endif
+
+    // UserDefaults の AppleLanguages（main.swift で設定済み）から優先言語を取得
+    let preferredLangs = Bundle.preferredLocalizations(from: module.localizations)
+    if let preferred = preferredLangs.first,
+       let path = module.path(forResource: preferred, ofType: "lproj"),
+       let bundle = Bundle(path: path) {
+        return bundle
+    }
+
+    // フォールバック: 日本語バンドルを直接試行
+    if let path = module.path(forResource: "ja", ofType: "lproj"),
+       let bundle = Bundle(path: path) {
+        return bundle
+    }
+
+    return module
+}()
+
+func TTL(_ key: String) -> String {
+    return NSLocalizedString(key, bundle: _localizedBundle, comment: "")
 }
 
 func TTL(_ key: String, _ args: CVarArg...) -> String {

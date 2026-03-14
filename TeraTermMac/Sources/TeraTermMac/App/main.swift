@@ -10,16 +10,21 @@
 #if canImport(AppKit)
 import AppKit
 
-// UI言語の設定: "Auto" ならシステム言語に従い、明示的に指定されていればそれを優先する。
+// UI言語の設定: デフォルトは日本語（Tera Term の主要言語）。
+// "Auto" ならシステム言語に従い、明示的に指定されていればそれを優先する。
 // AppleLanguages を設定しない場合、macOS は自動的にシステム言語に基づいて
 // en.lproj / ja.lproj から適切なローカライズリソースを選択する。
-let savedLanguage = UserDefaults.standard.string(forKey: "TeraTermUILanguage") ?? "Auto"
-if savedLanguage != "Auto" {
+let savedLanguage = UserDefaults.standard.string(forKey: "TeraTermUILanguage") ?? "Japanese"
+switch savedLanguage {
+case "Auto":
+    // システム言語に従う — AppleLanguages を設定しない
+    break
+default:
     let langCode: String
     switch savedLanguage {
     case "Japanese": langCode = "ja"
     case "English":  langCode = "en"
-    default:         langCode = "en"
+    default:         langCode = "ja"
     }
     UserDefaults.standard.set([langCode, "en"], forKey: "AppleLanguages")
     UserDefaults.standard.synchronize()
