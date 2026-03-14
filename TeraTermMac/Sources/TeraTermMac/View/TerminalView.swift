@@ -73,6 +73,10 @@ class TerminalView: NSView {
     // draw pass to reduce CPU usage and input lag under high throughput.
     private var refreshPending: Bool = false
     private var refreshTimer: DispatchSourceTimer?
+    private var refreshIdleCount: Int = 0
+
+    // Cached background color to avoid per-cell NSColor allocation in draw()
+    private var _cachedBackgroundColor: NSColor?
 
     // IME
     private var markedText: NSMutableAttributedString?
@@ -280,29 +284,34 @@ class TerminalView: NSView {
         guard let context = NSGraphicsContext.current?.cgContext else { return }
         guard let buffer = buffer else {
             // Draw empty screen
-            let bg = backgroundColor
+            let bg = cachedBackgroundColor
             context.setFillColor(bg.cgColor)
             context.fill(dirtyRect)
             layer?.backgroundColor = bg.cgColor
-            updateScrollerAppearance()
             return
         }
 
         // Draw background – fill entire bounds so right/bottom edges match
         // the terminal background color even when text grid doesn't cover
         // the full view area.
-        let bg = backgroundColor
+        let bg = cachedBackgroundColor
         context.setFillColor(bg.cgColor)
-        context.fill(bounds)
+        context.fill(dirtyRect)
 
         // Also set the layer background to match, preventing any edge
         // color mismatch when the window composites layers.
         layer?.backgroundColor = bg.cgColor
 
-        // Draw each visible row
-        for row in 0..<rows {
-            guard let line = buffer.line(at: row) else { continue }
-            drawLine(context: context, line: line, row: row, buffer: buffer)
+        // Compute the range of rows that intersect the dirty rect
+        let firstDirtyRow = max(0, Int((dirtyRect.minY - topInset) / cellHeight))
+        let lastDirtyRow = min(rows - 1, Int((dirtyRect.maxY - topInset) / cellHeight))
+
+        // Draw only dirty rows
+        if firstDirtyRow <= lastDirtyRow {
+            for row in firstDirtyRow...lastDirtyRow {
+                guard let line = buffer.line(at: row) else { continue }
+                drawLine(context: context, line: line, row: row, buffer: buffer)
+            }
         }
 
         // Draw cursor
@@ -317,10 +326,6 @@ class TerminalView: NSView {
         if let markedText = markedText, markedText.length > 0 {
             drawMarkedText(context: context, buffer: buffer, markedText: markedText)
         }
-
-        // Keep scroller in sync with buffer state
-        updateScroller()
-        updateScrollerAppearance()
     }
 
     private func drawMarkedText(context: CGContext, buffer: TerminalBuffer, markedText: NSAttributedString) {
@@ -367,7 +372,9 @@ class TerminalView: NSView {
 
     private func drawLine(context: CGContext, line: BufferLine, row: Int, buffer: TerminalBuffer) {
         let y = topInset + CGFloat(row) * cellHeight
+        let bg = cachedBackgroundColor
 
+        // Pass 1: Draw cell backgrounds
         for col in 0..<min(columns, line.cells.count) {
             let cell = line.cells[col]
             if cell.isWideTrail { continue }
@@ -375,23 +382,100 @@ class TerminalView: NSView {
             let x = leftInset + CGFloat(col) * cellWidth
             let charWidth = cell.isWide ? cellWidth * 2 : cellWidth
 
-            // Draw cell background
             let bgColor = resolveBackgroundColor(cell, inSelection: buffer.selection.contains(x: col, y: row))
-            if bgColor != backgroundColor {
+            if bgColor != bg {
                 context.setFillColor(bgColor.cgColor)
                 context.fill(CGRect(x: x, y: y, width: charWidth, height: cellHeight))
             }
+        }
 
-            // Draw character
-            if cell.character != " " || !cell.combiningCharacters.isEmpty {
-                let fgColor = resolveForegroundColor(cell, inSelection: buffer.selection.contains(x: col, y: row))
-                drawCharacter(context: context, cell: cell, x: x, y: y, color: fgColor, width: charWidth)
+        // Pass 2: Batch text rendering — group consecutive cells with
+        // identical attributes into a single CTLine to reduce Core Text overhead.
+        let colCount = min(columns, line.cells.count)
+        var col = 0
+        while col < colCount {
+            let cell = line.cells[col]
+            if cell.isWideTrail || (cell.character == " " && cell.combiningCharacters.isEmpty) {
+                // Draw decorations for space characters
+                if !cell.isWideTrail {
+                    let x = leftInset + CGFloat(col) * cellWidth
+                    let charWidth = cell.isWide ? cellWidth * 2 : cellWidth
+                    drawDecorations(context: context, cell: cell, x: x, y: y, width: charWidth,
+                                  color: resolveForegroundColor(cell, inSelection: false))
+                }
+                col += 1
+                continue
             }
 
-            // Draw underline styles
-            drawDecorations(context: context, cell: cell, x: x, y: y, width: charWidth,
-                          color: resolveForegroundColor(cell, inSelection: false))
+            let inSel = buffer.selection.contains(x: col, y: row)
+            let fgColor = resolveForegroundColor(cell, inSelection: inSel)
+            let runFont = selectFont(for: cell)
+            let runStartCol = col
+            var runText = cellString(cell)
+
+            col += cell.isWide ? 2 : 1
+
+            // Extend run while attributes match
+            while col < colCount {
+                let nextCell = line.cells[col]
+                if nextCell.isWideTrail { col += 1; continue }
+                if nextCell.character == " " && nextCell.combiningCharacters.isEmpty { break }
+
+                let nextInSel = buffer.selection.contains(x: col, y: row)
+                let nextFg = resolveForegroundColor(nextCell, inSelection: nextInSel)
+                let nextFont = selectFont(for: nextCell)
+                if nextFg != fgColor || nextFont !== runFont
+                   || nextCell.attributes.intersection([.bold, .italic]) != cell.attributes.intersection([.bold, .italic]) {
+                    break
+                }
+                runText += cellString(nextCell)
+                col += nextCell.isWide ? 2 : 1
+            }
+
+            // Draw the batched run
+            let x = leftInset + CGFloat(runStartCol) * cellWidth
+            let attrs: [NSAttributedString.Key: Any] = [
+                .font: runFont as Any,
+                .foregroundColor: fgColor,
+            ]
+            let attrStr = NSAttributedString(string: runText, attributes: attrs)
+            let ctLine = CTLineCreateWithAttributedString(attrStr)
+            context.saveGState()
+            context.textMatrix = CGAffineTransform(scaleX: 1.0, y: -1.0)
+            context.textPosition = CGPoint(x: x, y: y + fontAscent)
+            CTLineDraw(ctLine, context)
+            context.restoreGState()
+
+            // Draw decorations for each cell in the run
+            for c in runStartCol..<col {
+                if c < line.cells.count {
+                    let decCell = line.cells[c]
+                    if !decCell.isWideTrail {
+                        let dx = leftInset + CGFloat(c) * cellWidth
+                        let cw = decCell.isWide ? cellWidth * 2 : cellWidth
+                        drawDecorations(context: context, cell: decCell, x: dx, y: y, width: cw,
+                                      color: resolveForegroundColor(decCell, inSelection: false))
+                    }
+                }
+            }
         }
+    }
+
+    /// Select the appropriate CTFont for a cell's bold/italic attributes.
+    private func selectFont(for cell: BufferCharacter) -> CTFont {
+        guard let font = ctFont else { return CTFontCreateWithName("Menlo" as CFString, 13, nil) }
+        if cell.attributes.contains(.bold), let bf = boldFont { return bf }
+        if cell.attributes.contains(.italic), let itf = italicFont { return itf }
+        return font
+    }
+
+    /// Build the string representation of a cell including combining characters.
+    private func cellString(_ cell: BufferCharacter) -> String {
+        var str = String(cell.character)
+        for combining in cell.combiningCharacters {
+            str.append(Character(combining))
+        }
+        return str
     }
 
     private func drawCharacter(context: CGContext, cell: BufferCharacter, x: CGFloat, y: CGFloat, color: NSColor, width: CGFloat) {
@@ -547,6 +631,19 @@ class TerminalView: NSView {
             blue: CGFloat(c.b) / 255.0,
             alpha: alpha
         )
+    }
+
+    /// Cached version of backgroundColor — reused within a single draw pass
+    /// to avoid repeated NSColor allocation for every cell comparison.
+    private var cachedBackgroundColor: NSColor {
+        if let cached = _cachedBackgroundColor { return cached }
+        let color = backgroundColor
+        _cachedBackgroundColor = color
+        return color
+    }
+
+    func invalidateBackgroundColorCache() {
+        _cachedBackgroundColor = nil
     }
 
     // MARK: - Color Resolution Helpers
@@ -1055,15 +1152,30 @@ class TerminalView: NSView {
     func refresh() {
         guard !refreshPending else { return }
         refreshPending = true
+        refreshIdleCount = 0
 
         if refreshTimer == nil {
             let timer = DispatchSource.makeTimerSource(queue: .main)
             timer.schedule(deadline: .now(), repeating: .milliseconds(8))
             timer.setEventHandler { [weak self] in
-                guard let self = self, self.refreshPending else { return }
-                self.refreshPending = false
-                self.needsDisplay = true
-                self.updateScroller()
+                guard let self = self else { return }
+                if self.refreshPending {
+                    self.refreshPending = false
+                    self.refreshIdleCount = 0
+                    self.invalidateBackgroundColorCache()
+                    self.needsDisplay = true
+                    // Update scroller outside draw() to avoid layout-in-draw
+                    // and prevent NSRemoteView position ambiguity warnings.
+                    self.updateScroller()
+                    self.updateScrollerAppearance()
+                } else {
+                    // Auto-cancel after ~250ms idle (≈32 ticks × 8ms)
+                    self.refreshIdleCount += 1
+                    if self.refreshIdleCount > 32 {
+                        self.refreshTimer?.cancel()
+                        self.refreshTimer = nil
+                    }
+                }
             }
             timer.resume()
             refreshTimer = timer
