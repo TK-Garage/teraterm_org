@@ -1804,16 +1804,4 @@ s = "double quotes"
 
 | コマンド | 説明 |
 |----------|------|
-| ~~`bplusrecv` / `bplussend`~~ | ~~B Plus プロトコル転送~~ → 実装済み (§13) |
-| ~~`xmodemrecv` / `xmodemsend`~~ | ~~XMODEM 転送~~ → 実装済み (§13) |
-| ~~`ymodemrecv` / `ymodemsend`~~ | ~~YMODEM 転送~~ → 実装済み (§13) |
-| ~~`zmodemrecv` / `zmodemsend`~~ | ~~ZMODEM 転送~~ → 実装済み (§13) |
-| ~~`kmtrecv` / `kmtsend` / `kmtget` / `kmtfinish`~~ | ~~Kermit 転送~~ → 実装済み (§13) |
-| ~~`quickvanrecv` / `quickvansend`~~ | ~~Quick VAN 転送~~ → 実装済み (§13) |
-| ~~`scprecv` / `scpsend`~~ | ~~SCP 転送~~ → 実装済み (§13) |
-| ~~`recvfile`~~ | ~~ファイル受信~~ → 実装済み (§13) |
 | `cygconnect` | Cygwin 接続（macOS 非対応） |
-| ~~`loadkeymap`~~ | ~~キーマップ読み込み~~ → 実装済み (§12) |
-| ~~`restoresetup`~~ | ~~セットアップ復元~~ → 実装済み (§12) |
-| ~~`callmenu`~~ | ~~メニュー呼び出し~~ → 実装済み (§12) |
-| ~~`setserialdelaychar` / `setserialdelayline`~~ | ~~シリアル遅延設定~~ → 実装済み (§12) |
