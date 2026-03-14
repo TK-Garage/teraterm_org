@@ -1179,16 +1179,15 @@ extension TerminalView: NSTextInputClient {
         markedText = nil
         imeMarkedRange = NSRange(location: NSNotFound, length: 0)
 
-        // Send as key events
-        for char in text {
-            let event = TerminalKeyEvent(
-                keyCode: 0,
-                characters: String(char),
-                modifiers: [],
-                isKeyDown: true
-            )
-            terminalDelegate?.terminalViewDidReceiveKeyEvent(event)
-        }
+        // Send as a single key event with the full text to avoid per-character
+        // overhead (each delegate call previously enqueued a separate send).
+        let event = TerminalKeyEvent(
+            keyCode: 0,
+            characters: text,
+            modifiers: [],
+            isKeyDown: true
+        )
+        terminalDelegate?.terminalViewDidReceiveKeyEvent(event)
     }
 
     func setMarkedText(_ string: Any, selectedRange: NSRange, replacementRange: NSRange) {

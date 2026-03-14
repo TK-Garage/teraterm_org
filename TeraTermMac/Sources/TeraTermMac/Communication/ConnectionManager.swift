@@ -531,6 +531,7 @@ class SerialConnection: Connection {
     private(set) var state: ConnectionState = .disconnected
     private var fileDescriptor: Int32 = -1
     private let readQueue = DispatchQueue(label: "com.teraterm.serial.read")
+    private let writeQueue = DispatchQueue(label: "com.teraterm.serial.write")
 
     // Thread safety
     private let stateLock = NSLock()
@@ -693,26 +694,26 @@ class SerialConnection: Connection {
         stateLock.unlock()
 
         guard running, fd >= 0 else { return }
-        // 全バイト送信完了までループ（部分書き込み対応）
-        data.withUnsafeBytes { buffer in
-            guard let basePtr = buffer.baseAddress else { return }
-            var offset = 0
-            let total = data.count
-            while offset < total {
-                let n = write(fd, basePtr + offset, total - offset)
-                if n > 0 {
-                    offset += n
-                } else if n < 0 {
-                    if errno == EINTR { continue }
-                    if errno == EAGAIN {
-                        Thread.sleep(forTimeInterval: 0.001)
-                        continue
+        writeQueue.async { [weak self] in
+            data.withUnsafeBytes { buffer in
+                guard let basePtr = buffer.baseAddress else { return }
+                var offset = 0
+                let total = data.count
+                while offset < total {
+                    let n = write(fd, basePtr + offset, total - offset)
+                    if n > 0 {
+                        offset += n
+                    } else if n < 0 {
+                        if errno == EINTR { continue }
+                        if errno == EAGAIN {
+                            Thread.sleep(forTimeInterval: 0.001)
+                            continue
+                        }
+                        DispatchQueue.main.async { [weak self] in
+                            self?.disconnect()
+                        }
+                        return
                     }
-                    // 書き込みエラー → 切断
-                    DispatchQueue.main.async { [weak self] in
-                        self?.disconnect()
-                    }
-                    return
                 }
             }
         }
@@ -798,6 +799,7 @@ class LocalShellConnection: Connection {
     private var masterFD: Int32 = -1
     private var childPID: pid_t = 0
     private let readQueue = DispatchQueue(label: "com.teraterm.pty.read")
+    private let writeQueue = DispatchQueue(label: "com.teraterm.pty.write")
 
     // Thread safety
     private let stateLock = NSLock()
@@ -957,26 +959,26 @@ class LocalShellConnection: Connection {
         stateLock.unlock()
 
         guard running, fd >= 0 else { return }
-        // 全バイト送信完了までループ（部分書き込み対応）
-        data.withUnsafeBytes { buffer in
-            guard let basePtr = buffer.baseAddress else { return }
-            var offset = 0
-            let total = data.count
-            while offset < total {
-                let n = write(fd, basePtr + offset, total - offset)
-                if n > 0 {
-                    offset += n
-                } else if n < 0 {
-                    if errno == EINTR { continue }
-                    if errno == EAGAIN {
-                        Thread.sleep(forTimeInterval: 0.001)
-                        continue
+        writeQueue.async { [weak self] in
+            data.withUnsafeBytes { buffer in
+                guard let basePtr = buffer.baseAddress else { return }
+                var offset = 0
+                let total = data.count
+                while offset < total {
+                    let n = write(fd, basePtr + offset, total - offset)
+                    if n > 0 {
+                        offset += n
+                    } else if n < 0 {
+                        if errno == EINTR { continue }
+                        if errno == EAGAIN {
+                            Thread.sleep(forTimeInterval: 0.001)
+                            continue
+                        }
+                        DispatchQueue.main.async { [weak self] in
+                            self?.disconnect()
+                        }
+                        return
                     }
-                    // 書き込みエラー → 切断
-                    DispatchQueue.main.async { [weak self] in
-                        self?.disconnect()
-                    }
-                    return
                 }
             }
         }

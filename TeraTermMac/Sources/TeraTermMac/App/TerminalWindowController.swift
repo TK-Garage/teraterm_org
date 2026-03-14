@@ -10,6 +10,38 @@
 #if canImport(AppKit)
 import AppKit
 
+// [KEY-INPUT-AUDIT]
+// keyDown 実装: TerminalView.swift:832 (override keyDown)
+// keyDown→delegate: TerminalView.swift:868 → terminalDelegate?.terminalViewDidReceiveKeyEvent
+// insertText (IME): TerminalView.swift:1169 → terminalDelegate?.terminalViewDidReceiveKeyEvent
+// delegate処理: TerminalWindowController.swift:859 → keyboardHandler.processKeyEvent → connectionManager.send
+// flagsChanged: TerminalView.swift:875 (空実装)
+// monitor 登録: なし（keyDownオーバーライドで直接受け取り）
+// observer 登録: AppDelegate.swift:146 (NSWindow.willCloseNotification) × 解除なし（objectベースで自動解除される）
+// Timer 生成: TerminalView.swift:813 (cursorBlinkTimer) × invalidateあり
+// Timer 生成: TerminalView.swift:1127 (refreshTimer/DispatchSourceTimer) × cancelあり
+// Timer 生成: TerminalWindowController.swift:585 (resizeHideTimer) × invalidateあり
+// Timer 生成: TerminalWindowController.swift:1272 (macroRecvTimer) × invalidateあり
+// 送信キュー: なし（メインスレッドで同期送信）★問題箇所
+
+// [KEY-INPUT-ROOT-CAUSE]
+// 原因1: TerminalWindowController.terminalViewDidReceiveKeyEvent() で connectionManager.send() を
+//         メインスレッド上で同期的に呼んでいる。SerialConnection.send() と LocalShellConnection.send() は
+//         write() を同期ループで呼ぶため、ネットワーク遅延やバッファフルでメインスレッドがブロックされる。
+//         ★根本原因
+// 原因2: TerminalWindowController に deinit がなく、windowWillClose で resizeHideTimer と
+//         macroRecvTimer の invalidate が漏れている。Timer リーク・再接続時の累積の可能性。要注意
+// 原因3: AppDelegate.swift:146 の NotificationCenter observer が addObserver(forName:object:queue:)
+//         形式で登録。戻り値を保持していないため removeObserver できないが、object が指定されているため
+//         ウィンドウ破棄時に自動解除される。要注意（重大ではない）
+
+// [KEY-INPUT-FIX-PLAN]
+// 修正1: TerminalWindowController.swift:859 キー送信をメインスレッドで同期実行 → 専用sendQueueで非同期送信
+// 修正2: TerminalWindowController.swift:新規 deinit追加 → resizeHideTimer/macroRecvTimer を確実にinvalidate
+// 修正3: TerminalWindowController.swift:590 windowWillClose → Timer の invalidate を追加
+// 修正4: SerialConnection/LocalShellConnection の send() もwriteQueueで非同期化
+// 修正5: TerminalView.swift insertText で文字ごとにデリゲート呼び出し → 一括送信に最適化
+
 // MARK: - Terminal Window Controller (port of CVTWindow)
 
 class TerminalWindowController: NSWindowController {
@@ -30,6 +62,11 @@ class TerminalWindowController: NSWindowController {
     // State
     private var useTelnet: Bool = false
     private var isConnected: Bool = false
+
+    // Key input send queue — offloads network I/O from the main thread
+    // to prevent blocking UI during key input handling.
+    private let sendQueue = DispatchQueue(
+        label: "com.teraterm.TeraTermMac.sendQueue", qos: .userInteractive)
 
     // Resize tooltip
     private var resizeTooltipWindow: NSWindow?
@@ -77,6 +114,13 @@ class TerminalWindowController: NSWindowController {
 
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
+    }
+
+    deinit {
+        resizeHideTimer?.invalidate()
+        resizeHideTimer = nil
+        macroRecvTimer?.invalidate()
+        macroRecvTimer = nil
     }
 
     // MARK: - Component Setup
@@ -589,6 +633,10 @@ extension TerminalWindowController: NSWindowDelegate {
 
     func windowWillClose(_ notification: Notification) {
         hideResizeTooltip()
+        resizeHideTimer?.invalidate()
+        resizeHideTimer = nil
+        macroRecvTimer?.invalidate()
+        macroRecvTimer = nil
         disconnect()
         logger.stopLogging()
     }
@@ -596,14 +644,18 @@ extension TerminalWindowController: NSWindowDelegate {
     func windowDidBecomeKey(_ notification: Notification) {
         window?.alphaValue = CGFloat(settings.windowAlpha)
         if let data = keyboardHandler.focusIn() {
-            connectionManager.send(data)
+            sendQueue.async { [weak self] in
+                self?.connectionManager.send(data)
+            }
         }
     }
 
     func windowDidResignKey(_ notification: Notification) {
         window?.alphaValue = CGFloat(settings.windowAlphaInactive)
         if let data = keyboardHandler.focusOut() {
-            connectionManager.send(data)
+            sendQueue.async { [weak self] in
+                self?.connectionManager.send(data)
+            }
         }
     }
 
@@ -863,23 +915,35 @@ extension TerminalWindowController: TerminalViewDelegate {
             terminalEmulator.processData(data)
         }
 
-        if useTelnet {
-            let escaped = telnetProtocol.escapeData(data)
-            connectionManager.send(escaped)
-        } else {
-            connectionManager.send(data)
+        // Send data on a background queue to avoid blocking the main thread.
+        // Network I/O (especially serial/PTY write) can stall, and doing it
+        // synchronously on the main thread was the root cause of progressive
+        // key input lag.
+        let telnet = useTelnet
+        sendQueue.async { [weak self] in
+            guard let self = self else { return }
+            if telnet {
+                let escaped = self.telnetProtocol.escapeData(data)
+                self.connectionManager.send(escaped)
+            } else {
+                self.connectionManager.send(data)
+            }
         }
     }
 
     func terminalViewDidReceiveMouseEvent(button: Int, x: Int, y: Int, isRelease: Bool, modifiers: TerminalKeyEvent.KeyModifiers) {
         if let data = keyboardHandler.mouseEvent(button: button, x: x, y: y, isRelease: isRelease, modifiers: modifiers) {
-            connectionManager.send(data)
+            sendQueue.async { [weak self] in
+                self?.connectionManager.send(data)
+            }
         }
     }
 
     func terminalViewDidReceiveScrollEvent(direction: Int, x: Int, y: Int, modifiers: TerminalKeyEvent.KeyModifiers) {
         if let data = keyboardHandler.scrollEvent(direction: direction, x: x, y: y, modifiers: modifiers) {
-            connectionManager.send(data)
+            sendQueue.async { [weak self] in
+                self?.connectionManager.send(data)
+            }
         }
     }
 
@@ -893,13 +957,17 @@ extension TerminalWindowController: TerminalViewDelegate {
 
     func terminalViewDidGainFocus() {
         if let data = keyboardHandler.focusIn() {
-            connectionManager.send(data)
+            sendQueue.async { [weak self] in
+                self?.connectionManager.send(data)
+            }
         }
     }
 
     func terminalViewDidLoseFocus() {
         if let data = keyboardHandler.focusOut() {
-            connectionManager.send(data)
+            sendQueue.async { [weak self] in
+                self?.connectionManager.send(data)
+            }
         }
     }
 
@@ -909,11 +977,15 @@ extension TerminalWindowController: TerminalViewDelegate {
         data.append(Data(text.utf8))
         data.append(keyboardHandler.bracketedPasteEnd())
 
-        if useTelnet {
-            let escaped = telnetProtocol.escapeData(data)
-            connectionManager.send(escaped)
-        } else {
-            connectionManager.send(data)
+        let telnet = useTelnet
+        sendQueue.async { [weak self] in
+            guard let self = self else { return }
+            if telnet {
+                let escaped = self.telnetProtocol.escapeData(data)
+                self.connectionManager.send(escaped)
+            } else {
+                self.connectionManager.send(data)
+            }
         }
     }
 }
