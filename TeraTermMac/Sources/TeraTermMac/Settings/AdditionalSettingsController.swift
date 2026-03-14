@@ -1831,8 +1831,8 @@ final class UITab: AdditionalSettingsTab {
     private func buildUI(_ s: TerminalSettings) {
         let langLabel = NSView.makeLabel(TTL("dialog.ui.language"), alignment: .left)
         languagePopup = NSView.makePopUpButton(
-            items: ["English", "Japanese", "German", "French", "Russian", "Korean", "Chinese (Simplified)", "Chinese (Traditional)"],
-            selected: s.language, width: 200)
+            items: [TTL("dialog.ui.languageAuto"), "English", "Japanese"],
+            selected: s.language == "Auto" ? TTL("dialog.ui.languageAuto") : s.language, width: 200)
         let langRow = NSStackView(views: [langLabel, languagePopup])
         langRow.translatesAutoresizingMaskIntoConstraints = false
         langRow.orientation = .horizontal
@@ -1882,7 +1882,11 @@ final class UITab: AdditionalSettingsTab {
     }
 
     func apply(to s: TerminalSettings) {
-        s.language = languagePopup.titleOfSelectedItem ?? "English"
+        let selectedTitle = languagePopup.titleOfSelectedItem ?? "Auto"
+        // ローカライズされた "Auto (System)" 表示名を内部値 "Auto" に変換
+        s.language = (selectedTitle == TTL("dialog.ui.languageAuto")) ? "Auto" : selectedTitle
+        // 次回起動時に反映されるよう UserDefaults にも保存
+        UserDefaults.standard.set(s.language, forKey: "TeraTermUILanguage")
         s.dialogFontProportional = proportionalCheck.state == .on
         s.dialogFontHidden = hiddenCheck.state == .on
     }

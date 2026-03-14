@@ -589,6 +589,7 @@
 
 /* Additional Settings - UI */
 "dialog.ui.language" = "言語:";
+"dialog.ui.languageAuto" = "自動 (システム言語)";
 "dialog.ui.dialogFont" = "ダイアログフォント";
 "dialog.ui.fontName" = "フォント:";
 "dialog.ui.chooseFont" = "選択…";
@@ -807,6 +808,7 @@
 "dialog.general.title" = "全般の設定";
 "dialog.generalSetup.title" = "全般の設定";
 "dialog.generalSetup.language" = "言語:";
+"dialog.generalSetup.languageAuto" = "自動 (システム言語)";
 "dialog.generalSetup.languageEnglish" = "English";
 "dialog.generalSetup.languageJapanese" = "Japanese";
 "dialog.generalSetup.defaultPort" = "デフォルトポート:";

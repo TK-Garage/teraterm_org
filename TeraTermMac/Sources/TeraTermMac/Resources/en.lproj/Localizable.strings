@@ -589,6 +589,7 @@
 
 /* Additional Settings - UI */
 "dialog.ui.language" = "Language:";
+"dialog.ui.languageAuto" = "Auto (System)";
 "dialog.ui.dialogFont" = "Dialog Font";
 "dialog.ui.fontName" = "Font:";
 "dialog.ui.chooseFont" = "Choose…";
@@ -807,6 +808,7 @@
 "dialog.general.title" = "General Setup";
 "dialog.generalSetup.title" = "General Setup";
 "dialog.generalSetup.language" = "Language:";
+"dialog.generalSetup.languageAuto" = "Auto (System)";
 "dialog.generalSetup.languageEnglish" = "English";
 "dialog.generalSetup.languageJapanese" = "Japanese";
 "dialog.generalSetup.defaultPort" = "Default port:";

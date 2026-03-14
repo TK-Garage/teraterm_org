@@ -10,11 +10,20 @@
 #if canImport(AppKit)
 import AppKit
 
-// Tera Term は日本語アプリケーション — 日本語を優先言語に設定する。
-// システム言語が英語でも日本語UIで表示されるようにする。
-// ユーザーがシステム環境設定で英語を選んでいる場合も日本語を優先する。
-UserDefaults.standard.set(["ja", "en"], forKey: "AppleLanguages")
-UserDefaults.standard.synchronize()
+// UI言語の設定: "Auto" ならシステム言語に従い、明示的に指定されていればそれを優先する。
+// AppleLanguages を設定しない場合、macOS は自動的にシステム言語に基づいて
+// en.lproj / ja.lproj から適切なローカライズリソースを選択する。
+let savedLanguage = UserDefaults.standard.string(forKey: "TeraTermUILanguage") ?? "Auto"
+if savedLanguage != "Auto" {
+    let langCode: String
+    switch savedLanguage {
+    case "Japanese": langCode = "ja"
+    case "English":  langCode = "en"
+    default:         langCode = "en"
+    }
+    UserDefaults.standard.set([langCode, "en"], forKey: "AppleLanguages")
+    UserDefaults.standard.synchronize()
+}
 
 // Transform the process into a foreground (GUI) application.
 // Without this, SPM executables run as background processes

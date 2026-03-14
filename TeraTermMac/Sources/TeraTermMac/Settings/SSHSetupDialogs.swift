@@ -1997,12 +1997,16 @@ final class GeneralSetupDialogController: BaseSetupDialogController {
         contentArea.widthAnchor.constraint(equalToConstant: dialogWidth).isActive = true
 
         let langLabel = NSView.makeLabel(TTL("dialog.generalSetup.language"))
+        let autoLabel = TTL("dialog.generalSetup.languageAuto")
         languagePopup = NSView.makePopUpButton(items: [
+            autoLabel,
             TTL("dialog.generalSetup.languageEnglish"),
             TTL("dialog.generalSetup.languageJapanese"),
         ], selected: settings.language == "Japanese"
             ? TTL("dialog.generalSetup.languageJapanese")
-            : TTL("dialog.generalSetup.languageEnglish"))
+            : settings.language == "English"
+            ? TTL("dialog.generalSetup.languageEnglish")
+            : autoLabel)
 
         let portLabel = NSView.makeLabel(TTL("dialog.generalSetup.defaultPort"))
         defaultPortPopup = NSView.makePopUpButton(items: [
@@ -2070,7 +2074,13 @@ final class GeneralSetupDialogController: BaseSetupDialogController {
     }
 
     override func applySettings() {
-        settings.language = (languagePopup.indexOfSelectedItem == 1) ? "Japanese" : "English"
+        switch languagePopup.indexOfSelectedItem {
+        case 1:  settings.language = "English"
+        case 2:  settings.language = "Japanese"
+        default: settings.language = "Auto"
+        }
+        // 次回起動時に反映されるよう UserDefaults にも保存
+        UserDefaults.standard.set(settings.language, forKey: "TeraTermUILanguage")
 
         switch defaultPortPopup.indexOfSelectedItem {
         case 0:
