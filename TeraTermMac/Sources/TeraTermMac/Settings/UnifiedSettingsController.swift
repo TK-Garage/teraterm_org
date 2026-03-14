@@ -110,7 +110,7 @@ enum UnifiedSettingsTab: String, CaseIterable {
 
 // MARK: - Unified Settings Controller
 
-final class UnifiedSettingsController: NSObject, NSWindowDelegate {
+final class UnifiedSettingsController: NSObject, NSWindowDelegate, NSTabViewDelegate {
 
     private var window: NSWindow?
     private var tabView: NSTabView?
@@ -132,6 +132,12 @@ final class UnifiedSettingsController: NSObject, NSWindowDelegate {
     /// 3-row segmented controls for tab selection
     private var segmentedControls: [NSSegmentedControl] = []
 
+    /// Height constraint for the tab view content area (animated on tab change)
+    private var tabViewHeightConstraint: NSLayoutConstraint?
+
+    /// Minimum height for the tab view content
+    private let minTabViewHeight: CGFloat = 300
+
     init(settings: TerminalSettings) {
         self.settings = settings
         super.init()
@@ -152,6 +158,9 @@ final class UnifiedSettingsController: NSObject, NSWindowDelegate {
         guard let win = window else { return nil }
 
         selectTab(selectedTab)
+
+        // Set initial height to fit selected tab (no animation)
+        setHeightToFitSelectedTab()
 
         // Center over parent window
         win.layoutIfNeeded()
@@ -191,6 +200,7 @@ final class UnifiedSettingsController: NSObject, NSWindowDelegate {
         buildWindow()
         guard let win = window else { return }
         selectTab(selectedTab)
+        setHeightToFitSelectedTab()
         win.center()
         let response = NSApplication.shared.runModal(for: win)
         if response == .OK {
@@ -239,6 +249,92 @@ final class UnifiedSettingsController: NSObject, NSWindowDelegate {
         guard segIdx >= 0, segIdx < row.count else { return }
         let tab = row[segIdx]
         selectTab(tab)
+    }
+
+    // MARK: - NSTabViewDelegate
+
+    func tabView(_ tabView: NSTabView, didSelect tabViewItem: NSTabViewItem?) {
+        // Update segmented control selection
+        if let identifier = tabViewItem?.identifier as? String,
+           let tab = UnifiedSettingsTab(rawValue: identifier) {
+            updateSegmentedSelection(for: tab)
+        }
+        // Animate window height to fit the selected tab's content
+        // (only when window is visible — initial sizing is handled separately)
+        if window?.isVisible == true {
+            animateHeightToFitSelectedTab()
+        }
+    }
+
+    /// Set the window height to fit the selected tab without animation (for initial display).
+    private func setHeightToFitSelectedTab() {
+        guard let win = window,
+              let tv = tabView,
+              let selectedItem = tv.selectedTabViewItem,
+              let itemView = selectedItem.view else { return }
+
+        var contentHeight: CGFloat = minTabViewHeight
+        if let scrollView = itemView as? NSScrollView,
+           let documentView = scrollView.documentView {
+            documentView.layoutSubtreeIfNeeded()
+            let fittingHeight = documentView.fittingSize.height
+            contentHeight = max(minTabViewHeight, fittingHeight + 8)
+        }
+
+        if let screen = win.screen ?? NSScreen.main {
+            let maxHeight = screen.visibleFrame.height - 100
+            let nonTabHeight = win.frame.height - (tabViewHeightConstraint?.constant ?? 420)
+            let maxTabHeight = maxHeight - nonTabHeight
+            contentHeight = min(contentHeight, maxTabHeight)
+        }
+
+        tabViewHeightConstraint?.constant = contentHeight
+    }
+
+    /// Calculate the ideal height for the currently selected tab's content
+    /// and animate the window frame to fit.
+    private func animateHeightToFitSelectedTab() {
+        guard let win = window,
+              let tv = tabView,
+              let selectedItem = tv.selectedTabViewItem,
+              let itemView = selectedItem.view else { return }
+
+        // The item view is a scroll view wrapping the content.
+        // Measure the document view's fitting height.
+        var contentHeight: CGFloat = minTabViewHeight
+        if let scrollView = itemView as? NSScrollView,
+           let documentView = scrollView.documentView {
+            documentView.layoutSubtreeIfNeeded()
+            let fittingHeight = documentView.fittingSize.height
+            // Add bezel border padding of the NSTabView
+            contentHeight = max(minTabViewHeight, fittingHeight + 8)
+        }
+
+        // Clamp to screen height minus some margin
+        if let screen = win.screen ?? NSScreen.main {
+            let maxHeight = screen.visibleFrame.height - 100
+            let nonTabHeight = win.frame.height - (tabViewHeightConstraint?.constant ?? 420)
+            let maxTabHeight = maxHeight - nonTabHeight
+            contentHeight = min(contentHeight, maxTabHeight)
+        }
+
+        // Animate the height change
+        let oldHeight = tabViewHeightConstraint?.constant ?? 420
+        guard abs(contentHeight - oldHeight) > 1 else { return }
+
+        tabViewHeightConstraint?.constant = contentHeight
+
+        let heightDelta = contentHeight - oldHeight
+        var newFrame = win.frame
+        // Grow/shrink from the top (keep bottom edge stable)
+        newFrame.size.height += heightDelta
+        newFrame.origin.y -= heightDelta
+
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = 0.25
+            context.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+            win.animator().setFrame(newFrame, display: true)
+        }
     }
 
     // MARK: - Apply All
@@ -341,7 +437,16 @@ final class UnifiedSettingsController: NSObject, NSWindowDelegate {
         container.addSubview(tv)
         container.addSubview(footerBar)
 
+        // Set delegate for tab change notifications
+        tv.delegate = self
+
         let m: CGFloat = 16
+
+        // Dynamic height constraint for the tab view (animated on tab change)
+        let heightConstraint = tv.heightAnchor.constraint(equalToConstant: 420)
+        heightConstraint.priority = .defaultHigh
+        tabViewHeightConstraint = heightConstraint
+
         NSLayoutConstraint.activate([
             // Tab bar at top
             tabBarStack.topAnchor.constraint(equalTo: container.topAnchor, constant: m),
@@ -361,17 +466,19 @@ final class UnifiedSettingsController: NSObject, NSWindowDelegate {
             footerBar.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -m),
 
             tv.widthAnchor.constraint(greaterThanOrEqualToConstant: 720),
-            tv.heightAnchor.constraint(greaterThanOrEqualToConstant: 420),
+            tv.heightAnchor.constraint(greaterThanOrEqualToConstant: minTabViewHeight),
+            heightConstraint,
         ])
 
         let contentVC = NSViewController()
         contentVC.view = container
         let win = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 800, height: 620),
-            styleMask: [.titled, .closable],
+            styleMask: [.titled, .closable, .resizable],
             backing: .buffered,
             defer: true)
         win.contentViewController = contentVC
+        win.contentMinSize = NSSize(width: 760, height: 400)
         win.isReleasedWhenClosed = false
         win.title = TTL("dialog.unifiedSettings.title")
         win.delegate = self

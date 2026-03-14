@@ -379,6 +379,7 @@ final class GeneralTab: AdditionalSettingsTab {
             stack.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 12),
             stack.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 12),
             stack.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -12),
+            stack.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -12),
         ])
     }
 
@@ -483,6 +484,7 @@ final class CodingTab: AdditionalSettingsTab {
             emojiOverrideCheck.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 12),
             fallbackCP932Check.topAnchor.constraint(equalTo: emojiOverrideCheck.bottomAnchor, constant: 6),
             fallbackCP932Check.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 12),
+            fallbackCP932Check.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -12),
         ])
     }
 
@@ -638,6 +640,7 @@ final class CopyPasteTab: AdditionalSettingsTab {
             stack.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 12),
             stack.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 12),
             stack.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -12),
+            stack.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -12),
         ])
     }
 
@@ -803,6 +806,7 @@ final class SequenceTab: AdditionalSettingsTab {
             stack.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 12),
             stack.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 12),
             stack.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -12),
+            stack.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -12),
         ])
     }
 
@@ -894,6 +898,8 @@ final class MouseTab: AdditionalSettingsTab {
         NSLayoutConstraint.activate([
             stack.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 16),
             stack.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 12),
+            stack.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -12),
+            stack.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -12),
         ])
     }
 
@@ -1048,6 +1054,7 @@ final class LogTab: AdditionalSettingsTab {
             stack.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 12),
             stack.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 12),
             stack.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -12),
+            stack.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -12),
         ])
     }
 
@@ -1387,6 +1394,7 @@ final class VisualTab: AdditionalSettingsTab {
             stack.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 8),
             stack.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 8),
             stack.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -8),
+            stack.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -8),
         ])
     }
 
@@ -1572,6 +1580,7 @@ final class FontTab: AdditionalSettingsTab {
             stack.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 12),
             stack.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 12),
             stack.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -12),
+            stack.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -12),
         ])
     }
 
@@ -1633,6 +1642,8 @@ final class TEKFontTab: AdditionalSettingsTab {
         NSLayoutConstraint.activate([
             stack.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 16),
             stack.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 12),
+            stack.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -12),
+            stack.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -12),
         ])
     }
 
@@ -1812,6 +1823,7 @@ final class ThemeTab: NSObject, AdditionalSettingsTab {
             stack.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 16),
             stack.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 12),
             stack.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -12),
+            stack.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -12),
         ])
     }
 
@@ -1932,6 +1944,7 @@ final class UITab: AdditionalSettingsTab {
             stack.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 16),
             stack.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 12),
             stack.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -12),
+            stack.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -12),
         ])
     }
 
@@ -2004,6 +2017,7 @@ final class PluginTab: NSObject, AdditionalSettingsTab {
             stack.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 12),
             stack.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 12),
             stack.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -12),
+            stack.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -12),
             scrollView.heightAnchor.constraint(equalToConstant: 150),
             scrollView.widthAnchor.constraint(equalTo: stack.widthAnchor),
         ])
@@ -2114,6 +2128,7 @@ final class LocalShellTab: AdditionalSettingsTab {
             grid.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 16),
             grid.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 12),
             grid.trailingAnchor.constraint(lessThanOrEqualTo: contentView.trailingAnchor, constant: -12),
+            grid.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -12),
         ])
     }
 
@@ -2165,6 +2180,8 @@ final class DebugTab: AdditionalSettingsTab {
         NSLayoutConstraint.activate([
             stack.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 16),
             stack.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 12),
+            stack.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -12),
+            stack.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -12),
         ])
     }
 
