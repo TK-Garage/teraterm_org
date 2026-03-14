@@ -143,7 +143,10 @@ class DialogCommandProvider {
             } else {
                 inputField = NSView.makeTextField(value: defaultValue)
             }
-            inputField.widthAnchor.constraint(greaterThanOrEqualToConstant: 300).isActive = true
+            // NSAlert sizes its accessoryView by frame, not Auto Layout.
+            // Set an explicit frame so the field is visible inside the alert.
+            inputField.translatesAutoresizingMaskIntoConstraints = true
+            inputField.frame = NSRect(x: 0, y: 0, width: 300, height: 24)
             alert.accessoryView = inputField
             alert.window.initialFirstResponder = inputField
 
@@ -172,15 +175,18 @@ class DialogCommandProvider {
             alert.addButton(withTitle: TTL("dialog.macro.ok"))
             alert.addButton(withTitle: TTL("dialog.macro.cancel"))
 
-            // Build table view inside scroll view
-            let scrollView = NSScrollView()
-            scrollView.translatesAutoresizingMaskIntoConstraints = false
+            // Build table view inside scroll view.
+            // NSAlert sizes its accessoryView by frame, not Auto Layout,
+            // so we use explicit frame-based sizing throughout.
+            let scrollView = NSScrollView(frame: NSRect(x: 0, y: 0, width: 300, height: 200))
             scrollView.hasVerticalScroller = true
             scrollView.borderType = .bezelBorder
+            scrollView.autoresizingMask = [.width, .height]
 
             let tableView = NSTableView()
             let column = NSTableColumn(identifier: NSUserInterfaceItemIdentifier("item"))
             column.title = ""
+            column.width = 280
             tableView.addTableColumn(column)
             tableView.headerView = nil
             tableView.allowsMultipleSelection = false
@@ -196,10 +202,6 @@ class DialogCommandProvider {
             }
 
             scrollView.documentView = tableView
-            NSLayoutConstraint.activate([
-                scrollView.widthAnchor.constraint(greaterThanOrEqualToConstant: 300),
-                scrollView.heightAnchor.constraint(greaterThanOrEqualToConstant: 200),
-            ])
             alert.accessoryView = scrollView
 
             self?.runAlert(alert) { response in
