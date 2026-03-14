@@ -487,6 +487,7 @@ class TerminalEmulator {
 extension TerminalEmulator: VTParserDelegate {
 
     func parserDidReceivePrintable(_ text: String) {
+        prevControlChar = 0  // Reset AUTO CR/LF deduplication state on printable chars
         for char in text {
             if modes.insertMode {
                 buffer.insertCharacters(1)
@@ -501,14 +502,17 @@ extension TerminalEmulator: VTParserDelegate {
     }
 
     func parserDidRequestBell() {
+        prevControlChar = 0x07
         delegate?.terminalDidRing()
     }
 
     func parserDidRequestBackspace() {
+        prevControlChar = 0x08
         buffer.backspace()
     }
 
     func parserDidRequestTab() {
+        prevControlChar = 0x09
         buffer.tab()
     }
 
@@ -561,16 +565,19 @@ extension TerminalEmulator: VTParserDelegate {
     }
 
     func parserDidRequestShiftOut() {
+        prevControlChar = 0x0E
         charSet.gl = 1  // Switch to G1
     }
 
     func parserDidRequestShiftIn() {
+        prevControlChar = 0x0F
         charSet.gl = 0  // Switch to G0
     }
 
     // MARK: - ESC Sequence Handler
 
     func parserDidReceiveESC(intermediates: [UInt8], final: UInt8) {
+        prevControlChar = 0  // Reset AUTO CR/LF state after escape sequence
         if intermediates.isEmpty {
             switch final {
             case 0x37: // ESC 7 - DECSC (Save Cursor)
@@ -665,6 +672,7 @@ extension TerminalEmulator: VTParserDelegate {
     // MARK: - CSI Sequence Handler
 
     func parserDidReceiveCSI(params: CSIParams, final: UInt8) {
+        prevControlChar = 0  // Reset AUTO CR/LF state after CSI sequence
         if let marker = params.privateMarker {
             handlePrivateCSI(marker: marker, params: params, final: final)
             return
@@ -990,6 +998,7 @@ extension TerminalEmulator: VTParserDelegate {
     // MARK: - OSC Sequence Handler
 
     func parserDidReceiveOSC(command: Int, data: String) {
+        prevControlChar = 0  // Reset AUTO CR/LF state after OSC sequence
         switch command {
         case 0: // Change icon name and window title
             windowTitle = data
@@ -1078,6 +1087,7 @@ extension TerminalEmulator: VTParserDelegate {
     // MARK: - DCS Sequence Handler
 
     func parserDidReceiveDCS(params: CSIParams, intermediates: [UInt8], data: String) {
+        prevControlChar = 0  // Reset AUTO CR/LF state after DCS sequence
         // Handle Device Control String sequences
         // DECRQSS, DECUDK, etc.
         if let inter = intermediates.first {
