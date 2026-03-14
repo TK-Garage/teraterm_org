@@ -38,6 +38,7 @@ class MockTTLDelegate: TTLInterpreterDelegate {
     func ttlFlushReceiveBuffer() { receivedDataBuffer = "" }
     func ttlDisconnect() { isConnected = false }
     func ttlConnect(_ param: String) { isConnected = true }
+    func ttlConnectLocalShell() { isConnected = true }
     func ttlSetTitle(_ title: String) { self.title = title }
     func ttlGetTitle() -> String { return title }
     func ttlShowWindow(_ show: Bool) { windowShown = show }
@@ -48,6 +49,8 @@ class MockTTLDelegate: TTLInterpreterDelegate {
     func ttlLogPause() {}
     func ttlLogStart() {}
     func ttlLogWrite(_ text: String) {}
+    func ttlLogInfo() -> (state: Int, filePath: String) { return (0, logPath) }
+    func ttlLogRotateSet(mode: String, value: Int) {}
     func ttlShowError(_ message: String, line: Int, lineText: String, fileName: String, completion: @escaping (Bool) -> Void) { errorMessage = message; errorLine = line; completion(true) }
     func ttlShowStatusBox(_ message: String, title: String) { statusBoxMessage = message; statusBoxTitle = title }
     func ttlCloseStatusBox() { statusBoxMessage = ""; statusBoxTitle = "" }
