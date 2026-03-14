@@ -56,8 +56,13 @@ class TerminalEmulator {
     private var prevControlChar: UInt8 = 0
     private var prevCRorLFGeneratedCRLF: Bool = false
 
-    // Macro receive buffer: accumulates received text for TTL wait commands
+    // Macro receive buffer: accumulates received text for TTL wait commands.
+    // Only filled when macroReceiveEnabled is true (i.e. a macro is running).
     var macroReceiveBuffer: String = ""
+    var macroReceiveEnabled: Bool = false
+
+    // Cap the buffer to prevent unbounded growth even while a macro is running
+    private static let macroReceiveBufferLimit = 1_000_000
 
     init(settings: TerminalSettings) {
         self.settings = settings
@@ -75,9 +80,14 @@ class TerminalEmulator {
 
     func processData(_ data: Data) {
         parser.parse(data)
-        // Feed macro receive buffer for TTL wait commands
-        if let text = String(data: data, encoding: .utf8) {
+        // Feed macro receive buffer for TTL wait commands (only when macro is active)
+        if macroReceiveEnabled, let text = String(data: data, encoding: .utf8) {
             macroReceiveBuffer += text
+            // Trim from the front if the buffer exceeds the limit
+            if macroReceiveBuffer.count > Self.macroReceiveBufferLimit {
+                let excess = macroReceiveBuffer.count - Self.macroReceiveBufferLimit
+                macroReceiveBuffer.removeFirst(excess)
+            }
         }
         delegate?.terminalDidUpdateDisplay()
     }

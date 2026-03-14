@@ -389,76 +389,45 @@ class TerminalView: NSView {
             }
         }
 
-        // Pass 2: Batch text rendering — group consecutive cells with
-        // identical attributes into a single CTLine to reduce Core Text overhead.
+        // Pass 2: Draw each character at its grid-aligned position.
+        // Each cell is drawn individually so characters never drift from the
+        // fixed cellWidth grid (CTLine natural advances can accumulate sub-pixel
+        // errors across long runs, causing cursor/character misalignment).
         let colCount = min(columns, line.cells.count)
-        var col = 0
-        while col < colCount {
+        context.saveGState()
+        context.textMatrix = CGAffineTransform(scaleX: 1.0, y: -1.0)
+        for col in 0..<colCount {
             let cell = line.cells[col]
-            if cell.isWideTrail || (cell.character == " " && cell.combiningCharacters.isEmpty) {
-                // Draw decorations for space characters
-                if !cell.isWideTrail {
-                    let x = leftInset + CGFloat(col) * cellWidth
-                    let charWidth = cell.isWide ? cellWidth * 2 : cellWidth
-                    drawDecorations(context: context, cell: cell, x: x, y: y, width: charWidth,
-                                  color: resolveForegroundColor(cell, inSelection: false))
-                }
-                col += 1
-                continue
+            if cell.isWideTrail { continue }
+
+            let x = leftInset + CGFloat(col) * cellWidth
+            let charWidth = cell.isWide ? cellWidth * 2 : cellWidth
+
+            // Draw decorations (underline, strikethrough, etc.)
+            if !cell.attributes.isEmpty {
+                let inSel = buffer.selection.contains(x: col, y: row)
+                drawDecorations(context: context, cell: cell, x: x, y: y, width: charWidth,
+                              color: resolveForegroundColor(cell, inSelection: inSel))
             }
+
+            // Skip blank cells
+            if cell.character == " " && cell.combiningCharacters.isEmpty { continue }
 
             let inSel = buffer.selection.contains(x: col, y: row)
             let fgColor = resolveForegroundColor(cell, inSelection: inSel)
-            let runFont = selectFont(for: cell)
-            let runStartCol = col
-            var runText = cellString(cell)
+            let drawFont = selectFont(for: cell)
+            let str = cellString(cell)
 
-            col += cell.isWide ? 2 : 1
-
-            // Extend run while attributes match
-            while col < colCount {
-                let nextCell = line.cells[col]
-                if nextCell.isWideTrail { col += 1; continue }
-                if nextCell.character == " " && nextCell.combiningCharacters.isEmpty { break }
-
-                let nextInSel = buffer.selection.contains(x: col, y: row)
-                let nextFg = resolveForegroundColor(nextCell, inSelection: nextInSel)
-                let nextFont = selectFont(for: nextCell)
-                if nextFg != fgColor || nextFont !== runFont
-                   || nextCell.attributes.intersection([.bold, .italic]) != cell.attributes.intersection([.bold, .italic]) {
-                    break
-                }
-                runText += cellString(nextCell)
-                col += nextCell.isWide ? 2 : 1
-            }
-
-            // Draw the batched run
-            let x = leftInset + CGFloat(runStartCol) * cellWidth
             let attrs: [NSAttributedString.Key: Any] = [
-                .font: runFont as Any,
+                .font: drawFont as Any,
                 .foregroundColor: fgColor,
             ]
-            let attrStr = NSAttributedString(string: runText, attributes: attrs)
+            let attrStr = NSAttributedString(string: str, attributes: attrs)
             let ctLine = CTLineCreateWithAttributedString(attrStr)
-            context.saveGState()
-            context.textMatrix = CGAffineTransform(scaleX: 1.0, y: -1.0)
             context.textPosition = CGPoint(x: x, y: y + fontAscent)
             CTLineDraw(ctLine, context)
-            context.restoreGState()
-
-            // Draw decorations for each cell in the run
-            for c in runStartCol..<col {
-                if c < line.cells.count {
-                    let decCell = line.cells[c]
-                    if !decCell.isWideTrail {
-                        let dx = leftInset + CGFloat(c) * cellWidth
-                        let cw = decCell.isWide ? cellWidth * 2 : cellWidth
-                        drawDecorations(context: context, cell: decCell, x: dx, y: y, width: cw,
-                                      color: resolveForegroundColor(decCell, inSelection: false))
-                    }
-                }
-            }
         }
+        context.restoreGState()
     }
 
     /// Select the appropriate CTFont for a cell's bold/italic attributes.

@@ -490,19 +490,27 @@ class TerminalWindowController: NSWindowController {
 
         interpreter.onComplete = { [weak self] in
             self?.macroInterpreter = nil
+            self?.terminalEmulator.macroReceiveEnabled = false
+            self?.terminalEmulator.macroReceiveBuffer = ""
         }
         interpreter.onError = { [weak self] msg, line in
             // Called when user chose "Stop" in the error dialog.
             self?.macroInterpreter = nil
+            self?.terminalEmulator.macroReceiveEnabled = false
+            self?.terminalEmulator.macroReceiveBuffer = ""
         }
 
         macroInterpreter = interpreter
+        terminalEmulator.macroReceiveEnabled = true
+        terminalEmulator.macroReceiveBuffer = ""
         interpreter.run()
     }
 
     func stopMacro() {
         macroInterpreter?.stop()
         macroInterpreter = nil
+        terminalEmulator.macroReceiveEnabled = false
+        terminalEmulator.macroReceiveBuffer = ""
     }
 
     // MARK: - Log Replay
