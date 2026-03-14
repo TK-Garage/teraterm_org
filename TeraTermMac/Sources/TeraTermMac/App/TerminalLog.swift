@@ -117,11 +117,11 @@ class TerminalLogger {
         try? fileManager.createDirectory(atPath: dir, withIntermediateDirectories: true)
 
         if self.options.appendMode && fileManager.fileExists(atPath: path) {
-            // Convert existing file content to LF line endings before appending
-            if let existingData = fileManager.contents(atPath: path) {
-                let normalized = TerminalLogger.normalizeLineEndingsInData(existingData)
-                if normalized != existingData {
-                    try? normalized.write(to: URL(fileURLWithPath: path))
+            // Convert existing file to UTF-8 (OS standard) with LF line endings
+            if let existingData = fileManager.contents(atPath: path), !existingData.isEmpty {
+                let converted = TerminalLogger.convertToUTF8WithLF(existingData)
+                if converted != existingData {
+                    try? converted.write(to: URL(fileURLWithPath: path))
                 }
             }
             guard let handle = FileHandle(forWritingAtPath: path) else { return false }
@@ -202,7 +202,8 @@ class TerminalLogger {
     }
 
     func logString(_ string: String) {
-        logData(Data(string.utf8))
+        guard let data = string.data(using: TerminalLogger.logEncoding) else { return }
+        logData(data)
     }
 
     func logComment(_ comment: String) {
@@ -254,6 +255,70 @@ class TerminalLogger {
         // Create new log file
         fm.createFile(atPath: currentPath, contents: nil)
         fileHandle = FileHandle(forWritingAtPath: currentPath)
+    }
+
+    // MARK: - Encoding Detection & Conversion
+
+    /// The OS-standard encoding used for all log output (UTF-8 on macOS).
+    static let logEncoding: String.Encoding = .utf8
+
+    /// Detect the encoding of raw file data and convert to UTF-8 with LF line endings.
+    /// Tries BOM detection first, then NSString auto-detection, then common encodings.
+    static func convertToUTF8WithLF(_ data: Data) -> Data {
+        // Already UTF-8? Just normalize line endings.
+        if let _ = String(data: data, encoding: .utf8) {
+            return normalizeLineEndingsInData(data)
+        }
+
+        // Try BOM-based detection
+        if let decoded = decodeBOM(data) {
+            let utf8 = Data(decoded.utf8)
+            return normalizeLineEndingsInData(utf8)
+        }
+
+        // Try NSString auto-detection
+        var usedEncoding: UInt = 0
+        if let nsStr = NSString(data: data, usedEncoding: &usedEncoding) {
+            let utf8 = Data((nsStr as String).utf8)
+            return normalizeLineEndingsInData(utf8)
+        }
+
+        // Fallback: try common encodings in order
+        let fallbacks: [String.Encoding] = [
+            .shiftJIS, .japaneseEUC, .iso2022JP,     // Japanese
+            .windowsCP1252, .isoLatin1,                // Western
+            .utf16, .utf16BigEndian, .utf16LittleEndian,
+        ]
+        for enc in fallbacks {
+            if let decoded = String(data: data, encoding: enc) {
+                let utf8 = Data(decoded.utf8)
+                return normalizeLineEndingsInData(utf8)
+            }
+        }
+
+        // Could not decode — normalize line endings on raw bytes as last resort
+        return normalizeLineEndingsInData(data)
+    }
+
+    /// Decode data that starts with a BOM (Byte Order Mark).
+    private static func decodeBOM(_ data: Data) -> String? {
+        if data.count >= 3 && data[0] == 0xEF && data[1] == 0xBB && data[2] == 0xBF {
+            // UTF-8 BOM — strip and decode
+            return String(data: data.dropFirst(3), encoding: .utf8)
+        }
+        if data.count >= 4 && data[0] == 0x00 && data[1] == 0x00 && data[2] == 0xFE && data[3] == 0xFF {
+            return String(data: data, encoding: .utf32BigEndian)
+        }
+        if data.count >= 4 && data[0] == 0xFF && data[1] == 0xFE && data[2] == 0x00 && data[3] == 0x00 {
+            return String(data: data, encoding: .utf32LittleEndian)
+        }
+        if data.count >= 2 && data[0] == 0xFE && data[1] == 0xFF {
+            return String(data: data, encoding: .utf16BigEndian)
+        }
+        if data.count >= 2 && data[0] == 0xFF && data[1] == 0xFE {
+            return String(data: data, encoding: .utf16LittleEndian)
+        }
+        return nil
     }
 
     // MARK: - Line Ending Normalization
@@ -322,7 +387,7 @@ class TerminalLogger {
     }
 
     private func writeToLog(_ string: String) {
-        guard let data = string.data(using: .utf8) else { return }
+        guard let data = string.data(using: TerminalLogger.logEncoding) else { return }
         writeRawToLog(data)
     }
 
