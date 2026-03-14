@@ -209,11 +209,24 @@ class TerminalLogger {
     func logComment(_ comment: String) {
         guard state == .active else { return }
         var line = "\n"
-        if options.addTimestamp {
-            line += "[\(formattedTimestamp())] "
-        }
+        line += "[\(formattedCommentTimestamp())] "
         line += "# \(comment)\n\n"
         writeToLog(line)
+    }
+
+    /// Format a timestamp for comments, always including date (yyyy-MM-dd HH:mm:ss).
+    private func formattedCommentTimestamp() -> String {
+        let fmt = DateFormatter()
+        fmt.dateFormat = "yyyy-MM-dd HH:mm:ss"
+        switch options.timestampType {
+        case .local:
+            fmt.timeZone = .current
+        case .utc:
+            fmt.timeZone = TimeZone(identifier: "UTC")
+        case .elapsed:
+            fmt.timeZone = .current
+        }
+        return fmt.string(from: Date())
     }
 
     // MARK: - Log Rotation (port of LogRotate() in filesys_log.cpp)
