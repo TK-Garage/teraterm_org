@@ -23,7 +23,7 @@ enum LogState {
 // MARK: - Log Options
 
 struct LogOptions {
-    var addTimestamp: Bool = false
+    var addTimestamp: Bool = true
     var timestampFormat: String = "yyyy-MM-dd HH:mm:ss"
     var plainText: Bool = true          // Strip escape sequences
     var appendMode: Bool = false
