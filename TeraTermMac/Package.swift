@@ -31,5 +31,26 @@ let package = Package(
             dependencies: ["TeraTermMac"],
             path: "Tests/TeraTermMacTests"
         ),
+        .executableTarget(
+            name: "Keycode",
+            path: "Sources/Keycode",
+            exclude: [
+                "Info.plist",
+            ],
+            resources: [
+                .process("Resources"),
+            ],
+            swiftSettings: [
+                .define("ENABLE_HARDENED_RUNTIME"),
+            ],
+            linkerSettings: [
+                .linkedFramework("AppKit"),
+            ]
+        ),
+        .testTarget(
+            name: "KeycodeTests",
+            dependencies: ["Keycode"],
+            path: "Tests/KeycodeTests"
+        ),
     ]
 )

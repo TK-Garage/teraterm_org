@@ -1,0 +1,8 @@
+/* Keycode.app - English localization */
+
+"keycode.window.title" = "Keycode";
+"keycode.prompt" = "Push any key.";
+"keycode.initial" = "---";
+"keycode.result" = "Key code is %d.";
+"keycode.optionHint" = "For Option+key: add 2048 to the base key code";
+"keycode.optionDetected" = "Option+%@ detected (base %d + 2048 = %d)";
