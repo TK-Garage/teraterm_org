@@ -117,6 +117,13 @@ class TerminalLogger {
         try? fileManager.createDirectory(atPath: dir, withIntermediateDirectories: true)
 
         if self.options.appendMode && fileManager.fileExists(atPath: path) {
+            // Convert existing file content to LF line endings before appending
+            if let existingData = fileManager.contents(atPath: path) {
+                let normalized = TerminalLogger.normalizeLineEndingsInData(existingData)
+                if normalized != existingData {
+                    try? normalized.write(to: URL(fileURLWithPath: path))
+                }
+            }
             guard let handle = FileHandle(forWritingAtPath: path) else { return false }
             handle.seekToEndOfFile()
             fileHandle = handle
@@ -131,6 +138,7 @@ class TerminalLogger {
         bytesLogged = 0
         escapeState = .normal
         atLineStart = true
+        pendingCR = false
         logStartTime = Date()
 
         // Write UTF-8 BOM if configured
@@ -182,11 +190,14 @@ class TerminalLogger {
             if options.addTimestamp {
                 writeWithTimestamp(stripped)
             } else {
-                writeToLog(stripped)
+                // Normalize CR/CRLF → LF even without timestamp
+                let normalized = normalizeLineEndings(stripped)
+                writeToLog(normalized)
             }
         } else {
-            // Binary mode — write raw, no timestamp
-            writeRawToLog(data)
+            // Binary mode — normalize line endings but write raw otherwise
+            let normalized = TerminalLogger.normalizeLineEndingsInData(data)
+            writeRawToLog(normalized)
         }
     }
 
@@ -245,12 +256,59 @@ class TerminalLogger {
         fileHandle = FileHandle(forWritingAtPath: currentPath)
     }
 
+    // MARK: - Line Ending Normalization
+
+    /// Normalize CR+LF and standalone CR to LF.
+    /// Handles split CR/LF across successive data chunks via `pendingCR`.
+    private var pendingCR: Bool = false
+
+    private func normalizeLineEndings(_ text: String) -> String {
+        var result = ""
+        result.reserveCapacity(text.count)
+        for ch in text {
+            if ch == "\r" {
+                // Emit LF; mark pending in case next char is LF (which we skip)
+                result.append("\n")
+                pendingCR = true
+            } else if ch == "\n" && pendingCR {
+                // LF that followed a CR — already emitted as LF, skip this one
+                pendingCR = false
+            } else {
+                pendingCR = false
+                result.append(ch)
+            }
+        }
+        return result
+    }
+
+    /// Normalize line endings in raw Data (used for existing file content on append).
+    private static func normalizeLineEndingsInData(_ data: Data) -> Data {
+        var result = Data()
+        result.reserveCapacity(data.count)
+        var i = 0
+        while i < data.count {
+            let byte = data[i]
+            if byte == 0x0D { // CR
+                result.append(0x0A) // LF
+                // Skip following LF if present (CR+LF → LF)
+                if i + 1 < data.count && data[i + 1] == 0x0A {
+                    i += 1
+                }
+            } else {
+                result.append(byte)
+            }
+            i += 1
+        }
+        return result
+    }
+
     // MARK: - Private Methods
 
     /// Write text with timestamps prepended at line boundaries.
     private func writeWithTimestamp(_ text: String) {
+        let normalized = normalizeLineEndings(text)
         var output = ""
-        for ch in text {
+        for ch in normalized {
             if atLineStart {
                 output += "[\(formattedTimestamp())] "
                 atLineStart = false
