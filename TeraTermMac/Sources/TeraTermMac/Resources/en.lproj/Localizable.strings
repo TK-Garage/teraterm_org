@@ -451,6 +451,7 @@
 
 /* Additional Settings Dialog */
 "dialog.additionalSettings.title" = "Tera Term: Additional Settings";
+"dialog.unifiedSettings.title" = "Tera Term: Settings";
 
 /* Additional Settings - Tab Names */
 "tab.general" = "General";

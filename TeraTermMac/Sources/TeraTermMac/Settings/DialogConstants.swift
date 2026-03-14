@@ -527,6 +527,11 @@ class BaseSetupDialogController: NSViewController {
     var minimumContentWidth: CGFloat = 400
     private var contentWidthConstraint: NSLayoutConstraint?
 
+    /// When true, the footer button bar (OK/Cancel/Help) and separator are
+    /// hidden. Set this before the view loads when embedding the controller
+    /// inside a tabbed container that provides its own buttons.
+    var hidesFooterButtons: Bool = false
+
     // MARK: - Convenience: Add Form Row
 
     /// Add a labelled form row to the content stack.
@@ -615,23 +620,35 @@ class BaseSetupDialogController: NSViewController {
 
         let m = DialogLayout.margin
 
-        NSLayoutConstraint.activate([
-            // Content area
-            contentArea.topAnchor.constraint(equalTo: container.topAnchor, constant: m),
-            contentArea.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: m),
-            contentArea.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -m),
+        if hidesFooterButtons {
+            // Embedded mode: content area fills the container, no buttons
+            footerBar.isHidden = true
+            separator.isHidden = true
+            NSLayoutConstraint.activate([
+                contentArea.topAnchor.constraint(equalTo: container.topAnchor, constant: m),
+                contentArea.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: m),
+                contentArea.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -m),
+                contentArea.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -m),
+            ])
+        } else {
+            NSLayoutConstraint.activate([
+                // Content area
+                contentArea.topAnchor.constraint(equalTo: container.topAnchor, constant: m),
+                contentArea.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: m),
+                contentArea.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -m),
 
-            // Separator
-            separator.topAnchor.constraint(equalTo: contentArea.bottomAnchor, constant: m),
-            separator.leadingAnchor.constraint(equalTo: container.leadingAnchor),
-            separator.trailingAnchor.constraint(equalTo: container.trailingAnchor),
+                // Separator
+                separator.topAnchor.constraint(equalTo: contentArea.bottomAnchor, constant: m),
+                separator.leadingAnchor.constraint(equalTo: container.leadingAnchor),
+                separator.trailingAnchor.constraint(equalTo: container.trailingAnchor),
 
-            // Button bar
-            footerBar.topAnchor.constraint(equalTo: separator.bottomAnchor, constant: m * 0.75),
-            footerBar.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: m),
-            footerBar.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -m),
-            footerBar.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -m * 0.75),
-        ])
+                // Button bar
+                footerBar.topAnchor.constraint(equalTo: separator.bottomAnchor, constant: m * 0.75),
+                footerBar.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: m),
+                footerBar.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -m),
+                footerBar.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -m * 0.75),
+            ])
+        }
 
         self.view = container
     }

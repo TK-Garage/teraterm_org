@@ -464,7 +464,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
     }
 
     @objc func showPreferences(_ sender: Any?) {
-        showTerminalSetupDialog()
+        showUnifiedSettingsDialog(selectedTab: .terminal)
     }
 
     @objc func newConnection(_ sender: Any?) {
@@ -927,15 +927,15 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
     }
 
     @objc func setupTerminal(_ sender: Any?) {
-        showTerminalSetupDialog()
+        showUnifiedSettingsDialog(selectedTab: .terminal)
     }
 
     @objc func setupWindow(_ sender: Any?) {
-        showWindowSetupDialog()
+        showUnifiedSettingsDialog(selectedTab: .window)
     }
 
     @objc func setupTCPIP(_ sender: Any?) {
-        showTCPIPDialog()
+        showUnifiedSettingsDialog(selectedTab: .tcpip)
     }
 
     @objc func setupAdditional(_ sender: Any?) {
@@ -966,35 +966,35 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
     }
 
     @objc func setupKeyboard(_ sender: Any?) {
-        showKeyboardSetupDialog()
+        showUnifiedSettingsDialog(selectedTab: .keyboard)
     }
 
     @objc func setupSerialPort(_ sender: Any?) {
-        showSerialPortDialog()
+        showUnifiedSettingsDialog(selectedTab: .serialPort)
     }
 
     @objc func setupProxy(_ sender: Any?) {
-        showProxySetupDialog()
+        showUnifiedSettingsDialog(selectedTab: .proxy)
     }
 
     @objc func setupSSH(_ sender: Any?) {
-        showSSHSetupDialog()
+        showUnifiedSettingsDialog(selectedTab: .ssh)
     }
 
     @objc func setupSSHAuth(_ sender: Any?) {
-        showSSHAuthSetupDialog()
+        showUnifiedSettingsDialog(selectedTab: .sshAuth)
     }
 
     @objc func setupSSHForwarding(_ sender: Any?) {
-        showSSHForwardingSetupDialog()
+        showUnifiedSettingsDialog(selectedTab: .sshForwarding)
     }
 
     @objc func setupSSHKeyGen(_ sender: Any?) {
-        showSSHKeyGenDialog()
+        showUnifiedSettingsDialog(selectedTab: .sshKeyGen)
     }
 
     @objc func setupGeneral(_ sender: Any?) {
-        showGeneralSetupDialog()
+        showUnifiedSettingsDialog(selectedTab: .general)
     }
 
     @objc func showSCPDialog(_ sender: Any?) {
@@ -1953,6 +1953,36 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         }
         currentSetupDialog = nil
     }
+
+    // MARK: - Unified Settings Dialog
+
+    private var unifiedSettingsController: UnifiedSettingsController?
+
+    private func showUnifiedSettingsDialog(selectedTab: UnifiedSettingsTab = .terminal) {
+        dismissCurrentSetupSheet()
+        let controller = UnifiedSettingsController(settings: settings)
+        controller.onApply = { [weak self] in
+            self?.activeWindowController?.applySettings()
+        }
+        controller.onApplyKeyboard = { [weak self] in
+            guard let self = self else { return }
+            self.activeWindowController?.terminalEmulator.terminalID = self.settings.terminalID
+        }
+        controller.onApplySerialPort = { [weak self] in
+            guard let self = self else { return }
+            if let port = self.settings.serialPort.isEmpty ? nil : self.settings.serialPort {
+                self.activeWindowController?.connectSerial(device: port)
+            }
+        }
+        unifiedSettingsController = controller
+        if let win = activeWindowController?.window {
+            currentSetupDialog = controller.show(on: win, selectedTab: selectedTab)
+        } else {
+            controller.showModal(selectedTab: selectedTab)
+        }
+    }
+
+    // MARK: - Individual Setup Dialogs (preserved for standalone use)
 
     private func showTerminalSetupDialog() {
         dismissCurrentSetupSheet()
