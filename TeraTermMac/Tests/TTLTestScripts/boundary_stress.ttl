@@ -521,7 +521,7 @@ filewriteln fh msg
 
 ; 6-3 str2int / int2str roundtrip
 test_num = test_num + 1
-str2int '12345' x
+str2int x '12345'
 int2str s x
 if s == '12345' then
   pass_count = pass_count + 1
