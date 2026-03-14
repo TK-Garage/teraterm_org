@@ -5,12 +5,14 @@
  *
  * Ported to Swift/macOS
  *
- * Unified Settings Dialog — combines all Setup menu dialogs into a single
- * tabbed window. Each tab embeds the existing dialog's view controller.
+ * Unified Settings Dialog — combines all Setup menu dialogs AND
+ * Additional Settings into a single tabbed window.
  *
- * Tabs (2 rows):
+ * Tabs (3 rows):
  *   Row 1: Terminal | Window | Keyboard | Serial Port | TCP/IP | General
  *   Row 2: Proxy | SSH | SSH Auth | SSH Forwarding | SSH Key Gen
+ *   Row 3: General* | Coding | Copy&Paste | Sequence | Mouse | Log | Visual
+ *          | Font | TEK Font | Theme | UI | Plugin | Local Shell | Debug
  *
  * Menu items remain functional: selecting one opens this unified dialog
  * with the corresponding tab pre-selected.
@@ -24,17 +26,34 @@ import AppKit
 /// Identifies each tab in the unified settings dialog.
 /// Used by menu actions to select the appropriate tab on open.
 enum UnifiedSettingsTab: String, CaseIterable {
+    // Row 1 — basic setup
     case terminal       = "Terminal"
     case window         = "Window"
     case keyboard       = "Keyboard"
     case serialPort     = "SerialPort"
     case tcpip          = "TCPIP"
     case general        = "General"
+    // Row 2 — network / SSH
     case proxy          = "Proxy"
     case ssh            = "SSH"
     case sshAuth        = "SSHAuth"
     case sshForwarding  = "SSHForwarding"
     case sshKeyGen      = "SSHKeyGen"
+    // Row 3 — additional settings (formerly separate dialog)
+    case addlGeneral    = "AddlGeneral"
+    case addlCoding     = "AddlCoding"
+    case addlCopyPaste  = "AddlCopyPaste"
+    case addlSequence   = "AddlSequence"
+    case addlMouse      = "AddlMouse"
+    case addlLog        = "AddlLog"
+    case addlVisual     = "AddlVisual"
+    case addlFont       = "AddlFont"
+    case addlTEKFont    = "AddlTEKFont"
+    case addlTheme      = "AddlTheme"
+    case addlUI         = "AddlUI"
+    case addlPlugin     = "AddlPlugin"
+    case addlLocalShell = "AddlLocalShell"
+    case addlDebug      = "AddlDebug"
 
     var localizedTitle: String {
         switch self {
@@ -49,7 +68,26 @@ enum UnifiedSettingsTab: String, CaseIterable {
         case .sshAuth:       return TTL("menu.setup.sshAuth")
         case .sshForwarding: return TTL("menu.setup.sshForward")
         case .sshKeyGen:     return TTL("menu.setup.sshKeyGen")
+        case .addlGeneral:   return TTL("tab.general")
+        case .addlCoding:    return TTL("tab.coding")
+        case .addlCopyPaste: return TTL("tab.copyPaste")
+        case .addlSequence:  return TTL("tab.sequence")
+        case .addlMouse:     return TTL("tab.mouse")
+        case .addlLog:       return TTL("tab.log")
+        case .addlVisual:    return TTL("tab.visual")
+        case .addlFont:      return TTL("tab.font")
+        case .addlTEKFont:   return TTL("tab.tekFont")
+        case .addlTheme:     return TTL("tab.theme")
+        case .addlUI:        return TTL("tab.ui")
+        case .addlPlugin:    return TTL("tab.plugin")
+        case .addlLocalShell: return TTL("tab.localShell")
+        case .addlDebug:     return TTL("tab.debug")
         }
+    }
+
+    /// Whether this tab is an "additional settings" tab
+    var isAdditionalSettingsTab: Bool {
+        return Self.row3.contains(self)
     }
 
     /// First row tabs
@@ -61,6 +99,13 @@ enum UnifiedSettingsTab: String, CaseIterable {
     static let row2: [UnifiedSettingsTab] = [
         .proxy, .ssh, .sshAuth, .sshForwarding, .sshKeyGen
     ]
+
+    /// Third row tabs (additional settings)
+    static let row3: [UnifiedSettingsTab] = [
+        .addlGeneral, .addlCoding, .addlCopyPaste, .addlSequence,
+        .addlMouse, .addlLog, .addlVisual, .addlFont, .addlTEKFont,
+        .addlTheme, .addlUI, .addlPlugin, .addlLocalShell, .addlDebug
+    ]
 }
 
 // MARK: - Unified Settings Controller
@@ -71,6 +116,8 @@ final class UnifiedSettingsController: NSObject {
     private var tabView: NSTabView?
     private var settings: TerminalSettings
     private var viewControllers: [UnifiedSettingsTab: BaseSetupDialogController] = [:]
+    /// Additional settings tabs (row 3) — uses the AdditionalSettingsTab protocol
+    private var additionalTabs: [UnifiedSettingsTab: AdditionalSettingsTab] = [:]
     var onApply: (() -> Void)?
 
     /// Callback for applying keyboard-specific settings (terminal ID)
@@ -124,6 +171,7 @@ final class UnifiedSettingsController: NSObject {
         }
         window = nil
         viewControllers.removeAll()
+        additionalTabs.removeAll()
         return win
     }
 
@@ -141,6 +189,7 @@ final class UnifiedSettingsController: NSObject {
         }
         window = nil
         viewControllers.removeAll()
+        additionalTabs.removeAll()
     }
 
     // MARK: - Tab Selection
@@ -168,6 +217,10 @@ final class UnifiedSettingsController: NSObject {
                 onApplySerialPort?()
             }
         }
+        // Apply additional settings tabs (row 3)
+        for (_, tc) in additionalTabs {
+            tc.apply(to: settings)
+        }
     }
 
     // MARK: - Build Window
@@ -177,20 +230,27 @@ final class UnifiedSettingsController: NSObject {
         tv.translatesAutoresizingMaskIntoConstraints = false
         tv.tabViewType = .topTabsBezelBorder
 
-        // Create view controllers for each tab
-        let allTabs = UnifiedSettingsTab.row1 + UnifiedSettingsTab.row2
-        for tab in allTabs {
+        // Create view controllers for row 1 + row 2 tabs (BaseSetupDialogController)
+        let setupTabs = UnifiedSettingsTab.row1 + UnifiedSettingsTab.row2
+        for tab in setupTabs {
             let vc = createViewController(for: tab)
             viewControllers[tab] = vc
 
             let item = NSTabViewItem(identifier: tab.rawValue)
             item.label = tab.localizedTitle
-
-            // Load the view controller's view and extract the content
-            // We embed the entire VC view (which includes OK/Cancel buttons from BaseSetupDialogController)
-            // but we hide those buttons since we have our own
             vc.loadViewIfNeeded()
             item.view = vc.view
+            tv.addTabViewItem(item)
+        }
+
+        // Create additional settings tabs for row 3 (AdditionalSettingsTab protocol)
+        for tab in UnifiedSettingsTab.row3 {
+            let tc = createAdditionalTab(for: tab)
+            additionalTabs[tab] = tc
+
+            let item = NSTabViewItem(identifier: tab.rawValue)
+            item.label = tab.localizedTitle
+            item.view = tc.contentView
             tv.addTabViewItem(item)
         }
 
@@ -207,6 +267,7 @@ final class UnifiedSettingsController: NSObject {
         container.addSubview(tv)
         container.addSubview(footerBar)
 
+        // Wider window to accommodate 3 rows of tabs; taller for content
         let m: CGFloat = 16
         NSLayoutConstraint.activate([
             tv.topAnchor.constraint(equalTo: container.topAnchor, constant: m),
@@ -218,18 +279,18 @@ final class UnifiedSettingsController: NSObject {
             footerBar.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -m),
             footerBar.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -m),
 
-            tv.widthAnchor.constraint(greaterThanOrEqualToConstant: 560),
-            tv.heightAnchor.constraint(greaterThanOrEqualToConstant: 440),
+            tv.widthAnchor.constraint(greaterThanOrEqualToConstant: 720),
+            tv.heightAnchor.constraint(greaterThanOrEqualToConstant: 480),
         ])
 
-        let vc = NSViewController()
-        vc.view = container
+        let contentVC = NSViewController()
+        contentVC.view = container
         let win = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 600, height: 520),
+            contentRect: NSRect(x: 0, y: 0, width: 760, height: 580),
             styleMask: [.titled, .closable],
             backing: .buffered,
             defer: true)
-        win.contentViewController = vc
+        win.contentViewController = contentVC
         win.isReleasedWhenClosed = false
         win.title = TTL("dialog.unifiedSettings.title")
         self.window = win
@@ -266,11 +327,37 @@ final class UnifiedSettingsController: NSObject {
             vc = SSHForwardingSetupDialogController(settings: settings)
         case .sshKeyGen:
             vc = SSHKeyGenDialogController()
+        default:
+            fatalError("createViewController called with additional-settings tab: \(tab)")
         }
         // Hide the individual OK/Cancel/Help buttons — the unified
         // dialog provides its own set at the bottom.
         vc.hidesFooterButtons = true
         return vc
+    }
+
+    // MARK: - Create Additional Settings Tabs
+
+    /// Create the AdditionalSettingsTab instance for each row-3 tab.
+    private func createAdditionalTab(for tab: UnifiedSettingsTab) -> AdditionalSettingsTab {
+        switch tab {
+        case .addlGeneral:   return GeneralTab(settings: settings)
+        case .addlCoding:    return CodingTab(settings: settings)
+        case .addlCopyPaste: return CopyPasteTab(settings: settings)
+        case .addlSequence:  return SequenceTab(settings: settings)
+        case .addlMouse:     return MouseTab(settings: settings)
+        case .addlLog:       return LogTab(settings: settings)
+        case .addlVisual:    return VisualTab(settings: settings)
+        case .addlFont:      return FontTab(settings: settings)
+        case .addlTEKFont:   return TEKFontTab(settings: settings)
+        case .addlTheme:     return ThemeTab(settings: settings)
+        case .addlUI:        return UITab(settings: settings)
+        case .addlPlugin:    return PluginTab(settings: settings)
+        case .addlLocalShell: return LocalShellTab(settings: settings)
+        case .addlDebug:     return DebugTab(settings: settings)
+        default:
+            fatalError("createAdditionalTab called with non-row3 tab: \(tab)")
+        }
     }
 
     // MARK: - Actions

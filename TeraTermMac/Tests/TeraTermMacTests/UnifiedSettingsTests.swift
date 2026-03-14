@@ -3,8 +3,8 @@
  * Tests for the Unified Settings Dialog (統合ダイアログ).
  *
  * Tests verify:
- *   - UnifiedSettingsTab enum completeness and properties
- *   - Tab row layout (row1/row2 partition)
+ *   - UnifiedSettingsTab enum completeness and properties (25 tabs)
+ *   - Tab row layout (row1/row2/row3 partition)
  *   - UnifiedSettingsController instantiation and lifecycle
  *   - Tab view controller creation via createViewController
  *   - hidesFooterButtons propagation to embedded VCs
@@ -25,9 +25,9 @@ import AppKit
 final class UnifiedSettingsTabTests: XCTestCase {
 
     func testAllCasesCount() {
-        // 11 tabs total: 6 in row1 + 5 in row2
-        XCTAssertEqual(UnifiedSettingsTab.allCases.count, 11,
-            "Should have 11 unified settings tabs")
+        // 25 tabs total: 6 in row1 + 5 in row2 + 14 in row3
+        XCTAssertEqual(UnifiedSettingsTab.allCases.count, 25,
+            "Should have 25 unified settings tabs")
     }
 
     func testRow1Contents() {
@@ -46,18 +46,28 @@ final class UnifiedSettingsTabTests: XCTestCase {
             "Row 2 should contain Proxy, SSH, SSHAuth, SSHForwarding, SSHKeyGen")
     }
 
+    func testRow3Contents() {
+        let expected: [UnifiedSettingsTab] = [
+            .addlGeneral, .addlCoding, .addlCopyPaste, .addlSequence,
+            .addlMouse, .addlLog, .addlVisual, .addlFont, .addlTEKFont,
+            .addlTheme, .addlUI, .addlPlugin, .addlLocalShell, .addlDebug
+        ]
+        XCTAssertEqual(UnifiedSettingsTab.row3, expected,
+            "Row 3 should contain all additional settings tabs")
+    }
+
     func testRowsCoverAllCases() {
-        let allFromRows = Set(UnifiedSettingsTab.row1 + UnifiedSettingsTab.row2)
+        let allFromRows = Set(UnifiedSettingsTab.row1 + UnifiedSettingsTab.row2 + UnifiedSettingsTab.row3)
         let allCases = Set(UnifiedSettingsTab.allCases)
         XCTAssertEqual(allFromRows, allCases,
-            "row1 + row2 should cover all cases exactly")
+            "row1 + row2 + row3 should cover all cases exactly")
     }
 
     func testRowsHaveNoDuplicates() {
-        let combined = UnifiedSettingsTab.row1 + UnifiedSettingsTab.row2
+        let combined = UnifiedSettingsTab.row1 + UnifiedSettingsTab.row2 + UnifiedSettingsTab.row3
         let unique = Set(combined)
         XCTAssertEqual(combined.count, unique.count,
-            "No tab should appear in both row1 and row2")
+            "No tab should appear in multiple rows")
     }
 
     func testRawValues() {
@@ -73,6 +83,21 @@ final class UnifiedSettingsTabTests: XCTestCase {
         XCTAssertEqual(UnifiedSettingsTab.sshAuth.rawValue, "SSHAuth")
         XCTAssertEqual(UnifiedSettingsTab.sshForwarding.rawValue, "SSHForwarding")
         XCTAssertEqual(UnifiedSettingsTab.sshKeyGen.rawValue, "SSHKeyGen")
+        // Row 3 additional settings
+        XCTAssertEqual(UnifiedSettingsTab.addlGeneral.rawValue, "AddlGeneral")
+        XCTAssertEqual(UnifiedSettingsTab.addlCoding.rawValue, "AddlCoding")
+        XCTAssertEqual(UnifiedSettingsTab.addlCopyPaste.rawValue, "AddlCopyPaste")
+        XCTAssertEqual(UnifiedSettingsTab.addlSequence.rawValue, "AddlSequence")
+        XCTAssertEqual(UnifiedSettingsTab.addlMouse.rawValue, "AddlMouse")
+        XCTAssertEqual(UnifiedSettingsTab.addlLog.rawValue, "AddlLog")
+        XCTAssertEqual(UnifiedSettingsTab.addlVisual.rawValue, "AddlVisual")
+        XCTAssertEqual(UnifiedSettingsTab.addlFont.rawValue, "AddlFont")
+        XCTAssertEqual(UnifiedSettingsTab.addlTEKFont.rawValue, "AddlTEKFont")
+        XCTAssertEqual(UnifiedSettingsTab.addlTheme.rawValue, "AddlTheme")
+        XCTAssertEqual(UnifiedSettingsTab.addlUI.rawValue, "AddlUI")
+        XCTAssertEqual(UnifiedSettingsTab.addlPlugin.rawValue, "AddlPlugin")
+        XCTAssertEqual(UnifiedSettingsTab.addlLocalShell.rawValue, "AddlLocalShell")
+        XCTAssertEqual(UnifiedSettingsTab.addlDebug.rawValue, "AddlDebug")
     }
 
     func testUniqueRawValues() {
@@ -173,7 +198,10 @@ final class UnifiedSettingsTabViewControllerTests: XCTestCase {
         settings = TerminalSettings()
     }
 
-    /// Create a BaseSetupDialogController for the given tab,
+    /// Row 1+2 tabs that use BaseSetupDialogController
+    private static let setupTabs = UnifiedSettingsTab.row1 + UnifiedSettingsTab.row2
+
+    /// Create a BaseSetupDialogController for the given tab (row 1+2 only),
     /// mirroring UnifiedSettingsController.createViewController(for:).
     private func createViewController(for tab: UnifiedSettingsTab) -> BaseSetupDialogController {
         let vc: BaseSetupDialogController
@@ -200,21 +228,53 @@ final class UnifiedSettingsTabViewControllerTests: XCTestCase {
             vc = SSHForwardingSetupDialogController(settings: settings)
         case .sshKeyGen:
             vc = SSHKeyGenDialogController()
+        default:
+            fatalError("createViewController called with additional-settings tab: \(tab)")
         }
         vc.hidesFooterButtons = true
         return vc
     }
 
-    func testAllTabsCreateViewControllers() {
-        for tab in UnifiedSettingsTab.allCases {
+    /// Create an AdditionalSettingsTab for row-3 tabs.
+    private func createAdditionalTab(for tab: UnifiedSettingsTab) -> AdditionalSettingsTab {
+        switch tab {
+        case .addlGeneral:   return GeneralTab(settings: settings)
+        case .addlCoding:    return CodingTab(settings: settings)
+        case .addlCopyPaste: return CopyPasteTab(settings: settings)
+        case .addlSequence:  return SequenceTab(settings: settings)
+        case .addlMouse:     return MouseTab(settings: settings)
+        case .addlLog:       return LogTab(settings: settings)
+        case .addlVisual:    return VisualTab(settings: settings)
+        case .addlFont:      return FontTab(settings: settings)
+        case .addlTEKFont:   return TEKFontTab(settings: settings)
+        case .addlTheme:     return ThemeTab(settings: settings)
+        case .addlUI:        return UITab(settings: settings)
+        case .addlPlugin:    return PluginTab(settings: settings)
+        case .addlLocalShell: return LocalShellTab(settings: settings)
+        case .addlDebug:     return DebugTab(settings: settings)
+        default:
+            fatalError("createAdditionalTab called with non-row3 tab: \(tab)")
+        }
+    }
+
+    func testAllSetupTabsCreateViewControllers() {
+        for tab in Self.setupTabs {
             let vc = createViewController(for: tab)
             XCTAssertNotNil(vc,
                 "Tab \(tab) should create a non-nil view controller")
         }
     }
 
-    func testAllTabsLoadViews() {
-        for tab in UnifiedSettingsTab.allCases {
+    func testAllAdditionalTabsCreate() {
+        for tab in UnifiedSettingsTab.row3 {
+            let tc = createAdditionalTab(for: tab)
+            XCTAssertNotNil(tc.contentView,
+                "Additional tab \(tab) should have a contentView")
+        }
+    }
+
+    func testAllSetupTabsLoadViews() {
+        for tab in Self.setupTabs {
             let vc = createViewController(for: tab)
             vc.loadView()
             vc.viewDidLoad()
@@ -223,8 +283,8 @@ final class UnifiedSettingsTabViewControllerTests: XCTestCase {
         }
     }
 
-    func testAllTabsHaveHiddenFooterButtons() {
-        for tab in UnifiedSettingsTab.allCases {
+    func testAllSetupTabsHaveHiddenFooterButtons() {
+        for tab in Self.setupTabs {
             let vc = createViewController(for: tab)
             XCTAssertTrue(vc.hidesFooterButtons,
                 "Tab \(tab) VC should have hidesFooterButtons = true")
@@ -286,8 +346,8 @@ final class UnifiedSettingsTabViewControllerTests: XCTestCase {
         XCTAssertTrue(vc is SSHKeyGenDialogController)
     }
 
-    func testLoadedViewsHaveContent() {
-        for tab in UnifiedSettingsTab.allCases {
+    func testLoadedSetupViewsHaveContent() {
+        for tab in Self.setupTabs {
             let vc = createViewController(for: tab)
             vc.loadView()
             vc.viewDidLoad()
@@ -299,13 +359,11 @@ final class UnifiedSettingsTabViewControllerTests: XCTestCase {
     }
 
     func testFooterButtonsHiddenWhenEmbedded() {
-        for tab in UnifiedSettingsTab.allCases {
+        for tab in Self.setupTabs {
             let vc = createViewController(for: tab)
             vc.loadView()
             vc.viewDidLoad()
 
-            // When hidesFooterButtons is true, OK/Cancel buttons should exist
-            // but the footer bar should be hidden
             XCTAssertNotNil(vc.okButton,
                 "Tab \(tab) should still have OK button reference")
             XCTAssertNotNil(vc.cancelButton,
@@ -314,12 +372,18 @@ final class UnifiedSettingsTabViewControllerTests: XCTestCase {
     }
 
     func testApplySettingsDoesNotCrash() {
-        for tab in UnifiedSettingsTab.allCases {
+        for tab in Self.setupTabs {
             let vc = createViewController(for: tab)
             vc.loadView()
             vc.viewDidLoad()
-            // applySettings should not crash even on fresh default settings
             vc.applySettings()
+        }
+    }
+
+    func testAdditionalTabsApplyDoesNotCrash() {
+        for tab in UnifiedSettingsTab.row3 {
+            let tc = createAdditionalTab(for: tab)
+            tc.apply(to: settings)
         }
     }
 
@@ -348,10 +412,15 @@ final class UnifiedSettingsTabLayoutTests: XCTestCase {
             "Row 2 should have exactly 5 tabs")
     }
 
+    func testRow3HasFourteenTabs() {
+        XCTAssertEqual(UnifiedSettingsTab.row3.count, 14,
+            "Row 3 should have exactly 14 tabs (additional settings)")
+    }
+
     func testTotalTabCount() {
-        let total = UnifiedSettingsTab.row1.count + UnifiedSettingsTab.row2.count
+        let total = UnifiedSettingsTab.row1.count + UnifiedSettingsTab.row2.count + UnifiedSettingsTab.row3.count
         XCTAssertEqual(total, UnifiedSettingsTab.allCases.count,
-            "row1 + row2 should equal total tab count")
+            "row1 + row2 + row3 should equal total tab count")
     }
 
     func testRow1StartsWithTerminal() {
@@ -374,6 +443,16 @@ final class UnifiedSettingsTabLayoutTests: XCTestCase {
             "Row 2 should end with SSH Key Gen tab")
     }
 
+    func testRow3StartsWithAddlGeneral() {
+        XCTAssertEqual(UnifiedSettingsTab.row3.first, .addlGeneral,
+            "Row 3 should start with Additional General tab")
+    }
+
+    func testRow3EndsWithAddlDebug() {
+        XCTAssertEqual(UnifiedSettingsTab.row3.last, .addlDebug,
+            "Row 3 should end with Additional Debug tab")
+    }
+
     func testSSHTabsGroupedInRow2() {
         let sshTabs: Set<UnifiedSettingsTab> = [.ssh, .sshAuth, .sshForwarding, .sshKeyGen]
         let row2Set = Set(UnifiedSettingsTab.row2)
@@ -386,6 +465,28 @@ final class UnifiedSettingsTabLayoutTests: XCTestCase {
         let row1Set = Set(UnifiedSettingsTab.row1)
         XCTAssertTrue(basicTabs.isSubset(of: row1Set),
             "Basic setup tabs should be in row 1")
+    }
+
+    func testAdditionalTabsInRow3() {
+        let additionalTabs: Set<UnifiedSettingsTab> = [
+            .addlGeneral, .addlCoding, .addlCopyPaste, .addlSequence,
+            .addlMouse, .addlLog, .addlVisual, .addlFont, .addlTEKFont,
+            .addlTheme, .addlUI, .addlPlugin, .addlLocalShell, .addlDebug
+        ]
+        let row3Set = Set(UnifiedSettingsTab.row3)
+        XCTAssertEqual(additionalTabs, row3Set,
+            "All additional settings tabs should be in row 3")
+    }
+
+    func testIsAdditionalSettingsTab() {
+        for tab in UnifiedSettingsTab.row1 + UnifiedSettingsTab.row2 {
+            XCTAssertFalse(tab.isAdditionalSettingsTab,
+                "\(tab) should not be an additional settings tab")
+        }
+        for tab in UnifiedSettingsTab.row3 {
+            XCTAssertTrue(tab.isAdditionalSettingsTab,
+                "\(tab) should be an additional settings tab")
+        }
     }
 }
 
@@ -438,8 +539,9 @@ final class UnifiedSettingsIntegrationTests: XCTestCase {
         let controller = UnifiedSettingsController(settings: settings)
         XCTAssertNotNil(controller)
 
-        // Create all VCs with default settings — no crash expected
-        for tab in UnifiedSettingsTab.allCases {
+        // Create all row 1+2 VCs with default settings — no crash expected
+        let setupTabs = UnifiedSettingsTab.row1 + UnifiedSettingsTab.row2
+        for tab in setupTabs {
             let vc: BaseSetupDialogController
             switch tab {
             case .terminal:      vc = TerminalSetupViewController(settings: settings)
@@ -453,11 +555,34 @@ final class UnifiedSettingsIntegrationTests: XCTestCase {
             case .sshAuth:       vc = SSHAuthSetupDialogController(settings: settings)
             case .sshForwarding: vc = SSHForwardingSetupDialogController(settings: settings)
             case .sshKeyGen:     vc = SSHKeyGenDialogController()
+            default:             continue
             }
             vc.hidesFooterButtons = true
             vc.loadView()
             vc.viewDidLoad()
             vc.applySettings()
+        }
+
+        // Create all row 3 additional tabs — no crash expected
+        let additionalTabInstances: [AdditionalSettingsTab] = [
+            GeneralTab(settings: settings),
+            CodingTab(settings: settings),
+            CopyPasteTab(settings: settings),
+            SequenceTab(settings: settings),
+            MouseTab(settings: settings),
+            LogTab(settings: settings),
+            VisualTab(settings: settings),
+            FontTab(settings: settings),
+            TEKFontTab(settings: settings),
+            ThemeTab(settings: settings),
+            UITab(settings: settings),
+            PluginTab(settings: settings),
+            LocalShellTab(settings: settings),
+            DebugTab(settings: settings),
+        ]
+        for tc in additionalTabInstances {
+            XCTAssertNotNil(tc.contentView)
+            tc.apply(to: settings)
         }
     }
 }

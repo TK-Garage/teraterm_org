@@ -939,7 +939,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
     }
 
     @objc func setupAdditional(_ sender: Any?) {
-        showAdditionalSettingsDialog()
+        showUnifiedSettingsDialog(selectedTab: .addlGeneral)
     }
 
     @objc func setupFont(_ sender: Any?) {
