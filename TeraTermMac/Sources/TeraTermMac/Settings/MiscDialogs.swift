@@ -1004,10 +1004,17 @@ final class WindowListDialog {
         alert.addButton(withTitle: TTL("Cancel"))
         alert.addButton(withTitle: TTL("dialog.windowList.closeWindow"))
 
+        // Collect all terminal windows (including minimized and the current one),
+        // matching the original Tera Term behavior which lists every VT/TEK window.
         let windows = NSApp.windows.filter {
-            $0.isVisible && !$0.isSheet && $0 !== window && $0.title != ""
+            !$0.isSheet && $0.windowController is TerminalWindowController
         }
-        let windowTitles = windows.map { $0.title }
+        let windowTitles = windows.enumerated().map { (i, w) -> String in
+            let marker = (w === window) ? "* " : "  "
+            let title = w.title.isEmpty ? "Tera Term" : w.title
+            let state = w.isMiniaturized ? " [min]" : ""
+            return "\(marker)\(title)\(state)"
+        }
 
         // NSAlert sizes its accessoryView by frame, not Auto Layout.
         let scrollView = NSScrollView(frame: NSRect(x: 0, y: 0, width: 360, height: 180))
@@ -1044,6 +1051,9 @@ final class WindowListDialog {
 
             switch response {
             case .alertFirstButtonReturn: // Open
+                if selectedWindow.isMiniaturized {
+                    selectedWindow.deminiaturize(nil)
+                }
                 selectedWindow.makeKeyAndOrderFront(nil)
                 completion(selectedWindow)
             case .alertThirdButtonReturn: // Close window
