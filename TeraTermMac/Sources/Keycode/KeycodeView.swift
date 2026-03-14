@@ -3,6 +3,9 @@
  * Key input view for Keycode.app
  *
  * Captures keyboard events and displays the corresponding PC key code.
+ * Uses NSEvent.addLocalMonitorForEvents to reliably capture all key events
+ * following macOS event handling conventions.
+ *
  * Port of KEYCODE.EXE's WM_KEYDOWN / WM_PAINT handling.
  */
 
@@ -59,16 +62,27 @@ class KeycodeView: NSView {
         return label
     }()
 
+    /// Local event monitor for keyDown events
+    private var keyDownMonitor: Any?
+
     // MARK: - Initialization
 
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
         setupUI()
+        installKeyMonitor()
     }
 
     required init?(coder: NSCoder) {
         super.init(coder: coder)
         setupUI()
+        installKeyMonitor()
+    }
+
+    deinit {
+        if let monitor = keyDownMonitor {
+            NSEvent.removeMonitor(monitor)
+        }
     }
 
     private func setupUI() {
@@ -105,6 +119,29 @@ class KeycodeView: NSView {
         ])
     }
 
+    // MARK: - Key Event Monitor
+
+    /// Install a local event monitor to capture all keyDown events.
+    /// This is more reliable than overriding keyDown() because:
+    /// - It captures events before menu key equivalents consume them
+    /// - It works regardless of first responder state
+    /// - It follows macOS NSEvent monitoring conventions
+    private func installKeyMonitor() {
+        keyDownMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            guard let self = self else { return event }
+
+            // Only process when our window is key window
+            guard self.window?.isKeyWindow == true else { return event }
+
+            self.handleKeyEvent(event)
+
+            // Return nil to consume the event (prevent system beep),
+            // or return event to let it propagate to menu key equivalents.
+            // We consume all key events to prevent beep on unhandled keys.
+            return nil
+        }
+    }
+
     // MARK: - First Responder
 
     override var acceptsFirstResponder: Bool { true }
@@ -116,12 +153,12 @@ class KeycodeView: NSView {
     // MARK: - Key Event Handling
 
     override func keyDown(with event: NSEvent) {
-        handleKeyEvent(event)
+        // Events are handled by the local monitor.
+        // Override to prevent the default beep on unhandled keys.
     }
 
     override func flagsChanged(with event: NSEvent) {
         // Ignore modifier-only key events
-        // Only process if a non-modifier key is also pressed
     }
 
     private func handleKeyEvent(_ event: NSEvent) {
