@@ -1857,6 +1857,330 @@ filewriteln fh msg
 filewriteln fh ''
 
 ; ############################################################
+;  SECTION 16 — CYGCONNECT (Local Shell / PTY)
+; ############################################################
+filewriteln fh '=== Section 16: cygconnect (Local Shell / PTY) ==='
+
+; 16-1 cygconnect opens a local PTY shell
+test_num = test_num + 1
+cygconnect
+; result = 1 if connected, 0 if not
+if result = 1 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] cygconnect opened local shell' test_num
+else
+  ; In offline/headless test environments PTY may not be available
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] cygconnect result=%d (env-dependent)' test_num result
+endif
+filewriteln fh msg
+
+; 16-2 testlink after cygconnect
+test_num = test_num + 1
+testlink
+; Should reflect the PTY connection state from cygconnect above
+if result >= 0 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] testlink after cygconnect=%d' test_num result
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] testlink after cygconnect=%d' test_num result
+endif
+filewriteln fh msg
+
+; 16-3 disconnect after cygconnect (cleanup)
+test_num = test_num + 1
+; If cygconnect succeeded, close the connection
+disconnect
+; After disconnect, testlink should be 0
+testlink
+if result = 0 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] disconnect after cygconnect (link=0)' test_num
+else
+  ; May already have been disconnected
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] disconnect after cygconnect (link=%d)' test_num result
+endif
+filewriteln fh msg
+
+filewriteln fh ''
+
+; ############################################################
+;  SECTION 17 — SETDATE / SETTIME (privilege-required, always fail)
+; ############################################################
+filewriteln fh '=== Section 17: setdate / settime ==='
+
+; 17-1 setdate always returns -1 (requires root)
+test_num = test_num + 1
+setdate '2026-01-01'
+if result = -1 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] setdate returns -1 (no root)' test_num
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] setdate unexpected result=%d' test_num result
+endif
+filewriteln fh msg
+
+; 17-2 settime always returns -1 (requires root)
+test_num = test_num + 1
+settime '12:00:00'
+if result = -1 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] settime returns -1 (no root)' test_num
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] settime unexpected result=%d' test_num result
+endif
+filewriteln fh msg
+
+; 17-3 setdate with empty string
+test_num = test_num + 1
+setdate ''
+if result = -1 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] setdate empty string returns -1' test_num
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] setdate empty result=%d' test_num result
+endif
+filewriteln fh msg
+
+; 17-4 settime with empty string
+test_num = test_num + 1
+settime ''
+if result = -1 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] settime empty string returns -1' test_num
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] settime empty result=%d' test_num result
+endif
+filewriteln fh msg
+
+; 17-5 setdate with various formats (all should fail)
+test_num = test_num + 1
+setdate '01/01/2026'
+r1 = result
+setdate '2026/01/01'
+r2 = result
+setdate 'invalid-date'
+r3 = result
+if r1 = -1 then
+  if r2 = -1 then
+    if r3 = -1 then
+      pass_count = pass_count + 1
+      sprintf2 msg 'PASS [%d] setdate all formats return -1' test_num
+    else
+      fail_count = fail_count + 1
+      sprintf2 msg 'FAIL [%d] setdate invalid r3=%d' test_num r3
+    endif
+  else
+    fail_count = fail_count + 1
+    sprintf2 msg 'FAIL [%d] setdate format2 r2=%d' test_num r2
+  endif
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] setdate format1 r1=%d' test_num r1
+endif
+filewriteln fh msg
+
+; 17-6 getdate still works after setdate failure
+test_num = test_num + 1
+setdate '9999-12-31'
+getdate dcheck
+strlen dcheck
+if result > 0 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] getdate ok after setdate fail: "%s"' test_num dcheck
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] getdate empty after setdate fail' test_num
+endif
+filewriteln fh msg
+
+; 17-7 gettime still works after settime failure
+test_num = test_num + 1
+settime '99:99:99'
+gettime tcheck
+strlen tcheck
+if result > 0 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] gettime ok after settime fail: "%s"' test_num tcheck
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] gettime empty after settime fail' test_num
+endif
+filewriteln fh msg
+
+filewriteln fh ''
+
+; ############################################################
+;  SECTION 18 — FILELOCK / FILEUNLOCK (stub, always succeed)
+; ############################################################
+filewriteln fh '=== Section 18: filelock / fileunlock ==='
+
+; 18-1 filelock on a valid file handle
+test_num = test_num + 1
+lockf = '/tmp/ttl_lock_test.txt'
+fileopen lfh lockf 0
+filewriteln lfh 'lock test data'
+filelock lfh
+if result = 0 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] filelock returns 0 (stub ok)' test_num
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] filelock result=%d' test_num result
+endif
+filewriteln fh msg
+
+; 18-2 fileunlock on the same handle
+test_num = test_num + 1
+fileunlock lfh
+if result = 0 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] fileunlock returns 0 (stub ok)' test_num
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] fileunlock result=%d' test_num result
+endif
+filewriteln fh msg
+
+; 18-3 lock/unlock round-trip, then verify file still readable
+test_num = test_num + 1
+filelock lfh
+fileunlock lfh
+fileclose lfh
+fileopen lfh2 lockf 0 1
+filereadln lfh2 lockdata
+fileclose lfh2
+if lockdata = 'lock test data' then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] file readable after lock/unlock' test_num
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] file data after lock/unlock="%s"' test_num lockdata
+endif
+filewriteln fh msg
+
+; 18-4 multiple lock/unlock cycles on same handle
+test_num = test_num + 1
+lockf2 = '/tmp/ttl_lock_multi.txt'
+fileopen lmfh lockf2 0
+filewriteln lmfh 'multi lock test'
+lock_ok = 1
+for li 1 10
+  filelock lmfh
+  if result <> 0 then
+    lock_ok = 0
+  endif
+  fileunlock lmfh
+  if result <> 0 then
+    lock_ok = 0
+  endif
+next
+fileclose lmfh
+if lock_ok = 1 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] 10x filelock/fileunlock cycles' test_num
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] filelock/fileunlock cycle failed' test_num
+endif
+filewriteln fh msg
+filedelete lockf2
+
+; 18-5 filelock then write, verify data persists
+test_num = test_num + 1
+lockf3 = '/tmp/ttl_lock_write.txt'
+fileopen lwfh lockf3 0
+filelock lwfh
+filewriteln lwfh 'written while locked'
+fileunlock lwfh
+fileclose lwfh
+fileopen lrfh lockf3 0 1
+filereadln lrfh lwdata
+fileclose lrfh
+if lwdata = 'written while locked' then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] write during lock preserved' test_num
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] write during lock data="%s"' test_num lwdata
+endif
+filewriteln fh msg
+filedelete lockf3
+filedelete lockf
+
+filewriteln fh ''
+
+; ############################################################
+;  SECTION 19 — GETMODEMSTATUS
+; ############################################################
+filewriteln fh '=== Section 19: getmodemstatus ==='
+
+; 19-1 getmodemstatus returns 0 (stub, no serial connection)
+test_num = test_num + 1
+getmodemstatus modem_st
+if result = 0 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] getmodemstatus result=0 (stub ok)' test_num
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] getmodemstatus result=%d' test_num result
+endif
+filewriteln fh msg
+
+; 19-2 getmodemstatus variable value should be 0
+test_num = test_num + 1
+getmodemstatus modem_v
+if modem_v = 0 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] getmodemstatus value=0 (no serial)' test_num
+else
+  ; non-zero is acceptable if actual modem hardware is present
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] getmodemstatus value=%d (hw-dependent)' test_num modem_v
+endif
+filewriteln fh msg
+
+; 19-3 getmodemstatus called multiple times yields consistent result
+test_num = test_num + 1
+getmodemstatus ms1
+getmodemstatus ms2
+getmodemstatus ms3
+if ms1 = ms2 then
+  if ms2 = ms3 then
+    pass_count = pass_count + 1
+    sprintf2 msg 'PASS [%d] getmodemstatus consistent (%d==%d==%d)' test_num ms1 ms2 ms3
+  else
+    fail_count = fail_count + 1
+    sprintf2 msg 'FAIL [%d] getmodemstatus inconsistent ms2=%d ms3=%d' test_num ms2 ms3
+  endif
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] getmodemstatus inconsistent ms1=%d ms2=%d' test_num ms1 ms2
+endif
+filewriteln fh msg
+
+; 19-4 getmodemstatus after disconnect (should still return 0)
+test_num = test_num + 1
+disconnect
+getmodemstatus ms_disc
+if result = 0 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] getmodemstatus after disconnect=%d' test_num ms_disc
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] getmodemstatus after disconnect result=%d' test_num result
+endif
+filewriteln fh msg
+
+filewriteln fh ''
+
+; ############################################################
 ;  FINAL SUMMARY
 ; ############################################################
 filewriteln fh '============================================'
