@@ -208,11 +208,11 @@ class TerminalLogger {
 
     func logComment(_ comment: String) {
         guard state == .active else { return }
-        var line = ""
+        var line = "\n"
         if options.addTimestamp {
             line += "[\(formattedTimestamp())] "
         }
-        line += "# \(comment)\n"
+        line += "# \(comment)\n\n"
         writeToLog(line)
     }
 
