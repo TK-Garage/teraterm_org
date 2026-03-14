@@ -798,10 +798,13 @@ final class TTLBoundaryTests: XCTestCase {
     // MARK: - TEST 8: File I/O Boundary
     // ================================================================
 
-    /// 8.1 File open with non-existent path should return -1
+    /// 8.1 File open with non-existent path in read-only mode should return -1
     func testFileOpen_NonExistent() {
+        let path = "/tmp/__nonexistent_ttl_test_file__.txt"
+        // Ensure file does not exist
+        try? FileManager.default.removeItem(atPath: path)
         let script = """
-        fileopen fh '/tmp/__nonexistent_ttl_test_file__.txt' 0
+        fileopen fh '\(path)' 0 1
         x = result
         end
         """
@@ -811,6 +814,26 @@ final class TTLBoundaryTests: XCTestCase {
         if let (_, id) = interpreter.parser.checkVar("x") {
             XCTAssertEqual(interpreter.parser.getIntVal(id: id), -1)
         }
+    }
+
+    /// 8.1b File open with non-existent path without readonly should create file
+    func testFileOpen_NonExistent_Creates() {
+        let path = "/tmp/__nonexistent_ttl_test_create_\(ProcessInfo.processInfo.processIdentifier).txt"
+        try? FileManager.default.removeItem(atPath: path)
+        defer { try? FileManager.default.removeItem(atPath: path) }
+        let script = """
+        fileopen fh '\(path)' 0
+        x = result
+        fileclose fh
+        end
+        """
+        let ok = execSync(script)
+        XCTAssertTrue(ok)
+
+        if let (_, id) = interpreter.parser.checkVar("x") {
+            XCTAssertEqual(interpreter.parser.getIntVal(id: id), 0)
+        }
+        XCTAssertTrue(FileManager.default.fileExists(atPath: path))
     }
 
     /// 8.2 File write and readback

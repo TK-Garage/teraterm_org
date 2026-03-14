@@ -2207,13 +2207,22 @@ class TTLInterpreter {
     }
 
     private func ttlFileOpen() throws {
-        // fileopen <handle> <filename> <mode>
-        // mode: 0=read, 1=write(truncate), 2=append (Tera Term 互換)
+        // fileopen <handle> <filename> <append flag> [<readonly flag>]
+        // append flag: 0 = pointer at beginning, nonzero = pointer at end (append)
+        // readonly flag (optional, default 0): 0 = read/write, nonzero = read-only
+        // If not readonly, the file is created if it does not exist.
+        // (Tera Term 互換)
         let varId = try parser.getIntVar()
         let filename = try parser.getStrExpression()
-        let mode = try parser.getIntExpression()
-        let readOnly = (mode == 0)
+        let appendFlag = try parser.getIntExpression()
 
+        // Optional 4th parameter: readonly flag
+        var readonlyFlag = 0
+        if parser.checkParameterGiven() {
+            readonlyFlag = try parser.getIntExpression()
+        }
+
+        let readOnly = (readonlyFlag != 0)
         let path = resolvePath(filename)
 
         let fm = FileManager.default
@@ -2248,14 +2257,9 @@ class TTLInterpreter {
             return
         }
 
-        if !readOnly {
-            if mode == 2 {
-                // Append mode
-                fileHandle.seekToEndOfFile()
-            } else {
-                // Write mode (truncate)
-                fileHandle.truncateFile(atOffset: 0)
-            }
+        if !readOnly && appendFlag != 0 {
+            // Append mode: seek to end
+            fileHandle.seekToEndOfFile()
         }
 
         let idx = handlePut(fileHandle)
