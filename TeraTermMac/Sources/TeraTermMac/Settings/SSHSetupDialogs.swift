@@ -700,8 +700,7 @@ final class SSHSetupDialogController: BaseSetupDialogController {
         // ═══════════════════════════════════════════════════
 
         let knownHostsBox = NSView.makeGroupBox(title: TTL("dialog.sshSetup.knownHosts"))
-        let khContent = NSView()
-        khContent.translatesAutoresizingMaskIntoConstraints = false
+        let khContent = knownHostsBox.contentView!
 
         let rwLabel = NSView.makeLabel(TTL("dialog.sshSetup.knownHostsFile"))
         knownHostsFileField = NSView.makeTextField(value: settings.sshKnownHostsFile)
@@ -761,7 +760,6 @@ final class SSHSetupDialogController: BaseSetupDialogController {
             knownHostsFileField.widthAnchor.constraint(greaterThanOrEqualToConstant: 200),
             readOnlyHostsFileField.widthAnchor.constraint(greaterThanOrEqualToConstant: 200),
         ])
-        knownHostsBox.contentView = khContent
 
         // ═══════════════════════════════════════════════════
         // Bottom options: left side + right side
@@ -975,13 +973,10 @@ private final class AlgorithmOrderListView: NSView, NSTableViewDataSource, NSTab
 
         // Layout: group box containing scroll view + buttons
         let box = NSView.makeGroupBox(title: title)
-        let boxContent = NSView()
-        boxContent.translatesAutoresizingMaskIntoConstraints = false
+        let boxContent = box.contentView!
 
         let buttonRow = NSStackView(views: [moveUpButton, moveDownButton])
         buttonRow.translatesAutoresizingMaskIntoConstraints = false
-        buttonRow.orientation = .horizontal
-        buttonRow.spacing = DialogLayout.buttonSpacing
 
         boxContent.addSubview(scrollView)
         boxContent.addSubview(buttonRow)
@@ -997,7 +992,6 @@ private final class AlgorithmOrderListView: NSView, NSTableViewDataSource, NSTab
             buttonRow.centerXAnchor.constraint(equalTo: boxContent.centerXAnchor),
             buttonRow.bottomAnchor.constraint(equalTo: boxContent.bottomAnchor, constant: -pad),
         ])
-        box.contentView = boxContent
 
         addSubview(box)
         NSLayoutConstraint.activate([
@@ -1119,8 +1113,7 @@ final class SSHAuthSetupDialogController: BaseSetupDialogController {
         logonUserLabel.textColor = .secondaryLabelColor
         logonUserLabel.font = NSFont.systemFont(ofSize: 11)
 
-        let usernameContent = NSView()
-        usernameContent.translatesAutoresizingMaskIntoConstraints = false
+        let usernameContent = usernameBox.contentView!
         let usernameStack = NSStackView(views: [
             noUsernameRadio, defaultUsernameRadio, defaultUsernameField,
             logonUsernameRadio, logonUserLabel,
@@ -1138,7 +1131,6 @@ final class SSHAuthSetupDialogController: BaseSetupDialogController {
             usernameStack.bottomAnchor.constraint(equalTo: usernameContent.bottomAnchor, constant: -uPad),
             defaultUsernameField.widthAnchor.constraint(equalToConstant: 200),
         ])
-        usernameBox.contentView = usernameContent
 
         // Set initial radio state
         switch settings.sshDefaultUsernameMode {
@@ -1185,8 +1177,7 @@ final class SSHAuthSetupDialogController: BaseSetupDialogController {
         keyRow.alignment = .firstBaseline
         privateKeyField.setContentHuggingPriority(.defaultLow, for: .horizontal)
 
-        let authContent = NSView()
-        authContent.translatesAutoresizingMaskIntoConstraints = false
+        let authContent = authBox.contentView!
         let authStack = NSStackView(views: [
             passwordRadio, publicKeyRadio, keyRow,
             rhostsRadio, challengeRadio, pageantRadio,
@@ -1204,7 +1195,6 @@ final class SSHAuthSetupDialogController: BaseSetupDialogController {
             authStack.bottomAnchor.constraint(equalTo: authContent.bottomAnchor, constant: -aPad),
             keyRow.widthAnchor.constraint(equalTo: authStack.widthAnchor),
         ])
-        authBox.contentView = authContent
 
         // ── Check auth ──
         checkAuthCheck = NSView.makeCheckbox(
@@ -1356,8 +1346,7 @@ final class SSHForwardingSetupDialogController: BaseSetupDialogController {
 
         // ── Port forwarding group ──
         let fwdBox = NSView.makeGroupBox(title: TTL("dialog.sshFwd.portForwarding"))
-        let fwdContent = NSView()
-        fwdContent.translatesAutoresizingMaskIntoConstraints = false
+        let fwdContent = fwdBox.contentView!
 
         // Table view for forwarding rules
         let scrollView = NSScrollView()
@@ -1405,12 +1394,10 @@ final class SSHForwardingSetupDialogController: BaseSetupDialogController {
             buttonRow.centerXAnchor.constraint(equalTo: fwdContent.centerXAnchor),
             buttonRow.bottomAnchor.constraint(equalTo: fwdContent.bottomAnchor, constant: -fPad),
         ])
-        fwdBox.contentView = fwdContent
 
         // ── X Forwarding ──
         let xBox = NSView.makeGroupBox(title: TTL("dialog.sshFwd.xForwarding"))
-        let xContent = NSView()
-        xContent.translatesAutoresizingMaskIntoConstraints = false
+        let xContent = xBox.contentView!
         xForwardingCheck = NSView.makeCheckbox(
             TTL("dialog.sshFwd.xDisplay"), checked: settings.sshXForwarding)
         xContent.addSubview(xForwardingCheck)
@@ -1420,7 +1407,6 @@ final class SSHForwardingSetupDialogController: BaseSetupDialogController {
             xForwardingCheck.leadingAnchor.constraint(equalTo: xContent.leadingAnchor, constant: xPad),
             xForwardingCheck.bottomAnchor.constraint(equalTo: xContent.bottomAnchor, constant: -xPad),
         ])
-        xBox.contentView = xContent
 
         // ── Main layout ──
         let mainStack = NSStackView(views: [fwdBox, xBox])
@@ -1566,8 +1552,7 @@ final class SSHForwardingEditDialogController: BaseSetupDialogController {
         let localBox = NSBox()
         localBox.translatesAutoresizingMaskIntoConstraints = false
         localBox.titlePosition = .noTitle
-        let localContent = NSView()
-        localContent.translatesAutoresizingMaskIntoConstraints = false
+        let localContent = localBox.contentView!
         let localStack = NSStackView(views: [localRow1, localRow2])
         localStack.translatesAutoresizingMaskIntoConstraints = false
         localStack.orientation = .vertical
@@ -1581,7 +1566,6 @@ final class SSHForwardingEditDialogController: BaseSetupDialogController {
             localStack.trailingAnchor.constraint(equalTo: localContent.trailingAnchor, constant: -p),
             localStack.bottomAnchor.constraint(equalTo: localContent.bottomAnchor, constant: -p),
         ])
-        localBox.contentView = localContent
 
         // Remote forwarding
         remotePortRadio = NSView.makeRadioButton(TTL("dialog.sshFwdEdit.remotePort"), tag: 1)
@@ -1610,8 +1594,7 @@ final class SSHForwardingEditDialogController: BaseSetupDialogController {
         let remoteBox = NSBox()
         remoteBox.translatesAutoresizingMaskIntoConstraints = false
         remoteBox.titlePosition = .noTitle
-        let remoteContent = NSView()
-        remoteContent.translatesAutoresizingMaskIntoConstraints = false
+        let remoteContent = remoteBox.contentView!
         let remoteStack = NSStackView(views: [remoteRow1, remoteRow2])
         remoteStack.translatesAutoresizingMaskIntoConstraints = false
         remoteStack.orientation = .vertical
@@ -1624,7 +1607,6 @@ final class SSHForwardingEditDialogController: BaseSetupDialogController {
             remoteStack.trailingAnchor.constraint(equalTo: remoteContent.trailingAnchor, constant: -p),
             remoteStack.bottomAnchor.constraint(equalTo: remoteContent.bottomAnchor, constant: -p),
         ])
-        remoteBox.contentView = remoteContent
 
         // Dynamic forwarding
         dynamicPortRadio = NSView.makeRadioButton(TTL("dialog.sshFwdEdit.dynamicPort"), tag: 2)
@@ -1643,8 +1625,7 @@ final class SSHForwardingEditDialogController: BaseSetupDialogController {
         let dynamicBox = NSBox()
         dynamicBox.translatesAutoresizingMaskIntoConstraints = false
         dynamicBox.titlePosition = .noTitle
-        let dynamicContent = NSView()
-        dynamicContent.translatesAutoresizingMaskIntoConstraints = false
+        let dynamicContent = dynamicBox.contentView!
         dynamicContent.addSubview(dynamicRow)
         NSLayoutConstraint.activate([
             dynamicRow.topAnchor.constraint(equalTo: dynamicContent.topAnchor, constant: p),
@@ -1652,7 +1633,6 @@ final class SSHForwardingEditDialogController: BaseSetupDialogController {
             dynamicRow.trailingAnchor.constraint(equalTo: dynamicContent.trailingAnchor, constant: -p),
             dynamicRow.bottomAnchor.constraint(equalTo: dynamicContent.bottomAnchor, constant: -p),
         ])
-        dynamicBox.contentView = dynamicContent
 
         let mainStack = NSStackView(views: [bannerLabel, localBox, remoteBox, dynamicBox])
         mainStack.translatesAutoresizingMaskIntoConstraints = false
@@ -1767,8 +1747,7 @@ final class SSHKeyGenDialogController: BaseSetupDialogController {
 
         // ── Key type group ──
         let keyTypeBox = NSView.makeGroupBox(title: TTL("dialog.sshKeyGen.keyType"))
-        let keyTypeContent = NSView()
-        keyTypeContent.translatesAutoresizingMaskIntoConstraints = false
+        let keyTypeContent = keyTypeBox.contentView!
 
         keyTypePopup = NSView.makePopUpButton(items: [
             "RSA", "DSA", "ECDSA-256", "ECDSA-384", "ECDSA-521", "ED25519",
@@ -1790,7 +1769,6 @@ final class SSHKeyGenDialogController: BaseSetupDialogController {
             typeRow.leadingAnchor.constraint(equalTo: keyTypeContent.leadingAnchor, constant: tPad),
             typeRow.bottomAnchor.constraint(equalTo: keyTypeContent.bottomAnchor, constant: -tPad),
         ])
-        keyTypeBox.contentView = keyTypeContent
 
         // ── Passphrase / Confirm / Comment ──
         let passLabel = NSView.makeLabel(TTL("dialog.sshKeyGen.passphrase"))
@@ -2060,8 +2038,7 @@ final class GeneralSetupDialogController: BaseSetupDialogController {
 
         // Title format
         let titleBox = NSView.makeGroupBox(title: TTL("dialog.generalSetup.titleFormat"))
-        let titleContent = NSView()
-        titleContent.translatesAutoresizingMaskIntoConstraints = false
+        let titleContent = titleBox.contentView!
         titleHostnameCheck = NSView.makeCheckbox(
             TTL("dialog.generalSetup.titleHostname"), checked: settings.titleFormatTCP)
         titleSessionCheck = NSView.makeCheckbox(
@@ -2079,7 +2056,6 @@ final class GeneralSetupDialogController: BaseSetupDialogController {
             titleStack.trailingAnchor.constraint(equalTo: titleContent.trailingAnchor, constant: -tPad),
             titleStack.bottomAnchor.constraint(equalTo: titleContent.bottomAnchor, constant: -tPad),
         ])
-        titleBox.contentView = titleContent
 
         let mainStack = NSStackView(views: [grid, autoCloseCheck, titleBox])
         mainStack.translatesAutoresizingMaskIntoConstraints = false
