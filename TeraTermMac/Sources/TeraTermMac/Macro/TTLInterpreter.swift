@@ -3386,7 +3386,9 @@ class TTLInterpreter {
             alert.addButton(withTitle: TTL("dialog.macro.ok"))
             alert.addButton(withTitle: TTL("dialog.macro.cancel"))
             let input = NSView.makeSecureTextField(placeholder: "", width: nil)
-            input.widthAnchor.constraint(equalToConstant: 300).isActive = true
+            // NSAlert sizes its accessoryView by frame, not Auto Layout.
+            input.translatesAutoresizingMaskIntoConstraints = true
+            input.frame = NSRect(x: 0, y: 0, width: 300, height: 24)
             alert.accessoryView = input
             let response = alert.runModal()
             if response == .alertFirstButtonReturn {

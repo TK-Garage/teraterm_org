@@ -4,10 +4,10 @@
  * do not overflow their parent containers.
  *
  * Checks every dialog class for:
- *   - Input fields (NSTextField, NSSecureTextField) have fixed or
- *     maximum-bounded width constraints (not only greaterThanOrEqual)
- *   - ScrollViews used as NSAlert accessoryViews have fixed dimensions
- *   - All controls fit within their parent view bounds after layout
+ *   - NSAlert accessoryViews use frame-based layout (NSAlert sizes by frame,
+ *     not Auto Layout) with reasonable fixed dimensions
+ *   - BaseSetupDialogController-based dialogs have bounded fields
+ *   - All AdditionalSettings tabs have bounded editable fields
  */
 
 import XCTest
@@ -33,19 +33,14 @@ private func forceLayout(_ view: NSView) {
     view.layoutSubtreeIfNeeded()
 }
 
-/// Check whether `child` fits inside `parent` bounds (with tolerance).
-private func fitsWithin(_ child: NSView, parent: NSView, tolerance: CGFloat = 1.0) -> Bool {
-    let childFrame = child.convert(child.bounds, to: parent)
-    let parentBounds = parent.bounds
-    return childFrame.minX >= -tolerance &&
-           childFrame.minY >= -tolerance &&
-           childFrame.maxX <= parentBounds.width + tolerance &&
-           childFrame.maxY <= parentBounds.height + tolerance
-}
-
 /// Check that a constraint list does NOT contain an unbounded
 /// greaterThanOrEqual width without a matching equalTo or lessThanOrEqual.
 private func hasProperWidthBound(_ view: NSView) -> Bool {
+    // Frame-based layout (translatesAutoresizingMaskIntoConstraints = true):
+    // the frame itself is the bound – acceptable if width > 0 and reasonable
+    if view.translatesAutoresizingMaskIntoConstraints && view.frame.width > 0 && view.frame.width <= 600 {
+        return true
+    }
     let widthConstraints = view.constraints.filter {
         $0.firstAttribute == .width && $0.firstItem as? NSView === view
     }
@@ -58,6 +53,199 @@ private func hasProperWidthBound(_ view: NSView) -> Bool {
         return false
     }
     return true
+}
+
+/// Check if a view is bounded by its superview (stack/grid or trailing constraint).
+private func isConstrainedByParent(_ view: NSView) -> Bool {
+    guard let sv = view.superview else { return false }
+    if sv is NSStackView || sv is NSGridView { return true }
+    for c in sv.constraints {
+        if (c.firstAttribute == .trailing || c.firstAttribute == .width) &&
+           (c.firstItem as? NSView === view || c.secondItem as? NSView === view) {
+            return true
+        }
+    }
+    return isConstrainedByParent(sv)
+}
+
+/// Check if a view is inside an NSStackView or NSGridView ancestor.
+private func isInStackOrGrid(_ view: NSView) -> Bool {
+    var current: NSView? = view.superview
+    while let sv = current {
+        if sv is NSStackView || sv is NSGridView { return true }
+        current = sv.superview
+    }
+    return false
+}
+
+
+// MARK: - NSAlert AccessoryView Frame Tests
+//
+// NSAlert sizes its accessoryView by FRAME, not Auto Layout.
+// All accessoryViews must use frame-based layout with fixed dimensions.
+
+final class DialogOverflowAlertFrameTests: XCTestCase {
+
+    /// Verify that an NSAlert accessoryView uses frame-based layout
+    /// with a reasonable fixed width.
+    private func verifyAccessoryViewFrame(_ accessoryView: NSView,
+                                          expectedWidth: CGFloat,
+                                          dialogName: String,
+                                          file: StaticString = #file,
+                                          line: UInt = #line) {
+        // The view should use frame-based layout for NSAlert compatibility
+        XCTAssertTrue(accessoryView.translatesAutoresizingMaskIntoConstraints,
+            "\(dialogName): accessoryView must use frame-based layout " +
+            "(translatesAutoresizingMaskIntoConstraints = true) for NSAlert",
+            file: file, line: line)
+
+        // Frame width should match expected value
+        XCTAssertEqual(accessoryView.frame.width, expectedWidth, accuracy: 1.0,
+            "\(dialogName): accessoryView frame width should be \(expectedWidth)pt, " +
+            "got \(accessoryView.frame.width)pt",
+            file: file, line: line)
+
+        // Frame width must be positive and reasonable
+        XCTAssertGreaterThan(accessoryView.frame.width, 0,
+            "\(dialogName): accessoryView frame width must be > 0",
+            file: file, line: line)
+        XCTAssertLessThanOrEqual(accessoryView.frame.width, 600,
+            "\(dialogName): accessoryView frame width should not exceed 600pt",
+            file: file, line: line)
+    }
+
+    // MARK: - Comment to Log Dialog
+
+    func testCommentToLogDialogFrameBased() {
+        let textField = NSView.makeTextField(value: "", placeholder: "Comment")
+        textField.font = NSFont.monospacedSystemFont(ofSize: 13, weight: .regular)
+        textField.lineBreakMode = .byTruncatingTail
+        textField.translatesAutoresizingMaskIntoConstraints = true
+        textField.frame = NSRect(x: 0, y: 0, width: 300, height: 24)
+
+        verifyAccessoryViewFrame(textField, expectedWidth: 300,
+                                 dialogName: "CommentToLog")
+    }
+
+    // MARK: - InputDialog
+
+    func testInputDialogFrameBased() {
+        let field = NSView.makeTextField(value: "test")
+        field.lineBreakMode = .byTruncatingTail
+        field.translatesAutoresizingMaskIntoConstraints = true
+        field.frame = NSRect(x: 0, y: 0, width: 300, height: 24)
+
+        verifyAccessoryViewFrame(field, expectedWidth: 300,
+                                 dialogName: "InputDialog")
+    }
+
+    // MARK: - ClipboardConfirmationDialog
+
+    func testClipboardDialogFrameBased() {
+        let scrollView = NSScrollView(frame: NSRect(x: 0, y: 0, width: 400, height: 250))
+
+        verifyAccessoryViewFrame(scrollView, expectedWidth: 400,
+                                 dialogName: "ClipboardConfirmation")
+        XCTAssertEqual(scrollView.frame.height, 250, accuracy: 1.0,
+            "ClipboardConfirmation: height should be 250pt")
+    }
+
+    // MARK: - ListDialog
+
+    func testListDialogFrameBased() {
+        let scrollView = NSScrollView(frame: NSRect(x: 0, y: 0, width: 340, height: 180))
+
+        verifyAccessoryViewFrame(scrollView, expectedWidth: 340,
+                                 dialogName: "ListDialog")
+        XCTAssertEqual(scrollView.frame.height, 180, accuracy: 1.0,
+            "ListDialog: height should be 180pt")
+    }
+
+    // MARK: - WindowListDialog
+
+    func testWindowListDialogFrameBased() {
+        let scrollView = NSScrollView(frame: NSRect(x: 0, y: 0, width: 360, height: 180))
+
+        verifyAccessoryViewFrame(scrollView, expectedWidth: 360,
+                                 dialogName: "WindowListDialog")
+        XCTAssertEqual(scrollView.frame.height, 180, accuracy: 1.0,
+            "WindowListDialog: height should be 180pt")
+    }
+
+    // MARK: - ChangeDirectoryDialog
+
+    func testChangeDirectoryDialogFrameBased() {
+        let row = NSView(frame: NSRect(x: 0, y: 0, width: 320, height: 24))
+
+        verifyAccessoryViewFrame(row, expectedWidth: 320,
+                                 dialogName: "ChangeDirectoryDialog")
+    }
+
+    // MARK: - Password (TTLInterpreter) Dialog
+
+    func testPasswordDialogFrameBased() {
+        let input = NSView.makeSecureTextField(placeholder: "", width: nil)
+        input.translatesAutoresizingMaskIntoConstraints = true
+        input.frame = NSRect(x: 0, y: 0, width: 300, height: 24)
+
+        verifyAccessoryViewFrame(input, expectedWidth: 300,
+                                 dialogName: "PasswordDialog")
+    }
+
+    // MARK: - DialogCommandProvider InputBox
+
+    func testDialogCommandInputBoxFrameBased() {
+        let inputField = NSView.makeTextField(value: "test")
+        inputField.translatesAutoresizingMaskIntoConstraints = true
+        inputField.frame = NSRect(x: 0, y: 0, width: 300, height: 24)
+
+        verifyAccessoryViewFrame(inputField, expectedWidth: 300,
+                                 dialogName: "DialogCommandProvider.InputBox")
+    }
+
+    // MARK: - DialogCommandProvider ListBox
+
+    func testDialogCommandListBoxFrameBased() {
+        let scrollView = NSScrollView(frame: NSRect(x: 0, y: 0, width: 300, height: 200))
+
+        verifyAccessoryViewFrame(scrollView, expectedWidth: 300,
+                                 dialogName: "DialogCommandProvider.ListBox")
+    }
+
+    // MARK: - SSH Security Dialogs
+
+    func testSSHFingerprintViewFrameBased() {
+        let stack = NSStackView(views: [
+            NSView.makeLabel("Key Type: RSA", alignment: .left),
+            NSView.makeLabel("SHA256:abc123", alignment: .left),
+        ])
+        stack.translatesAutoresizingMaskIntoConstraints = true
+        stack.frame = NSRect(x: 0, y: 0, width: 400, height: 48)
+        stack.orientation = .vertical
+        stack.alignment = .leading
+        stack.spacing = 4
+
+        verifyAccessoryViewFrame(stack, expectedWidth: 400,
+                                 dialogName: "SSHFingerprintView")
+    }
+
+    func testSSHDifferentKeyDialogFrameBased() {
+        let stack = NSStackView(views: [
+            NSView.makeLabel("Stored:", alignment: .left),
+            NSView.makeTextField(value: "old-fp"),
+            NSView.makeLabel("New:", alignment: .left),
+            NSView.makeTextField(value: "new-fp"),
+            NSView.makeLabel("Warning!", alignment: .left),
+        ])
+        stack.translatesAutoresizingMaskIntoConstraints = true
+        stack.frame = NSRect(x: 0, y: 0, width: 440, height: 120)
+        stack.orientation = .vertical
+        stack.alignment = .leading
+        stack.spacing = 4
+
+        verifyAccessoryViewFrame(stack, expectedWidth: 440,
+                                 dialogName: "SSHDifferentKeyDialog")
+    }
 }
 
 
@@ -80,202 +268,37 @@ final class DialogOverflowBaseSetupTests: XCTestCase {
 
         let contentArea = vc.contentArea
 
-        // Check all text fields
         let textFields = findSubviews(of: NSTextField.self, in: contentArea)
         for tf in textFields where tf.isEditable {
-            // Editable fields should have bounded width
             XCTAssertTrue(hasProperWidthBound(tf) || isConstrainedByParent(tf),
                 "Editable field in \(type(of: vc)) may overflow: '\(tf.placeholderString ?? tf.stringValue)'",
                 file: file, line: line)
         }
     }
 
-    /// Check if a view is bounded by its superview's trailing anchor or by a
-    /// containing stack/grid (which handles overflow implicitly).
-    private func isConstrainedByParent(_ view: NSView) -> Bool {
-        guard let sv = view.superview else { return false }
-        // In a stack view or grid view, children are auto-constrained
-        if sv is NSStackView || sv is NSGridView { return true }
-        // Check if there's a trailing constraint from superview to this view
-        for c in sv.constraints {
-            if (c.firstAttribute == .trailing || c.firstAttribute == .width) &&
-               (c.firstItem as? NSView === view || c.secondItem as? NSView === view) {
-                return true
-            }
-        }
-        // Recurse upward
-        return isConstrainedByParent(sv)
-    }
-
-    // MARK: - DragDropDialogController
-
     func testDragDropDialogNoOverflow() {
         let vc = DragDropDialogController(path: "/tmp/test.txt")
         verifyDialogFits(vc)
     }
-
-    // MARK: - EditHistoryDialogController
 
     func testEditHistoryDialogNoOverflow() {
         let vc = EditHistoryDialogController(history: ["host1", "host2", "host3"])
         verifyDialogFits(vc)
     }
 
-    // MARK: - LogDialogController
-
     func testLogDialogNoOverflow() {
         let vc = LogDialogController()
         verifyDialogFits(vc)
     }
-
-    // MARK: - KeyboardSetupDialogController
 
     func testKeyboardSetupDialogNoOverflow() {
         let vc = KeyboardSetupDialogController(settings: settings)
         verifyDialogFits(vc)
     }
 
-    // MARK: - TCPIPDialogController
-
     func testTCPIPDialogNoOverflow() {
         let vc = TCPIPDialogController(settings: settings)
         verifyDialogFits(vc)
-    }
-}
-
-
-// MARK: - NSAlert-based Dialogs (accessoryView overflow checks)
-
-final class DialogOverflowAlertTests: XCTestCase {
-
-    /// Verify that an NSAlert accessoryView has a fixed width constraint
-    /// (equalToConstant) rather than an unbounded minimum.
-    private func verifyAccessoryViewWidth(_ accessoryView: NSView,
-                                          dialogName: String,
-                                          file: StaticString = #file,
-                                          line: UInt = #line) {
-        let widthConstraints = accessoryView.constraints.filter {
-            $0.firstAttribute == .width && $0.firstItem as? NSView === accessoryView
-        }
-        XCTAssertFalse(widthConstraints.isEmpty,
-            "\(dialogName): accessoryView should have a width constraint",
-            file: file, line: line)
-
-        let hasUnboundedGTE = widthConstraints.contains {
-            $0.relation == .greaterThanOrEqual
-        }
-        let hasBound = widthConstraints.contains {
-            $0.relation == .equal || $0.relation == .lessThanOrEqual
-        }
-
-        XCTAssertFalse(hasUnboundedGTE && !hasBound,
-            "\(dialogName): accessoryView uses greaterThanOrEqual without upper bound — may overflow",
-            file: file, line: line)
-    }
-
-    // MARK: - Comment to Log Dialog
-
-    func testCommentToLogDialogFixedWidth() {
-        let alert = NSAlert()
-        alert.messageText = "Comment"
-        alert.addButton(withTitle: "OK")
-
-        let textField = NSView.makeTextField(value: "", placeholder: "Comment")
-        textField.font = NSFont.monospacedSystemFont(ofSize: 13, weight: .regular)
-        textField.lineBreakMode = .byTruncatingTail
-        textField.widthAnchor.constraint(equalToConstant: 300).isActive = true
-        alert.accessoryView = textField
-
-        verifyAccessoryViewWidth(textField, dialogName: "CommentToLog")
-    }
-
-    // MARK: - InputDialog
-
-    func testInputDialogFixedWidth() {
-        let field = NSView.makeTextField(value: "test")
-        field.lineBreakMode = .byTruncatingTail
-        field.widthAnchor.constraint(equalToConstant: 300).isActive = true
-
-        verifyAccessoryViewWidth(field, dialogName: "InputDialog")
-    }
-
-    // MARK: - ClipboardConfirmationDialog
-
-    func testClipboardDialogFixedSize() {
-        let scrollView = NSScrollView()
-        scrollView.translatesAutoresizingMaskIntoConstraints = false
-        NSLayoutConstraint.activate([
-            scrollView.widthAnchor.constraint(equalToConstant: 400),
-            scrollView.heightAnchor.constraint(equalToConstant: 250),
-        ])
-
-        verifyAccessoryViewWidth(scrollView, dialogName: "ClipboardConfirmation")
-    }
-
-    // MARK: - ListDialog
-
-    func testListDialogFixedSize() {
-        let scrollView = NSScrollView()
-        scrollView.translatesAutoresizingMaskIntoConstraints = false
-        NSLayoutConstraint.activate([
-            scrollView.widthAnchor.constraint(equalToConstant: 340),
-            scrollView.heightAnchor.constraint(equalToConstant: 180),
-        ])
-
-        verifyAccessoryViewWidth(scrollView, dialogName: "ListDialog")
-    }
-
-    // MARK: - WindowListDialog
-
-    func testWindowListDialogFixedSize() {
-        let scrollView = NSScrollView()
-        scrollView.translatesAutoresizingMaskIntoConstraints = false
-        NSLayoutConstraint.activate([
-            scrollView.widthAnchor.constraint(equalToConstant: 360),
-            scrollView.heightAnchor.constraint(equalToConstant: 180),
-        ])
-
-        verifyAccessoryViewWidth(scrollView, dialogName: "WindowListDialog")
-    }
-
-    // MARK: - ChangeDirectoryDialog
-
-    func testChangeDirectoryDialogFixedWidth() {
-        let row = NSStackView()
-        row.translatesAutoresizingMaskIntoConstraints = false
-        row.widthAnchor.constraint(equalToConstant: 320).isActive = true
-
-        verifyAccessoryViewWidth(row, dialogName: "ChangeDirectoryDialog")
-    }
-
-    // MARK: - Password (TTLInterpreter) Dialog
-
-    func testPasswordDialogFixedWidth() {
-        let input = NSView.makeSecureTextField(placeholder: "", width: nil)
-        input.widthAnchor.constraint(equalToConstant: 300).isActive = true
-
-        verifyAccessoryViewWidth(input, dialogName: "PasswordDialog")
-    }
-
-    // MARK: - DialogCommandProvider InputBox
-
-    func testDialogCommandInputBoxFixedFrame() {
-        // DialogCommandProvider uses frame-based layout (translatesAutoresizingMaskIntoConstraints = true)
-        let inputField = NSView.makeTextField(value: "test")
-        inputField.translatesAutoresizingMaskIntoConstraints = true
-        inputField.frame = NSRect(x: 0, y: 0, width: 300, height: 24)
-
-        // Frame-based layout: verify the frame width is reasonable
-        XCTAssertEqual(inputField.frame.width, 300,
-            "DialogCommandProvider inputField should have a fixed 300pt frame width")
-    }
-
-    // MARK: - DialogCommandProvider ListBox
-
-    func testDialogCommandListBoxFixedFrame() {
-        let scrollView = NSScrollView(frame: NSRect(x: 0, y: 0, width: 300, height: 200))
-        XCTAssertEqual(scrollView.frame.width, 300,
-            "DialogCommandProvider listBox scrollView should have fixed 300pt frame")
     }
 }
 
@@ -302,18 +325,6 @@ final class DialogOverflowSSHTests: XCTestCase {
                 "Editable field in \(type(of: vc)) may overflow",
                 file: file, line: line)
         }
-    }
-
-    private func isConstrainedByParent(_ view: NSView) -> Bool {
-        guard let sv = view.superview else { return false }
-        if sv is NSStackView || sv is NSGridView { return true }
-        for c in sv.constraints {
-            if (c.firstAttribute == .trailing || c.firstAttribute == .width) &&
-               (c.firstItem as? NSView === view || c.secondItem as? NSView === view) {
-                return true
-            }
-        }
-        return isConstrainedByParent(sv)
     }
 
     func testSCPDialogNoOverflow() {
@@ -393,15 +404,6 @@ final class DialogOverflowSetupViewTests: XCTestCase {
                 "Editable field in SerialPortSetupViewController may overflow")
         }
     }
-
-    private func isInStackOrGrid(_ view: NSView) -> Bool {
-        var current: NSView? = view.superview
-        while let sv = current {
-            if sv is NSStackView || sv is NSGridView { return true }
-            current = sv.superview
-        }
-        return false
-    }
 }
 
 
@@ -446,15 +448,6 @@ final class DialogOverflowAdditionalSettingsTests: XCTestCase {
                     "(placeholder: '\(tf.placeholderString ?? "")' value: '\(tf.stringValue)')")
             }
         }
-    }
-
-    private func isInStackOrGrid(_ view: NSView) -> Bool {
-        var current: NSView? = view.superview
-        while let sv = current {
-            if sv is NSStackView || sv is NSGridView { return true }
-            current = sv.superview
-        }
-        return false
     }
 }
 

@@ -31,10 +31,11 @@ final class ClipboardConfirmationDialog {
         alert.addButton(withTitle: TTL("OK"))
         alert.addButton(withTitle: TTL("Cancel"))
 
-        let scrollView = NSScrollView()
-        scrollView.translatesAutoresizingMaskIntoConstraints = false
+        // NSAlert sizes its accessoryView by frame, not Auto Layout.
+        let scrollView = NSScrollView(frame: NSRect(x: 0, y: 0, width: 400, height: 250))
         scrollView.hasVerticalScroller = true
         scrollView.borderType = .bezelBorder
+        scrollView.autoresizingMask = [.width, .height]
 
         let textView = NSTextView()
         textView.isEditable = true
@@ -46,10 +47,6 @@ final class ClipboardConfirmationDialog {
         textView.textContainer?.widthTracksTextView = true
         scrollView.documentView = textView
 
-        NSLayoutConstraint.activate([
-            scrollView.widthAnchor.constraint(equalToConstant: 400),
-            scrollView.heightAnchor.constraint(equalToConstant: 250),
-        ])
         alert.accessoryView = scrollView
 
         alert.beginSheetModal(for: window) { response in
@@ -177,21 +174,22 @@ final class ChangeDirectoryDialog {
         alert.addButton(withTitle: TTL("Cancel"))
 
         let field = NSView.makeTextField(value: "", placeholder: TTL("dialog.changeDir.placeholder"))
-        field.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        field.lineBreakMode = .byTruncatingTail
 
         let browseBtn = NSButton(title: TTL("..."), target: nil, action: nil)
-        browseBtn.translatesAutoresizingMaskIntoConstraints = false
         browseBtn.bezelStyle = .rounded
-        browseBtn.widthAnchor.constraint(equalToConstant: 30).isActive = true
 
-        let row = NSStackView(views: [field, browseBtn])
-        row.translatesAutoresizingMaskIntoConstraints = false
-        row.orientation = .horizontal
-        row.spacing = 4
-        row.alignment = .centerY
-        row.distribution = .fill
-
-        row.widthAnchor.constraint(equalToConstant: 320).isActive = true
+        // NSAlert sizes its accessoryView by frame, not Auto Layout.
+        // Use frame-based layout to prevent overflow.
+        let row = NSView(frame: NSRect(x: 0, y: 0, width: 320, height: 24))
+        let btnWidth: CGFloat = 30
+        browseBtn.frame = NSRect(x: 320 - btnWidth, y: 0, width: btnWidth, height: 24)
+        browseBtn.autoresizingMask = [.minXMargin]
+        field.translatesAutoresizingMaskIntoConstraints = true
+        field.frame = NSRect(x: 0, y: 0, width: 320 - btnWidth - 4, height: 24)
+        field.autoresizingMask = [.width]
+        row.addSubview(field)
+        row.addSubview(browseBtn)
 
         alert.accessoryView = row
 
@@ -372,7 +370,9 @@ final class InputDialog {
 
         let field = NSView.makeTextField(value: defaultValue)
         field.lineBreakMode = .byTruncatingTail
-        field.widthAnchor.constraint(equalToConstant: 300).isActive = true
+        // NSAlert sizes its accessoryView by frame, not Auto Layout.
+        field.translatesAutoresizingMaskIntoConstraints = true
+        field.frame = NSRect(x: 0, y: 0, width: 300, height: 24)
         alert.accessoryView = field
         alert.window.initialFirstResponder = field
 
@@ -398,14 +398,16 @@ final class ListDialog {
         alert.addButton(withTitle: TTL("OK"))
         alert.addButton(withTitle: TTL("Cancel"))
 
-        let scrollView = NSScrollView()
-        scrollView.translatesAutoresizingMaskIntoConstraints = false
+        // NSAlert sizes its accessoryView by frame, not Auto Layout.
+        let scrollView = NSScrollView(frame: NSRect(x: 0, y: 0, width: 340, height: 180))
         scrollView.hasVerticalScroller = true
         scrollView.borderType = .bezelBorder
+        scrollView.autoresizingMask = [.width, .height]
 
         let tableView = NSTableView()
         let col = NSTableColumn(identifier: NSUserInterfaceItemIdentifier("item"))
         col.title = ""
+        col.width = 320
         tableView.addTableColumn(col)
         tableView.headerView = nil
         let ds = DialogListBoxDataSource(items: items)
@@ -417,10 +419,6 @@ final class ListDialog {
         }
         scrollView.documentView = tableView
 
-        NSLayoutConstraint.activate([
-            scrollView.widthAnchor.constraint(equalToConstant: 340),
-            scrollView.heightAnchor.constraint(equalToConstant: 180),
-        ])
         alert.accessoryView = scrollView
 
         // Prevent ds from being deallocated
@@ -1011,14 +1009,16 @@ final class WindowListDialog {
         }
         let windowTitles = windows.map { $0.title }
 
-        let scrollView = NSScrollView()
-        scrollView.translatesAutoresizingMaskIntoConstraints = false
+        // NSAlert sizes its accessoryView by frame, not Auto Layout.
+        let scrollView = NSScrollView(frame: NSRect(x: 0, y: 0, width: 360, height: 180))
         scrollView.hasVerticalScroller = true
         scrollView.borderType = .bezelBorder
+        scrollView.autoresizingMask = [.width, .height]
 
         let tableView = NSTableView()
         let col = NSTableColumn(identifier: NSUserInterfaceItemIdentifier("window"))
         col.title = TTL("dialog.windowList.windowColumn")
+        col.width = 340
         tableView.addTableColumn(col)
         tableView.headerView = nil
         let ds = DialogListBoxDataSource(items: windowTitles)
@@ -1030,10 +1030,6 @@ final class WindowListDialog {
         }
         scrollView.documentView = tableView
 
-        NSLayoutConstraint.activate([
-            scrollView.widthAnchor.constraint(equalToConstant: 360),
-            scrollView.heightAnchor.constraint(equalToConstant: 180),
-        ])
         alert.accessoryView = scrollView
 
         objc_setAssociatedObject(alert, "ds", ds, .OBJC_ASSOCIATION_RETAIN)

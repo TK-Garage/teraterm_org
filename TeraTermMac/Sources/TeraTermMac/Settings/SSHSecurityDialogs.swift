@@ -93,30 +93,26 @@ final class DifferentKeyDialog {
         let storedField = NSView.makeTextField(value: storedFingerprint)
         storedField.isEditable = false
         storedField.font = NSFont.monospacedSystemFont(ofSize: 11, weight: .regular)
-        storedField.setContentCompressionResistancePriority(.required, for: .horizontal)
+        storedField.lineBreakMode = .byTruncatingTail
 
         let newLabel = NSView.makeLabel(TTL("dialog.security.newFingerprint"), alignment: .left)
         let newField = NSView.makeTextField(value: newFingerprint)
         newField.isEditable = false
         newField.font = NSFont.monospacedSystemFont(ofSize: 11, weight: .regular)
         newField.textColor = .systemRed
-        newField.setContentCompressionResistancePriority(.required, for: .horizontal)
+        newField.lineBreakMode = .byTruncatingTail
 
         let warningLabel = NSView.makeLabel(TTL("dialog.security.differentKey.warning"), alignment: .left)
         warningLabel.textColor = .systemRed
         warningLabel.font = NSFont.boldSystemFont(ofSize: 12)
-        warningLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
 
+        // NSAlert sizes its accessoryView by frame, not Auto Layout.
         let stack = NSStackView(views: [storedLabel, storedField, newLabel, newField, warningLabel])
-        stack.translatesAutoresizingMaskIntoConstraints = false
+        stack.translatesAutoresizingMaskIntoConstraints = true
+        stack.frame = NSRect(x: 0, y: 0, width: 440, height: 120)
         stack.orientation = .vertical
         stack.alignment = .leading
         stack.spacing = 4
-
-        // Let the stack size itself via intrinsic content
-        stack.widthAnchor.constraint(greaterThanOrEqualToConstant: 440).isActive = true
-        storedField.widthAnchor.constraint(equalTo: stack.widthAnchor).isActive = true
-        newField.widthAnchor.constraint(equalTo: stack.widthAnchor).isActive = true
 
         alert.accessoryView = stack
         alert.addButton(withTitle: TTL("dialog.security.accept"))
@@ -257,22 +253,19 @@ final class SSHFPDialog {
 private func makeFingerPrintView(keyType: String, fingerprint: String) -> NSView {
     let typeLabel = NSView.makeLabel(
         String(format: TTL("dialog.security.keyType"), keyType), alignment: .left)
-    typeLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
 
     let fpLabel = NSView.makeLabel(
         String(format: TTL("dialog.security.fingerprint"), fingerprint), alignment: .left)
     fpLabel.font = NSFont.monospacedSystemFont(ofSize: 11, weight: .regular)
-    fpLabel.lineBreakMode = .byCharWrapping
-    fpLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
+    fpLabel.lineBreakMode = .byTruncatingTail
 
+    // NSAlert sizes its accessoryView by frame, not Auto Layout.
     let stack = NSStackView(views: [typeLabel, fpLabel])
-    stack.translatesAutoresizingMaskIntoConstraints = false
+    stack.translatesAutoresizingMaskIntoConstraints = true
+    stack.frame = NSRect(x: 0, y: 0, width: 400, height: 48)
     stack.orientation = .vertical
     stack.alignment = .leading
     stack.spacing = 4
-
-    // Allow auto-expansion for longer localized strings
-    stack.widthAnchor.constraint(greaterThanOrEqualToConstant: 400).isActive = true
 
     return stack
 }

@@ -551,7 +551,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         let textField = NSView.makeTextField(value: "", placeholder: TTL("dialog.logComment.placeholder"))
         textField.font = NSFont.monospacedSystemFont(ofSize: 13, weight: .regular)
         textField.lineBreakMode = .byTruncatingTail
-        textField.widthAnchor.constraint(equalToConstant: 300).isActive = true
+        // NSAlert sizes its accessoryView by frame, not Auto Layout.
+        textField.translatesAutoresizingMaskIntoConstraints = true
+        textField.frame = NSRect(x: 0, y: 0, width: 300, height: 24)
         alert.accessoryView = textField
         alert.window.initialFirstResponder = textField
 
