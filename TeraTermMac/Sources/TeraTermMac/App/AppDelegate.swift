@@ -550,7 +550,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
 
         let textField = NSView.makeTextField(value: "", placeholder: TTL("dialog.logComment.placeholder"))
         textField.font = NSFont.monospacedSystemFont(ofSize: 13, weight: .regular)
-        textField.widthAnchor.constraint(greaterThanOrEqualToConstant: 300).isActive = true
+        textField.lineBreakMode = .byTruncatingTail
+        textField.widthAnchor.constraint(equalToConstant: 300).isActive = true
         alert.accessoryView = textField
         alert.window.initialFirstResponder = textField
 

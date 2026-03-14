@@ -47,8 +47,8 @@ final class ClipboardConfirmationDialog {
         scrollView.documentView = textView
 
         NSLayoutConstraint.activate([
-            scrollView.widthAnchor.constraint(greaterThanOrEqualToConstant: 400),
-            scrollView.heightAnchor.constraint(greaterThanOrEqualToConstant: 250),
+            scrollView.widthAnchor.constraint(equalToConstant: 400),
+            scrollView.heightAnchor.constraint(equalToConstant: 250),
         ])
         alert.accessoryView = scrollView
 
@@ -191,7 +191,7 @@ final class ChangeDirectoryDialog {
         row.alignment = .centerY
         row.distribution = .fill
 
-        row.widthAnchor.constraint(greaterThanOrEqualToConstant: 320).isActive = true
+        row.widthAnchor.constraint(equalToConstant: 320).isActive = true
 
         alert.accessoryView = row
 
@@ -371,7 +371,8 @@ final class InputDialog {
         alert.addButton(withTitle: TTL("Cancel"))
 
         let field = NSView.makeTextField(value: defaultValue)
-        field.widthAnchor.constraint(greaterThanOrEqualToConstant: 260).isActive = true
+        field.lineBreakMode = .byTruncatingTail
+        field.widthAnchor.constraint(equalToConstant: 300).isActive = true
         alert.accessoryView = field
         alert.window.initialFirstResponder = field
 
@@ -417,8 +418,8 @@ final class ListDialog {
         scrollView.documentView = tableView
 
         NSLayoutConstraint.activate([
-            scrollView.widthAnchor.constraint(greaterThanOrEqualToConstant: 340),
-            scrollView.heightAnchor.constraint(greaterThanOrEqualToConstant: 180),
+            scrollView.widthAnchor.constraint(equalToConstant: 340),
+            scrollView.heightAnchor.constraint(equalToConstant: 180),
         ])
         alert.accessoryView = scrollView
 
@@ -1030,8 +1031,8 @@ final class WindowListDialog {
         scrollView.documentView = tableView
 
         NSLayoutConstraint.activate([
-            scrollView.widthAnchor.constraint(greaterThanOrEqualToConstant: 360),
-            scrollView.heightAnchor.constraint(greaterThanOrEqualToConstant: 180),
+            scrollView.widthAnchor.constraint(equalToConstant: 360),
+            scrollView.heightAnchor.constraint(equalToConstant: 180),
         ])
         alert.accessoryView = scrollView
 
