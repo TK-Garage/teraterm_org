@@ -69,6 +69,11 @@ class TerminalView: NSView {
     // Vertical scroller – always visible (legacy style)
     private var verticalScroller: NSScroller!
 
+    // Display refresh batching — coalesce rapid updates into a single
+    // draw pass to reduce CPU usage and input lag under high throughput.
+    private var refreshPending: Bool = false
+    private var refreshTimer: DispatchSourceTimer?
+
     // IME
     private var markedText: NSMutableAttributedString?
     private var imeMarkedRange: NSRange = NSRange(location: NSNotFound, length: 0)
@@ -117,6 +122,7 @@ class TerminalView: NSView {
 
     deinit {
         cursorBlinkTimer?.invalidate()
+        refreshTimer?.cancel()
     }
 
     // MARK: - Font Setup (port of vtdisp.c font handling)
@@ -758,6 +764,9 @@ class TerminalView: NSView {
     // MARK: - Key Event Handling
 
     override func keyDown(with event: NSEvent) {
+        // ユーザー入力時は最下行（入力行）に表示を移動する
+        scrollToBottom()
+
         // IME変換中はすべてのキーをIMEに渡す
         if hasMarkedText() {
             interpretKeyEvents([event])
@@ -1040,8 +1049,36 @@ class TerminalView: NSView {
 
     // MARK: - Refresh
 
+    /// Coalesced display refresh — batches rapid updates so the view
+    /// redraws at most once per ~8 ms (≈120 fps), preventing redundant
+    /// draw cycles that cause input lag under high data throughput.
     func refresh() {
-        needsDisplay = true
+        guard !refreshPending else { return }
+        refreshPending = true
+
+        if refreshTimer == nil {
+            let timer = DispatchSource.makeTimerSource(queue: .main)
+            timer.schedule(deadline: .now(), repeating: .milliseconds(8))
+            timer.setEventHandler { [weak self] in
+                guard let self = self, self.refreshPending else { return }
+                self.refreshPending = false
+                self.needsDisplay = true
+                self.updateScroller()
+            }
+            timer.resume()
+            refreshTimer = timer
+        }
+    }
+
+    /// Scroll to the bottom (most recent output) and refresh display.
+    /// Called when the user types to ensure they see the input line.
+    func scrollToBottom() {
+        guard let buffer = buffer else { return }
+        if buffer.scrollOffset != 0 {
+            buffer.scrollOffset = 0
+            updateScroller()
+            needsDisplay = true
+        }
     }
 }
 

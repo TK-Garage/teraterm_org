@@ -671,6 +671,11 @@ extension TerminalWindowController: NSWindowDelegate {
 extension TerminalWindowController: TerminalEmulatorDelegate {
     func terminalDidUpdateDisplay() {
         terminalView.modes = terminalEmulator.modes
+        // 新しいデータ到着時、スクロール位置を最下行に戻す
+        // (autoScrollOnOutput 設定に基づく)
+        if settings.autoScrollOnOutput {
+            terminalView.scrollToBottom()
+        }
         terminalView.refresh()
     }
 

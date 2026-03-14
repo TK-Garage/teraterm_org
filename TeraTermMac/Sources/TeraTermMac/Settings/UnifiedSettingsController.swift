@@ -599,11 +599,10 @@ final class UnifiedSettingsController: NSObject, NSWindowDelegate, NSTabViewDele
         // Pin the document view width to the scroll view's clip view
         // so content never extends horizontally beyond the visible area.
         // Height is free to grow — the scroll view handles it.
-        if let clipView = scrollView.contentView as? NSClipView {
-            NSLayoutConstraint.activate([
-                documentView.widthAnchor.constraint(equalTo: clipView.widthAnchor),
-            ])
-        }
+        let clipView = scrollView.contentView
+        NSLayoutConstraint.activate([
+            documentView.widthAnchor.constraint(equalTo: clipView.widthAnchor),
+        ])
 
         return scrollView
     }
