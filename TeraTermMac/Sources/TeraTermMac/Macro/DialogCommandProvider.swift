@@ -271,8 +271,18 @@ class DialogCommandProvider {
             self.statusPanel = panel
             self.statusLabel = label
 
+            // Auto Layout を確定してから位置を決定する
+            panel.layoutIfNeeded()
+
             if self.posX >= 0 && self.posY >= 0 {
                 self.applyPosition(to: panel)
+            } else if let parent = self.parentWindow, parent.isVisible {
+                // 親ウィンドウの中央に配置
+                let parentFrame = parent.frame
+                let panelSize = panel.frame.size
+                let x = parentFrame.midX - panelSize.width / 2
+                let y = parentFrame.midY - panelSize.height / 2
+                panel.setFrameOrigin(NSPoint(x: x, y: y))
             } else {
                 panel.center()
             }
