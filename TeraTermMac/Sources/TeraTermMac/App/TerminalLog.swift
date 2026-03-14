@@ -276,13 +276,6 @@ class TerminalLogger {
             return normalizeLineEndingsInData(utf8)
         }
 
-        // Try NSString auto-detection
-        var usedEncoding: UInt = 0
-        if let nsStr = NSString(data: data, usedEncoding: &usedEncoding) {
-            let utf8 = Data((nsStr as String).utf8)
-            return normalizeLineEndingsInData(utf8)
-        }
-
         // Fallback: try common encodings in order
         let fallbacks: [String.Encoding] = [
             .shiftJIS, .japaneseEUC, .iso2022JP,     // Japanese
