@@ -1085,7 +1085,7 @@ extension TerminalWindowController: TTLInterpreterDelegate {
         case "rotate":
             logger.setRotation(step: value)
         case "halt":
-            logger.setRotation(mode: .none)
+            logger.setRotation(mode: LogRotateMode.none)
         default:
             break
         }
