@@ -8,10 +8,10 @@
  * Unified Settings Dialog — combines all Setup menu dialogs AND
  * Additional Settings into a single tabbed window.
  *
- * Tabs (3 rows):
+ * Tabs (2 rows):
  *   Row 1: Terminal | Window | Keyboard | Serial Port | TCP/IP | General
- *   Row 2: Proxy | SSH | SSH Auth | SSH Forwarding | SSH Key Gen
- *   Row 3: General* | Coding | Copy&Paste | Sequence | Mouse | Log | Visual
+ *          | Proxy | SSH | SSH Auth | SSH Forwarding | SSH Key Gen
+ *   Row 2: General* | Coding | Copy&Paste | Sequence | Mouse | Log | Visual
  *          | Font | TEK Font | Theme | UI | Plugin | Local Shell | Debug
  *
  * Menu items remain functional: selecting one opens this unified dialog
@@ -87,21 +87,17 @@ enum UnifiedSettingsTab: String, CaseIterable {
 
     /// Whether this tab is an "additional settings" tab
     var isAdditionalSettingsTab: Bool {
-        return Self.row3.contains(self)
+        return Self.row2.contains(self)
     }
 
-    /// First row tabs
+    /// First row tabs (basic setup + network / SSH)
     static let row1: [UnifiedSettingsTab] = [
-        .terminal, .window, .keyboard, .serialPort, .tcpip, .general
-    ]
-
-    /// Second row tabs
-    static let row2: [UnifiedSettingsTab] = [
+        .terminal, .window, .keyboard, .serialPort, .tcpip, .general,
         .proxy, .ssh, .sshAuth, .sshForwarding, .sshKeyGen
     ]
 
-    /// Third row tabs (additional settings)
-    static let row3: [UnifiedSettingsTab] = [
+    /// Second row tabs (additional settings)
+    static let row2: [UnifiedSettingsTab] = [
         .addlGeneral, .addlCoding, .addlCopyPaste, .addlSequence,
         .addlMouse, .addlLog, .addlVisual, .addlFont, .addlTEKFont,
         .addlTheme, .addlUI, .addlPlugin, .addlLocalShell, .addlDebug
@@ -126,10 +122,10 @@ final class UnifiedSettingsController: NSObject, NSWindowDelegate, NSTabViewDele
     /// Callback for applying serial port settings
     var onApplySerialPort: (() -> Void)?
 
-    /// All tabs in display order (row1 + row2 + row3)
+    /// All tabs in display order (row1 + row2)
     private var allTabs: [UnifiedSettingsTab] = []
 
-    /// 3-row segmented controls for tab selection
+    /// 2-row segmented controls for tab selection
     private var segmentedControls: [NSSegmentedControl] = []
 
     /// Height constraint for the tab view content area (animated on tab change)
@@ -248,7 +244,7 @@ final class UnifiedSettingsController: NSObject, NSWindowDelegate, NSTabViewDele
     /// Update the segmented controls to reflect the selected tab.
     private func updateSegmentedSelection(for tab: UnifiedSettingsTab) {
         let rows: [[UnifiedSettingsTab]] = [
-            UnifiedSettingsTab.row1, UnifiedSettingsTab.row2, UnifiedSettingsTab.row3
+            UnifiedSettingsTab.row1, UnifiedSettingsTab.row2
         ]
         for (rowIdx, row) in rows.enumerated() {
             guard rowIdx < segmentedControls.count else { continue }
@@ -264,7 +260,7 @@ final class UnifiedSettingsController: NSObject, NSWindowDelegate, NSTabViewDele
 
     @objc private func segmentClicked(_ sender: NSSegmentedControl) {
         let rows: [[UnifiedSettingsTab]] = [
-            UnifiedSettingsTab.row1, UnifiedSettingsTab.row2, UnifiedSettingsTab.row3
+            UnifiedSettingsTab.row1, UnifiedSettingsTab.row2
         ]
         guard let rowIdx = segmentedControls.firstIndex(of: sender),
               rowIdx < rows.count else { return }
@@ -409,45 +405,40 @@ final class UnifiedSettingsController: NSObject, NSWindowDelegate, NSTabViewDele
     }
 
     private func buildWindow() {
-        // NSTabView with hidden tabs — we provide a custom 3-row tab bar
+        // NSTabView with hidden tabs — we provide a custom 2-row tab bar
         let tv = NSTabView()
         tv.translatesAutoresizingMaskIntoConstraints = false
         tv.tabViewType = .noTabsBezelBorder
 
         // Build ordered tab list
-        allTabs = UnifiedSettingsTab.row1 + UnifiedSettingsTab.row2 + UnifiedSettingsTab.row3
+        allTabs = UnifiedSettingsTab.row1 + UnifiedSettingsTab.row2
 
-        // Create view controllers for row 1 + row 2 tabs (BaseSetupDialogController)
-        let setupTabs = UnifiedSettingsTab.row1 + UnifiedSettingsTab.row2
-        for tab in setupTabs {
-            let vc = createViewController(for: tab)
-            viewControllers[tab] = vc
-
+        // Create tab view items for all tabs
+        for tab in allTabs {
             let item = NSTabViewItem(identifier: tab.rawValue)
             item.label = tab.localizedTitle
-            vc.loadViewIfNeeded()
-            item.view = wrapForTabView(vc.view)
+
+            if tab.isAdditionalSettingsTab {
+                // Additional settings tabs (row 2)
+                let tc = createAdditionalTab(for: tab)
+                additionalTabs[tab] = tc
+                item.view = wrapForTabView(tc.contentView)
+            } else {
+                // Setup tabs (row 1)
+                let vc = createViewController(for: tab)
+                viewControllers[tab] = vc
+                vc.loadViewIfNeeded()
+                item.view = wrapForTabView(vc.view)
+            }
             tv.addTabViewItem(item)
         }
 
-        // Create additional settings tabs for row 3 (AdditionalSettingsTab protocol)
-        for tab in UnifiedSettingsTab.row3 {
-            let tc = createAdditionalTab(for: tab)
-            additionalTabs[tab] = tc
-
-            let item = NSTabViewItem(identifier: tab.rawValue)
-            item.label = tab.localizedTitle
-            item.view = wrapForTabView(tc.contentView)
-            tv.addTabViewItem(item)
-        }
-
-        // ── 3-row segmented tab bar ──
+        // ── 2-row segmented tab bar ──
         let seg1 = makeSegmentedRow(tabs: UnifiedSettingsTab.row1)
         let seg2 = makeSegmentedRow(tabs: UnifiedSettingsTab.row2)
-        let seg3 = makeSegmentedRow(tabs: UnifiedSettingsTab.row3)
-        segmentedControls = [seg1, seg2, seg3]
+        segmentedControls = [seg1, seg2]
 
-        let tabBarStack = NSStackView(views: [seg1, seg2, seg3])
+        let tabBarStack = NSStackView(views: [seg1, seg2])
         tabBarStack.translatesAutoresizingMaskIntoConstraints = false
         tabBarStack.orientation = .vertical
         tabBarStack.alignment = .centerX
@@ -588,7 +579,7 @@ final class UnifiedSettingsController: NSObject, NSWindowDelegate, NSTabViewDele
         case .addlLocalShell: return LocalShellTab(settings: settings)
         case .addlDebug:     return DebugTab(settings: settings)
         default:
-            fatalError("createAdditionalTab called with non-row3 tab: \(tab)")
+            fatalError("createAdditionalTab called with non-additional-settings tab: \(tab)")
         }
     }
 

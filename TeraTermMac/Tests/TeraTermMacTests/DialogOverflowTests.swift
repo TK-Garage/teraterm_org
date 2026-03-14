@@ -579,10 +579,9 @@ final class UnifiedSettingsTabOverflowTests: XCTestCase {
     func testAllTabsHaveScrollableContent() {
         // Verify that all 25 tab enum cases exist
         XCTAssertEqual(UnifiedSettingsTab.allCases.count, 25,
-            "Should have 25 tabs total (6 + 5 + 14)")
-        XCTAssertEqual(UnifiedSettingsTab.row1.count, 6, "Row 1 should have 6 tabs")
-        XCTAssertEqual(UnifiedSettingsTab.row2.count, 5, "Row 2 should have 5 tabs")
-        XCTAssertEqual(UnifiedSettingsTab.row3.count, 14, "Row 3 should have 14 tabs")
+            "Should have 25 tabs total (11 + 14)")
+        XCTAssertEqual(UnifiedSettingsTab.row1.count, 11, "Row 1 should have 11 tabs")
+        XCTAssertEqual(UnifiedSettingsTab.row2.count, 14, "Row 2 should have 14 tabs")
     }
 
     // MARK: - Helper
