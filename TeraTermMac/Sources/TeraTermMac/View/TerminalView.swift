@@ -101,13 +101,14 @@ class TerminalView: NSView {
         // Build 256-color palette
         build256ColorPalette()
 
-        // Vertical scroller for scrollback
+        // Vertical scroller for scrollback – use legacy style so the
+        // scrollbar is always visible, matching the original Tera Term behavior.
         verticalScroller = NSScroller(frame: .zero)
-        verticalScroller.scrollerStyle = .overlay
+        verticalScroller.scrollerStyle = .legacy
         verticalScroller.isEnabled = true
         verticalScroller.target = self
         verticalScroller.action = #selector(scrollerAction(_:))
-        verticalScroller.alphaValue = 0  // hidden until needed
+        verticalScroller.knobProportion = 1.0
         addSubview(verticalScroller)
 
         updateFont()
@@ -162,7 +163,7 @@ class TerminalView: NSView {
 
     private func recalculateSize() {
         let availableHeight = bounds.height - topInset
-        let availableWidth = bounds.width - leftInset - rightInset
+        let availableWidth = bounds.width - leftInset - rightInset - scrollerWidth
         let newCols = max(1, Int(availableWidth / cellWidth))
         let newRows = max(1, Int(availableHeight / cellHeight))
 
@@ -178,7 +179,8 @@ class TerminalView: NSView {
     }
 
     func preferredSize(columns: Int, rows: Int) -> NSSize {
-        return NSSize(width: CGFloat(columns) * cellWidth + leftInset + rightInset, height: CGFloat(rows) * cellHeight + topInset)
+        return NSSize(width: CGFloat(columns) * cellWidth + leftInset + rightInset + scrollerWidth,
+                      height: CGFloat(rows) * cellHeight + topInset)
     }
 
     override func setFrameSize(_ newSize: NSSize) {
@@ -195,12 +197,18 @@ class TerminalView: NSView {
 
     // MARK: - Vertical Scroller
 
+    /// Width of the legacy scroller track, used to reserve space for the
+    /// persistent scrollbar so that terminal text does not render beneath it.
+    var scrollerWidth: CGFloat {
+        return NSScroller.scrollerWidth(for: .regular, scrollerStyle: .legacy)
+    }
+
     private func layoutScroller() {
-        let scrollerWidth = NSScroller.scrollerWidth(for: .regular, scrollerStyle: .overlay)
+        let sw = scrollerWidth
         verticalScroller.frame = NSRect(
-            x: bounds.width - scrollerWidth,
+            x: bounds.width - sw,
             y: topInset,
-            width: scrollerWidth,
+            width: sw,
             height: bounds.height - topInset
         )
     }
@@ -208,15 +216,17 @@ class TerminalView: NSView {
     /// Synchronize the scroller knob position / proportion with the buffer state.
     func updateScroller() {
         guard let buffer = buffer else {
-            verticalScroller.alphaValue = 0
+            verticalScroller.isEnabled = false
+            verticalScroller.knobProportion = 1.0
             return
         }
         let scrollbackLines = buffer.totalLines - buffer.height
         if scrollbackLines <= 0 {
-            verticalScroller.alphaValue = 0
+            verticalScroller.isEnabled = false
+            verticalScroller.knobProportion = 1.0
             return
         }
-        verticalScroller.alphaValue = 1
+        verticalScroller.isEnabled = true
         let proportion = Double(buffer.height) / Double(buffer.totalLines)
         let position = 1.0 - Double(buffer.scrollOffset) / Double(scrollbackLines)
         verticalScroller.knobProportion = CGFloat(proportion)
