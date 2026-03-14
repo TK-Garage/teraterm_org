@@ -126,6 +126,12 @@ final class UnifiedSettingsController: NSObject, NSWindowDelegate {
     /// Callback for applying serial port settings
     var onApplySerialPort: (() -> Void)?
 
+    /// All tabs in display order (row1 + row2 + row3)
+    private var allTabs: [UnifiedSettingsTab] = []
+
+    /// 3-row segmented controls for tab selection
+    private var segmentedControls: [NSSegmentedControl] = []
+
     init(settings: TerminalSettings) {
         self.settings = settings
         super.init()
@@ -199,14 +205,40 @@ final class UnifiedSettingsController: NSObject, NSWindowDelegate {
     // MARK: - Tab Selection
 
     private func selectTab(_ tab: UnifiedSettingsTab) {
-        guard let tv = tabView else { return }
-        for i in 0..<tv.numberOfTabViewItems {
-            if let identifier = tv.tabViewItem(at: i).identifier as? String,
-               identifier == tab.rawValue {
-                tv.selectTabViewItem(at: i)
-                return
+        guard let tv = tabView,
+              let index = allTabs.firstIndex(of: tab) else { return }
+        tv.selectTabViewItem(at: index)
+        updateSegmentedSelection(for: tab)
+    }
+
+    /// Update the segmented controls to reflect the selected tab.
+    private func updateSegmentedSelection(for tab: UnifiedSettingsTab) {
+        let rows: [[UnifiedSettingsTab]] = [
+            UnifiedSettingsTab.row1, UnifiedSettingsTab.row2, UnifiedSettingsTab.row3
+        ]
+        for (rowIdx, row) in rows.enumerated() {
+            guard rowIdx < segmentedControls.count else { continue }
+            let seg = segmentedControls[rowIdx]
+            if let segIdx = row.firstIndex(of: tab) {
+                seg.selectedSegment = segIdx
+            } else {
+                // Deselect this row — no native API; set to -1 equivalent
+                seg.selectedSegment = -1
             }
         }
+    }
+
+    @objc private func segmentClicked(_ sender: NSSegmentedControl) {
+        let rows: [[UnifiedSettingsTab]] = [
+            UnifiedSettingsTab.row1, UnifiedSettingsTab.row2, UnifiedSettingsTab.row3
+        ]
+        guard let rowIdx = segmentedControls.firstIndex(of: sender),
+              rowIdx < rows.count else { return }
+        let row = rows[rowIdx]
+        let segIdx = sender.selectedSegment
+        guard segIdx >= 0, segIdx < row.count else { return }
+        let tab = row[segIdx]
+        selectTab(tab)
     }
 
     // MARK: - Apply All
@@ -229,10 +261,30 @@ final class UnifiedSettingsController: NSObject, NSWindowDelegate {
 
     // MARK: - Build Window
 
+    /// Create an NSSegmentedControl for one row of tabs.
+    private func makeSegmentedRow(tabs: [UnifiedSettingsTab]) -> NSSegmentedControl {
+        let seg = NSSegmentedControl()
+        seg.translatesAutoresizingMaskIntoConstraints = false
+        seg.segmentCount = tabs.count
+        seg.segmentStyle = .rounded
+        seg.trackingMode = .selectOne
+        for (i, tab) in tabs.enumerated() {
+            seg.setLabel(tab.localizedTitle, forSegment: i)
+            seg.setWidth(0, forSegment: i)  // auto-size
+        }
+        seg.target = self
+        seg.action = #selector(segmentClicked(_:))
+        return seg
+    }
+
     private func buildWindow() {
+        // NSTabView with hidden tabs — we provide a custom 3-row tab bar
         let tv = NSTabView()
         tv.translatesAutoresizingMaskIntoConstraints = false
-        tv.tabViewType = .topTabsBezelBorder
+        tv.tabViewType = .noTabsBezelBorder
+
+        // Build ordered tab list
+        allTabs = UnifiedSettingsTab.row1 + UnifiedSettingsTab.row2 + UnifiedSettingsTab.row3
 
         // Create view controllers for row 1 + row 2 tabs (BaseSetupDialogController)
         let setupTabs = UnifiedSettingsTab.row1 + UnifiedSettingsTab.row2
@@ -258,6 +310,23 @@ final class UnifiedSettingsController: NSObject, NSWindowDelegate {
             tv.addTabViewItem(item)
         }
 
+        // ── 3-row segmented tab bar ──
+        let seg1 = makeSegmentedRow(tabs: UnifiedSettingsTab.row1)
+        let seg2 = makeSegmentedRow(tabs: UnifiedSettingsTab.row2)
+        let seg3 = makeSegmentedRow(tabs: UnifiedSettingsTab.row3)
+        segmentedControls = [seg1, seg2, seg3]
+
+        let tabBarStack = NSStackView(views: [seg1, seg2, seg3])
+        tabBarStack.translatesAutoresizingMaskIntoConstraints = false
+        tabBarStack.orientation = .vertical
+        tabBarStack.alignment = .centerX
+        tabBarStack.spacing = 4
+
+        // Row labels (optional section headers)
+        let rowSeparator = NSBox()
+        rowSeparator.translatesAutoresizingMaskIntoConstraints = false
+        rowSeparator.boxType = .separator
+
         // HIG button bar: [Help(?)] --- [Cancel] [OK]
         let buttonBar = DialogButtonBar.build(
             okTarget: self, okAction: #selector(okAction(_:)),
@@ -268,29 +337,37 @@ final class UnifiedSettingsController: NSObject, NSWindowDelegate {
 
         let container = NSView()
         container.translatesAutoresizingMaskIntoConstraints = false
+        container.addSubview(tabBarStack)
         container.addSubview(tv)
         container.addSubview(footerBar)
 
-        // Wider window to accommodate 3 rows of tabs; taller for content
         let m: CGFloat = 16
         NSLayoutConstraint.activate([
-            tv.topAnchor.constraint(equalTo: container.topAnchor, constant: m),
+            // Tab bar at top
+            tabBarStack.topAnchor.constraint(equalTo: container.topAnchor, constant: m),
+            tabBarStack.leadingAnchor.constraint(greaterThanOrEqualTo: container.leadingAnchor, constant: m),
+            tabBarStack.trailingAnchor.constraint(lessThanOrEqualTo: container.trailingAnchor, constant: -m),
+            tabBarStack.centerXAnchor.constraint(equalTo: container.centerXAnchor),
+
+            // Tab content below tab bar
+            tv.topAnchor.constraint(equalTo: tabBarStack.bottomAnchor, constant: 8),
             tv.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: m),
             tv.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -m),
 
+            // Footer below tab content
             footerBar.topAnchor.constraint(equalTo: tv.bottomAnchor, constant: m),
             footerBar.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: m),
             footerBar.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -m),
             footerBar.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -m),
 
             tv.widthAnchor.constraint(greaterThanOrEqualToConstant: 720),
-            tv.heightAnchor.constraint(greaterThanOrEqualToConstant: 480),
+            tv.heightAnchor.constraint(greaterThanOrEqualToConstant: 420),
         ])
 
         let contentVC = NSViewController()
         contentVC.view = container
         let win = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 760, height: 580),
+            contentRect: NSRect(x: 0, y: 0, width: 800, height: 620),
             styleMask: [.titled, .closable],
             backing: .buffered,
             defer: true)
