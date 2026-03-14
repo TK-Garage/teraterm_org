@@ -30,6 +30,8 @@ protocol TTLInterpreterDelegate: AnyObject {
     func ttlDisconnect()
     /// Connect to terminal
     func ttlConnect(_ param: String)
+    /// Connect local shell (macOS equivalent of cygconnect)
+    func ttlConnectLocalShell()
     /// Set terminal window title
     func ttlSetTitle(_ title: String)
     /// Get terminal window title
@@ -809,8 +811,7 @@ class TTLInterpreter {
         case .setSerialDelayChar: try ttlSetSerialDelayChar()
         case .setSerialDelayLine: try ttlSetSerialDelayLine()
         case .loadKeyMap:   try ttlLoadKeyMap()
-        case .cygConnect:
-            throw TTLError.notSupported
+        case .cygConnect:   try ttlCygConnect()
         }
     }
 
@@ -2990,6 +2991,13 @@ class TTLInterpreter {
     private func ttlConnect() throws {
         let param = try parser.getStrExpression()
         delegate?.ttlConnect(param)
+        parser.setResult(delegate?.ttlIsConnected() == true ? 1 : 0)
+    }
+
+    private func ttlCygConnect() throws {
+        // macOS: cygconnect opens a local shell (PTY) connection,
+        // equivalent to Cygwin terminal on Windows.
+        delegate?.ttlConnectLocalShell()
         parser.setResult(delegate?.ttlIsConnected() == true ? 1 : 0)
     }
 

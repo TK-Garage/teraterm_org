@@ -1015,6 +1015,10 @@ extension TerminalWindowController: TTLInterpreterDelegate {
         }
     }
 
+    func ttlConnectLocalShell() {
+        connectLocalShell()
+    }
+
     func ttlSetTitle(_ title: String) {
         window?.title = title
     }

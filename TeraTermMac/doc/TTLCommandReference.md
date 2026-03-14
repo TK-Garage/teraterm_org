@@ -31,7 +31,7 @@ Tera Term Mac で利用可能な TTL マクロコマンドの一覧です。
 22. [その他](#22-その他)
 23. [システム変数](#23-システム変数)
 24. [式と演算子](#24-式と演算子)
-25. [未実装コマンド](#25-未実装コマンド)
+25. [macOS 固有の動作差異](#25-macos-固有の動作差異)
 
 ---
 
@@ -1136,6 +1136,21 @@ connect 'myhost.example.com:23'
 
 **result**: 1 = 接続成功、0 = 失敗
 
+### `cygconnect`
+
+ローカルシェル（ターミナル）接続を開く。引数なし。
+
+> **macOS 固有動作**: オリジナル Tera Term では Cygwin 環境への接続だが、macOS 版ではローカルシェル（PTY）接続として動作する。シェルパスや環境変数は Additional Settings > ローカルシェル タブの設定に従う。
+
+```ttl
+cygconnect
+if result == 1 then
+  ; 接続成功
+endif
+```
+
+**result**: 1 = 接続成功、0 = 失敗
+
 ### `disconnect`
 
 ```ttl
@@ -1713,9 +1728,39 @@ regexoption 1    ; bit 0 = 大文字小文字無視
 regexoption 0    ; デフォルト
 ```
 
-### `setdate` / `settime`
+### `setdate`
 
-システム日時設定（macOS ではエラーを返す）。
+システム日付を設定する。
+
+> **macOS 固有動作**: macOS ではシステム日時の変更に root 権限が必要なため、常に `result = -1`（失敗）を返す。引数は受け付けるが実際の変更は行わない。
+
+```ttl
+setdate '2026/03/14'
+; result = -1 (macOS では常に失敗)
+```
+
+| 引数 | 型 | 説明 |
+|------|------|------|
+| `<datestr>` | 文字列 | 日付文字列 |
+
+**result**: 0 = 成功（macOS では不可）、-1 = 失敗
+
+### `settime`
+
+システム時刻を設定する。
+
+> **macOS 固有動作**: `setdate` と同様、macOS では常に `result = -1` を返す。
+
+```ttl
+settime '14:30:00'
+; result = -1 (macOS では常に失敗)
+```
+
+| 引数 | 型 | 説明 |
+|------|------|------|
+| `<timestr>` | 文字列 | 時刻文字列 |
+
+**result**: 0 = 成功（macOS では不可）、-1 = 失敗
 
 ---
 
@@ -1798,10 +1843,14 @@ s = "double quotes"
 
 ---
 
-## 25. 未実装コマンド
+## 25. macOS 固有の動作差異
 
-以下は予約語として認識されますが、macOS 版では未実装（`notSupported` エラー）です。
+以下のコマンドは macOS 版でオリジナル Tera Term (Windows) と異なる動作をする。
 
-| コマンド | 説明 |
-|----------|------|
-| `cygconnect` | Cygwin 接続（macOS 非対応） |
+| コマンド | オリジナル (Windows) | macOS 版 |
+|----------|---------------------|----------|
+| `cygconnect` | Cygwin 環境への接続 | ローカルシェル（PTY）接続として動作（§12 参照） |
+| `setdate` | システム日付を変更 | 常に `result = -1` を返す（root 権限が必要なため変更不可） |
+| `settime` | システム時刻を変更 | 常に `result = -1` を返す（同上） |
+| `filelock` / `fileunlock` | ファイルの排他ロック | スタブ実装（macOS では advisory lock のみ） |
+| `getmodemstatus` | モデム制御線の状態取得 | スタブ実装（常に 0 を返す） |
