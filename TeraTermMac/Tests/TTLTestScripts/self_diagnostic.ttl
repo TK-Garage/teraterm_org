@@ -1,0 +1,661 @@
+; ============================================================
+; Tera Term Macro Self-Diagnostic Script
+; Tests all major TTL features and writes results to log file
+; ============================================================
+
+; --- Configuration ---
+logfile = '/tmp/ttl_self_diagnostic.log'
+pass_count = 0
+fail_count = 0
+test_num = 0
+
+; --- Open Log File ---
+fileopen fh logfile 0
+if fh < 0 then
+  messagebox 'Cannot open log file' 'Error'
+  end
+endif
+
+filewriteln fh '============================================'
+filewriteln fh 'TTL Self-Diagnostic Report'
+getdate datestr
+gettime timestr
+sprintf2 header 'Date: %s  Time: %s' datestr timestr
+filewriteln fh header
+filewriteln fh '============================================'
+filewriteln fh ''
+
+; ============================================================
+; TEST 1: String Operations
+; ============================================================
+filewriteln fh '--- Test Group: String Operations ---'
+
+; Test strconcat
+test_num = test_num + 1
+s = 'Hello'
+strconcat s ' World'
+if s = 'Hello World' then
+  sprintf2 msg 'PASS [%d] strconcat: basic concatenation' test_num
+  pass_count = pass_count + 1
+else
+  sprintf2 msg 'FAIL [%d] strconcat: expected "Hello World", got "%s"' test_num s
+  fail_count = fail_count + 1
+endif
+filewriteln fh msg
+
+; Test strconcat empty
+test_num = test_num + 1
+s = 'test'
+strconcat s ''
+if s = 'test' then
+  sprintf2 msg 'PASS [%d] strconcat: empty string append' test_num
+  pass_count = pass_count + 1
+else
+  sprintf2 msg 'FAIL [%d] strconcat: empty append changed string' test_num
+  fail_count = fail_count + 1
+endif
+filewriteln fh msg
+
+; Test strlen
+test_num = test_num + 1
+strlen 'Hello'
+if result = 5 then
+  sprintf2 msg 'PASS [%d] strlen: "Hello" = 5' test_num
+  pass_count = pass_count + 1
+else
+  sprintf2 msg 'FAIL [%d] strlen: expected 5, got %d' test_num result
+  fail_count = fail_count + 1
+endif
+filewriteln fh msg
+
+; Test strlen empty
+test_num = test_num + 1
+strlen ''
+if result = 0 then
+  sprintf2 msg 'PASS [%d] strlen: empty = 0' test_num
+  pass_count = pass_count + 1
+else
+  sprintf2 msg 'FAIL [%d] strlen: expected 0, got %d' test_num result
+  fail_count = fail_count + 1
+endif
+filewriteln fh msg
+
+; Test strcompare equal
+test_num = test_num + 1
+strcompare 'abc' 'abc'
+if result = 0 then
+  sprintf2 msg 'PASS [%d] strcompare: equal strings' test_num
+  pass_count = pass_count + 1
+else
+  sprintf2 msg 'FAIL [%d] strcompare: expected 0, got %d' test_num result
+  fail_count = fail_count + 1
+endif
+filewriteln fh msg
+
+; Test strcompare less
+test_num = test_num + 1
+strcompare 'abc' 'def'
+if result < 0 then
+  sprintf2 msg 'PASS [%d] strcompare: "abc" < "def"' test_num
+  pass_count = pass_count + 1
+else
+  sprintf2 msg 'FAIL [%d] strcompare: expected negative, got %d' test_num result
+  fail_count = fail_count + 1
+endif
+filewriteln fh msg
+
+; Test strcopy
+test_num = test_num + 1
+strcopy 'Hello World' 7 5 dest
+if dest = 'World' then
+  sprintf2 msg 'PASS [%d] strcopy: substring extraction' test_num
+  pass_count = pass_count + 1
+else
+  sprintf2 msg 'FAIL [%d] strcopy: expected "World", got "%s"' test_num dest
+  fail_count = fail_count + 1
+endif
+filewriteln fh msg
+
+; Test strscan
+test_num = test_num + 1
+strscan 'Hello World' 'World'
+if result = 7 then
+  sprintf2 msg 'PASS [%d] strscan: found at pos 7' test_num
+  pass_count = pass_count + 1
+else
+  sprintf2 msg 'FAIL [%d] strscan: expected 7, got %d' test_num result
+  fail_count = fail_count + 1
+endif
+filewriteln fh msg
+
+; Test strscan not found
+test_num = test_num + 1
+strscan 'Hello' 'xyz'
+if result = 0 then
+  sprintf2 msg 'PASS [%d] strscan: not found returns 0' test_num
+  pass_count = pass_count + 1
+else
+  sprintf2 msg 'FAIL [%d] strscan: expected 0, got %d' test_num result
+  fail_count = fail_count + 1
+endif
+filewriteln fh msg
+
+; Test tolower
+test_num = test_num + 1
+s = 'HELLO'
+tolower s
+if s = 'hello' then
+  sprintf2 msg 'PASS [%d] tolower' test_num
+  pass_count = pass_count + 1
+else
+  sprintf2 msg 'FAIL [%d] tolower: expected "hello", got "%s"' test_num s
+  fail_count = fail_count + 1
+endif
+filewriteln fh msg
+
+; Test toupper
+test_num = test_num + 1
+s = 'hello'
+toupper s
+if s = 'HELLO' then
+  sprintf2 msg 'PASS [%d] toupper' test_num
+  pass_count = pass_count + 1
+else
+  sprintf2 msg 'FAIL [%d] toupper: expected "HELLO", got "%s"' test_num s
+  fail_count = fail_count + 1
+endif
+filewriteln fh msg
+
+; Test strmatch regex
+test_num = test_num + 1
+strmatch 'Hello 123 World' '\d+'
+if result > 0 then
+  sprintf2 msg 'PASS [%d] strmatch: regex found digits' test_num
+  pass_count = pass_count + 1
+else
+  sprintf2 msg 'FAIL [%d] strmatch: regex should match digits' test_num
+  fail_count = fail_count + 1
+endif
+filewriteln fh msg
+
+; Test str2int
+test_num = test_num + 1
+str2int val '42'
+if result = 1 then
+  if val = 42 then
+    sprintf2 msg 'PASS [%d] str2int: "42" -> 42' test_num
+    pass_count = pass_count + 1
+  else
+    sprintf2 msg 'FAIL [%d] str2int: expected 42, got %d' test_num val
+    fail_count = fail_count + 1
+  endif
+else
+  sprintf2 msg 'FAIL [%d] str2int: conversion failed' test_num
+  fail_count = fail_count + 1
+endif
+filewriteln fh msg
+
+; Test int2str
+test_num = test_num + 1
+int2str numstr 255
+if numstr = '255' then
+  sprintf2 msg 'PASS [%d] int2str: 255 -> "255"' test_num
+  pass_count = pass_count + 1
+else
+  sprintf2 msg 'FAIL [%d] int2str: expected "255", got "%s"' test_num numstr
+  fail_count = fail_count + 1
+endif
+filewriteln fh msg
+
+filewriteln fh ''
+
+; ============================================================
+; TEST 2: Arithmetic & Variables
+; ============================================================
+filewriteln fh '--- Test Group: Arithmetic & Variables ---'
+
+; Basic arithmetic
+test_num = test_num + 1
+a = 10
+b = 20
+c = a + b
+if c = 30 then
+  sprintf2 msg 'PASS [%d] addition: 10 + 20 = 30' test_num
+  pass_count = pass_count + 1
+else
+  sprintf2 msg 'FAIL [%d] addition: expected 30, got %d' test_num c
+  fail_count = fail_count + 1
+endif
+filewriteln fh msg
+
+test_num = test_num + 1
+c = a * b
+if c = 200 then
+  sprintf2 msg 'PASS [%d] multiplication: 10 * 20 = 200' test_num
+  pass_count = pass_count + 1
+else
+  sprintf2 msg 'FAIL [%d] multiplication: expected 200, got %d' test_num c
+  fail_count = fail_count + 1
+endif
+filewriteln fh msg
+
+test_num = test_num + 1
+c = b / a
+if c = 2 then
+  sprintf2 msg 'PASS [%d] division: 20 / 10 = 2' test_num
+  pass_count = pass_count + 1
+else
+  sprintf2 msg 'FAIL [%d] division: expected 2, got %d' test_num c
+  fail_count = fail_count + 1
+endif
+filewriteln fh msg
+
+test_num = test_num + 1
+c = 17 % 5
+if c = 2 then
+  sprintf2 msg 'PASS [%d] modulo: 17 %% 5 = 2' test_num
+  pass_count = pass_count + 1
+else
+  sprintf2 msg 'FAIL [%d] modulo: expected 2, got %d' test_num c
+  fail_count = fail_count + 1
+endif
+filewriteln fh msg
+
+; Operator precedence
+test_num = test_num + 1
+c = 2 + 3 * 4
+if c = 14 then
+  sprintf2 msg 'PASS [%d] precedence: 2 + 3 * 4 = 14' test_num
+  pass_count = pass_count + 1
+else
+  sprintf2 msg 'FAIL [%d] precedence: expected 14, got %d' test_num c
+  fail_count = fail_count + 1
+endif
+filewriteln fh msg
+
+; Parentheses
+test_num = test_num + 1
+c = (2 + 3) * 4
+if c = 20 then
+  sprintf2 msg 'PASS [%d] parentheses: (2 + 3) * 4 = 20' test_num
+  pass_count = pass_count + 1
+else
+  sprintf2 msg 'FAIL [%d] parentheses: expected 20, got %d' test_num c
+  fail_count = fail_count + 1
+endif
+filewriteln fh msg
+
+filewriteln fh ''
+
+; ============================================================
+; TEST 3: Control Flow - Nested If/For/While/Goto
+; ============================================================
+filewriteln fh '--- Test Group: Control Flow ---'
+
+; For loop
+test_num = test_num + 1
+sum = 0
+for i 1 10
+  sum = sum + i
+next
+if sum = 55 then
+  sprintf2 msg 'PASS [%d] for loop: sum(1..10) = 55' test_num
+  pass_count = pass_count + 1
+else
+  sprintf2 msg 'FAIL [%d] for loop: expected 55, got %d' test_num sum
+  fail_count = fail_count + 1
+endif
+filewriteln fh msg
+
+; While loop
+test_num = test_num + 1
+count = 0
+while count < 5
+  count = count + 1
+endwhile
+if count = 5 then
+  sprintf2 msg 'PASS [%d] while loop: counted to 5' test_num
+  pass_count = pass_count + 1
+else
+  sprintf2 msg 'FAIL [%d] while loop: expected 5, got %d' test_num count
+  fail_count = fail_count + 1
+endif
+filewriteln fh msg
+
+; Nested if in for
+test_num = test_num + 1
+even_count = 0
+for i 1 10
+  if (i % 2) = 0 then
+    even_count = even_count + 1
+  endif
+next
+if even_count = 5 then
+  sprintf2 msg 'PASS [%d] nested if-in-for: 5 even numbers in 1..10' test_num
+  pass_count = pass_count + 1
+else
+  sprintf2 msg 'FAIL [%d] nested if-in-for: expected 5, got %d' test_num even_count
+  fail_count = fail_count + 1
+endif
+filewriteln fh msg
+
+; Goto
+test_num = test_num + 1
+x = 0
+goto skip_increment
+x = 999
+:skip_increment
+if x = 0 then
+  sprintf2 msg 'PASS [%d] goto: skipped assignment' test_num
+  pass_count = pass_count + 1
+else
+  sprintf2 msg 'FAIL [%d] goto: should have skipped, x = %d' test_num x
+  fail_count = fail_count + 1
+endif
+filewriteln fh msg
+
+; Break
+test_num = test_num + 1
+last_i = 0
+for i 1 100
+  if i = 5 then
+    last_i = i
+    break
+  endif
+  last_i = i
+next
+if last_i = 5 then
+  sprintf2 msg 'PASS [%d] break: exited loop at i=5' test_num
+  pass_count = pass_count + 1
+else
+  sprintf2 msg 'FAIL [%d] break: expected last_i=5, got %d' test_num last_i
+  fail_count = fail_count + 1
+endif
+filewriteln fh msg
+
+filewriteln fh ''
+
+; ============================================================
+; TEST 4: Subroutine (call/return) Nesting
+; ============================================================
+filewriteln fh '--- Test Group: Subroutine Nesting ---'
+
+test_num = test_num + 1
+call_depth = 0
+max_depth = 0
+call depth_test_1
+if max_depth = 10 then
+  sprintf2 msg 'PASS [%d] call/return: 10-level nesting' test_num
+  pass_count = pass_count + 1
+else
+  sprintf2 msg 'FAIL [%d] call/return: expected depth 10, got %d' test_num max_depth
+  fail_count = fail_count + 1
+endif
+filewriteln fh msg
+
+goto after_subroutines
+
+:depth_test_1
+  call_depth = call_depth + 1
+  if call_depth > max_depth then
+    max_depth = call_depth
+  endif
+  call depth_test_2
+  call_depth = call_depth - 1
+  return
+
+:depth_test_2
+  call_depth = call_depth + 1
+  if call_depth > max_depth then
+    max_depth = call_depth
+  endif
+  call depth_test_3
+  call_depth = call_depth - 1
+  return
+
+:depth_test_3
+  call_depth = call_depth + 1
+  if call_depth > max_depth then
+    max_depth = call_depth
+  endif
+  call depth_test_4
+  call_depth = call_depth - 1
+  return
+
+:depth_test_4
+  call_depth = call_depth + 1
+  if call_depth > max_depth then
+    max_depth = call_depth
+  endif
+  call depth_test_5
+  call_depth = call_depth - 1
+  return
+
+:depth_test_5
+  call_depth = call_depth + 1
+  if call_depth > max_depth then
+    max_depth = call_depth
+  endif
+  call depth_test_6
+  call_depth = call_depth - 1
+  return
+
+:depth_test_6
+  call_depth = call_depth + 1
+  if call_depth > max_depth then
+    max_depth = call_depth
+  endif
+  call depth_test_7
+  call_depth = call_depth - 1
+  return
+
+:depth_test_7
+  call_depth = call_depth + 1
+  if call_depth > max_depth then
+    max_depth = call_depth
+  endif
+  call depth_test_8
+  call_depth = call_depth - 1
+  return
+
+:depth_test_8
+  call_depth = call_depth + 1
+  if call_depth > max_depth then
+    max_depth = call_depth
+  endif
+  call depth_test_9
+  call_depth = call_depth - 1
+  return
+
+:depth_test_9
+  call_depth = call_depth + 1
+  if call_depth > max_depth then
+    max_depth = call_depth
+  endif
+  call depth_test_10
+  call_depth = call_depth - 1
+  return
+
+:depth_test_10
+  call_depth = call_depth + 1
+  if call_depth > max_depth then
+    max_depth = call_depth
+  endif
+  call_depth = call_depth - 1
+  return
+
+:after_subroutines
+
+filewriteln fh ''
+
+; ============================================================
+; TEST 5: Array Operations
+; ============================================================
+filewriteln fh '--- Test Group: Array Operations ---'
+
+; intdim
+test_num = test_num + 1
+intdim iarr 10
+arr_ok = 1
+for i 0 9
+  iarr[i] = i * i
+next
+for i 0 9
+  if iarr[i] <> (i * i) then
+    arr_ok = 0
+  endif
+next
+if arr_ok = 1 then
+  sprintf2 msg 'PASS [%d] intdim: int array set/get' test_num
+  pass_count = pass_count + 1
+else
+  sprintf2 msg 'FAIL [%d] intdim: array values incorrect' test_num
+  fail_count = fail_count + 1
+endif
+filewriteln fh msg
+
+; strdim
+test_num = test_num + 1
+strdim sarr 5
+sarr[0] = 'alpha'
+sarr[1] = 'beta'
+sarr[2] = 'gamma'
+sarr[3] = 'delta'
+sarr[4] = 'epsilon'
+if sarr[0] = 'alpha' then
+  if sarr[4] = 'epsilon' then
+    sprintf2 msg 'PASS [%d] strdim: str array set/get' test_num
+    pass_count = pass_count + 1
+  else
+    sprintf2 msg 'FAIL [%d] strdim: sarr[4] incorrect' test_num
+    fail_count = fail_count + 1
+  endif
+else
+  sprintf2 msg 'FAIL [%d] strdim: sarr[0] incorrect' test_num
+  fail_count = fail_count + 1
+endif
+filewriteln fh msg
+
+filewriteln fh ''
+
+; ============================================================
+; TEST 6: File I/O
+; ============================================================
+filewriteln fh '--- Test Group: File I/O ---'
+
+test_num = test_num + 1
+testfile = '/tmp/ttl_test_file.txt'
+fileopen tfh testfile 0
+if tfh >= 0 then
+  filewriteln tfh 'Line 1'
+  filewriteln tfh 'Line 2'
+  filewriteln tfh 'Line 3'
+  fileclose tfh
+
+  ; Read back
+  fileopen tfh testfile 0 1
+  filereadln tfh line
+  if line = 'Line 1' then
+    sprintf2 msg 'PASS [%d] file I/O: write and readback' test_num
+    pass_count = pass_count + 1
+  else
+    sprintf2 msg 'FAIL [%d] file I/O: expected "Line 1", got "%s"' test_num line
+    fail_count = fail_count + 1
+  endif
+  fileclose tfh
+  filedelete testfile
+else
+  sprintf2 msg 'FAIL [%d] file I/O: cannot open test file' test_num
+  fail_count = fail_count + 1
+endif
+filewriteln fh msg
+
+; filesearch
+test_num = test_num + 1
+filesearch '/tmp'
+if result = 1 then
+  sprintf2 msg 'PASS [%d] filesearch: /tmp exists' test_num
+  pass_count = pass_count + 1
+else
+  sprintf2 msg 'FAIL [%d] filesearch: /tmp should exist' test_num
+  fail_count = fail_count + 1
+endif
+filewriteln fh msg
+
+filewriteln fh ''
+
+; ============================================================
+; TEST 7: sprintf / sprintf2
+; ============================================================
+filewriteln fh '--- Test Group: sprintf/sprintf2 ---'
+
+test_num = test_num + 1
+sprintf2 formatted 'Hello %s, you are %d years old' 'World' 42
+if formatted = 'Hello World, you are 42 years old' then
+  sprintf2 msg 'PASS [%d] sprintf2: string and int format' test_num
+  pass_count = pass_count + 1
+else
+  sprintf2 msg 'FAIL [%d] sprintf2: formatting error' test_num
+  fail_count = fail_count + 1
+endif
+filewriteln fh msg
+
+test_num = test_num + 1
+sprintf2 hexstr 'hex: %x' 255
+if hexstr = 'hex: ff' then
+  sprintf2 msg 'PASS [%d] sprintf2: hex format' test_num
+  pass_count = pass_count + 1
+else
+  sprintf2 msg 'FAIL [%d] sprintf2: expected "hex: ff", got "%s"' test_num hexstr
+  fail_count = fail_count + 1
+endif
+filewriteln fh msg
+
+filewriteln fh ''
+
+; ============================================================
+; TEST 8: System Commands
+; ============================================================
+filewriteln fh '--- Test Group: System Commands ---'
+
+test_num = test_num + 1
+getdir curdir
+strlen curdir
+if result > 0 then
+  sprintf2 msg 'PASS [%d] getdir: current directory is "%s"' test_num curdir
+  pass_count = pass_count + 1
+else
+  sprintf2 msg 'FAIL [%d] getdir: returned empty string' test_num
+  fail_count = fail_count + 1
+endif
+filewriteln fh msg
+
+test_num = test_num + 1
+getenv home 'HOME'
+strlen home
+if result > 0 then
+  sprintf2 msg 'PASS [%d] getenv HOME: "%s"' test_num home
+  pass_count = pass_count + 1
+else
+  sprintf2 msg 'FAIL [%d] getenv HOME: empty' test_num
+  fail_count = fail_count + 1
+endif
+filewriteln fh msg
+
+filewriteln fh ''
+
+; ============================================================
+; SUMMARY
+; ============================================================
+filewriteln fh '============================================'
+sprintf2 summary 'Total: %d  Passed: %d  Failed: %d' test_num pass_count fail_count
+filewriteln fh summary
+if fail_count = 0 then
+  filewriteln fh 'STATUS: ALL TESTS PASSED'
+else
+  filewriteln fh 'STATUS: SOME TESTS FAILED'
+endif
+filewriteln fh '============================================'
+
+fileclose fh
+end

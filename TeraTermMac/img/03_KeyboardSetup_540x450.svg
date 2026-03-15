@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="540" height="450" viewBox="0 0 540 450">
+  <defs>
+    <style>
+      .bg { fill: #ECECEC; }
+      .border { fill: none; stroke: red; stroke-width: 2; }
+      .label { font-family: -apple-system, 'Helvetica Neue', sans-serif; font-size: 13px; fill: #333; }
+      .label-right { font-family: -apple-system, 'Helvetica Neue', sans-serif; font-size: 13px; fill: #333; text-anchor: end; }
+      .title { font-family: -apple-system, 'Helvetica Neue', sans-serif; font-size: 13px; fill: #333; font-weight: 600; }
+      .field { fill: #FFF; stroke: #B0B0B0; stroke-width: 1; rx: 3; }
+      .popup { fill: #FFF; stroke: #B0B0B0; stroke-width: 1; rx: 3; }
+      .btn { fill: #F0F0F0; stroke: #B0B0B0; stroke-width: 1; rx: 5; }
+      .btn-primary { fill: #007AFF; stroke: #006AE0; stroke-width: 1; rx: 5; }
+      .btn-label { font-family: -apple-system, 'Helvetica Neue', sans-serif; font-size: 13px; fill: #333; text-anchor: middle; }
+      .btn-label-w { font-family: -apple-system, 'Helvetica Neue', sans-serif; font-size: 13px; fill: #FFF; text-anchor: middle; }
+      .size-label { font-family: monospace; font-size: 10px; fill: red; }
+      .dim-line { stroke: #007AFF; stroke-width: 0.5; stroke-dasharray: 3,2; }
+      .dim-label { font-family: monospace; font-size: 9px; fill: #007AFF; }
+      .pad-area { fill: rgba(0,122,255,0.05); stroke: #007AFF; stroke-width: 0.5; stroke-dasharray: 2,2; }
+    </style>
+  </defs>
+
+  <!-- Background -->
+  <rect width="540" height="450" class="bg"/>
+  <rect x="1" y="1" width="538" height="448" class="border"/>
+
+  <!-- Title bar -->
+  <rect x="0" y="0" width="540" height="22" fill="#E8E8E8" stroke="#C0C0C0" stroke-width="1"/>
+  <text x="270" y="15" class="title" text-anchor="middle">Tera Term: Keyboard setup</text>
+  <circle cx="14" cy="11" r="5" fill="#FF5F57"/>
+  <circle cx="30" cy="11" r="5" fill="#FEBC2E"/>
+  <circle cx="46" cy="11" r="5" fill="#28C840"/>
+
+  <!-- 20pt padding area visualization -->
+  <rect x="20" y="42" width="500" height="320" class="pad-area"/>
+
+  <!-- Padding dimension markers -->
+  <!-- Top padding -->
+  <line x1="20" y1="22" x2="20" y2="42" class="dim-line"/>
+  <text x="24" y="35" class="dim-label">20pt</text>
+  <!-- Left padding -->
+  <line x1="0" y1="42" x2="20" y2="42" class="dim-line"/>
+  <text x="3" y="55" class="dim-label" transform="rotate(-90,10,55)">20pt</text>
+
+  <!-- ════════ Grid: 4 rows x 2 columns ════════ -->
+  <!-- Column 0 width = 140pt (labels, right-aligned) -->
+  <!-- Column 1 starts at 170pt (140 + 10pt spacing + 20pt pad) -->
+
+  <!-- Row height = 24pt each, rowSpacing = 12pt -->
+
+  <!-- ──── Row 1: Backspace key ──── -->
+  <!-- Label column: x=20..160 (140pt), right-aligned -->
+  <text x="160" y="68" class="label-right">Backspace key:</text>
+  <!-- Control column: x=170 -->
+  <rect x="170" y="52" width="180" height="24" class="popup"/>
+  <text x="180" y="68" class="label">BS (0x08)</text>
+  <polygon points="338,60 344,60 341,66" fill="#666"/>
+
+  <!-- Row height annotation -->
+  <line x1="360" y1="52" x2="370" y2="52" class="dim-line"/>
+  <line x1="360" y1="76" x2="370" y2="76" class="dim-line"/>
+  <line x1="365" y1="52" x2="365" y2="76" class="dim-line"/>
+  <text x="374" y="67" class="dim-label">24pt</text>
+
+  <!-- ──── Row 2: Delete key ──── -->
+  <text x="160" y="104" class="label-right">Delete key:</text>
+  <rect x="170" y="88" width="180" height="24" class="popup"/>
+  <text x="180" y="104" class="label">DEL (0x7F)</text>
+  <polygon points="338,96 344,96 341,102" fill="#666"/>
+
+  <!-- 12pt row spacing annotation -->
+  <line x1="400" y1="76" x2="410" y2="76" class="dim-line"/>
+  <line x1="400" y1="88" x2="410" y2="88" class="dim-line"/>
+  <line x1="405" y1="76" x2="405" y2="88" class="dim-line"/>
+  <text x="414" y="85" class="dim-label">12pt</text>
+
+  <!-- ──── Row 3: Meta key ──── -->
+  <text x="160" y="140" class="label-right">Meta key:</text>
+  <rect x="170" y="124" width="180" height="24" class="popup"/>
+  <text x="180" y="140" class="label">off</text>
+  <polygon points="338,132 344,132 341,138" fill="#666"/>
+
+  <!-- ──── Row 4: Answerback ──── -->
+  <text x="160" y="176" class="label-right">Answerback:</text>
+  <rect x="170" y="160" width="200" height="24" class="field"/>
+  <text x="180" y="176" class="label" fill="#999">Enter answerback string</text>
+
+  <!-- Column width annotations -->
+  <!-- Label column -->
+  <line x1="20" y1="200" x2="160" y2="200" class="dim-line"/>
+  <text x="90" y="212" class="dim-label" text-anchor="middle">140pt (label col)</text>
+  <!-- Spacing -->
+  <line x1="160" y1="200" x2="170" y2="200" class="dim-line"/>
+  <text x="165" y="212" class="dim-label" text-anchor="middle">10</text>
+  <!-- Control column -->
+  <line x1="170" y1="200" x2="370" y2="200" class="dim-line"/>
+  <text x="270" y="212" class="dim-label" text-anchor="middle">180pt+ (control col)</text>
+
+  <!-- ════════ Separator ════════ -->
+  <line x1="0" y1="380" x2="540" y2="380" stroke="#C0C0C0" stroke-width="1"/>
+
+  <!-- ════════ Buttons ════════ -->
+  <rect x="360" y="395" width="80" height="24" class="btn"/>
+  <text x="400" y="411" class="btn-label">Cancel</text>
+
+  <rect x="448" y="395" width="80" height="24" class="btn-primary"/>
+  <text x="488" y="411" class="btn-label-w">OK</text>
+
+  <!-- Size annotation -->
+  <text x="530" y="445" class="size-label" text-anchor="end">540 x 450</text>
+
+  <!-- Min width annotation -->
+  <line x1="20" y1="230" x2="520" y2="230" class="dim-line"/>
+  <text x="270" y="242" class="dim-label" text-anchor="middle">min-width: 500pt (content)</text>
+</svg>

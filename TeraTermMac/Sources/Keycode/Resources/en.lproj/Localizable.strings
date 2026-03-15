@@ -1,0 +1,18 @@
+/* Keycode.app - English localization */
+
+"keycode.window.title" = "Keycode";
+"keycode.prompt" = "Push any key.";
+"keycode.initial" = "---";
+"keycode.result" = "Key code is %d.";
+"keycode.optionHint" = "For Option+key: add 2048 to the base key code";
+"keycode.optionDetected" = "Option+%@ detected (base %d + 2048 = %d)";
+
+/* Menu */
+"keycode.menu.about" = "About %@";
+"keycode.menu.hide" = "Hide %@";
+"keycode.menu.hideOthers" = "Hide Others";
+"keycode.menu.showAll" = "Show All";
+"keycode.menu.quit" = "Quit %@";
+"keycode.menu.window" = "Window";
+"keycode.menu.minimize" = "Minimize";
+"keycode.menu.close" = "Close";

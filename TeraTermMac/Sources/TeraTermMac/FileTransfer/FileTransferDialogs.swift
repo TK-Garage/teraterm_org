@@ -1,0 +1,1269 @@
+/*
+ * Copyright (C) 1994-1998 T. Teranishi
+ * (C) 2004- TeraTerm Project
+ * All rights reserved.
+ *
+ * Ported to Swift/macOS
+ *
+ * File transfer dialogs — faithful reproduction of Tera Term 5.6 file
+ * selection and transfer progress dialogs.
+ *
+ * Original dialogs ported:
+ *   - _GetXFname (XMODEM file dialog with IDD_XOPT option panel)
+ *   - _GetMultiFname (ZMODEM/Kermit file dialog with IDD_FOPT option panel)
+ *   - IDD_PROTDLG (protocol transfer progress)
+ *   - IDD_FILETRANSDLG (file send/log transfer progress)
+ *   - IDD_GETFNDLG (Kermit GET remote filename input)
+ *   - IDD_SENDFILEDLG (send file dialog with delay/read options)
+ *   - IDD_RECVFILEDLG (receive file dialog with auto-stop option)
+ */
+
+#if canImport(AppKit)
+import AppKit
+
+// MARK: - XMODEM Option Panel
+
+/// Accessory view for NSOpenPanel / NSSavePanel when using XMODEM.
+///
+///  ┌─Option─────────────────────────────────────┐
+///  │ ◉ Checksum  ○ CRC   ☑ 1K   ☑ Binary       │
+///  └────────────────────────────────────────────┘
+///
+/// Maps to Tera Term IDD_XOPT.
+final class XMODEMOptionAccessory: NSView {
+    let checksumRadio: NSButton
+    let crcRadio: NSButton
+    let oneKCheck: NSButton
+    let binaryCheck: NSButton
+
+    /// Current XMODEM mode derived from the radio/checkbox state.
+    var selectedProtocol: TransferProtocolType {
+        if oneKCheck.state == .on { return .xmodem1K }
+        if crcRadio.state == .on { return .xmodemCRC }
+        return .xmodem
+    }
+
+    var isBinary: Bool { binaryCheck.state == .on }
+
+    /// - Parameters:
+    ///   - isSend: true for send dialog, false for receive.
+    ///   - defaultCRC: initial radio selection (true = CRC, false = checksum).
+    init(isSend: Bool, defaultCRC: Bool = true) {
+        checksumRadio = NSView.makeRadioButton(
+            TTL("dialog.xopt.checksum"), tag: 0)
+        crcRadio = NSView.makeRadioButton(
+            TTL("dialog.xopt.crc"), tag: 1)
+        oneKCheck = NSView.makeCheckbox(
+            TTL("dialog.xopt.1k"))
+        binaryCheck = NSView.makeCheckbox(
+            TTL("dialog.xopt.binary"), checked: true)
+
+        super.init(frame: .zero)
+        translatesAutoresizingMaskIntoConstraints = false
+
+        // GroupBox
+        let box = NSView.makeGroupBox(
+            title: TTL("dialog.xopt.option"))
+        addSubview(box)
+        box.translatesAutoresizingMaskIntoConstraints = false
+
+        // Radio default
+        if defaultCRC {
+            crcRadio.state = .on
+            checksumRadio.state = .off
+        } else {
+            checksumRadio.state = .on
+            crcRadio.state = .off
+        }
+
+        // Wire radios
+        checksumRadio.target = self
+        checksumRadio.action = #selector(radioChanged(_:))
+        crcRadio.target = self
+        crcRadio.action = #selector(radioChanged(_:))
+
+        let row = NSStackView(views: [checksumRadio, crcRadio, oneKCheck, binaryCheck])
+        row.translatesAutoresizingMaskIntoConstraints = false
+        row.orientation = .horizontal
+        row.spacing = 16
+        row.alignment = .firstBaseline
+
+        let content = box.contentView!
+        content.addSubview(row)
+
+        NSLayoutConstraint.activate([
+            box.topAnchor.constraint(equalTo: topAnchor),
+            box.leadingAnchor.constraint(equalTo: leadingAnchor),
+            box.trailingAnchor.constraint(equalTo: trailingAnchor),
+            box.bottomAnchor.constraint(equalTo: bottomAnchor),
+
+            row.topAnchor.constraint(equalTo: content.topAnchor, constant: 4),
+            row.leadingAnchor.constraint(equalTo: content.leadingAnchor, constant: 8),
+            row.trailingAnchor.constraint(lessThanOrEqualTo: content.trailingAnchor, constant: -8),
+            row.bottomAnchor.constraint(equalTo: content.bottomAnchor, constant: -4),
+        ])
+    }
+
+    required init?(coder: NSCoder) { fatalError() }
+
+    @objc private func radioChanged(_ sender: NSButton) {
+        checksumRadio.state = (sender === checksumRadio) ? .on : .off
+        crcRadio.state = (sender === crcRadio) ? .on : .off
+    }
+}
+
+// MARK: - General File Option Panel
+
+/// Accessory view for NSOpenPanel / NSSavePanel when using ZMODEM / Kermit.
+///
+///  ┌─Option──────────────────────┐
+///  │ ☑ Binary                    │
+///  └─────────────────────────────┘
+///
+/// Maps to Tera Term IDD_FOPT (simplified for macOS — only Binary is relevant).
+final class FileOptionAccessory: NSView {
+    let binaryCheck: NSButton
+
+    var isBinary: Bool { binaryCheck.state == .on }
+
+    init() {
+        binaryCheck = NSView.makeCheckbox(
+            TTL("dialog.fopt.binary"), checked: true)
+
+        super.init(frame: .zero)
+        translatesAutoresizingMaskIntoConstraints = false
+
+        let box = NSView.makeGroupBox(
+            title: TTL("dialog.fopt.option"))
+        addSubview(box)
+        box.translatesAutoresizingMaskIntoConstraints = false
+
+        let content = box.contentView!
+        content.addSubview(binaryCheck)
+
+        NSLayoutConstraint.activate([
+            box.topAnchor.constraint(equalTo: topAnchor),
+            box.leadingAnchor.constraint(equalTo: leadingAnchor),
+            box.trailingAnchor.constraint(equalTo: trailingAnchor),
+            box.bottomAnchor.constraint(equalTo: bottomAnchor),
+
+            binaryCheck.topAnchor.constraint(equalTo: content.topAnchor, constant: 4),
+            binaryCheck.leadingAnchor.constraint(equalTo: content.leadingAnchor, constant: 8),
+            binaryCheck.bottomAnchor.constraint(equalTo: content.bottomAnchor, constant: -4),
+        ])
+    }
+
+    required init?(coder: NSCoder) { fatalError() }
+}
+
+// MARK: - Protocol Transfer Progress Panel (IDD_PROTDLG)
+
+/// Floating panel that shows protocol (XMODEM/ZMODEM/Kermit) transfer progress.
+///
+///  Filename:           test.bin
+///  Protocol:        XMODEM-CRC
+///  Packet#:                  42
+///  Bytes transferred:     5376
+///  Elapsed time:  0:12 (448.0KB/s)
+///  [════════════════════════] 75%
+///                    [Cancel]
+///
+/// Maps to Tera Term IDD_PROTDLG (142×95 DLU).
+final class ProtocolTransferPanel {
+
+    private var panel: NSPanel?
+    private var filenameField: NSTextField?
+    private var protocolLabel: NSTextField?
+    private var packetLabel: NSTextField?
+    private var bytesLabel: NSTextField?
+    private var elapsedLabel: NSTextField?
+    private var percentLabel: NSTextField?
+    private var progressBar: NSProgressIndicator?
+
+    var onCancel: (() -> Void)?
+
+    private var startTime: Date?
+
+    var isVisible: Bool { panel?.isVisible ?? false }
+
+    func show(fileName: String, protocolName: String) {
+        if panel == nil { buildPanel() }
+        filenameField?.stringValue = fileName
+        protocolLabel?.stringValue = protocolName
+        packetLabel?.stringValue = "0"
+        bytesLabel?.stringValue = "0"
+        elapsedLabel?.stringValue = "0:00"
+        percentLabel?.stringValue = ""
+        progressBar?.doubleValue = 0
+        startTime = Date()
+        panel?.orderFront(nil)
+    }
+
+    func update(packetNum: Int, bytesTransferred: Int64, totalBytes: Int64?) {
+        packetLabel?.stringValue = "\(packetNum)"
+
+        if let total = totalBytes, total > 0 {
+            let pct = Double(bytesTransferred) / Double(total) * 100
+            bytesLabel?.stringValue = "\(bytesTransferred) (\(String(format: "%.1f%%", pct)))"
+            progressBar?.isIndeterminate = false
+            progressBar?.doubleValue = pct
+            percentLabel?.stringValue = String(format: "%d%%", Int(pct))
+        } else {
+            bytesLabel?.stringValue = "\(bytesTransferred)"
+            progressBar?.isIndeterminate = true
+            progressBar?.startAnimation(nil)
+            percentLabel?.stringValue = ""
+        }
+
+        // Elapsed time + rate
+        if let start = startTime {
+            let elapsed = Int(Date().timeIntervalSince(start))
+            let rate = elapsed > 0 ? bytesTransferred / Int64(elapsed) : 0
+            let rateStr: String
+            if rate < 1200 {
+                rateStr = "\(rate)B/s"
+            } else if rate < 1_200_000 {
+                rateStr = String(format: "%.2fKB/s", Double(rate) / 1000)
+            } else {
+                rateStr = String(format: "%.2fMB/s", Double(rate) / 1_000_000)
+            }
+            elapsedLabel?.stringValue = "\(elapsed / 60):\(String(format: "%02d", elapsed % 60)) (\(rateStr))"
+        }
+    }
+
+    func close() {
+        panel?.orderOut(nil)
+        panel = nil
+    }
+
+    private func buildPanel() {
+        let container = NSView()
+        container.translatesAutoresizingMaskIntoConstraints = false
+        container.widthAnchor.constraint(greaterThanOrEqualToConstant: 340).isActive = true
+
+        let cv = container
+        let pad: CGFloat = DialogLayout.margin
+
+        // Grid: label | value
+        let fnTitle = NSView.makeLabel(
+            TTL("dialog.prot.filename"))
+        let fnField = NSTextField(labelWithString: "")
+        fnField.lineBreakMode = .byTruncatingMiddle
+        fnField.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        filenameField = fnField
+
+        let prTitle = NSView.makeLabel(
+            TTL("dialog.prot.protocol"))
+        let prField = NSTextField(labelWithString: "")
+        prField.alignment = .right
+        protocolLabel = prField
+
+        let pkTitle = NSView.makeLabel(
+            TTL("dialog.prot.packet"))
+        let pkField = NSTextField(labelWithString: "0")
+        pkField.alignment = .right
+        packetLabel = pkField
+
+        let btTitle = NSView.makeLabel(
+            TTL("dialog.prot.bytesTransferred"))
+        let btField = NSTextField(labelWithString: "0")
+        btField.alignment = .right
+        bytesLabel = btField
+
+        let etTitle = NSView.makeLabel(
+            TTL("dialog.prot.elapsed"))
+        let etField = NSTextField(labelWithString: "0:00")
+        etField.alignment = .right
+        elapsedLabel = etField
+
+        let grid = NSGridView(views: [
+            [fnTitle, fnField],
+            [prTitle, prField],
+            [pkTitle, pkField],
+            [btTitle, btField],
+            [etTitle, etField],
+        ])
+        grid.translatesAutoresizingMaskIntoConstraints = false
+        grid.column(at: 0).xPlacement = .trailing
+        grid.column(at: 1).xPlacement = .fill
+        grid.rowSpacing = 4
+        grid.columnSpacing = 8
+        cv.addSubview(grid)
+
+        // Progress bar
+        let progress = NSProgressIndicator()
+        progress.translatesAutoresizingMaskIntoConstraints = false
+        progress.style = .bar
+        progress.minValue = 0
+        progress.maxValue = 100
+        progress.isIndeterminate = true
+        progressBar = progress
+        cv.addSubview(progress)
+
+        let pctLabel = NSTextField(labelWithString: "")
+        pctLabel.translatesAutoresizingMaskIntoConstraints = false
+        pctLabel.alignment = .right
+        pctLabel.font = NSFont.monospacedDigitSystemFont(ofSize: 11, weight: .regular)
+        percentLabel = pctLabel
+        cv.addSubview(pctLabel)
+
+        // Cancel button
+        let cancelBtn = NSButton(
+            title: TTL("dialog.prot.cancel"),
+            target: self, action: #selector(cancelClicked(_:)))
+        cancelBtn.translatesAutoresizingMaskIntoConstraints = false
+        cancelBtn.bezelStyle = .rounded
+        cancelBtn.keyEquivalent = "\u{1b}" // Esc
+        cv.addSubview(cancelBtn)
+
+        NSLayoutConstraint.activate([
+            grid.topAnchor.constraint(equalTo: cv.topAnchor, constant: pad),
+            grid.leadingAnchor.constraint(equalTo: cv.leadingAnchor, constant: pad),
+            grid.trailingAnchor.constraint(equalTo: cv.trailingAnchor, constant: -pad),
+
+            progress.topAnchor.constraint(equalTo: grid.bottomAnchor, constant: 12),
+            progress.leadingAnchor.constraint(equalTo: cv.leadingAnchor, constant: pad),
+            progress.trailingAnchor.constraint(equalTo: pctLabel.leadingAnchor, constant: -8),
+
+            pctLabel.centerYAnchor.constraint(equalTo: progress.centerYAnchor),
+            pctLabel.trailingAnchor.constraint(equalTo: cv.trailingAnchor, constant: -pad),
+            pctLabel.widthAnchor.constraint(equalToConstant: 40),
+
+            cancelBtn.topAnchor.constraint(equalTo: progress.bottomAnchor, constant: 16),
+            cancelBtn.centerXAnchor.constraint(equalTo: cv.centerXAnchor),
+            cancelBtn.widthAnchor.constraint(equalToConstant: 80),
+            cancelBtn.bottomAnchor.constraint(equalTo: cv.bottomAnchor, constant: -pad),
+        ])
+
+        let vc = NSViewController()
+        vc.view = container
+        let p = NSPanel(
+            contentRect: NSRect(x: 0, y: 0, width: 340, height: 200),
+            styleMask: [.titled, .closable, .utilityWindow],
+            backing: .buffered,
+            defer: true)
+        p.contentViewController = vc
+        p.title = TTL("dialog.prot.title")
+        p.isFloatingPanel = true
+        p.becomesKeyOnlyIfNeeded = true
+        p.isReleasedWhenClosed = false
+        p.center()
+        self.panel = p
+    }
+
+    @objc private func cancelClicked(_ sender: Any?) {
+        onCancel?()
+        close()
+    }
+}
+
+// MARK: - File Transfer Progress Panel (IDD_FILETRANSDLG)
+
+/// Panel for file send / log progress — more detailed than ProtocolTransferPanel.
+///
+///  Filename:           test.bin
+///  Fullpath:      /Users/.../test.bin
+///  Bytes transferred:    12345 (50.0%)
+///  Elapsed time:   0:05 (2.41KB/s)
+///  [══════════════════════════════]
+///  [Close]  [Pause]  [Help]
+///
+/// Maps to Tera Term IDD_FILETRANSDLG (176×96 DLU).
+final class FileTransferProgressPanel {
+
+    private var panel: NSPanel?
+    private var filenameField: NSTextField?
+    private var fullpathField: NSTextField?
+    private var bytesLabel: NSTextField?
+    private var elapsedLabel: NSTextField?
+    private var progressBar: NSProgressIndicator?
+    private var pauseButton: NSButton?
+
+    var onClose: (() -> Void)?
+    var onPauseResume: ((_ paused: Bool) -> Void)?
+
+    private var startTime: Date?
+    private var isPaused = false
+
+    var isVisible: Bool { panel?.isVisible ?? false }
+
+    func show(fileName: String, fullPath: String, forSend: Bool) {
+        if panel == nil { buildPanel() }
+        filenameField?.stringValue = fileName
+        fullpathField?.stringValue = fullPath
+        bytesLabel?.stringValue = "0"
+        elapsedLabel?.stringValue = "0:00"
+        progressBar?.doubleValue = 0
+        progressBar?.isHidden = !forSend
+        startTime = Date()
+        isPaused = false
+        updatePauseButton()
+        panel?.orderFront(nil)
+    }
+
+    func update(fileSize: Int64, byteCount: Int64) {
+        if fileSize > 0 {
+            let pct = Double(byteCount) / Double(fileSize) * 100
+            bytesLabel?.stringValue = "\(byteCount) (\(String(format: "%.1f%%", pct)))"
+            progressBar?.isIndeterminate = false
+            progressBar?.doubleValue = pct
+        } else {
+            bytesLabel?.stringValue = "\(byteCount)"
+        }
+
+        if let start = startTime {
+            let elapsed = Int(Date().timeIntervalSince(start))
+            if elapsed > 0 {
+                let rate = byteCount / Int64(elapsed)
+                let rateStr: String
+                if rate < 1200 {
+                    rateStr = "\(rate)B/s"
+                } else if rate < 1_200_000 {
+                    rateStr = String(format: "%d.%02dKB/s", rate / 1000, rate / 10 % 100)
+                } else {
+                    rateStr = String(format: "%d.%02dMB/s", rate / 1_000_000, rate / 10000 % 100)
+                }
+                elapsedLabel?.stringValue = "\(elapsed / 60):\(String(format: "%02d", elapsed % 60)) (\(rateStr))"
+            }
+        }
+    }
+
+    func close() {
+        panel?.orderOut(nil)
+        panel = nil
+    }
+
+    private func buildPanel() {
+        let container = NSView()
+        container.translatesAutoresizingMaskIntoConstraints = false
+        container.widthAnchor.constraint(greaterThanOrEqualToConstant: 380).isActive = true
+
+        let cv = container
+        let pad: CGFloat = DialogLayout.margin
+
+        let fnTitle = NSView.makeLabel(
+            TTL("dialog.ftrans.filename"))
+        let fnField = NSTextField(labelWithString: "")
+        fnField.lineBreakMode = .byTruncatingMiddle
+        fnField.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        filenameField = fnField
+
+        let fpTitle = NSView.makeLabel(
+            TTL("dialog.ftrans.fullpath"))
+        let fpField = NSTextField(labelWithString: "")
+        fpField.lineBreakMode = .byTruncatingMiddle
+        fpField.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        fullpathField = fpField
+
+        let btTitle = NSView.makeLabel(
+            TTL("dialog.ftrans.bytesTransferred"))
+        let btField = NSTextField(labelWithString: "0")
+        btField.alignment = .right
+        bytesLabel = btField
+
+        let etTitle = NSView.makeLabel(
+            TTL("dialog.ftrans.elapsed"))
+        let etField = NSTextField(labelWithString: "0:00")
+        etField.alignment = .right
+        elapsedLabel = etField
+
+        let grid = NSGridView(views: [
+            [fnTitle, fnField],
+            [fpTitle, fpField],
+            [btTitle, btField],
+            [etTitle, etField],
+        ])
+        grid.translatesAutoresizingMaskIntoConstraints = false
+        grid.column(at: 0).xPlacement = .trailing
+        grid.column(at: 1).xPlacement = .fill
+        grid.rowSpacing = 4
+        grid.columnSpacing = 8
+        cv.addSubview(grid)
+
+        let progress = NSProgressIndicator()
+        progress.translatesAutoresizingMaskIntoConstraints = false
+        progress.style = .bar
+        progress.minValue = 0
+        progress.maxValue = 100
+        progress.isIndeterminate = false
+        progressBar = progress
+        cv.addSubview(progress)
+
+        // Buttons: [Close] [Pause] [Help]
+        let closeBtn = NSButton(
+            title: TTL("dialog.ftrans.close"),
+            target: self, action: #selector(closeClicked(_:)))
+        closeBtn.bezelStyle = .rounded
+        closeBtn.translatesAutoresizingMaskIntoConstraints = false
+
+        let pauseBtn = NSButton(
+            title: TTL("dialog.ftrans.pause"),
+            target: self, action: #selector(pauseClicked(_:)))
+        pauseBtn.bezelStyle = .rounded
+        pauseBtn.translatesAutoresizingMaskIntoConstraints = false
+        pauseButton = pauseBtn
+
+        let helpBtn = NSButton(
+            title: TTL("dialog.ftrans.help"),
+            target: nil, action: nil)
+        helpBtn.bezelStyle = .rounded
+        helpBtn.translatesAutoresizingMaskIntoConstraints = false
+
+        let btnStack = NSStackView(views: [closeBtn, pauseBtn, helpBtn])
+        btnStack.translatesAutoresizingMaskIntoConstraints = false
+        btnStack.orientation = .horizontal
+        btnStack.spacing = 12
+        btnStack.distribution = .fillEqually
+        cv.addSubview(btnStack)
+
+        NSLayoutConstraint.activate([
+            grid.topAnchor.constraint(equalTo: cv.topAnchor, constant: pad),
+            grid.leadingAnchor.constraint(equalTo: cv.leadingAnchor, constant: pad),
+            grid.trailingAnchor.constraint(equalTo: cv.trailingAnchor, constant: -pad),
+
+            progress.topAnchor.constraint(equalTo: grid.bottomAnchor, constant: 12),
+            progress.leadingAnchor.constraint(equalTo: cv.leadingAnchor, constant: pad),
+            progress.trailingAnchor.constraint(equalTo: cv.trailingAnchor, constant: -pad),
+
+            btnStack.topAnchor.constraint(equalTo: progress.bottomAnchor, constant: 16),
+            btnStack.leadingAnchor.constraint(equalTo: cv.leadingAnchor, constant: pad),
+            btnStack.trailingAnchor.constraint(equalTo: cv.trailingAnchor, constant: -pad),
+            btnStack.bottomAnchor.constraint(equalTo: cv.bottomAnchor, constant: -pad),
+        ])
+
+        let vc = NSViewController()
+        vc.view = container
+        let p = NSPanel(
+            contentRect: NSRect(x: 0, y: 0, width: 440, height: 280),
+            styleMask: [.titled, .closable, .miniaturizable, .utilityWindow],
+            backing: .buffered,
+            defer: true)
+        p.contentViewController = vc
+        p.title = TTL("dialog.ftrans.title")
+        p.isFloatingPanel = false
+        p.isReleasedWhenClosed = false
+        p.center()
+        self.panel = p
+    }
+
+    @objc private func closeClicked(_ sender: Any?) {
+        onClose?()
+        close()
+    }
+
+    @objc private func pauseClicked(_ sender: Any?) {
+        isPaused.toggle()
+        updatePauseButton()
+        onPauseResume?(isPaused)
+    }
+
+    private func updatePauseButton() {
+        pauseButton?.title = isPaused
+            ? TTL("dialog.ftrans.resume")
+            : TTL("dialog.ftrans.pause")
+    }
+}
+
+// MARK: - Kermit Get Dialog (IDD_GETFNDLG)
+
+/// Modal dialog for Kermit GET — prompts user for remote filename.
+///
+///   Filename: [__________________]
+///   [OK]  [Cancel]  [Help]
+///
+/// Maps to Tera Term IDD_GETFNDLG (150×59 DLU).
+final class KermitGetDialogController: BaseSetupDialogController {
+
+    private var filenameField: NSTextField!
+
+    /// Result: nil if cancelled, otherwise the entered filename.
+    var resultFilename: String?
+
+    init() {
+        super.init(nibName: nil, bundle: nil)
+        self.title = TTL("dialog.kermitGet.title")
+    }
+
+    required init?(coder: NSCoder) { fatalError() }
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        setupControls()
+    }
+
+    private func setupControls() {
+        setDialogContentWidth(340)
+
+        let fnLabel = NSView.makeLabel(
+            TTL("dialog.kermitGet.filename"),
+            alignment: .right)
+        fnLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
+
+        filenameField = NSView.makeTextField(value: "")
+        filenameField.placeholderString = TTL("dialog.kermitGet.placeholder")
+
+        let row = NSStackView(views: [fnLabel, filenameField])
+        row.translatesAutoresizingMaskIntoConstraints = false
+        row.orientation = .horizontal
+        row.spacing = 8
+        row.alignment = .firstBaseline
+        contentArea.addSubview(row)
+
+        NSLayoutConstraint.activate([
+            row.topAnchor.constraint(equalTo: contentArea.topAnchor),
+            row.leadingAnchor.constraint(equalTo: contentArea.leadingAnchor),
+            row.trailingAnchor.constraint(equalTo: contentArea.trailingAnchor),
+            row.bottomAnchor.constraint(equalTo: contentArea.bottomAnchor),
+        ])
+    }
+
+    override func applySettings() {
+        let name = filenameField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
+        resultFilename = name.isEmpty ? nil : name
+    }
+}
+
+// MARK: - File Transfer Dialog Helper
+
+/// Static helpers to present file selection dialogs for each protocol,
+/// matching the original Tera Term behaviour.
+enum FileTransferDialogHelper {
+
+    // MARK: - Panel Configuration
+
+    /// Configure an NSOpenPanel to allow selection of files with any file
+    /// attribute (no content-type filtering).  This matches the original
+    /// Tera Term behaviour where every file is selectable.
+    static func configureOpenPanelForAllFileTypes(_ panel: NSOpenPanel) {
+        panel.allowedContentTypes = []
+        panel.allowsOtherFileTypes = true
+        panel.treatsFilePackagesAsDirectories = true
+    }
+
+    /// Validate that the file at *url* is readable.  If not, present an
+    /// error alert on *window* and return `false`.
+    @discardableResult
+    static func validateReadPermission(for url: URL, on window: NSWindow?) -> Bool {
+        guard FileManager.default.isReadableFile(atPath: url.path) else {
+            let alert = NSAlert()
+            alert.alertStyle = .critical
+            alert.messageText = TTL("dialog.fileTransfer.readError.title")
+            alert.informativeText = String(
+                format: TTL("dialog.fileTransfer.readError.message"),
+                url.lastPathComponent)
+            alert.addButton(withTitle: TTL("OK"))
+            if let window = window {
+                alert.beginSheetModal(for: window, completionHandler: nil)
+            } else {
+                alert.runModal()
+            }
+            return false
+        }
+        return true
+    }
+
+    // MARK: - XMODEM Send
+
+    /// Present an XMODEM send file open panel with protocol option accessory.
+    /// Calls completion with the chosen URL and protocol type, or nil if cancelled.
+    static func presentXMODEMSendPanel(
+        on window: NSWindow,
+        completion: @escaping (URL, TransferProtocolType) -> Void
+    ) {
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = true
+        panel.canChooseDirectories = false
+        panel.allowsMultipleSelection = false
+        configureOpenPanelForAllFileTypes(panel)
+        panel.title = TTL("dialog.xmodem.sendTitle")
+
+        let accessory = XMODEMOptionAccessory(isSend: true, defaultCRC: true)
+        panel.accessoryView = accessory
+        panel.isAccessoryViewDisclosed = true
+
+        panel.beginSheetModal(for: window) { response in
+            guard response == .OK, let url = panel.url else { return }
+            guard validateReadPermission(for: url, on: window) else { return }
+            completion(url, accessory.selectedProtocol)
+        }
+    }
+
+    // MARK: - XMODEM Receive
+
+    /// Present an XMODEM receive file save panel with protocol option accessory.
+    static func presentXMODEMReceivePanel(
+        on window: NSWindow,
+        completion: @escaping (URL, TransferProtocolType) -> Void
+    ) {
+        let panel = NSSavePanel()
+        panel.title = TTL("dialog.xmodem.receiveTitle")
+
+        let accessory = XMODEMOptionAccessory(isSend: false, defaultCRC: true)
+        panel.accessoryView = accessory
+
+        panel.beginSheetModal(for: window) { response in
+            guard response == .OK, let url = panel.url else { return }
+            completion(url, accessory.selectedProtocol)
+        }
+    }
+
+    // MARK: - ZMODEM / Kermit Send
+
+    /// Present a ZMODEM or Kermit send file open panel with binary option.
+    static func presentMultiSendPanel(
+        on window: NSWindow,
+        protocolType: TransferProtocolType,
+        completion: @escaping (URL, TransferProtocolType) -> Void
+    ) {
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = true
+        panel.canChooseDirectories = false
+        panel.allowsMultipleSelection = false
+        configureOpenPanelForAllFileTypes(panel)
+
+        let protoName: String
+        switch protocolType {
+        case .zmodem:   protoName = "ZMODEM"
+        case .kermit:   protoName = "Kermit"
+        case .bplus:    protoName = "B-Plus"
+        case .quickVAN: protoName = "Quick-VAN"
+        default:        protoName = TTL("dialog.multi.protocolDefault")
+        }
+        panel.title = String(format: TTL("dialog.multi.sendTitle"), protoName)
+
+        let accessory = FileOptionAccessory()
+        panel.accessoryView = accessory
+        panel.isAccessoryViewDisclosed = true
+
+        panel.beginSheetModal(for: window) { response in
+            guard response == .OK, let url = panel.url else { return }
+            guard self.validateReadPermission(for: url, on: window) else { return }
+            completion(url, protocolType)
+        }
+    }
+
+    // MARK: - ZMODEM / Kermit Receive
+
+    /// Present a ZMODEM or Kermit receive file save panel with binary option.
+    static func presentMultiReceivePanel(
+        on window: NSWindow,
+        protocolType: TransferProtocolType,
+        completion: @escaping (URL, TransferProtocolType) -> Void
+    ) {
+        let panel = NSSavePanel()
+
+        let protoName: String
+        switch protocolType {
+        case .zmodem:   protoName = "ZMODEM"
+        case .kermit:   protoName = "Kermit"
+        case .bplus:    protoName = "B-Plus"
+        case .quickVAN: protoName = "Quick-VAN"
+        default:        protoName = TTL("dialog.multi.protocolDefault")
+        }
+        panel.title = String(format: TTL("dialog.multi.receiveTitle"), protoName)
+
+        let accessory = FileOptionAccessory()
+        panel.accessoryView = accessory
+
+        panel.beginSheetModal(for: window) { response in
+            guard response == .OK, let url = panel.url else { return }
+            completion(url, protocolType)
+        }
+    }
+
+    // MARK: - Kermit Get
+
+    /// Present the Kermit Get dialog (prompts for remote filename).
+    static func presentKermitGetDialog(
+        on window: NSWindow,
+        completion: @escaping (String?) -> Void
+    ) {
+        let vc = KermitGetDialogController()
+        vc.presentAsModal(on: window)
+        completion(vc.resultFilename)
+    }
+
+    // MARK: - Send File Dialog
+
+    /// Present the Send File dialog (IDD_SENDFILEDLG).
+    static func presentSendFileDialog(
+        on window: NSWindow,
+        completion: @escaping (SendFileDialogController.Result?) -> Void
+    ) {
+        let vc = SendFileDialogController()
+        vc.presentAsModal(on: window)
+        completion(vc.result)
+    }
+
+    // MARK: - Receive File Dialog
+
+    /// Present the Receive File dialog (IDD_RECVFILEDLG).
+    static func presentRecvFileDialog(
+        on window: NSWindow,
+        completion: @escaping (RecvFileDialogController.Result?) -> Void
+    ) {
+        let vc = RecvFileDialogController()
+        vc.presentAsModal(on: window)
+        completion(vc.result)
+    }
+}
+
+// MARK: - Send File Dialog Controller (IDD_SENDFILEDLG)
+
+/// Modal dialog for sending a file — provides filename selection,
+/// reading method, binary mode, delay type/time, and send size options.
+///
+///  Filename: [______________] [...]
+///  File reading method:
+///    ◉ Bulk read    ○ Sequential read
+///  ☑ Binary
+///  Delay type:  [No delay ▾]
+///  Send size:   [All ▾]
+///  Delay time(ms): [0___]
+///  [OK]  [Cancel]  [Help]
+///
+/// Maps to Tera Term IDD_SENDFILEDLG (271×227 DLU).
+final class SendFileDialogController: BaseSetupDialogController {
+
+    /// Delay type options matching original Tera Term.
+    enum DelayType: Int, CaseIterable {
+        case noDelay = 0
+        case perChar
+        case perLine
+
+        var localizedTitle: String {
+            switch self {
+            case .noDelay: return TTL("dialog.sendFile.delayNone")
+            case .perChar: return TTL("dialog.sendFile.delayPerChar")
+            case .perLine: return TTL("dialog.sendFile.delayPerLine")
+            }
+        }
+    }
+
+    /// Result returned after user clicks OK.
+    struct Result {
+        let fileURL: URL
+        let bulkRead: Bool
+        let binary: Bool
+        let delayType: DelayType
+        let sendSize: Int   // 0 = all
+        let delayTimeMs: Int
+    }
+
+    private var filenameField: NSTextField!
+    private var bulkRadio: NSButton!
+    private var sequentialRadio: NSButton!
+    private var binaryCheck: NSButton!
+    private var delayTypePopup: NSPopUpButton!
+    private var sendSizePopup: NSPopUpButton!
+    private var delayTimeField: NSTextField!
+
+    private(set) var result: Result?
+
+    init() {
+        super.init(nibName: nil, bundle: nil)
+        self.title = TTL("dialog.sendFile.title")
+    }
+
+    required init?(coder: NSCoder) { fatalError() }
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        setupControls()
+    }
+
+    private func setupControls() {
+        setDialogContentWidth(420)
+
+        // --- Filename row ---
+        let fnLabel = NSView.makeLabel(
+            TTL("dialog.sendFile.filename"))
+        fnLabel.alignment = .left
+
+        filenameField = NSView.makeTextField(value: "", placeholder: "")
+        filenameField.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+
+        let browseBtn = NSButton(
+            title: "...", target: self, action: #selector(browseFile(_:)))
+        browseBtn.translatesAutoresizingMaskIntoConstraints = false
+        browseBtn.bezelStyle = .rounded
+        browseBtn.widthAnchor.constraint(equalToConstant: 30).isActive = true
+
+        let fnRow = NSStackView(views: [filenameField, browseBtn])
+        fnRow.translatesAutoresizingMaskIntoConstraints = false
+        fnRow.orientation = .horizontal
+        fnRow.spacing = 4
+
+        // --- Reading method ---
+        let readLabel = NSView.makeLabel(
+            TTL("dialog.sendFile.readingMethod"))
+        readLabel.alignment = .left
+
+        bulkRadio = NSView.makeRadioButton(
+            TTL("dialog.sendFile.bulkRead"), tag: 0)
+        bulkRadio.state = .on
+        bulkRadio.target = self
+        bulkRadio.action = #selector(readMethodChanged(_:))
+
+        sequentialRadio = NSView.makeRadioButton(
+            TTL("dialog.sendFile.sequentialRead"), tag: 1)
+        sequentialRadio.state = .off
+        sequentialRadio.target = self
+        sequentialRadio.action = #selector(readMethodChanged(_:))
+
+        let radioRow = NSStackView(views: [bulkRadio, sequentialRadio])
+        radioRow.translatesAutoresizingMaskIntoConstraints = false
+        radioRow.orientation = .horizontal
+        radioRow.spacing = 16
+
+        // --- Binary checkbox ---
+        binaryCheck = NSView.makeCheckbox(
+            TTL("dialog.sendFile.binary"), checked: false)
+
+        // --- Delay type ---
+        let delayLabel = NSView.makeLabel(
+            TTL("dialog.sendFile.delayType"))
+        delayLabel.alignment = .left
+
+        delayTypePopup = NSView.makePopUpButton(
+            items: DelayType.allCases.map { $0.localizedTitle }, width: 140)
+
+        let delayRow = NSStackView(views: [delayLabel, delayTypePopup])
+        delayRow.translatesAutoresizingMaskIntoConstraints = false
+        delayRow.orientation = .horizontal
+        delayRow.spacing = 8
+
+        // --- Send size ---
+        let sizeLabel = NSView.makeLabel(
+            TTL("dialog.sendFile.sendSize"))
+        sizeLabel.alignment = .left
+
+        let sizeItems = [TTL("dialog.sendFile.sizeAll"), "80", "160", "320", "640", "1280", "2560", "5120", "10240"]
+        sendSizePopup = NSView.makePopUpButton(items: sizeItems, width: 140)
+
+        let sizeRow = NSStackView(views: [sizeLabel, sendSizePopup])
+        sizeRow.translatesAutoresizingMaskIntoConstraints = false
+        sizeRow.orientation = .horizontal
+        sizeRow.spacing = 8
+
+        // --- Delay time ---
+        let timeLabel = NSView.makeLabel(
+            TTL("dialog.sendFile.delayTime"))
+        timeLabel.alignment = .left
+
+        delayTimeField = NSView.makeTextField(value: "0", width: 60)
+
+        let timeRow = NSStackView(views: [timeLabel, delayTimeField])
+        timeRow.translatesAutoresizingMaskIntoConstraints = false
+        timeRow.orientation = .horizontal
+        timeRow.spacing = 8
+
+        // --- Assemble ---
+        let stack = NSStackView(views: [
+            fnLabel, fnRow, readLabel, radioRow,
+            binaryCheck, delayRow, sizeRow, timeRow
+        ])
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        stack.orientation = .vertical
+        stack.alignment = .leading
+        stack.spacing = 8
+        contentArea.addSubview(stack)
+
+        NSLayoutConstraint.activate([
+            stack.topAnchor.constraint(equalTo: contentArea.topAnchor),
+            stack.leadingAnchor.constraint(equalTo: contentArea.leadingAnchor),
+            stack.trailingAnchor.constraint(equalTo: contentArea.trailingAnchor),
+            stack.bottomAnchor.constraint(equalTo: contentArea.bottomAnchor),
+            fnRow.widthAnchor.constraint(equalTo: stack.widthAnchor),
+        ])
+    }
+
+    @objc private func readMethodChanged(_ sender: NSButton) {
+        bulkRadio.state = (sender === bulkRadio) ? .on : .off
+        sequentialRadio.state = (sender === sequentialRadio) ? .on : .off
+    }
+
+    @objc private func browseFile(_ sender: Any?) {
+        let openPanel = NSOpenPanel()
+        openPanel.canChooseFiles = true
+        openPanel.canChooseDirectories = false
+        openPanel.allowsMultipleSelection = false
+        FileTransferDialogHelper.configureOpenPanelForAllFileTypes(openPanel)
+        if openPanel.runModal() == .OK, let url = openPanel.url {
+            filenameField.stringValue = url.path
+        }
+    }
+
+    override func applySettings() {
+        let path = filenameField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !path.isEmpty else { result = nil; return }
+        let url = URL(fileURLWithPath: path)
+
+        guard FileTransferDialogHelper.validateReadPermission(
+            for: url, on: view.window) else {
+            result = nil
+            return
+        }
+
+        let delayType = DelayType(rawValue: delayTypePopup.indexOfSelectedItem) ?? .noDelay
+
+        let sizeStr = sendSizePopup.titleOfSelectedItem ?? ""
+        let sendSize = (Int(sizeStr) == nil) ? 0 : (Int(sizeStr) ?? 0)
+
+        let delayMs = Int(delayTimeField.stringValue) ?? 0
+
+        result = Result(
+            fileURL: url,
+            bulkRead: bulkRadio.state == .on,
+            binary: binaryCheck.state == .on,
+            delayType: delayType,
+            sendSize: sendSize,
+            delayTimeMs: delayMs
+        )
+    }
+}
+
+// MARK: - Receive File Dialog Controller (IDD_RECVFILEDLG)
+
+/// Modal dialog for receiving a file — provides filename selection,
+/// binary mode, and auto-stop wait time.
+///
+///  Filename: [______________] [...]
+///  ☑ Binary
+///  Auto-stop wait time(sec): [0___]
+///  [OK]  [Cancel]  [Help]
+///
+/// Maps to Tera Term IDD_RECVFILEDLG (271×102 DLU).
+final class RecvFileDialogController: BaseSetupDialogController {
+
+    struct Result {
+        let fileURL: URL
+        let binary: Bool
+        let autoStopWaitSec: Int
+    }
+
+    private var filenameField: NSTextField!
+    private var binaryCheck: NSButton!
+    private var autoStopField: NSTextField!
+
+    private(set) var result: Result?
+
+    init() {
+        super.init(nibName: nil, bundle: nil)
+        self.title = TTL("dialog.recvFile.title")
+    }
+
+    required init?(coder: NSCoder) { fatalError() }
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        setupControls()
+    }
+
+    private func setupControls() {
+        setDialogContentWidth(420)
+
+        // --- Filename row ---
+        let fnLabel = NSView.makeLabel(
+            TTL("dialog.recvFile.filename"))
+        fnLabel.alignment = .left
+
+        filenameField = NSView.makeTextField(value: "", placeholder: "")
+        filenameField.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+
+        let browseBtn = NSButton(
+            title: "...", target: self, action: #selector(browseFile(_:)))
+        browseBtn.translatesAutoresizingMaskIntoConstraints = false
+        browseBtn.bezelStyle = .rounded
+        browseBtn.widthAnchor.constraint(equalToConstant: 30).isActive = true
+
+        let fnRow = NSStackView(views: [filenameField, browseBtn])
+        fnRow.translatesAutoresizingMaskIntoConstraints = false
+        fnRow.orientation = .horizontal
+        fnRow.spacing = 4
+
+        // --- Binary checkbox ---
+        binaryCheck = NSView.makeCheckbox(
+            TTL("dialog.recvFile.binary"), checked: false)
+
+        // --- Auto-stop wait time ---
+        let autoLabel = NSView.makeLabel(
+            TTL("dialog.recvFile.autoStop"))
+        autoLabel.alignment = .left
+
+        autoStopField = NSView.makeTextField(value: "0", width: 60)
+
+        let autoRow = NSStackView(views: [autoLabel, autoStopField])
+        autoRow.translatesAutoresizingMaskIntoConstraints = false
+        autoRow.orientation = .horizontal
+        autoRow.spacing = 8
+
+        // --- Assemble ---
+        let stack = NSStackView(views: [fnLabel, fnRow, binaryCheck, autoRow])
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        stack.orientation = .vertical
+        stack.alignment = .leading
+        stack.spacing = 8
+        contentArea.addSubview(stack)
+
+        NSLayoutConstraint.activate([
+            stack.topAnchor.constraint(equalTo: contentArea.topAnchor),
+            stack.leadingAnchor.constraint(equalTo: contentArea.leadingAnchor),
+            stack.trailingAnchor.constraint(equalTo: contentArea.trailingAnchor),
+            stack.bottomAnchor.constraint(equalTo: contentArea.bottomAnchor),
+            fnRow.widthAnchor.constraint(equalTo: stack.widthAnchor),
+        ])
+    }
+
+    @objc private func browseFile(_ sender: Any?) {
+        let savePanel = NSSavePanel()
+        if savePanel.runModal() == .OK, let url = savePanel.url {
+            filenameField.stringValue = url.path
+        }
+    }
+
+    override func applySettings() {
+        let path = filenameField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !path.isEmpty else { result = nil; return }
+        let url = URL(fileURLWithPath: path)
+
+        result = Result(
+            fileURL: url,
+            binary: binaryCheck.state == .on,
+            autoStopWaitSec: Int(autoStopField.stringValue) ?? 0
+        )
+    }
+}
+
+// MARK: - YMODEM Option Panel
+
+/// Accessory view for NSOpenPanel / NSSavePanel when using YMODEM.
+///
+///  ┌─Option──────────────────────────────────────┐
+///  │ ◉ YMODEM  ○ YMODEM-G   ☑ Binary             │
+///  └─────────────────────────────────────────────┘
+///
+/// Maps to Tera Term YMODEM option (Yopt1K / YoptG / YoptSingle).
+final class YMODEMOptionAccessory: NSView {
+    let standardRadio: NSButton
+    let ymodemGRadio: NSButton
+    let binaryCheck: NSButton
+
+    var selectedProtocol: TransferProtocolType {
+        if ymodemGRadio.state == .on { return .ymodemG }
+        return .ymodem
+    }
+
+    var isBinary: Bool { binaryCheck.state == .on }
+
+    init(defaultStandard: Bool = true) {
+        standardRadio = NSView.makeRadioButton(
+            TTL("dialog.yopt.ymodem"), tag: 0)
+        ymodemGRadio = NSView.makeRadioButton(
+            TTL("dialog.yopt.ymodemG"), tag: 1)
+        binaryCheck = NSView.makeCheckbox(
+            TTL("dialog.yopt.binary"), checked: true)
+
+        super.init(frame: .zero)
+        translatesAutoresizingMaskIntoConstraints = false
+
+        let box = NSView.makeGroupBox(
+            title: TTL("dialog.yopt.option"))
+        addSubview(box)
+        box.translatesAutoresizingMaskIntoConstraints = false
+
+        if defaultStandard {
+            standardRadio.state = .on
+            ymodemGRadio.state = .off
+        } else {
+            standardRadio.state = .off
+            ymodemGRadio.state = .on
+        }
+
+        standardRadio.target = self
+        standardRadio.action = #selector(radioChanged(_:))
+        ymodemGRadio.target = self
+        ymodemGRadio.action = #selector(radioChanged(_:))
+
+        let row = NSStackView(views: [standardRadio, ymodemGRadio, binaryCheck])
+        row.translatesAutoresizingMaskIntoConstraints = false
+        row.orientation = .horizontal
+        row.spacing = 16
+        row.alignment = .firstBaseline
+
+        let content = box.contentView!
+        content.addSubview(row)
+
+        NSLayoutConstraint.activate([
+            box.topAnchor.constraint(equalTo: topAnchor),
+            box.leadingAnchor.constraint(equalTo: leadingAnchor),
+            box.trailingAnchor.constraint(equalTo: trailingAnchor),
+            box.bottomAnchor.constraint(equalTo: bottomAnchor),
+
+            row.topAnchor.constraint(equalTo: content.topAnchor, constant: 4),
+            row.leadingAnchor.constraint(equalTo: content.leadingAnchor, constant: 8),
+            row.trailingAnchor.constraint(lessThanOrEqualTo: content.trailingAnchor, constant: -8),
+            row.bottomAnchor.constraint(equalTo: content.bottomAnchor, constant: -4),
+        ])
+    }
+
+    required init?(coder: NSCoder) { fatalError() }
+
+    @objc private func radioChanged(_ sender: NSButton) {
+        standardRadio.state = (sender === standardRadio) ? .on : .off
+        ymodemGRadio.state = (sender === ymodemGRadio) ? .on : .off
+    }
+}
+
+// MARK: - YMODEM Dialog Helpers (in FileTransferDialogHelper extension)
+
+extension FileTransferDialogHelper {
+
+    // MARK: - YMODEM Send
+
+    /// Present a YMODEM send file open panel with YMODEM option accessory.
+    static func presentYMODEMSendPanel(
+        on window: NSWindow,
+        completion: @escaping (URL, TransferProtocolType) -> Void
+    ) {
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = true
+        panel.canChooseDirectories = false
+        panel.allowsMultipleSelection = false
+        configureOpenPanelForAllFileTypes(panel)
+        panel.title = TTL("dialog.ymodem.sendTitle")
+
+        let accessory = YMODEMOptionAccessory(defaultStandard: true)
+        panel.accessoryView = accessory
+        panel.isAccessoryViewDisclosed = true
+
+        panel.beginSheetModal(for: window) { response in
+            guard response == .OK, let url = panel.url else { return }
+            guard self.validateReadPermission(for: url, on: window) else { return }
+            completion(url, accessory.selectedProtocol)
+        }
+    }
+
+    // MARK: - YMODEM Receive
+
+    /// Present a YMODEM receive directory selection panel.
+    /// YMODEM provides filename in block 0, so user picks a directory.
+    static func presentYMODEMReceivePanel(
+        on window: NSWindow,
+        completion: @escaping (URL) -> Void
+    ) {
+        let panel = NSSavePanel()
+        panel.title = TTL("dialog.ymodem.receiveTitle")
+        panel.nameFieldStringValue = "received_file"
+
+        let accessory = YMODEMOptionAccessory(defaultStandard: true)
+        panel.accessoryView = accessory
+
+        panel.beginSheetModal(for: window) { response in
+            guard response == .OK, let url = panel.url else { return }
+            completion(url)
+        }
+    }
+}
+
+#endif

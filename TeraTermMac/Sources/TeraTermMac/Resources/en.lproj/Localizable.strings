@@ -1,0 +1,1124 @@
+/* Application Menu */
+"menu.app.about" = "About Tera Term Mac";
+"menu.app.preferences" = "Preferences…";
+"menu.app.hide" = "Hide Tera Term Mac";
+"menu.app.hideOthers" = "Hide Others";
+"menu.app.showAll" = "Show All";
+"menu.app.quit" = "Quit Tera Term Mac";
+
+/* File Menu */
+"menu.file" = "File";
+"menu.file.newConnection" = "New Connection…";
+"menu.file.newWindow" = "New Window";
+"menu.file.duplicateSession" = "Duplicate Session";
+"menu.file.log" = "Log…";
+"menu.file.stopLog" = "Stop Log";
+"menu.file.pauseLog" = "Pause Log";
+"menu.file.resumeLog" = "Resume Log";
+"menu.file.commentToLog" = "Comment to Log…";
+"menu.file.viewLog" = "View Log";
+"menu.file.showLogDialog" = "Show Log Dialog";
+"menu.file.quitAll" = "Quit All Tera Term";
+"menu.file.fileTransfer" = "File Transfer";
+"menu.file.xmodemSend" = "XMODEM Send…";
+"menu.file.xmodemReceive" = "XMODEM Receive…";
+"menu.file.zmodemSend" = "ZMODEM Send…";
+"menu.file.zmodemReceive" = "ZMODEM Receive…";
+"menu.file.kermitSend" = "Kermit Send…";
+"menu.file.kermitReceive" = "Kermit Receive…";
+"menu.file.kermitGet" = "Kermit Get…";
+"menu.file.kermitFinish" = "Kermit Finish";
+"menu.file.ymodemSend" = "YMODEM Send…";
+"menu.file.ymodemReceive" = "YMODEM Receive…";
+"menu.file.bplusSend" = "B-Plus Send…";
+"menu.file.bplusReceive" = "B-Plus Receive…";
+"menu.file.quickvanSend" = "Quick-VAN Send…";
+"menu.file.quickvanReceive" = "Quick-VAN Receive…";
+"menu.file.sendFile" = "Send File…";
+"menu.file.receiveFile" = "Receive File…";
+"menu.file.changeDir" = "Change Directory…";
+"menu.file.disconnect" = "Disconnect";
+"menu.file.close" = "Close";
+
+/* Edit Menu */
+"menu.edit" = "Edit";
+"menu.edit.copy" = "Copy";
+"menu.edit.copyAsTable" = "Copy as Table";
+"menu.edit.paste" = "Paste";
+"menu.edit.pasteSpecial" = "Paste Special…";
+"menu.edit.clearScreen" = "Clear Screen";
+"menu.edit.clearBuffer" = "Clear Buffer";
+"menu.edit.selectAll" = "Select All";
+"menu.edit.pasteCR" = "Paste with CR";
+"menu.edit.deselect" = "Deselect";
+"menu.edit.selectScreen" = "Select Screen";
+"menu.edit.editHistory" = "Edit History…";
+
+/* Setup Menu */
+"menu.setup" = "Setup";
+"menu.setup.terminal" = "Terminal…";
+"menu.setup.window" = "Window…";
+"menu.setup.font" = "Font…";
+"menu.setup.keyboard" = "Keyboard…";
+"menu.setup.serialPort" = "Serial Port…";
+"menu.setup.tcpip" = "TCP/IP…";
+"menu.setup.additionalSettings" = "Additional Settings…";
+"menu.setup.loadKeymap" = "Load Key Map…";
+"menu.setup.saveSetup" = "Save Setup…";
+"menu.setup.restoreSetup" = "Restore Setup…";
+
+/* Code Menu (Encoding) */
+"menu.code" = "Code";
+"menu.code.both" = "Send && Receive";
+"menu.code.receive" = "Receive";
+"menu.code.send" = "Send";
+"menu.code.group.unicode" = "— Unicode —";
+"menu.code.group.japanese" = "— Japanese —";
+"menu.code.group.chinese" = "— Chinese —";
+"menu.code.group.korean" = "— Korean —";
+"menu.code.group.western" = "— Western —";
+"menu.code.group.dosWindows" = "— DOS / Windows —";
+
+/* Control Menu */
+"menu.control" = "Control";
+"menu.control.resetTerminal" = "Reset Terminal";
+"menu.control.areYouThere" = "Are You There";
+"menu.control.sendBreak" = "Send Break";
+"menu.control.resetPort" = "Reset Port";
+"menu.control.macro" = "Macro…";
+"menu.control.replayLog" = "Replay Log…";
+"menu.control.resetRemoteTitle" = "Reset Remote Title";
+"menu.control.tekWindow" = "Open TEK Window";
+"menu.control.closeTekWindow" = "Close TEK Window";
+"menu.control.showMacroWindow" = "Show Macro Window";
+"menu.control.broadcast" = "Command Broadcast";
+
+/* Window Menu */
+"menu.window" = "Window";
+"menu.window.minimize" = "Minimize";
+"menu.window.zoom" = "Zoom";
+"menu.window.windowList" = "Window List";
+"menu.window.minimizeAll" = "Minimize All";
+"menu.window.restoreAll" = "Restore All";
+"menu.window.cascade" = "Cascade";
+"menu.window.tileVertical" = "Tile Vertically";
+"menu.window.tileHorizontal" = "Tile Horizontally";
+
+/* Help Menu */
+"menu.help" = "Help";
+"menu.help.help" = "Tera Term Mac Help";
+
+/* Connection Dialog (port of IDD_HOSTDLG + TTSSH) */
+"dialog.connection.title" = "Tera Term: New connection";
+"dialog.connection.host" = "Host:";
+"dialog.connection.hostPlaceholder" = "hostname or IP";
+"dialog.connection.tcpip" = "TCP/IP";
+"dialog.connection.service" = "Service:";
+"dialog.connection.telnet" = "Telnet";
+"dialog.connection.other" = "Other";
+"dialog.connection.tcpPort" = "TCP port#:";
+"dialog.connection.sshVersion" = "SSH version:";
+"dialog.connection.ipVersion" = "IP version:";
+"dialog.connection.serial" = "Serial";
+"dialog.connection.serialPort" = "Port:";
+"dialog.connection.localShell" = "Local Shell";
+"dialog.connection.shellPath" = "Shell:";
+"dialog.connection.ok" = "OK";
+"dialog.connection.cancel" = "Cancel";
+
+/* Terminal Setup Dialog */
+"dialog.terminalSetup.title" = "Terminal Setup";
+"dialog.terminalSetup.localEcho" = "Local Echo";
+
+/* Window Setup Dialog */
+"dialog.windowSetup.title" = "Window Setup";
+"dialog.windowSetup.title_label" = "Title:";
+"dialog.windowSetup.alpha" = "Opacity:";
+"dialog.windowSetup.cursorBlock" = "Block";
+"dialog.windowSetup.cursorVertical" = "Vertical Bar";
+"dialog.windowSetup.cursorHorizontal" = "Underline";
+"dialog.windowSetup.colors" = "Colors";
+"dialog.windowSetup.scrollBuffer" = "Scroll Buffer:";
+"dialog.windowSetup.lines" = "lines";
+
+/* Keyboard Setup Dialog */
+"dialog.keyboardSetup.title" = "Keyboard Setup";
+"dialog.keyboardSetup.bsKey" = "Backspace Key:";
+"dialog.keyboardSetup.deleteKey" = "Delete Key:";
+"dialog.keyboardSetup.bsOption" = "BS (0x08)";
+"dialog.keyboardSetup.delOption" = "DEL (0x7F)";
+"dialog.keyboardSetup.deleteEscSeq" = "ESC Sequence";
+"dialog.keyboardSetup.metaKey" = "Meta Key (Option):";
+"dialog.keyboardSetup.metaOff" = "Off";
+"dialog.keyboardSetup.metaOn" = "On (Send ESC)";
+"dialog.keyboardSetup.answerback" = "Answerback:";
+"dialog.keyboardSetup.answerbackPlaceholder" = "ENQ response";
+"dialog.keyboardSetup.keyboardType" = "Keyboard Type:";
+"dialog.keyboardSetup.disableAppKeypad" = "Application Keypad:";
+"dialog.keyboardSetup.disableAppKeypadOption" = "Disable application keypad mode";
+"dialog.keyboardSetup.disableAppCursor" = "Application Cursor:";
+"dialog.keyboardSetup.disableAppCursorOption" = "Disable application cursor mode";
+"dialog.keyboardSetup.ok" = "OK";
+"dialog.keyboardSetup.cancel" = "Cancel";
+
+/* Load Keymap Dialog */
+"dialog.loadKeymap.title" = "Load Key Map";
+"dialog.loadKeymap.message" = "Select a keyboard setup file (.cnf)";
+"dialog.loadKeymap.success" = "Key map loaded successfully.";
+"dialog.loadKeymap.successDetail" = "%d key mappings and %d user keys loaded.";
+"dialog.loadKeymap.warning" = "Key map loaded with warnings:";
+"dialog.loadKeymap.error" = "Failed to load key map";
+
+/* Serial Port Dialog */
+"dialog.serialPort.title" = "Serial Port Setup";
+"dialog.serialPort.port" = "Port:";
+"dialog.serialPort.dataBits" = "Data Bits:";
+"dialog.serialPort.parity" = "Parity:";
+"dialog.serialPort.parityNone" = "None";
+"dialog.serialPort.parityOdd" = "Odd";
+"dialog.serialPort.parityEven" = "Even";
+"dialog.serialPort.parityMark" = "Mark";
+"dialog.serialPort.paritySpace" = "Space";
+"dialog.serialPort.flow" = "Flow:";
+"dialog.serialPort.flowNone" = "None";
+"dialog.serialPort.flowXonXoff" = "XON/XOFF";
+"dialog.serialPort.flowHardware" = "Hardware";
+"dialog.serialPort.noPortsFound" = "(No ports found)";
+
+/* Terminal Setup Dialog (new ViewController keys - matching IDD_TERMDLG) */
+"dialog.termSetup.terminalSize" = "Terminal size";
+"dialog.termSetup.termSizeIsWin" = "Term size = win size";
+"dialog.termSetup.autoResize" = "Auto window resize";
+"dialog.termSetup.newline" = "New-line";
+"dialog.termSetup.receive" = "Receive:";
+"dialog.termSetup.transmit" = "Transmit:";
+"dialog.termSetup.terminalId" = "Terminal ID:";
+"dialog.termSetup.answerback" = "Answerback:";
+"dialog.termSetup.autoSwitch" = "Auto switch (VT<->TEK)";
+"dialog.termSetup.newlineCR" = "CR";
+"dialog.termSetup.newlineCRLF" = "CR+LF";
+"dialog.termSetup.newlineLF" = "LF";
+"dialog.termSetup.newlineAuto" = "AUTO";
+
+/* Serial Port Setup Dialog (new ViewController keys - matching IDD_SERIALDLG) */
+"dialog.serialSetup.speed" = "Speed:";
+"dialog.serialSetup.stopBits" = "Stop bits:";
+"dialog.serialSetup.flowControl" = "Flow control:";
+"dialog.serialSetup.transmitDelay" = "Transmit delay";
+"dialog.serialSetup.msecChar" = "msec/char";
+"dialog.serialSetup.msecLine" = "msec/line";
+
+/* Window Setup Dialog (new ViewController keys - matching IDD_WINDLG) */
+"dialog.winSetup.cursorShape" = "Cursor shape";
+"dialog.winSetup.hideTitleBar" = "Hide title bar";
+"dialog.winSetup.hideMenuBar" = "Hide menu bar";
+"dialog.winSetup.pc16Colors" = "16 Colors (PC style)";
+"dialog.winSetup.text" = "Text";
+"dialog.winSetup.background" = "Background";
+"dialog.winSetup.swapColors" = "Swap colors";
+
+/* Common Dialog Buttons */
+"OK" = "OK";
+"Cancel" = "Cancel";
+"Help" = "Help";
+"Close" = "Close";
+"No" = "No";
+"..." = "...";
+"Tera Term" = "Tera Term";
+
+/* Paste Special Dialog */
+"dialog.pasteSpecial.title" = "Paste Special";
+"dialog.pasteSpecial.message" = "Edit text before sending to terminal:";
+"dialog.pasteSpecial.send" = "Send";
+
+/* Macro Dialog */
+"dialog.macro.title" = "Run Macro";
+"dialog.macro.message" = "Select a macro script file (.txt)";
+
+/* Replay Log Dialog */
+"dialog.replayLog.title" = "Replay Log";
+
+/* Broadcast Panel */
+"dialog.broadcast.title" = "Broadcast Command";
+"dialog.broadcast.label" = "Type a command to send to all connected sessions:";
+"dialog.broadcast.placeholder" = "command";
+"dialog.broadcast.send" = "Send";
+"dialog.broadcast.sendToThisOnly" = "Send to this process only";
+"dialog.broadcast.sendEnter" = "Send Enter";
+"dialog.broadcast.realtime" = "Real-time";
+"dialog.broadcast.windowList" = "Target windows:";
+"dialog.broadcast.windowTitle" = "Window";
+"dialog.broadcast.bringToFront" = "Bring to Front";
+"dialog.broadcast.minimize" = "Minimize";
+"dialog.broadcast.selectAll" = "Select All";
+"dialog.broadcast.invertSelection" = "Invert Selection";
+
+/* SSH Security Dialogs */
+"dialog.security.unknownHost.title" = "Unknown Host Key";
+"dialog.security.unknownHost.message" = "The server '%@' presented a host key that is not in your known_hosts file.\n\nKey type: %@\nFingerprint: %@\n\nAre you sure you want to continue connecting?";
+"dialog.security.differentKey.title" = "Host Key Changed";
+"dialog.security.differentKey.message" = "WARNING: The host key for '%@' has changed!\n\nKey type: %@\n\nThis could indicate a man-in-the-middle attack or the server has been reconfigured.";
+"dialog.security.differentKey.warning" = "WARNING: This could be a security threat!";
+"dialog.security.differentTypeKey.title" = "Different Key Type";
+"dialog.security.differentTypeKey.message" = "The server '%@' presented a key of type '%@' instead of the stored type '%@'.\n\nNew fingerprint: %@";
+"dialog.security.storedFingerprint" = "Stored fingerprint:";
+"dialog.security.newFingerprint" = "New fingerprint:";
+"dialog.security.accept" = "Accept & Save";
+"dialog.security.acceptOnce" = "Accept Once";
+"dialog.security.reject" = "Disconnect";
+"dialog.security.keyType" = "Key type: %@";
+"dialog.security.fingerprint" = "Fingerprint: %@";
+"dialog.security.keyRotation.title" = "Host Key Rotation";
+"dialog.security.keyRotation.message" = "The server '%@' is offering a new host key via key rotation.\n\nOld key type: %@\nNew key type: %@\nNew fingerprint: %@\n\nWould you like to update the stored host key?";
+"dialog.security.keyRotation.accept" = "Update Key";
+"dialog.security.keyRotation.reject" = "Keep Current Key";
+"dialog.security.sshfp.result" = "SSHFP DNS verification: %@";
+"dialog.security.sshfp.matchedTitle" = "SSHFP Verified";
+"dialog.security.sshfp.matchedMessage" = "The host key for '%@' matches the DNS SSHFP record.\n\nKey type: %@\nFingerprint: %@";
+"dialog.security.sshfp.notMatchedTitle" = "SSHFP Mismatch";
+"dialog.security.sshfp.notMatchedMessage" = "WARNING: The host key for '%@' does NOT match the DNS SSHFP record.\n\nKey type: %@\nFingerprint: %@";
+"dialog.security.sshfp.notFoundTitle" = "SSHFP Not Found";
+"dialog.security.sshfp.notFoundMessage" = "No SSHFP DNS record found for '%@'.";
+"dialog.security.sshfp.insecureTitle" = "SSHFP Insecure";
+"dialog.security.sshfp.insecureMessage" = "SSHFP record for '%@' was found but the DNS response is not secured by DNSSEC.";
+
+/* About Dialog */
+"dialog.about.title" = "Tera Term Mac";
+"dialog.about.message" = "macOS port of Tera Term\nTerminal Emulator\n\nOriginal: (C) 1994-1998 T. Teranishi\n(C) 2004- TeraTerm Project\n\nmacOS Port: Swift/AppKit";
+"dialog.about.ok" = "OK";
+
+/* Quit Confirmation */
+"dialog.quit.title" = "Active Connections";
+"dialog.quit.message" = "There are %d active connection(s). Quit anyway?";
+"dialog.quit.quit" = "Quit";
+"dialog.quit.cancel" = "Cancel";
+
+/* Connection Errors */
+"error.connection.title" = "Connection Error";
+"error.connection.title.dns" = "Host Not Found";
+"error.connection.title.refused" = "Connection Refused";
+"error.connection.title.timeout" = "Connection Timeout";
+"error.connection.title.ssh" = "SSH Not Supported";
+"error.connection.title.serial" = "Serial Port Error";
+"error.connection.title.sshError" = "SSH Error";
+"error.connection.ok" = "OK";
+"error.connection.streamFailed" = "Failed to create network streams to %@:%d.";
+"error.connection.failed" = "Could not connect to %@:%d.";
+"error.connection.refused" = "Connection to %@:%d was refused.\nThe host may not be listening on this port.";
+"error.connection.timeout" = "Connection to %@:%d timed out.\nThe host may be unreachable or a firewall is blocking access.";
+"error.connection.hostNotFound" = "Host \"%@\" could not be found.\nPlease check the hostname and your network connection.";
+"error.connection.sshNotSupported" = "SSH connection to %@:%d is not yet supported.\nPlease use an external SSH client or connect via Telnet.";
+"error.connection.sshFailed" = "SSH connection to %@:%d failed.";
+"error.connection.sshProcessFailed" = "Failed to start SSH process.";
+"error.connection.sshNotFound" = "/usr/bin/ssh not found. Please ensure OpenSSH is installed.";
+"error.connection.serialFailed" = "Failed to open serial port %@.";
+"error.connection.ptyFailed" = "Failed to create pseudo-terminal.";
+"error.connection.sendFailed" = "Failed to send data.";
+
+/* Log Comment Dialog */
+"dialog.logComment.title" = "Comment to Log";
+"dialog.logComment.message" = "Enter a comment to append to the log file:";
+"dialog.logComment.placeholder" = "Comment";
+"dialog.logComment.ok" = "Append";
+"dialog.logComment.cancel" = "Cancel";
+
+/* Log Progress Panel (IDD_LOGDLG progress) */
+"dialog.logProgress.title" = "Tera Term: Log";
+"dialog.logProgress.filename" = "Filename:";
+"dialog.logProgress.fullpath" = "Fullpath:";
+"dialog.logProgress.bytesLogged" = "Bytes logged:";
+"dialog.logProgress.elapsed" = "Elapsed time:";
+"dialog.logProgress.state" = "State:";
+"dialog.logProgress.stateActive" = "Logging";
+"dialog.logProgress.statePaused" = "Paused";
+"dialog.logProgress.pause" = "Pause";
+"dialog.logProgress.resume" = "Resume";
+"dialog.logProgress.close" = "Close";
+"dialog.logProgress.comment" = "Comment";
+"dialog.logProgress.help" = "Help";
+
+/* Quit All Confirmation */
+"dialog.quitAll.title" = "Quit All";
+"dialog.quitAll.message" = "There are %d Tera Term window(s). Close all?";
+"dialog.quitAll.quit" = "Quit All";
+"dialog.quitAll.cancel" = "Cancel";
+
+/* SSH Authentication Dialog */
+"dialog.sshAuth.title" = "SSH Authentication";
+"dialog.sshAuth.disconnect" = "Disconnect";
+"dialog.sshAuth.username" = "User name:";
+"dialog.sshAuth.passphrase" = "Passphrase:";
+"dialog.sshAuth.usePassword" = "Use plain password to log in";
+"dialog.sshAuth.usePublicKey" = "Use RSA/DSA/ECDSA/ED25519 key to log in";
+"dialog.sshAuth.useRhosts" = "Use rhosts to log in (SSH1)";
+"dialog.sshAuth.useChallenge" = "Use challenge/response to log in (keyboard-interactive)";
+"dialog.sshAuth.usePageant" = "Use Pageant";
+"dialog.sshAuth.privateKey" = "Private key file:";
+"dialog.sshAuth.selectKeyFile" = "Select Private Key File";
+"dialog.sshAuth.rememberPassword" = "Remember password in memory";
+"dialog.sshAuth.forwardAgent" = "Forward agent";
+"dialog.sshAuth.invalidKey.title" = "Invalid Private Key";
+"dialog.sshAuth.invalidKey.message" = "The selected file is not a valid private key:\n%@\n\nSupported formats: OpenSSH, PEM (RSA/DSA/EC), PuTTY (PPK), SSH.COM.\nPlease select a valid private key file.";
+"dialog.sshAuth.invalidKey.retry" = "Select Again";
+
+/* File Transfer */
+"transfer.complete.title" = "Transfer Complete";
+"transfer.complete.message" = "%@: %lld bytes";
+"transfer.failed.title" = "Transfer Failed";
+"transfer.ok" = "OK";
+
+/* Window Title */
+"window.title.disconnected" = "Disconnected";
+"window.title.localShell" = "Local Shell";
+
+/* Context Menu */
+"contextMenu.copy" = "Copy";
+"contextMenu.paste" = "Paste";
+"contextMenu.selectAll" = "Select All";
+"contextMenu.clearBuffer" = "Clear Buffer";
+
+/* Macro */
+"macro.error.title" = "Macro Error";
+"macro.error.stop" = "Stop";
+"macro.error.continue" = "Continue";
+"menu.control.stopMacro" = "Stop Macro";
+
+/* Macro Dialog Commands */
+"dialog.macro.ok" = "OK";
+"dialog.macro.cancel" = "Cancel";
+"dialog.macro.yes" = "Yes";
+"dialog.macro.no" = "No";
+"dialog.macro.selectFile" = "Select File";
+"dialog.macro.selectFolder" = "Select Folder";
+
+/* Macro Status Panel */
+"macroStatus.title" = "Macro";
+"macroStatus.pause" = "Pause";
+"macroStatus.resume" = "Resume";
+"macroStatus.stop" = "Stop";
+
+/* File Transfer Dialogs */
+"dialog.xopt.checksum" = "Checksum";
+"dialog.xopt.crc" = "CRC";
+"dialog.xopt.1k" = "1K";
+"dialog.xopt.binary" = "Binary";
+"dialog.xopt.option" = "Option";
+"dialog.fopt.binary" = "Binary";
+"dialog.fopt.option" = "Option";
+"dialog.xmodem.sendTitle" = "Tera Term: XMODEM Send";
+"dialog.xmodem.receiveTitle" = "Tera Term: XMODEM Receive";
+"dialog.multi.sendTitle" = "Tera Term: %@ Send";
+"dialog.multi.receiveTitle" = "Tera Term: %@ Receive";
+"dialog.multi.protocolDefault" = "File Transfer";
+"dialog.kermitGet.filename" = "Filename:";
+"dialog.prot.filename" = "Filename:";
+"dialog.prot.protocol" = "Protocol:";
+"dialog.prot.packet" = "Packet#:";
+"dialog.prot.bytesTransferred" = "Bytes transferred:";
+"dialog.prot.elapsed" = "Elapsed time:";
+"dialog.prot.cancel" = "Cancel";
+"dialog.prot.title" = "Tera Term: File Transfer";
+"dialog.ftrans.filename" = "Filename:";
+"dialog.ftrans.fullpath" = "Fullpath:";
+"dialog.ftrans.bytesTransferred" = "Bytes transferred:";
+"dialog.ftrans.elapsed" = "Elapsed time:";
+"dialog.ftrans.close" = "Close";
+"dialog.ftrans.pause" = "Pause";
+"dialog.ftrans.resume" = "Resume";
+"dialog.ftrans.help" = "Help";
+"dialog.ftrans.title" = "Tera Term: File Transfer";
+
+/* Send File Dialog (IDD_SENDFILEDLG) */
+"dialog.sendFile.title" = "Send file";
+"dialog.sendFile.filename" = "Filename (drop file in this dialog):";
+"dialog.sendFile.readingMethod" = "File reading method:";
+"dialog.sendFile.bulkRead" = "Bulk read";
+"dialog.sendFile.sequentialRead" = "Sequential read";
+"dialog.sendFile.binary" = "Binary";
+"dialog.sendFile.delayType" = "Delay type:";
+"dialog.sendFile.delayNone" = "No delay";
+"dialog.sendFile.delayPerChar" = "Per character";
+"dialog.sendFile.delayPerLine" = "Per line";
+"dialog.sendFile.sendSize" = "Send size(bytes):";
+"dialog.sendFile.sizeAll" = "All";
+"dialog.sendFile.delayTime" = "Delay time(ms):";
+
+/* Receive File Dialog (IDD_RECVFILEDLG) */
+"dialog.recvFile.title" = "Receive file";
+"dialog.recvFile.filename" = "Filename (drop file in this dialog):";
+"dialog.recvFile.binary" = "Binary";
+"dialog.recvFile.autoStop" = "Auto-stop wait time(sec):";
+
+/* Additional Settings Dialog */
+"dialog.additionalSettings.title" = "Tera Term: Additional Settings";
+"dialog.unifiedSettings.title" = "Tera Term: Settings";
+
+/* Additional Settings - Tab Names */
+"tab.general" = "General";
+"tab.coding" = "Coding";
+"tab.copyPaste" = "Copy and Paste";
+"tab.sequence" = "Sequence";
+"tab.mouse" = "Mouse";
+"tab.log" = "Log";
+"tab.visual" = "Visual";
+"tab.font" = "Font";
+"tab.tekFont" = "TEK Font";
+"tab.theme" = "Theme";
+"tab.ui" = "UI";
+"tab.plugin" = "Plugin";
+"tab.localShell" = "Local Shell";
+"tab.debug" = "Debug";
+
+/* Additional Settings - General */
+"dialog.general.sendBreak" = "Disable Send Break accelerator key";
+"dialog.general.broadcast" = "Accept broadcast";
+"dialog.general.autoScroll" = "Auto-scroll only in bottom line";
+"dialog.general.clearOnResize" = "Clear on window resize";
+"dialog.general.cursorIME" = "Change cursor shape by IME state";
+"dialog.general.defaultPort" = "Default port:";
+"dialog.general.titleFormat" = "Title Format";
+"dialog.general.titleTCPIP" = "TCP/IP";
+"dialog.general.titleSerial" = "Serial";
+"dialog.general.titleSession" = "Session No.";
+"dialog.general.notifySound" = "Notification sound";
+"dialog.general.fileTransferFolder" = "File transfer folder:";
+
+/* Additional Settings - Coding */
+"dialog.coding.receiveEncoding" = "Receive encoding:";
+"dialog.coding.sendEncoding" = "Send encoding:";
+"dialog.coding.ambiguousWidth" = "Ambiguous character width:";
+"dialog.coding.emojiWidth" = "Emoji width:";
+
+/* Additional Settings - Copy and Paste */
+"dialog.copyPaste.continuedLineCopy" = "Enable continued line copy";
+"dialog.copyPaste.confirmPasteNewLine" = "Confirm paste with newline";
+"dialog.copyPaste.autoTextCopy" = "Auto-copy selection to clipboard";
+"dialog.copyPaste.delimiterList" = "Delimiter list:";
+"dialog.copyPaste.pasteDelay" = "Paste delay (ms):";
+"dialog.copyPaste.disableRightClickPaste" = "Disable right-click paste";
+"dialog.copyPaste.confirmRightClickPaste" = "Confirm right-click paste";
+"dialog.copyPaste.disableMiddleClickPaste" = "Disable middle-click paste";
+"dialog.copyPaste.leftClickOnlySelection" = "Start selection with left-click only";
+"dialog.copyPaste.trimTrailingNewline" = "Trim trailing newline on paste";
+"dialog.copyPaste.confirmDangerousClipboard" = "Confirm dangerous clipboard paste";
+"dialog.copyPaste.dangerousKeywordFile" = "Keyword file:";
+"dialog.copyPaste.enableSelectionOnActivate" = "Enable text selection on window activate";
+"dialog.copyPaste.pasteSettings" = "Paste Settings";
+"dialog.copyPaste.securitySettings" = "Security";
+
+/* Additional Settings - Sequence */
+"dialog.sequence.mouseEventTracking" = "Accept mouse event tracking";
+"dialog.sequence.disableControlKeyMouse" = "Disable mouse events while Control key pressed";
+"dialog.sequence.titleChanging" = "Accept title changing";
+"dialog.sequence.titleChangeMode" = "Title change mode:";
+"dialog.sequence.titleModeOverwrite" = "Overwrite";
+"dialog.sequence.titleModePrepend" = "Prepend";
+"dialog.sequence.titleModeAppend" = "Append";
+"dialog.sequence.titleReport" = "Title report request";
+"dialog.sequence.windowControl" = "Window control sequence";
+"dialog.sequence.windowInfoReport" = "Window information report sequence";
+"dialog.sequence.cursorControl" = "Cursor control sequence";
+"dialog.sequence.clipboardAccess" = "Clipboard access from remote";
+"dialog.sequence.clipboardAccessMode" = "Clipboard access mode:";
+"dialog.sequence.clipOff" = "Off";
+"dialog.sequence.clipReadWrite" = "Read/Write";
+"dialog.sequence.clipReadOnly" = "Read Only";
+"dialog.sequence.clipWriteOnly" = "Write Only";
+"dialog.sequence.notifyClipboardAccess" = "Notify remote clipboard access";
+"dialog.sequence.acceptScrollBufferClear" = "Accept scroll buffer clear from remote";
+"dialog.sequence.disablePrintSequence" = "Disable print start sequence";
+"dialog.sequence.beep" = "Beep:";
+"dialog.sequence.beepOff" = "Off";
+"dialog.sequence.beepSystem" = "System Sound";
+"dialog.sequence.beepVisual" = "Visual Bell";
+
+/* Additional Settings - Mouse */
+"dialog.mouse.clickableURL" = "Enable clickable URL";
+"dialog.mouse.wheelScrollLines" = "Wheel scroll lines:";
+"dialog.mouse.lines" = "lines";
+
+/* Additional Settings - Log */
+"dialog.log.viewEditor" = "Log viewer/editor:";
+"dialog.log.editorArguments" = "Arguments:";
+"dialog.log.defaultName" = "Default log file name:";
+"dialog.log.defaultPath" = "Default log file path:";
+"dialog.log.autoStart" = "Auto start logging";
+"dialog.log.options" = "Options";
+"dialog.log.binary" = "Binary";
+"dialog.log.append" = "Append";
+"dialog.log.plainText" = "Plain text";
+"dialog.log.hideDialog" = "Hide dialog";
+"dialog.log.screenBuffer" = "Include screen buffer";
+"dialog.log.timestamp" = "Timestamp";
+"dialog.log.bom" = "BOM";
+"dialog.log.timestampType" = "Timestamp type:";
+"dialog.log.logRotate" = "Log Rotate";
+"dialog.log.rotateEnabled" = "Enable rotation";
+"dialog.log.rotateSize" = "Size:";
+"dialog.log.rotateStep" = "Step:";
+
+/* Additional Settings - Visual */
+"dialog.visual.windowOpacity" = "Window Opacity";
+"dialog.visual.active" = "Active:";
+"dialog.visual.inactive" = "Inactive:";
+"dialog.visual.ansiColorPalette" = "ANSI Color Palette";
+"dialog.visual.charAttributes" = "Character Attributes";
+"dialog.visual.attrBold" = "Bold";
+"dialog.visual.attrBlink" = "Blink";
+"dialog.visual.attrReverse" = "Reverse";
+"dialog.visual.attrUnderline" = "Underline";
+"dialog.visual.attrStrikethrough" = "Strikethrough";
+"dialog.visual.mouseCursor" = "Mouse cursor:";
+"dialog.visual.cursorArrow" = "Arrow";
+"dialog.visual.cursorIBeam" = "I-Beam";
+"dialog.visual.cursorCrosshair" = "Crosshair";
+"dialog.visual.cursorHidden" = "Hidden";
+"dialog.visual.fontRenderingQuality" = "Font quality:";
+"dialog.visual.qualityDefault" = "Default";
+"dialog.visual.qualityAntiAlias" = "AntiAlias";
+"dialog.visual.qualitySubpixel" = "Subpixel (ClearType)";
+"dialog.visual.attrColorFont" = "Attribute Color / Font";
+"dialog.visual.enableBoldColor" = "Enable bold attribute color";
+"dialog.visual.enableBoldFont" = "Enable bold attribute font";
+"dialog.visual.enableBlinkColor" = "Enable blink attribute color";
+"dialog.visual.enableReverseColor" = "Enable reverse attribute color";
+"dialog.visual.enableUnderlineColor" = "Enable underline attribute color";
+"dialog.visual.enableUnderlineDecoration" = "Add underline to underline attribute";
+"dialog.visual.enableURLColor" = "Enable URL attribute color";
+"dialog.visual.enableURLUnderline" = "Add underline to URL strings";
+"dialog.visual.enableStrikethroughColor" = "Enable strikethrough attribute color";
+"dialog.visual.enableANSIColor" = "Enable ANSI color";
+"dialog.visual.useTextColor" = "Use text color (ignore SGR/ANSI colors)";
+"dialog.visual.flickerlessMove" = "Disable theme during window move/resize";
+
+/* Additional Settings - Font */
+"dialog.font.vtWindowFont" = "VT Window Font";
+"dialog.font.fontName" = "Font:";
+"dialog.font.choose" = "Choose…";
+"dialog.font.proportional" = "Show proportional fonts";
+"dialog.font.hidden" = "Show hidden fonts";
+"dialog.font.drawingAPI" = "Drawing API:";
+"dialog.font.codePage" = "Code page:";
+"dialog.font.charSpace" = "Character Space";
+
+/* Additional Settings - TEK Font */
+"dialog.tekFont.fontName" = "Font:";
+"dialog.tekFont.choose" = "Choose…";
+"dialog.tekFont.proportional" = "Show proportional fonts";
+"dialog.tekFont.hidden" = "Show hidden fonts";
+
+/* Additional Settings - Theme */
+"dialog.theme.enable" = "Enable theme";
+"dialog.theme.fastSizeMove" = "Disable theme during resize";
+"dialog.theme.themeFile" = "Theme file:";
+"dialog.theme.startupTheme" = "Startup theme:";
+"dialog.theme.susiePath" = "Susie plugin path:";
+"dialog.theme.themeEditor" = "Theme Editor…";
+
+/* Additional Settings - UI */
+"dialog.ui.language" = "Language:";
+"dialog.ui.languageAuto" = "Auto (System)";
+"dialog.ui.dialogFont" = "Dialog Font";
+"dialog.ui.fontName" = "Font:";
+"dialog.ui.chooseFont" = "Choose…";
+"dialog.ui.proportional" = "Show proportional fonts";
+"dialog.ui.hidden" = "Show hidden fonts";
+
+/* Additional Settings - Plugin */
+"dialog.plugin.setupDirectories" = "Plugin setup directories:";
+"dialog.plugin.add" = "Add…";
+"dialog.plugin.remove" = "Remove";
+
+/* Additional Settings - Local Shell (port of Cygwin tab) */
+"dialog.localShell.shellPath" = "Shell path:";
+"dialog.localShell.loginShell" = "Login shell";
+"dialog.localShell.homeChdir" = "cd to HOME";
+"dialog.localShell.env1" = "ENV 1:";
+"dialog.localShell.env2" = "ENV 2:";
+"dialog.localShell.envPlaceholder" = "KEY=VALUE";
+
+/* Additional Settings - Debug */
+"dialog.debug.charInfoPopup" = "Show character info popup";
+
+/* Clipboard Confirmation Dialog (IDD_CLIPBOARD_DIALOG) */
+"dialog.clipboard.title" = "Clipboard";
+
+/* File Drag and Drop Dialog (IDD_DAD_DIALOG) */
+"dialog.dragDrop.title" = "Drag and Drop";
+"dialog.dragDrop.filePath" = "File path:";
+"dialog.dragDrop.scp" = "SCP";
+"dialog.dragDrop.sendFile" = "Send file";
+"dialog.dragDrop.pastePath" = "Paste path";
+"dialog.dragDrop.binary" = "Binary";
+"dialog.dragDrop.escape" = "Escape spaces";
+
+/* Change Directory Dialog (IDD_DIRDLG) */
+"dialog.changeDir.title" = "Tera Term: Change directory";
+"dialog.changeDir.current" = "Current dir: %@";
+"dialog.changeDir.placeholder" = "New dir";
+
+/* Edit History Dialog (IDD_EDITHISTORYDLG) */
+"dialog.editHistory.title" = "Edit History";
+"dialog.editHistory.host" = "Host:";
+"dialog.editHistory.add" = "Add";
+"dialog.editHistory.remove" = "Remove";
+"dialog.editHistory.up" = "Up";
+"dialog.editHistory.down" = "Down";
+"dialog.editHistory.hostColumn" = "Host";
+
+/* Macro Error Dialog (IDD_ERRDLG) */
+"dialog.macroError.title" = "Macro Error";
+"dialog.macroError.lineNumber" = "Line: %d";
+"dialog.macroError.stop" = "Stop";
+"dialog.macroError.continue" = "Continue";
+
+/* Log Dialog (IDD_LOGDLG) */
+"dialog.log.title" = "Log";
+"dialog.log.filename" = "Filename (drop file in this dialog):";
+"dialog.log.placeholder" = "teraterm.log";
+"dialog.log.writeMode" = "Write mode";
+"dialog.log.new" = "New / Overwrite";
+"dialog.log.appendMode" = "Append";
+"dialog.log.format" = "Text or Binary mode";
+"dialog.log.formatText" = "Text";
+"dialog.log.formatBinary" = "Binary";
+"dialog.log.timestampOption" = "Timestamp";
+"dialog.log.plainTextOption" = "Plain text";
+
+/* TCP/IP Setup Dialog (IDD_TCPIPDLG) */
+"dialog.tcpip.title" = "TCP/IP setup";
+"dialog.tcpip.host" = "Host:";
+"dialog.tcpip.port" = "TCP Port#:";
+"dialog.tcpip.keepAlive" = "TCP keepalive";
+"dialog.tcpip.keepAliveInterval" = "Keepalive interval:";
+"dialog.tcpip.autoClose" = "Auto window close on disconnect";
+"dialog.tcpip.historySize" = "History:";
+"dialog.tcpip.antiIdle" = "Anti-idle";
+"dialog.tcpip.antiIdleEnable" = "Enable anti-idle";
+"dialog.tcpip.antiIdleString" = "Send string:";
+"dialog.tcpip.antiIdleInterval" = "Interval:";
+"dialog.tcpip.telnetAutoDetect" = "Auto detect";
+"dialog.tcpip.telnetBinaryOption" = "Binary option";
+"dialog.tcpip.telnetBinaryMode" = "Binary mode";
+"dialog.tcpip.telnetIgnoreDisconnect" = "Ignore disconnect on close";
+"dialog.tcpip.sshHeartbeat" = "SSH heartbeat:";
+
+/* Window List Dialog (IDD_WINLISTDLG) */
+"dialog.windowList.title" = "Tera Term: Window list";
+"dialog.windowList.open" = "Open";
+"dialog.windowList.closeWindow" = "Close window";
+"dialog.windowList.windowColumn" = "Window";
+
+/* File Menu - SSH SCP */
+"menu.file.sshSCP" = "SSH SCP…";
+
+/* File Menu - Print */
+"menu.file.print" = "Print…";
+"menu.file.printTEK" = "Print TEK…";
+
+/* Setup Menu - SSH related */
+"menu.setup.proxy" = "Proxy…";
+"menu.setup.ssh" = "SSH…";
+"menu.setup.sshAuth" = "SSH Authentication…";
+"menu.setup.sshForward" = "SSH Forwarding…";
+"menu.setup.sshKeyGen" = "SSH Key Generation…";
+"menu.setup.general" = "General…";
+"menu.setup.openConfigFolder" = "Open Config Folder";
+
+/* SSH SCP Dialog (IDD_SSHSCP) */
+"dialog.scp.title" = "Tera Term: Secure Copy Protocol (SCP)";
+"dialog.scp.sendFrom" = "From:";
+"dialog.scp.sendTo" = "To:";
+"dialog.scp.dragNote" = "You can drag the file to this window.";
+"dialog.scp.send" = "Send";
+"dialog.scp.receiveFrom" = "From:";
+"dialog.scp.receiveTo" = "To:";
+"dialog.scp.receive" = "Receive";
+"dialog.scp.selectFile" = "Select File to Send";
+"dialog.scp.selectDest" = "Select Destination Folder";
+"dialog.scp.progress.title.send" = "SCP: Sending file";
+"dialog.scp.progress.title.receive" = "SCP: Receiving file";
+"dialog.scp.progress.filename" = "Filename:";
+"dialog.scp.progress.bytes" = "Bytes transferred:";
+"dialog.scp.progress.time" = "Elapsed time:";
+"dialog.scp.error.notConnected" = "SCP requires an active SSH connection.";
+
+/* Proxy Setup Dialog (IDD_SETTING) */
+"dialog.proxy.title" = "Proxy Setup";
+"dialog.proxy.type" = "Type:";
+"dialog.proxy.typeNone" = "None";
+"dialog.proxy.typeHTTP" = "HTTP";
+"dialog.proxy.typeSocks4" = "SOCKS4";
+"dialog.proxy.typeSocks5" = "SOCKS5";
+"dialog.proxy.typeTelnet" = "Telnet";
+"dialog.proxy.hostname" = "Hostname:";
+"dialog.proxy.port" = "Port:";
+"dialog.proxy.username" = "Username:";
+"dialog.proxy.password" = "Password:";
+
+/* SSH Setup Dialog (IDD_SSHSETUP) */
+"dialog.ssh.title" = "SSH Setup";
+"dialog.sshSetup.title" = "SSH Setup";
+"dialog.sshSetup.cipherOrder" = "Preferred cipher order";
+"dialog.sshSetup.moveUp" = "Move Up";
+"dialog.sshSetup.moveDown" = "Move Down";
+"dialog.sshSetup.knownHosts" = "SSH Known Hosts";
+"dialog.sshSetup.knownHostsFile" = "Known hosts file:";
+"dialog.sshSetup.heartbeat" = "HeartBeat (keep-alive)";
+"dialog.sshSetup.heartbeatSec" = "sec. (0 to turn off)";
+"dialog.sshSetup.rememberPassword" = "Remember password in memory";
+"dialog.sshSetup.forwardAgent" = "Enable agent forwarding";
+"dialog.sshSetup.confirmAgent" = "Confirm agent forwarding";
+"dialog.sshSetup.notifyAgent" = "Notify access to the forwarded agent";
+"dialog.sshSetup.verifyDNS" = "Verify hostkey fingerprint by DNS";
+"dialog.sshSetup.notice" = "All options take effect the next time a session is started.";
+"dialog.sshSetup.hostKeyRotation" = "Hostkey rotation";
+"dialog.sshSetup.rotationDisabled" = "Disabled";
+"dialog.sshSetup.rotationEnabled" = "Enabled";
+"dialog.sshSetup.rotationAsk" = "Ask";
+"dialog.sshSetup.browse" = "Browse…";
+"dialog.sshSetup.readOnlyFiles" = "Read-only files:";
+"dialog.sshSetup.kexOrder" = "KEX order (SSH2)";
+"dialog.sshSetup.hostKeyOrder" = "Host Key order (SSH2)";
+"dialog.sshSetup.macOrder" = "MAC order (SSH2)";
+"dialog.sshSetup.compOrder" = "Compression order (SSH2)";
+"dialog.sshSetup.compressionLevel" = "Compression level:";
+"dialog.sshSetup.compressionNone" = "None";
+"dialog.sshSetup.compressionHigh" = "Highest";
+"dialog.sshSetup.logLevel" = "LogLevel";
+"dialog.sshSetup.logLevelUnit" = "(0 to turn off)";
+
+/* SSH Authentication Setup Dialog (IDD_SSHAUTHSETUP) */
+"dialog.sshAuthSetup.title" = "SSH Authentication Setup";
+"dialog.sshAuthSetup.banner" = "Select defaults for authentication:";
+"dialog.sshAuthSetup.usernameGroup" = "User name";
+"dialog.sshAuthSetup.noUsername" = "Do not enter username";
+"dialog.sshAuthSetup.defaultUsername" = "Use default username";
+"dialog.sshAuthSetup.logonUsername" = "Use logon username";
+"dialog.sshAuthSetup.currentUser" = "Current username is \"%@\"";
+"dialog.sshAuthSetup.checkAuth" = "Check the enabled authentication methods before login (SSH2)";
+
+/* SSH Forwarding Setup Dialog (IDD_SSHFWDSETUP) */
+"dialog.sshForward.title" = "SSH Forwarding Setup";
+"dialog.sshFwd.title" = "SSH Forwarding Setup";
+"dialog.sshFwd.portForwarding" = "Port Forwarding";
+"dialog.sshFwd.add" = "Add…";
+"dialog.sshFwd.edit" = "Edit…";
+"dialog.sshFwd.remove" = "Remove";
+"dialog.sshFwd.xForwarding" = "X Forwarding";
+"dialog.sshFwd.xDisplay" = "Display remote X applications on local X server";
+
+/* SSH Forwarding Edit Dialog (IDD_SSHFWDEDIT) */
+"dialog.sshFwdEdit.title" = "SSH Port Forwarding";
+"dialog.sshFwdEdit.banner" = "Select direction for forwarded port:";
+"dialog.sshFwdEdit.localPort" = "Forward local port";
+"dialog.sshFwdEdit.listen" = "listen";
+"dialog.sshFwdEdit.toRemote" = "to remote machine";
+"dialog.sshFwdEdit.port" = "port";
+"dialog.sshFwdEdit.remotePort" = "Forward remote server port";
+"dialog.sshFwdEdit.toLocal" = "to local machine";
+"dialog.sshFwdEdit.dynamicPort" = "Forward dynamic port";
+
+/* SSH Key Generation Dialog (IDD_SSHKEYGEN) */
+"dialog.sshKeyGen.title" = "SSH Key Generator";
+"dialog.sshKeyGen.keyType" = "Key type";
+"dialog.sshKeyGen.keyBits" = "Key Bits:";
+"dialog.sshKeyGen.passphrase" = "Key passphrase:";
+"dialog.sshKeyGen.confirm" = "Confirm passphrase:";
+"dialog.sshKeyGen.comment" = "Comment:";
+"dialog.sshKeyGen.generate" = "Generate";
+"dialog.sshKeyGen.savePublic" = "Save public key";
+"dialog.sshKeyGen.savePrivate" = "Save private key";
+"dialog.sshKeyGen.generating" = "Generating key…";
+"dialog.sshKeyGen.generated" = "Key generated.";
+"dialog.sshKeyGen.mismatch" = "Passphrases do not match.";
+"dialog.sshKeyGen.emptyPassphrase" = "Use empty passphrase?";
+"dialog.sshKeyGen.savePublicTitle" = "Save Public Key";
+"dialog.sshKeyGen.savePrivateTitle" = "Save Private Key";
+"dialog.sshKeyGen.error" = "Key generation failed: %@";
+
+/* General Setup Dialog (IDD_GENDLG) */
+"dialog.general.title" = "General Setup";
+"dialog.generalSetup.title" = "General Setup";
+"dialog.generalSetup.language" = "Language:";
+"dialog.generalSetup.languageAuto" = "Auto (System)";
+"dialog.generalSetup.languageEnglish" = "English";
+"dialog.generalSetup.languageJapanese" = "Japanese";
+"dialog.generalSetup.defaultPort" = "Default port:";
+"dialog.generalSetup.autoWindowClose" = "Auto window close";
+"dialog.generalSetup.titleFormat" = "Title format";
+"dialog.generalSetup.titleHostname" = "Hostname";
+"dialog.generalSetup.titleSession" = "Session No.";
+
+/* Multilingual Settings System */
+"settings.multilingual.title" = "Tera Term: Multilingual Settings";
+"settings.multilingual.languageSection" = "Language Settings";
+"settings.multilingual.currentLanguage" = "Current Language:";
+"settings.multilingual.autoDetect" = "Use system language";
+"settings.multilingual.restartRequired" = "Restart required to apply language changes.";
+"settings.multilingual.apply" = "Apply";
+"settings.multilingual.preview" = "Preview";
+
+/* Dynamic Layout Test Labels */
+"settings.layout.terminalEmulation" = "Terminal Emulation Settings";
+"settings.layout.connectionSettings" = "Connection Settings";
+"settings.layout.displaySettings" = "Display Settings";
+"settings.layout.keyboardShortcuts" = "Keyboard Shortcuts";
+"settings.layout.characterEncoding" = "Character Encoding";
+"settings.layout.scrollBufferSettings" = "Scroll Buffer Settings";
+"settings.layout.autoWrapMode" = "Automatic Line Wrapping Mode";
+"settings.layout.transmitDelaySettings" = "Transmit Delay Settings (ms/char)";
+
+/* Localization Validation */
+"validation.truncation.warning" = "Text truncation detected";
+"validation.layout.overflow" = "Layout overflow detected";
+"validation.language.mismatch" = "Language mismatch detected";
+
+/* Additional Settings - General (new items) */
+"dialog.general.connectingTimeout" = "Connecting timeout (sec, 0=infinite):";
+"dialog.general.clearScreenOnClose" = "Clear screen on close connection";
+"dialog.general.saveWindowPosition" = "Save window position";
+"dialog.general.backWrap" = "Enable back-wrap";
+"dialog.general.vtCompatTab" = "VT compatible tab";
+
+/* Additional Settings - Coding (new items) */
+"dialog.coding.narrow" = "1 (Narrow)";
+"dialog.coding.wide" = "2 (Wide)";
+"dialog.coding.emojiOverride" = "Override emoji width";
+"dialog.coding.fallbackCP932" = "Fallback to CP932 for undefined characters";
+
+/* Additional Settings - Copy and Paste (new items) */
+"dialog.copyPaste.mouseSelectDelay" = "Selection start delay (ms):";
+
+/* Additional Settings - Sequence (new items) */
+"dialog.sequence.accept8BitCtrl" = "Accept 8-bit control codes";
+"dialog.sequence.send8BitCtrl" = "Send 8-bit control sequences";
+"dialog.sequence.alternateScreen" = "Enable alternate screen buffer";
+"dialog.sequence.bracketedPaste" = "Enable bracketed paste mode";
+"dialog.sequence.bracketedControlOnly" = "Bracketed paste control only";
+"dialog.sequence.allowWrongSequence" = "Allow wrong escape sequences";
+"dialog.sequence.maxOSCBuffer" = "Max OSC buffer size:";
+"dialog.sequence.enableLineMode" = "Enable line mode";
+
+/* Additional Settings - Mouse (new items) */
+"dialog.mouse.translateWheelToCursor" = "Translate wheel to cursor keys in alt screen";
+"dialog.mouse.disableWheelToCursorByCtrl" = "Disable wheel-to-cursor by Ctrl";
+
+/* Additional Settings - Log (new items) */
+"dialog.log.timestampFormat" = "Timestamp format:";
+
+/* Additional Settings - Visual (new items) */
+"dialog.visual.killFocusCursor" = "Show hollow cursor when window loses focus";
+"dialog.visual.pcBoldColor" = "PC-style bold color mapping";
+"dialog.visual.windowExtended" = "Window Extended Settings";
+"dialog.visual.attrColorSettings" = "Attribute Color Settings";
+"dialog.visual.colorNormal" = "Normal:";
+"dialog.visual.colorBold" = "Bold:";
+"dialog.visual.colorBlink" = "Blink:";
+"dialog.visual.colorReverse" = "Reverse:";
+"dialog.visual.colorURL" = "URL:";
+"dialog.visual.colorUnderline" = "Underline:";
+"dialog.visual.colorStrikethrough" = "Strikethrough:";
+"dialog.visual.enableBoldDisplay" = "Enable bold text rendering";
+"dialog.visual.hideWindowFrame" = "Frameless window display";
+"dialog.visual.aixtermColors" = "aixterm 16 color mode";
+"dialog.visual.xterm256Colors" = "xterm 256 color mode";
+"dialog.visual.useStandardBGColor" = "Always use standard background color";
+
+/* Additional Settings - Font (new items) */
+"dialog.font.resizeFontToFit" = "Resize font to fit drawing width";
+
+/* Additional Settings - Scroll (new items) */
+"dialog.general.scrollThreshold" = "Scroll threshold:";
+"dialog.general.scrollClearScreen" = "Clear screen on scroll";
+
+/* Additional Settings - Serial (new items) */
+"dialog.general.clearBuffOnOpen" = "Clear buffer on port open";
+"dialog.general.autoReconnect" = "Auto-reconnect serial port";
+
+/* Additional Settings - Beep (new items) */
+"dialog.general.beepOverUsedCount" = "Beep overuse count:";
+"dialog.general.beepOverUsedTime" = "Beep overuse time (sec):";
+"dialog.general.beepSuppressTime" = "Beep suppress time (sec):";
+
+/* Additional Settings - Broadcast (new items) */
+"dialog.general.maxBroadcastHistory" = "Max broadcast history:";
+
+/* Additional Settings - Debug (new items) */
+"dialog.debug.debugModes" = "Debug modes:";
+
+/* Additional Settings - URL (new items) */
+"dialog.mouse.joinSplitURL" = "Join split URLs across lines";
+"dialog.mouse.joinSplitURLIgnoreEOL" = "EOL char to ignore:";
+
+/* Additional Settings - File Transfer (new items) */
+"dialog.general.zmodemAuto" = "ZMODEM auto-receive";
+"dialog.general.confirmDragDrop" = "Confirm file drag and drop";
+"dialog.general.autoFileRename" = "Auto-rename files on conflict";
+
+/* Theme tab (new items) */
+"dialog.theme.bgImage" = "Background Image";
+"dialog.theme.bgImagePath" = "Image path:";
+"dialog.theme.browse" = "Browse…";
+"dialog.theme.alphaNormal" = "Normal text:";
+"dialog.theme.alphaReverse" = "Reverse text:";
+"dialog.theme.alphaOther" = "Other:";
+"dialog.theme.colorEditor" = "Theme Color Editor";
+"dialog.theme.foreground" = "Foreground:";
+"dialog.theme.background" = "Background:";
+"dialog.theme.cursor" = "Cursor:";
+"dialog.theme.url" = "URL:";
+"dialog.theme.selFg" = "Selection FG:";
+"dialog.theme.selBg" = "Selection BG:";
+
+/* Missing Localization Keys */
+
+/* Macro Status Panel - line number display */
+"macroStatus.linePrefix" = "Line: %d";
+
+/* Print Abort Dialog */
+"dialog.printAbort.printing" = "Printing...";
+
+/* Status Dialog */
+"dialog.status.title" = "Tera Term: Status";
+"dialog.status.processing" = "Processing...";
+
+/* TEK Window */
+"dialog.tek.title" = "Tera Term: TEK";
+
+/* Transfer Window Title */
+"window.title.transfer" = "Transfer: %@ - %@";
+
+/* Kermit Get Dialog */
+"dialog.kermitGet.title" = "Tera Term: Kermit Get";
+"dialog.kermitGet.placeholder" = "remote_file.txt";
+
+/* ANSI Color Names (tooltips) */
+"color.black" = "Black";
+"color.red" = "Red";
+"color.green" = "Green";
+"color.yellow" = "Yellow";
+"color.blue" = "Blue";
+"color.magenta" = "Magenta";
+"color.cyan" = "Cyan";
+"color.white" = "White";
+"color.brightBlack" = "Bright Black";
+"color.brightRed" = "Bright Red";
+"color.brightGreen" = "Bright Green";
+"color.brightYellow" = "Bright Yellow";
+"color.brightBlue" = "Bright Blue";
+"color.brightMagenta" = "Bright Magenta";
+"color.brightCyan" = "Bright Cyan";
+"color.brightWhite" = "Bright White";
+
+/* Drawing API names */
+"dialog.font.apiDefault" = "Default";
+"dialog.font.apiCoreText" = "CoreText";
+"dialog.font.apiCoreGraphics" = "CoreGraphics";
+
+/* UI Tab */
+"dialog.ui.systemDefault" = "(System Default)";
+
+/* Plugin Tab */
+"dialog.plugin.directoryColumn" = "Directory";
+
+/* Telnet Group Box (TCP/IP dialog) */
+"dialog.tcpip.telnetGroup" = "Telnet";
+
+/* Default Port items */
+"dialog.general.portTCPIP" = "TCP/IP";
+"dialog.general.portSerial" = "Serial";
+
+/* Macro */
+"macroStatus.lineFmt" = "Line: %d";
+
+/* Input Dialog default title */
+"dialog.input.defaultTitle" = "Input";
+
+/* Message Dialog default title */
+"dialog.message.defaultTitle" = "Message";
+
+/* File Transfer Read Error */
+"dialog.fileTransfer.readError.title" = "Cannot Read File";
+"dialog.fileTransfer.readError.message" = "The file \"%@\" cannot be read. Please check the file permissions.";
+
+/* YMODEM Option Panel */
+"dialog.yopt.ymodem" = "YMODEM";
+"dialog.yopt.ymodemG" = "YMODEM-G";
+"dialog.yopt.binary" = "Binary";
+"dialog.yopt.option" = "Option";
+
+/* YMODEM Dialog Titles */
+"dialog.ymodem.sendTitle" = "Tera Term: YMODEM Send";
+"dialog.ymodem.receiveTitle" = "Tera Term: YMODEM Receive";
+
+/* Macro - Password Dialog */
+"dialog.macro.password" = "Password";
+
+/* Macro Error Messages */
+"macro.error.closeParen" = "\")\" expected.";
+"macro.error.cantCall" = "Can't call sub.";
+"macro.error.cantConnect" = "Can't link macro.";
+"macro.error.cantOpen" = "Can't open file.";
+"macro.error.divByZero" = "Divide by zero.";
+"macro.error.invalidCtl" = "Invalid control.";
+"macro.error.labelAlreadyDef" = "Label already defined.";
+"macro.error.labelReq" = "Label required.";
+"macro.error.linkFirst" = "Link macro first. Use 'connect' macro.";
+"macro.error.stackOver" = "Stack overflow.";
+"macro.error.syntax" = "Syntax error.";
+"macro.error.tooManyLabels" = "Too many labels.";
+"macro.error.tooManyVar" = "Too many variables.";
+"macro.error.typeMismatch" = "Type mismatch.";
+"macro.error.varNotInit" = "Variable not initialized.";
+"macro.error.closeComment" = "\"*/\" expected.";
+"macro.error.outOfRange" = "Index out of range.";
+"macro.error.closeBracket" = "\"]\" expected.";
+"macro.error.fewMemory" = "Can't allocate memory.";
+"macro.error.notSupported" = "Unknown command.";
+"macro.error.cantExec" = "Can't execute command.";
+"macro.error.atLine" = "Error at line %d";
+
+/* Keymap Error Messages */
+"error.keymap.fileNotFound" = "Keyboard setup file not found: %@";
+"error.keymap.encodingFailed" = "Failed to detect character encoding of keyboard setup file";
+"error.keymap.parseError" = "Error parsing keyboard setup file: %@";
+
+/* File Transfer Error Messages */
+"transfer.error.noFile" = "No file specified";
+"transfer.error.cannotOpen" = "Cannot open file";
+"transfer.error.tooManyRetries" = "Too many retries";
+"transfer.error.fileNotFound" = "File not found";
+"transfer.error.kermit" = "Kermit error: %@";
+"transfer.error.bplusRemoteFailure" = "B-Plus: remote failure";
+"transfer.error.quickvanRetries" = "Quick-VAN: too many retries";
+"transfer.error.quickvanNaks" = "Quick-VAN: too many NAKs";
+
+/* Connection Error Messages (additional) */
+"error.connection.shellLaunchFailed" = "Shell launch failed.";
+"error.connection.shellExitedImmediately" = "Shell exited immediately.";
+
+/* SSH Error Messages (additional) */
+"error.ssh.ptyReadError" = "PTY read error before connection established.";
+"error.ssh.processExited" = "SSH process exited before connection established.";
+"error.ssh.terminated255" = "SSH connection terminated (exit code 255).";
+"error.ssh.exitedWithCode" = "SSH exited with code %d.";
+
+/* Debug / Console Log Messages */
+"debug.config.dirCreateFailed" = "Failed to create directory: %@";
+"debug.config.oldFormat" = "Old configuration format detected. Recreating...";
+"debug.config.unknownKey" = "Skipping unknown key [%@] %@=%@";
+"debug.config.saveFailed" = "Failed to save configuration: %@";
+"debug.settings.saveFailed" = "Failed to save settings: %@";
+"debug.keymap.warnings" = "KeyMap warnings: %@";
+"debug.keymap.loadFailed" = "Failed to load keymap: %@";
+"debug.tcp.writeRetryExceeded" = "send: write retry limit exceeded (%d retries, %d/%d bytes sent)";
+"debug.snapshot.zeroSize" = "View has zero size – skipping %@";
+"debug.snapshot.bitmapFailed" = "Failed to create bitmap for %@";
+"debug.snapshot.dirFailed" = "Cannot create directory: %@";
+"debug.snapshot.pngFailed" = "PNG encoding failed for %@";
+"debug.snapshot.saved" = "Saved: %@";
+"debug.snapshot.writeFailed" = "Write failed: %@";
+"debug.snapshot.allGenerated" = "All snapshots generated.";
+"debug.snapshot.allValidationGenerated" = "All %d validation snapshots generated.";
+"debug.snapshot.sizeExceeds" = "WARNING: %@ fittingSize (%dx%d) exceeds bounds (%dx%d)";

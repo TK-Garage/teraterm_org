@@ -1,0 +1,1124 @@
+/* Application Menu */
+"menu.app.about" = "Tera Term Mac について";
+"menu.app.preferences" = "環境設定…";
+"menu.app.hide" = "Tera Term Mac を隠す";
+"menu.app.hideOthers" = "ほかを隠す";
+"menu.app.showAll" = "すべてを表示";
+"menu.app.quit" = "Tera Term Mac を終了";
+
+/* File Menu */
+"menu.file" = "ファイル";
+"menu.file.newConnection" = "新しい接続…";
+"menu.file.newWindow" = "新しいウインドウ";
+"menu.file.duplicateSession" = "セッションの複製";
+"menu.file.log" = "ログ…";
+"menu.file.stopLog" = "ログ停止";
+"menu.file.pauseLog" = "ログを中断";
+"menu.file.resumeLog" = "ログを再開";
+"menu.file.commentToLog" = "ログにコメントを付加…";
+"menu.file.viewLog" = "ログを表示";
+"menu.file.showLogDialog" = "ログ記録中ダイアログを表示";
+"menu.file.quitAll" = "Tera Termの全終了";
+"menu.file.fileTransfer" = "ファイル転送";
+"menu.file.xmodemSend" = "XMODEM 送信…";
+"menu.file.xmodemReceive" = "XMODEM 受信…";
+"menu.file.zmodemSend" = "ZMODEM 送信…";
+"menu.file.zmodemReceive" = "ZMODEM 受信…";
+"menu.file.kermitSend" = "Kermit 送信…";
+"menu.file.kermitReceive" = "Kermit 受信…";
+"menu.file.kermitGet" = "Kermit 取得…";
+"menu.file.kermitFinish" = "Kermit 終了";
+"menu.file.ymodemSend" = "YMODEM 送信…";
+"menu.file.ymodemReceive" = "YMODEM 受信…";
+"menu.file.bplusSend" = "B-Plus 送信…";
+"menu.file.bplusReceive" = "B-Plus 受信…";
+"menu.file.quickvanSend" = "Quick-VAN 送信…";
+"menu.file.quickvanReceive" = "Quick-VAN 受信…";
+"menu.file.sendFile" = "ファイル送信…";
+"menu.file.receiveFile" = "ファイル受信…";
+"menu.file.changeDir" = "ディレクトリ変更…";
+"menu.file.disconnect" = "切断";
+"menu.file.close" = "閉じる";
+
+/* Edit Menu */
+"menu.edit" = "編集";
+"menu.edit.copy" = "コピー";
+"menu.edit.copyAsTable" = "表としてコピー";
+"menu.edit.paste" = "ペースト";
+"menu.edit.pasteSpecial" = "特殊貼り付け…";
+"menu.edit.clearScreen" = "画面クリア";
+"menu.edit.clearBuffer" = "バッファクリア";
+"menu.edit.selectAll" = "すべてを選択";
+"menu.edit.pasteCR" = "貼り付け<CR>";
+"menu.edit.deselect" = "選択を解除";
+"menu.edit.selectScreen" = "表示画面を選択";
+"menu.edit.editHistory" = "編集履歴…";
+
+/* Setup Menu */
+"menu.setup" = "設定";
+"menu.setup.terminal" = "端末…";
+"menu.setup.window" = "ウインドウ…";
+"menu.setup.font" = "フォント…";
+"menu.setup.keyboard" = "キーボード…";
+"menu.setup.serialPort" = "シリアルポート…";
+"menu.setup.tcpip" = "TCP/IP…";
+"menu.setup.additionalSettings" = "その他の設定…";
+"menu.setup.loadKeymap" = "キーマップ読み込み…";
+"menu.setup.saveSetup" = "設定の保存…";
+"menu.setup.restoreSetup" = "設定の復元…";
+
+/* Code Menu (Encoding) */
+"menu.code" = "コード";
+"menu.code.both" = "送受信";
+"menu.code.receive" = "受信";
+"menu.code.send" = "送信";
+"menu.code.group.unicode" = "— Unicode —";
+"menu.code.group.japanese" = "— 日本語 —";
+"menu.code.group.chinese" = "— 中国語 —";
+"menu.code.group.korean" = "— 韓国語 —";
+"menu.code.group.western" = "— 欧文 —";
+"menu.code.group.dosWindows" = "— DOS / Windows —";
+
+/* Control Menu */
+"menu.control" = "制御";
+"menu.control.resetTerminal" = "端末リセット";
+"menu.control.areYouThere" = "Are You There (AYT)";
+"menu.control.sendBreak" = "ブレーク送信";
+"menu.control.resetPort" = "ポートリセット";
+"menu.control.macro" = "マクロ…";
+"menu.control.replayLog" = "ログ再生…";
+"menu.control.resetRemoteTitle" = "リモートタイトルリセット";
+"menu.control.tekWindow" = "TEKウィンドウを開く";
+"menu.control.closeTekWindow" = "TEKウィンドウを閉じる";
+"menu.control.showMacroWindow" = "マクロウィンドウの表示";
+"menu.control.broadcast" = "コマンドブロードキャスト";
+
+/* Window Menu */
+"menu.window" = "ウインドウ";
+"menu.window.minimize" = "しまう";
+"menu.window.zoom" = "拡大/縮小";
+"menu.window.windowList" = "ウインドウ一覧";
+"menu.window.minimizeAll" = "すべて最小化";
+"menu.window.restoreAll" = "すべて復元";
+"menu.window.cascade" = "重ねて表示";
+"menu.window.tileVertical" = "上下に並べて表示";
+"menu.window.tileHorizontal" = "左右に並べて表示";
+
+/* Help Menu */
+"menu.help" = "ヘルプ";
+"menu.help.help" = "Tera Term Mac ヘルプ";
+
+/* Connection Dialog (port of IDD_HOSTDLG + TTSSH) */
+"dialog.connection.title" = "Tera Term: 新しい接続";
+"dialog.connection.host" = "ホスト:";
+"dialog.connection.hostPlaceholder" = "ホスト名またはIPアドレス";
+"dialog.connection.tcpip" = "TCP/IP";
+"dialog.connection.service" = "サービス:";
+"dialog.connection.telnet" = "Telnet";
+"dialog.connection.other" = "その他";
+"dialog.connection.tcpPort" = "TCPポート#:";
+"dialog.connection.sshVersion" = "SSHバージョン:";
+"dialog.connection.ipVersion" = "IPバージョン:";
+"dialog.connection.serial" = "シリアル";
+"dialog.connection.serialPort" = "ポート:";
+"dialog.connection.localShell" = "ローカルシェル";
+"dialog.connection.shellPath" = "シェル:";
+"dialog.connection.ok" = "OK";
+"dialog.connection.cancel" = "キャンセル";
+
+/* Terminal Setup Dialog */
+"dialog.terminalSetup.title" = "端末の設定";
+"dialog.terminalSetup.localEcho" = "ローカルエコー";
+
+/* Window Setup Dialog */
+"dialog.windowSetup.title" = "ウインドウの設定";
+"dialog.windowSetup.title_label" = "タイトル:";
+"dialog.windowSetup.alpha" = "不透明度:";
+"dialog.windowSetup.cursorBlock" = "ブロック";
+"dialog.windowSetup.cursorVertical" = "縦線";
+"dialog.windowSetup.cursorHorizontal" = "下線";
+"dialog.windowSetup.colors" = "カラー";
+"dialog.windowSetup.scrollBuffer" = "スクロール:";
+"dialog.windowSetup.lines" = "行";
+
+/* Keyboard Setup Dialog */
+"dialog.keyboardSetup.title" = "キーボードの設定";
+"dialog.keyboardSetup.bsKey" = "Backspaceキー:";
+"dialog.keyboardSetup.deleteKey" = "Deleteキー:";
+"dialog.keyboardSetup.bsOption" = "BS (0x08)";
+"dialog.keyboardSetup.delOption" = "DEL (0x7F)";
+"dialog.keyboardSetup.deleteEscSeq" = "ESCシーケンス";
+"dialog.keyboardSetup.metaKey" = "Metaキー (Option):";
+"dialog.keyboardSetup.metaOff" = "オフ";
+"dialog.keyboardSetup.metaOn" = "オン (ESC送信)";
+"dialog.keyboardSetup.answerback" = "応答文字列:";
+"dialog.keyboardSetup.answerbackPlaceholder" = "ENQ応答";
+"dialog.keyboardSetup.keyboardType" = "キーボード種類:";
+"dialog.keyboardSetup.disableAppKeypad" = "アプリケーションキーパッド:";
+"dialog.keyboardSetup.disableAppKeypadOption" = "アプリケーションキーパッドモードを無効化";
+"dialog.keyboardSetup.disableAppCursor" = "アプリケーションカーソル:";
+"dialog.keyboardSetup.disableAppCursorOption" = "アプリケーションカーソルモードを無効化";
+"dialog.keyboardSetup.ok" = "OK";
+"dialog.keyboardSetup.cancel" = "キャンセル";
+
+/* キーマップ読み込みダイアログ */
+"dialog.loadKeymap.title" = "キーマップの読み込み";
+"dialog.loadKeymap.message" = "キーボード設定ファイル (.cnf) を選択してください";
+"dialog.loadKeymap.success" = "キーマップを読み込みました。";
+"dialog.loadKeymap.successDetail" = "%d個のキーマッピングと%d個のユーザーキーを読み込みました。";
+"dialog.loadKeymap.warning" = "キーマップの読み込みで警告があります:";
+"dialog.loadKeymap.error" = "キーマップの読み込みに失敗しました";
+
+/* Serial Port Dialog */
+"dialog.serialPort.title" = "シリアルポートの設定";
+"dialog.serialPort.port" = "ポート:";
+"dialog.serialPort.dataBits" = "データビット:";
+"dialog.serialPort.parity" = "パリティ:";
+"dialog.serialPort.parityNone" = "なし";
+"dialog.serialPort.parityOdd" = "奇数";
+"dialog.serialPort.parityEven" = "偶数";
+"dialog.serialPort.parityMark" = "マーク";
+"dialog.serialPort.paritySpace" = "スペース";
+"dialog.serialPort.flow" = "フロー:";
+"dialog.serialPort.flowNone" = "なし";
+"dialog.serialPort.flowXonXoff" = "XON/XOFF";
+"dialog.serialPort.flowHardware" = "ハードウェア";
+"dialog.serialPort.noPortsFound" = "(ポートが見つかりません)";
+
+/* Terminal Setup Dialog (new ViewController keys - matching IDD_TERMDLG) */
+"dialog.termSetup.terminalSize" = "端末サイズ";
+"dialog.termSetup.termSizeIsWin" = "端末サイズ = ウインドウサイズ";
+"dialog.termSetup.autoResize" = "自動ウインドウリサイズ";
+"dialog.termSetup.newline" = "改行コード";
+"dialog.termSetup.receive" = "受信:";
+"dialog.termSetup.transmit" = "送信:";
+"dialog.termSetup.terminalId" = "端末ID:";
+"dialog.termSetup.answerback" = "応答文字列:";
+"dialog.termSetup.autoSwitch" = "自動切替 (VT<->TEK)";
+"dialog.termSetup.newlineCR" = "CR";
+"dialog.termSetup.newlineCRLF" = "CR+LF";
+"dialog.termSetup.newlineLF" = "LF";
+"dialog.termSetup.newlineAuto" = "自動";
+
+/* Serial Port Setup Dialog (new ViewController keys - matching IDD_SERIALDLG) */
+"dialog.serialSetup.speed" = "速度:";
+"dialog.serialSetup.stopBits" = "ストップビット:";
+"dialog.serialSetup.flowControl" = "フロー制御:";
+"dialog.serialSetup.transmitDelay" = "送信遅延";
+"dialog.serialSetup.msecChar" = "ミリ秒/文字";
+"dialog.serialSetup.msecLine" = "ミリ秒/行";
+
+/* Window Setup Dialog (new ViewController keys - matching IDD_WINDLG) */
+"dialog.winSetup.cursorShape" = "カーソル形状";
+"dialog.winSetup.hideTitleBar" = "タイトルバーを隠す";
+"dialog.winSetup.hideMenuBar" = "メニューバーを隠す";
+"dialog.winSetup.pc16Colors" = "16色 (PC スタイル)";
+"dialog.winSetup.text" = "テキスト";
+"dialog.winSetup.background" = "背景";
+"dialog.winSetup.swapColors" = "色を入替";
+
+/* Common Dialog Buttons */
+"OK" = "OK";
+"Cancel" = "キャンセル";
+"Help" = "ヘルプ";
+"Close" = "閉じる";
+"No" = "いいえ";
+"..." = "...";
+"Tera Term" = "Tera Term";
+
+/* Paste Special Dialog */
+"dialog.pasteSpecial.title" = "特殊貼り付け";
+"dialog.pasteSpecial.message" = "端末に送信する前にテキストを編集できます:";
+"dialog.pasteSpecial.send" = "送信";
+
+/* Macro Dialog */
+"dialog.macro.title" = "マクロ実行";
+"dialog.macro.message" = "マクロスクリプトファイル (.txt) を選択してください";
+
+/* Replay Log Dialog */
+"dialog.replayLog.title" = "ログ再生";
+
+/* Broadcast Panel */
+"dialog.broadcast.title" = "ブロードキャストコマンド";
+"dialog.broadcast.label" = "接続中のすべてのセッションに送信するコマンドを入力:";
+"dialog.broadcast.placeholder" = "コマンド";
+"dialog.broadcast.send" = "送信";
+"dialog.broadcast.sendToThisOnly" = "このプロセスのみに送信";
+"dialog.broadcast.sendEnter" = "Enterキー";
+"dialog.broadcast.realtime" = "リアルタイム";
+"dialog.broadcast.windowList" = "送信先ウインドウ:";
+"dialog.broadcast.windowTitle" = "ウインドウ";
+"dialog.broadcast.bringToFront" = "前面に表示";
+"dialog.broadcast.minimize" = "最小化";
+"dialog.broadcast.selectAll" = "すべて選択";
+"dialog.broadcast.invertSelection" = "選択を反転";
+
+/* SSH Security Dialogs */
+"dialog.security.unknownHost.title" = "未知のホスト鍵";
+"dialog.security.unknownHost.message" = "サーバー '%@' が提示したホスト鍵は known_hosts ファイルに登録されていません。\n\n鍵の種類: %@\nフィンガープリント: %@\n\n接続を続行しますか？";
+"dialog.security.differentKey.title" = "ホスト鍵の変更";
+"dialog.security.differentKey.message" = "警告: '%@' のホスト鍵が変更されています！\n\n鍵の種類: %@\n\n中間者攻撃の可能性、またはサーバーが再構成された可能性があります。";
+"dialog.security.differentKey.warning" = "警告: セキュリティ上の脅威の可能性があります！";
+"dialog.security.differentTypeKey.title" = "鍵の種類が異なります";
+"dialog.security.differentTypeKey.message" = "サーバー '%@' は、保存されている種類 '%@' ではなく '%@' の鍵を提示しました。\n\n新しいフィンガープリント: %@";
+"dialog.security.storedFingerprint" = "保存済みフィンガープリント:";
+"dialog.security.newFingerprint" = "新しいフィンガープリント:";
+"dialog.security.accept" = "承認して保存";
+"dialog.security.acceptOnce" = "今回のみ承認";
+"dialog.security.reject" = "切断";
+"dialog.security.keyType" = "鍵の種類: %@";
+"dialog.security.fingerprint" = "フィンガープリント: %@";
+"dialog.security.keyRotation.title" = "ホスト鍵のローテーション";
+"dialog.security.keyRotation.message" = "サーバー '%@' が鍵ローテーションにより新しいホスト鍵を提供しています。\n\n旧鍵の種類: %@\n新鍵の種類: %@\n新しいフィンガープリント: %@\n\n保存されているホスト鍵を更新しますか？";
+"dialog.security.keyRotation.accept" = "鍵を更新";
+"dialog.security.keyRotation.reject" = "現在の鍵を保持";
+"dialog.security.sshfp.result" = "SSHFP DNS検証: %@";
+"dialog.security.sshfp.matchedTitle" = "SSHFP 検証成功";
+"dialog.security.sshfp.matchedMessage" = "'%@' のホスト鍵は DNS SSHFP レコードと一致しました。\n\n鍵の種類: %@\nフィンガープリント: %@";
+"dialog.security.sshfp.notMatchedTitle" = "SSHFP 不一致";
+"dialog.security.sshfp.notMatchedMessage" = "警告: '%@' のホスト鍵が DNS SSHFP レコードと一致しません。\n\n鍵の種類: %@\nフィンガープリント: %@";
+"dialog.security.sshfp.notFoundTitle" = "SSHFP レコードなし";
+"dialog.security.sshfp.notFoundMessage" = "'%@' の SSHFP DNS レコードが見つかりません。";
+"dialog.security.sshfp.insecureTitle" = "SSHFP 安全でない";
+"dialog.security.sshfp.insecureMessage" = "'%@' の SSHFP レコードは見つかりましたが、DNS応答がDNSSECで保護されていません。";
+
+/* About Dialog */
+"dialog.about.title" = "Tera Term Mac";
+"dialog.about.message" = "Tera Term の macOS 移植版\nターミナルエミュレータ\n\nオリジナル: (C) 1994-1998 T. Teranishi\n(C) 2004- TeraTerm Project\n\nmacOS 移植: Swift/AppKit";
+"dialog.about.ok" = "OK";
+
+/* Quit Confirmation */
+"dialog.quit.title" = "アクティブな接続";
+"dialog.quit.message" = "%d 個のアクティブな接続があります。終了しますか？";
+"dialog.quit.quit" = "終了";
+"dialog.quit.cancel" = "キャンセル";
+
+/* Connection Errors */
+"error.connection.title" = "接続エラー";
+"error.connection.title.dns" = "ホストが見つかりません";
+"error.connection.title.refused" = "接続が拒否されました";
+"error.connection.title.timeout" = "接続タイムアウト";
+"error.connection.title.ssh" = "SSH未対応";
+"error.connection.title.serial" = "シリアルポートエラー";
+"error.connection.title.sshError" = "SSHエラー";
+"error.connection.ok" = "OK";
+"error.connection.streamFailed" = "%@:%d へのネットワークストリームの作成に失敗しました。";
+"error.connection.failed" = "%@:%d に接続できませんでした。";
+"error.connection.refused" = "%@:%d への接続が拒否されました。\nホストがこのポートで待ち受けていない可能性があります。";
+"error.connection.timeout" = "%@:%d への接続がタイムアウトしました。\nホストに到達できないか、ファイアウォールでブロックされている可能性があります。";
+"error.connection.hostNotFound" = "ホスト \"%@\" が見つかりません。\nホスト名とネットワーク接続を確認してください。";
+"error.connection.sshNotSupported" = "%@:%d へのSSH接続はまだサポートされていません。\n外部のSSHクライアントを使用するか、Telnetで接続してください。";
+"error.connection.sshFailed" = "%@:%d へのSSH接続に失敗しました。";
+"error.connection.sshProcessFailed" = "SSHプロセスの起動に失敗しました。";
+"error.connection.sshNotFound" = "/usr/bin/ssh が見つかりません。OpenSSHがインストールされていることを確認してください。";
+"error.connection.serialFailed" = "シリアルポート %@ を開けませんでした。";
+"error.connection.ptyFailed" = "擬似端末の作成に失敗しました。";
+"error.connection.sendFailed" = "データの送信に失敗しました。";
+
+/* Log Comment Dialog */
+"dialog.logComment.title" = "ログにコメントを付加";
+"dialog.logComment.message" = "ログファイルに追記するコメントを入力してください:";
+"dialog.logComment.placeholder" = "コメント";
+"dialog.logComment.ok" = "追記";
+"dialog.logComment.cancel" = "キャンセル";
+
+/* Log Progress Panel (IDD_LOGDLG progress) */
+"dialog.logProgress.title" = "Tera Term: ログ";
+"dialog.logProgress.filename" = "ファイル名:";
+"dialog.logProgress.fullpath" = "フルパス:";
+"dialog.logProgress.bytesLogged" = "記録バイト数:";
+"dialog.logProgress.elapsed" = "経過時間:";
+"dialog.logProgress.state" = "状態:";
+"dialog.logProgress.stateActive" = "記録中";
+"dialog.logProgress.statePaused" = "中断";
+"dialog.logProgress.pause" = "中断";
+"dialog.logProgress.resume" = "再開";
+"dialog.logProgress.close" = "閉じる";
+"dialog.logProgress.comment" = "コメント";
+"dialog.logProgress.help" = "ヘルプ";
+
+/* Quit All Confirmation */
+"dialog.quitAll.title" = "全終了";
+"dialog.quitAll.message" = "%d 個のTera Termウインドウがあります。すべて閉じますか？";
+"dialog.quitAll.quit" = "全終了";
+"dialog.quitAll.cancel" = "キャンセル";
+
+/* SSH Authentication Dialog */
+"dialog.sshAuth.title" = "SSH認証";
+"dialog.sshAuth.disconnect" = "切断";
+"dialog.sshAuth.username" = "ユーザ名:";
+"dialog.sshAuth.passphrase" = "パスフレーズ:";
+"dialog.sshAuth.usePassword" = "プレインテキストでパスワードを使う";
+"dialog.sshAuth.usePublicKey" = "RSA/DSA/ECDSA/ED25519鍵を使う";
+"dialog.sshAuth.useRhosts" = "rhostsを使う (SSH1)";
+"dialog.sshAuth.useChallenge" = "チャレンジ/レスポンスを使う (keyboard-interactive)";
+"dialog.sshAuth.usePageant" = "Pageantを使う";
+"dialog.sshAuth.privateKey" = "秘密鍵ファイル:";
+"dialog.sshAuth.selectKeyFile" = "秘密鍵ファイルの選択";
+"dialog.sshAuth.rememberPassword" = "パスワードをメモリに記憶する";
+"dialog.sshAuth.forwardAgent" = "エージェント転送する";
+"dialog.sshAuth.invalidKey.title" = "無効な秘密鍵ファイル";
+"dialog.sshAuth.invalidKey.message" = "選択されたファイルは有効な秘密鍵ではありません:\n%@\n\n対応形式: OpenSSH, PEM (RSA/DSA/EC), PuTTY (PPK), SSH.COM\n正しい形式のファイルを選択してください。";
+"dialog.sshAuth.invalidKey.retry" = "再選択";
+
+/* File Transfer */
+"transfer.complete.title" = "転送完了";
+"transfer.complete.message" = "%@: %lld バイト";
+"transfer.failed.title" = "転送失敗";
+"transfer.ok" = "OK";
+
+/* Window Title */
+"window.title.disconnected" = "未接続";
+"window.title.localShell" = "ローカルシェル";
+
+/* Context Menu */
+"contextMenu.copy" = "コピー";
+"contextMenu.paste" = "ペースト";
+"contextMenu.selectAll" = "すべてを選択";
+"contextMenu.clearBuffer" = "バッファクリア";
+
+/* Macro */
+"macro.error.title" = "マクロエラー";
+"macro.error.stop" = "停止";
+"macro.error.continue" = "続行";
+"menu.control.stopMacro" = "マクロ停止";
+
+/* Macro Dialog Commands */
+"dialog.macro.ok" = "OK";
+"dialog.macro.cancel" = "キャンセル";
+"dialog.macro.yes" = "はい";
+"dialog.macro.no" = "いいえ";
+"dialog.macro.selectFile" = "ファイルを選択";
+"dialog.macro.selectFolder" = "フォルダを選択";
+
+/* Macro Status Panel */
+"macroStatus.title" = "マクロ";
+"macroStatus.pause" = "一時停止";
+"macroStatus.resume" = "再開";
+"macroStatus.stop" = "中断";
+
+/* File Transfer Dialogs */
+"dialog.xopt.checksum" = "チェックサム";
+"dialog.xopt.crc" = "CRC";
+"dialog.xopt.1k" = "1K";
+"dialog.xopt.binary" = "バイナリ";
+"dialog.xopt.option" = "オプション";
+"dialog.fopt.binary" = "バイナリ";
+"dialog.fopt.option" = "オプション";
+"dialog.xmodem.sendTitle" = "Tera Term: XMODEM 送信";
+"dialog.xmodem.receiveTitle" = "Tera Term: XMODEM 受信";
+"dialog.multi.sendTitle" = "Tera Term: %@ 送信";
+"dialog.multi.receiveTitle" = "Tera Term: %@ 受信";
+"dialog.multi.protocolDefault" = "ファイル転送";
+"dialog.kermitGet.filename" = "ファイル名:";
+"dialog.prot.filename" = "ファイル名:";
+"dialog.prot.protocol" = "プロトコル:";
+"dialog.prot.packet" = "パケット番号:";
+"dialog.prot.bytesTransferred" = "転送バイト数:";
+"dialog.prot.elapsed" = "経過時間:";
+"dialog.prot.cancel" = "キャンセル";
+"dialog.prot.title" = "Tera Term: ファイル転送";
+"dialog.ftrans.filename" = "ファイル名:";
+"dialog.ftrans.fullpath" = "フルパス:";
+"dialog.ftrans.bytesTransferred" = "転送バイト数:";
+"dialog.ftrans.elapsed" = "経過時間:";
+"dialog.ftrans.close" = "閉じる";
+"dialog.ftrans.pause" = "一時停止";
+"dialog.ftrans.resume" = "再開";
+"dialog.ftrans.help" = "ヘルプ";
+"dialog.ftrans.title" = "Tera Term: ファイル転送";
+
+/* Send File Dialog (IDD_SENDFILEDLG) */
+"dialog.sendFile.title" = "ファイル送信";
+"dialog.sendFile.filename" = "ファイル名 (このダイアログにファイルをドロップ):";
+"dialog.sendFile.readingMethod" = "ファイル読み込み方法:";
+"dialog.sendFile.bulkRead" = "一括読み込み";
+"dialog.sendFile.sequentialRead" = "逐次読み込み";
+"dialog.sendFile.binary" = "バイナリ";
+"dialog.sendFile.delayType" = "ディレイ種別:";
+"dialog.sendFile.delayNone" = "ディレイなし";
+"dialog.sendFile.delayPerChar" = "文字毎";
+"dialog.sendFile.delayPerLine" = "行毎";
+"dialog.sendFile.sendSize" = "送信サイズ(バイト):";
+"dialog.sendFile.sizeAll" = "すべて";
+"dialog.sendFile.delayTime" = "ディレイ時間(ミリ秒):";
+
+/* Receive File Dialog (IDD_RECVFILEDLG) */
+"dialog.recvFile.title" = "ファイル受信";
+"dialog.recvFile.filename" = "ファイル名 (このダイアログにファイルをドロップ):";
+"dialog.recvFile.binary" = "バイナリ";
+"dialog.recvFile.autoStop" = "自動停止待ち時間(秒):";
+
+/* Additional Settings Dialog */
+"dialog.additionalSettings.title" = "Tera Term: その他の設定";
+"dialog.unifiedSettings.title" = "Tera Term: 設定";
+
+/* Additional Settings - Tab Names */
+"tab.general" = "全般";
+"tab.coding" = "エンコーディング";
+"tab.copyPaste" = "コピーと貼り付け";
+"tab.sequence" = "制御シーケンス";
+"tab.mouse" = "マウス";
+"tab.log" = "ログ";
+"tab.visual" = "表示";
+"tab.font" = "フォント";
+"tab.tekFont" = "フォント(TEK)";
+"tab.theme" = "テーマ";
+"tab.ui" = "UI";
+"tab.plugin" = "プラグイン";
+"tab.localShell" = "ローカルシェル";
+"tab.debug" = "デバッグ";
+
+/* Additional Settings - General */
+"dialog.general.sendBreak" = "ブレーク送信のアクセラレータキーを無効にする";
+"dialog.general.broadcast" = "ブロードキャストを受け入れる";
+"dialog.general.autoScroll" = "最下行でだけ自動スクロールする";
+"dialog.general.clearOnResize" = "ウインドウサイズ変更時に表示内容をクリアする";
+"dialog.general.cursorIME" = "IMEの状態によってカーソル形状を変更する";
+"dialog.general.defaultPort" = "デフォルトポート:";
+"dialog.general.titleFormat" = "タイトル形式";
+"dialog.general.titleTCPIP" = "TCP/IP";
+"dialog.general.titleSerial" = "シリアル";
+"dialog.general.titleSession" = "セッション番号";
+"dialog.general.notifySound" = "通知音";
+"dialog.general.fileTransferFolder" = "ファイル転送フォルダ:";
+
+/* Additional Settings - Coding */
+"dialog.coding.receiveEncoding" = "受信エンコーディング:";
+"dialog.coding.sendEncoding" = "送信エンコーディング:";
+"dialog.coding.ambiguousWidth" = "曖昧な文字幅:";
+"dialog.coding.emojiWidth" = "絵文字の文字幅:";
+
+/* Additional Settings - Copy and Paste */
+"dialog.copyPaste.continuedLineCopy" = "継続行コピーを有効にする";
+"dialog.copyPaste.confirmPasteNewLine" = "改行を含む貼り付け時に確認する";
+"dialog.copyPaste.autoTextCopy" = "選択時に自動でクリップボードにコピーする";
+"dialog.copyPaste.delimiterList" = "区切り文字:";
+"dialog.copyPaste.pasteDelay" = "貼り付けの行間遅延(ミリ秒):";
+"dialog.copyPaste.disableRightClickPaste" = "右クリックでの貼り付けを無効にする";
+"dialog.copyPaste.confirmRightClickPaste" = "右クリックでの貼り付け確認";
+"dialog.copyPaste.disableMiddleClickPaste" = "中クリックでの貼り付けを無効にする";
+"dialog.copyPaste.leftClickOnlySelection" = "左クリックでのみ選択を開始する";
+"dialog.copyPaste.trimTrailingNewline" = "貼り付け時に末尾の改行を削除する";
+"dialog.copyPaste.confirmDangerousClipboard" = "危険なクリップボードの貼り付け確認";
+"dialog.copyPaste.dangerousKeywordFile" = "キーワードファイル:";
+"dialog.copyPaste.enableSelectionOnActivate" = "ウインドウアクティブ化時に文字選択を有効にする";
+"dialog.copyPaste.pasteSettings" = "貼り付け設定";
+"dialog.copyPaste.securitySettings" = "セキュリティ";
+
+/* Additional Settings - Sequence */
+"dialog.sequence.mouseEventTracking" = "マウスイベント通知要求を受け入れる";
+"dialog.sequence.disableControlKeyMouse" = "Controlキー押下中のマウスイベントを無効にする";
+"dialog.sequence.titleChanging" = "ウインドウタイトルの変更要求を受け入れる";
+"dialog.sequence.titleChangeMode" = "タイトル変更モード:";
+"dialog.sequence.titleModeOverwrite" = "上書き";
+"dialog.sequence.titleModePrepend" = "前に追加";
+"dialog.sequence.titleModeAppend" = "後に追加";
+"dialog.sequence.titleReport" = "ウインドウタイトルの報告要求";
+"dialog.sequence.windowControl" = "ウインドウ操作制御シーケンス";
+"dialog.sequence.windowInfoReport" = "ウインドウ情報報告シーケンス";
+"dialog.sequence.cursorControl" = "カーソル形状/点滅変更制御シーケンス";
+"dialog.sequence.clipboardAccess" = "リモートからのクリップボードアクセス";
+"dialog.sequence.clipboardAccessMode" = "クリップボードアクセスモード:";
+"dialog.sequence.clipOff" = "無効";
+"dialog.sequence.clipReadWrite" = "読込/書込";
+"dialog.sequence.clipReadOnly" = "読込のみ";
+"dialog.sequence.clipWriteOnly" = "書込のみ";
+"dialog.sequence.notifyClipboardAccess" = "リモートからのクリップボードアクセスを通知する";
+"dialog.sequence.acceptScrollBufferClear" = "リモートからのスクロールバッファ消去を受け入れる";
+"dialog.sequence.disablePrintSequence" = "印字開始シーケンスを無効にする";
+"dialog.sequence.beep" = "ベル:";
+"dialog.sequence.beepOff" = "無効";
+"dialog.sequence.beepSystem" = "サウンド";
+"dialog.sequence.beepVisual" = "ビジュアルベル";
+
+/* Additional Settings - Mouse */
+"dialog.mouse.clickableURL" = "クリッカブルURLを有効にする";
+"dialog.mouse.wheelScrollLines" = "ホイールのスクロール行数:";
+"dialog.mouse.lines" = "行";
+
+/* Additional Settings - Log */
+"dialog.log.viewEditor" = "ログ表示用エディタ:";
+"dialog.log.editorArguments" = "引き数:";
+"dialog.log.defaultName" = "標準ログファイル名:";
+"dialog.log.defaultPath" = "標準のログ保存先フォルダ:";
+"dialog.log.autoStart" = "自動的にログ採取を開始する";
+"dialog.log.options" = "オプション";
+"dialog.log.binary" = "バイナリ";
+"dialog.log.append" = "追記";
+"dialog.log.plainText" = "プレインテキスト";
+"dialog.log.hideDialog" = "ダイアログを非表示";
+"dialog.log.screenBuffer" = "スクリーンバッファを含める";
+"dialog.log.timestamp" = "タイムスタンプ";
+"dialog.log.bom" = "BOM";
+"dialog.log.timestampType" = "タイムスタンプ種別:";
+"dialog.log.logRotate" = "ログのローテート";
+"dialog.log.rotateEnabled" = "ローテートを有効にする";
+"dialog.log.rotateSize" = "サイズ:";
+"dialog.log.rotateStep" = "世代:";
+
+/* Additional Settings - Visual */
+"dialog.visual.windowOpacity" = "ウインドウの不透明度";
+"dialog.visual.active" = "アクティブ時:";
+"dialog.visual.inactive" = "非アクティブ時:";
+"dialog.visual.ansiColorPalette" = "ANSIカラーパレット";
+"dialog.visual.charAttributes" = "文字属性";
+"dialog.visual.attrBold" = "太字";
+"dialog.visual.attrBlink" = "点滅";
+"dialog.visual.attrReverse" = "反転";
+"dialog.visual.attrUnderline" = "下線";
+"dialog.visual.attrStrikethrough" = "取消線";
+"dialog.visual.mouseCursor" = "マウスカーソル:";
+"dialog.visual.cursorArrow" = "矢印";
+"dialog.visual.cursorIBeam" = "I-Beam";
+"dialog.visual.cursorCrosshair" = "十字";
+"dialog.visual.cursorHidden" = "非表示";
+"dialog.visual.fontRenderingQuality" = "フォントの品質:";
+"dialog.visual.qualityDefault" = "デフォルト";
+"dialog.visual.qualityAntiAlias" = "アンチエイリアス";
+"dialog.visual.qualitySubpixel" = "サブピクセル (ClearType)";
+"dialog.visual.attrColorFont" = "属性別カラー / フォント";
+"dialog.visual.enableBoldColor" = "太字属性色を有効にする";
+"dialog.visual.enableBoldFont" = "太字属性フォントを有効にする";
+"dialog.visual.enableBlinkColor" = "点滅属性色を有効にする";
+"dialog.visual.enableReverseColor" = "反転属性色を有効にする";
+"dialog.visual.enableUnderlineColor" = "下線属性色を有効にする";
+"dialog.visual.enableUnderlineDecoration" = "下線属性に下線を付加する";
+"dialog.visual.enableURLColor" = "URL属性色を有効にする";
+"dialog.visual.enableURLUnderline" = "URL文字列に下線を付加する";
+"dialog.visual.enableStrikethroughColor" = "取り消し線属性色を有効にする";
+"dialog.visual.enableANSIColor" = "ANSIカラーを有効にする";
+"dialog.visual.useTextColor" = "テキスト色を使用 (SGR/ANSIカラーを無視)";
+"dialog.visual.flickerlessMove" = "ウインドウ移動/リサイズ時テーマを一時的に無効にする";
+
+/* Additional Settings - Font */
+"dialog.font.vtWindowFont" = "VTウインドウフォント";
+"dialog.font.fontName" = "フォント:";
+"dialog.font.choose" = "選択…";
+"dialog.font.proportional" = "プロポーショナルフォントを表示する";
+"dialog.font.hidden" = "非表示フォントを表示する";
+"dialog.font.drawingAPI" = "描画API:";
+"dialog.font.codePage" = "コードページ:";
+"dialog.font.charSpace" = "文字間スペース";
+
+/* Additional Settings - TEK Font */
+"dialog.tekFont.fontName" = "フォント:";
+"dialog.tekFont.choose" = "選択…";
+"dialog.tekFont.proportional" = "プロポーショナルフォントを表示する";
+"dialog.tekFont.hidden" = "非表示フォントを表示する";
+
+/* Additional Settings - Theme */
+"dialog.theme.enable" = "テーマを有効にする";
+"dialog.theme.fastSizeMove" = "リサイズ時にテーマを無効にする";
+"dialog.theme.themeFile" = "テーマファイル:";
+"dialog.theme.startupTheme" = "起動時テーマ:";
+"dialog.theme.susiePath" = "Susieプラグインパス:";
+"dialog.theme.themeEditor" = "テーマエディタ…";
+
+/* Additional Settings - UI */
+"dialog.ui.language" = "言語:";
+"dialog.ui.languageAuto" = "自動 (システム言語)";
+"dialog.ui.dialogFont" = "ダイアログフォント";
+"dialog.ui.fontName" = "フォント:";
+"dialog.ui.chooseFont" = "選択…";
+"dialog.ui.proportional" = "プロポーショナルフォントを表示する";
+"dialog.ui.hidden" = "非表示フォントを表示する";
+
+/* Additional Settings - Plugin */
+"dialog.plugin.setupDirectories" = "プラグイン設定ディレクトリ:";
+"dialog.plugin.add" = "追加…";
+"dialog.plugin.remove" = "削除";
+
+/* Additional Settings - Local Shell (Cygwinタブのポート) */
+"dialog.localShell.shellPath" = "シェルパス:";
+"dialog.localShell.loginShell" = "ログインシェル";
+"dialog.localShell.homeChdir" = "HOMEに移動";
+"dialog.localShell.env1" = "環境変数1:";
+"dialog.localShell.env2" = "環境変数2:";
+"dialog.localShell.envPlaceholder" = "キー=値";
+
+/* Additional Settings - Debug */
+"dialog.debug.charInfoPopup" = "文字情報ポップアップを表示する";
+
+/* Clipboard Confirmation Dialog (IDD_CLIPBOARD_DIALOG) */
+"dialog.clipboard.title" = "クリップボード";
+
+/* File Drag and Drop Dialog (IDD_DAD_DIALOG) */
+"dialog.dragDrop.title" = "ドラッグ＆ドロップ";
+"dialog.dragDrop.filePath" = "ファイルパス:";
+"dialog.dragDrop.scp" = "SCP";
+"dialog.dragDrop.sendFile" = "ファイル送信";
+"dialog.dragDrop.pastePath" = "パスを貼り付け";
+"dialog.dragDrop.binary" = "バイナリ";
+"dialog.dragDrop.escape" = "スペースをエスケープ";
+
+/* Change Directory Dialog (IDD_DIRDLG) */
+"dialog.changeDir.title" = "Tera Term: ディレクトリ変更";
+"dialog.changeDir.current" = "現在のディレクトリ: %@";
+"dialog.changeDir.placeholder" = "新しいディレクトリ";
+
+/* Edit History Dialog (IDD_EDITHISTORYDLG) */
+"dialog.editHistory.title" = "履歴の編集";
+"dialog.editHistory.host" = "ホスト:";
+"dialog.editHistory.add" = "追加";
+"dialog.editHistory.remove" = "削除";
+"dialog.editHistory.up" = "上へ";
+"dialog.editHistory.down" = "下へ";
+"dialog.editHistory.hostColumn" = "ホスト";
+
+/* Macro Error Dialog (IDD_ERRDLG) */
+"dialog.macroError.title" = "マクロエラー";
+"dialog.macroError.lineNumber" = "行: %d";
+"dialog.macroError.stop" = "中断";
+"dialog.macroError.continue" = "続行";
+
+/* Log Dialog (IDD_LOGDLG) */
+"dialog.log.title" = "ログ";
+"dialog.log.filename" = "ログファイル名 (このダイアログにファイルをドロップ):";
+"dialog.log.placeholder" = "teraterm.log";
+"dialog.log.writeMode" = "書き込みモード";
+"dialog.log.new" = "新規/上書き";
+"dialog.log.appendMode" = "追記";
+"dialog.log.format" = "テキスト/バイナリモード";
+"dialog.log.formatText" = "テキスト";
+"dialog.log.formatBinary" = "バイナリ";
+"dialog.log.timestampOption" = "タイムスタンプ";
+"dialog.log.plainTextOption" = "プレーンテキスト";
+
+/* TCP/IP Setup Dialog (IDD_TCPIPDLG) */
+"dialog.tcpip.title" = "TCP/IP";
+"dialog.tcpip.host" = "ホスト:";
+"dialog.tcpip.port" = "ポート#:";
+"dialog.tcpip.keepAlive" = "TCP キープアライブ";
+"dialog.tcpip.keepAliveInterval" = "キープアライブ間隔:";
+"dialog.tcpip.autoClose" = "切断時に自動でウィンドウを閉じる";
+"dialog.tcpip.historySize" = "履歴件数:";
+"dialog.tcpip.antiIdle" = "アイドル防止";
+"dialog.tcpip.antiIdleEnable" = "アイドル防止を有効にする";
+"dialog.tcpip.antiIdleString" = "送信文字列:";
+"dialog.tcpip.antiIdleInterval" = "間隔:";
+"dialog.tcpip.telnetAutoDetect" = "自動検出";
+"dialog.tcpip.telnetBinaryOption" = "バイナリオプション";
+"dialog.tcpip.telnetBinaryMode" = "バイナリモード";
+"dialog.tcpip.telnetIgnoreDisconnect" = "切断時の終了を無視";
+"dialog.tcpip.sshHeartbeat" = "SSHハートビート:";
+
+/* Window List Dialog (IDD_WINLISTDLG) */
+"dialog.windowList.title" = "Tera Term: ウィンドウのリスト";
+"dialog.windowList.open" = "開く";
+"dialog.windowList.closeWindow" = "閉じる";
+"dialog.windowList.windowColumn" = "ウィンドウ";
+
+/* File Menu - SSH SCP */
+"menu.file.sshSCP" = "SSH SCP…";
+
+/* File Menu - Print */
+"menu.file.print" = "印刷…";
+"menu.file.printTEK" = "TEK印刷…";
+
+/* Setup Menu - SSH related */
+"menu.setup.proxy" = "プロキシ…";
+"menu.setup.ssh" = "SSH…";
+"menu.setup.sshAuth" = "SSH認証…";
+"menu.setup.sshForward" = "SSH転送…";
+"menu.setup.sshKeyGen" = "SSH鍵生成…";
+"menu.setup.general" = "全般…";
+"menu.setup.openConfigFolder" = "設定フォルダを開く";
+
+/* SSH SCP Dialog (IDD_SSHSCP) */
+"dialog.scp.title" = "Tera Term: Secure Copy Protocol (SCP)";
+"dialog.scp.sendFrom" = "送信元:";
+"dialog.scp.sendTo" = "送信先:";
+"dialog.scp.dragNote" = "このウィンドウにファイルをドラッグできます";
+"dialog.scp.send" = "送信";
+"dialog.scp.receiveFrom" = "受信元:";
+"dialog.scp.receiveTo" = "受信先:";
+"dialog.scp.receive" = "受信";
+"dialog.scp.selectFile" = "送信ファイル選択";
+"dialog.scp.selectDest" = "受信フォルダ選択";
+"dialog.scp.progress.title.send" = "SCP: ファイル送信中";
+"dialog.scp.progress.title.receive" = "SCP: ファイル受信中";
+"dialog.scp.progress.filename" = "ファイル名:";
+"dialog.scp.progress.bytes" = "転送済み:";
+"dialog.scp.progress.time" = "経過時間:";
+"dialog.scp.error.notConnected" = "SCPにはSSH接続が必要です。";
+
+/* Proxy Setup Dialog (IDD_SETTING) */
+"dialog.proxy.title" = "プロキシの設定";
+"dialog.proxy.type" = "種類:";
+"dialog.proxy.typeNone" = "なし";
+"dialog.proxy.typeHTTP" = "HTTP";
+"dialog.proxy.typeSocks4" = "SOCKS4";
+"dialog.proxy.typeSocks5" = "SOCKS5";
+"dialog.proxy.typeTelnet" = "Telnet";
+"dialog.proxy.hostname" = "ホスト名:";
+"dialog.proxy.port" = "ポート番号:";
+"dialog.proxy.username" = "ユーザ名:";
+"dialog.proxy.password" = "パスワード:";
+
+/* SSH Setup Dialog (IDD_SSHSETUP) */
+"dialog.ssh.title" = "SSH設定";
+"dialog.sshSetup.title" = "SSH設定";
+"dialog.sshSetup.cipherOrder" = "優先する暗号アルゴリズムの順";
+"dialog.sshSetup.moveUp" = "上へ";
+"dialog.sshSetup.moveDown" = "下へ";
+"dialog.sshSetup.knownHosts" = "SSH Known Hosts";
+"dialog.sshSetup.knownHostsFile" = "Known hostsファイル:";
+"dialog.sshSetup.heartbeat" = "ハートビート(keep-alive)";
+"dialog.sshSetup.heartbeatSec" = "秒(0を指定すると無効)";
+"dialog.sshSetup.rememberPassword" = "パスワードをメモリ上に記憶する";
+"dialog.sshSetup.forwardAgent" = "エージェント転送を有効にする";
+"dialog.sshSetup.confirmAgent" = "エージェント転送を確認する";
+"dialog.sshSetup.notifyAgent" = "転送したエージェントの利用を通知する";
+"dialog.sshSetup.verifyDNS" = "ホストキーの鍵指紋をDNSで確認する";
+"dialog.sshSetup.notice" = "いずれの変更も次回のセッション以降有効になります。";
+"dialog.sshSetup.hostKeyRotation" = "ホスト公開鍵の自動更新";
+"dialog.sshSetup.rotationDisabled" = "無効";
+"dialog.sshSetup.rotationEnabled" = "有効";
+"dialog.sshSetup.rotationAsk" = "確認する";
+"dialog.sshSetup.browse" = "参照…";
+"dialog.sshSetup.readOnlyFiles" = "読み取り専用ファイル:";
+"dialog.sshSetup.kexOrder" = "KEX順序 (SSH2)";
+"dialog.sshSetup.hostKeyOrder" = "ホスト鍵順序 (SSH2)";
+"dialog.sshSetup.macOrder" = "MAC順序 (SSH2)";
+"dialog.sshSetup.compOrder" = "圧縮順序 (SSH2)";
+"dialog.sshSetup.compressionLevel" = "圧縮レベル:";
+"dialog.sshSetup.compressionNone" = "なし";
+"dialog.sshSetup.compressionHigh" = "最高";
+"dialog.sshSetup.logLevel" = "ログレベル";
+"dialog.sshSetup.logLevelUnit" = "(0を指定すると無効)";
+
+/* SSH Authentication Setup Dialog (IDD_SSHAUTHSETUP) */
+"dialog.sshAuthSetup.title" = "SSH認証設定";
+"dialog.sshAuthSetup.banner" = "通常使用する認証設定:";
+"dialog.sshAuthSetup.usernameGroup" = "ユーザ名";
+"dialog.sshAuthSetup.noUsername" = "入力しない";
+"dialog.sshAuthSetup.defaultUsername" = "デフォルトユーザ名を使用";
+"dialog.sshAuthSetup.logonUsername" = "ログオンユーザ名を使用";
+"dialog.sshAuthSetup.currentUser" = "現在のユーザ名 \"%@\"";
+"dialog.sshAuthSetup.checkAuth" = "ログイン前にサーバで有効な認証方式を確認する (SSH2)";
+
+/* SSH Forwarding Setup Dialog (IDD_SSHFWDSETUP) */
+"dialog.sshForward.title" = "SSHポート転送設定";
+"dialog.sshFwd.title" = "SSHポート転送設定";
+"dialog.sshFwd.portForwarding" = "ポート転送";
+"dialog.sshFwd.add" = "追加…";
+"dialog.sshFwd.edit" = "編集…";
+"dialog.sshFwd.remove" = "削除";
+"dialog.sshFwd.xForwarding" = "X転送";
+"dialog.sshFwd.xDisplay" = "リモートのXアプリケーションをローカルのXサーバに表示する";
+
+/* SSH Forwarding Edit Dialog (IDD_SSHFWDEDIT) */
+"dialog.sshFwdEdit.title" = "SSHポート転送";
+"dialog.sshFwdEdit.banner" = "ポート転送を行う向きの選択:";
+"dialog.sshFwdEdit.localPort" = "ローカルのポート";
+"dialog.sshFwdEdit.listen" = "リッスン";
+"dialog.sshFwdEdit.toRemote" = "リモート側ホスト";
+"dialog.sshFwdEdit.port" = "ポート";
+"dialog.sshFwdEdit.remotePort" = "リモートサーバのポート";
+"dialog.sshFwdEdit.toLocal" = "ローカル側ホスト";
+"dialog.sshFwdEdit.dynamicPort" = "ダイナミックポート";
+
+/* SSH Key Generation Dialog (IDD_SSHKEYGEN) */
+"dialog.sshKeyGen.title" = "SSH鍵生成";
+"dialog.sshKeyGen.keyType" = "鍵の種類";
+"dialog.sshKeyGen.keyBits" = "ビット数:";
+"dialog.sshKeyGen.passphrase" = "鍵のパスフレーズ:";
+"dialog.sshKeyGen.confirm" = "パスフレーズの確認:";
+"dialog.sshKeyGen.comment" = "コメント:";
+"dialog.sshKeyGen.generate" = "生成";
+"dialog.sshKeyGen.savePublic" = "公開鍵の保存";
+"dialog.sshKeyGen.savePrivate" = "秘密鍵の保存";
+"dialog.sshKeyGen.generating" = "鍵を生成しています…";
+"dialog.sshKeyGen.generated" = "鍵を生成しました。";
+"dialog.sshKeyGen.mismatch" = "パスフレーズが一致しません。";
+"dialog.sshKeyGen.emptyPassphrase" = "空のパスフレーズを使用しますか？";
+"dialog.sshKeyGen.savePublicTitle" = "公開鍵の保存先";
+"dialog.sshKeyGen.savePrivateTitle" = "秘密鍵の保存先";
+"dialog.sshKeyGen.error" = "鍵生成に失敗しました: %@";
+
+/* General Setup Dialog (IDD_GENDLG) */
+"dialog.general.title" = "全般の設定";
+"dialog.generalSetup.title" = "全般の設定";
+"dialog.generalSetup.language" = "言語:";
+"dialog.generalSetup.languageAuto" = "自動 (システム言語)";
+"dialog.generalSetup.languageEnglish" = "English";
+"dialog.generalSetup.languageJapanese" = "Japanese";
+"dialog.generalSetup.defaultPort" = "デフォルトポート:";
+"dialog.generalSetup.autoWindowClose" = "自動的にウィンドウを閉じる";
+"dialog.generalSetup.titleFormat" = "タイトル形式";
+"dialog.generalSetup.titleHostname" = "ホスト名";
+"dialog.generalSetup.titleSession" = "セッション番号";
+
+/* 多言語設定システム */
+"settings.multilingual.title" = "Tera Term: 多言語設定";
+"settings.multilingual.languageSection" = "言語設定";
+"settings.multilingual.currentLanguage" = "現在の言語:";
+"settings.multilingual.autoDetect" = "システムの言語を使用";
+"settings.multilingual.restartRequired" = "言語変更を適用するには再起動が必要です。";
+"settings.multilingual.apply" = "適用";
+"settings.multilingual.preview" = "プレビュー";
+
+/* 動的レイアウトテストラベル */
+"settings.layout.terminalEmulation" = "端末エミュレーション設定";
+"settings.layout.connectionSettings" = "接続設定";
+"settings.layout.displaySettings" = "表示設定";
+"settings.layout.keyboardShortcuts" = "キーボードショートカット";
+"settings.layout.characterEncoding" = "文字エンコーディング";
+"settings.layout.scrollBufferSettings" = "スクロールバッファ設定";
+"settings.layout.autoWrapMode" = "自動折り返しモード";
+"settings.layout.transmitDelaySettings" = "送信遅延設定 (ミリ秒/文字)";
+
+/* ローカライズ検証 */
+"validation.truncation.warning" = "テキストの切り詰めを検出しました";
+"validation.layout.overflow" = "レイアウトのオーバーフローを検出しました";
+"validation.language.mismatch" = "言語の不一致を検出しました";
+
+/* その他の設定 - 全般 (新規項目) */
+"dialog.general.connectingTimeout" = "接続タイムアウト (秒, 0=無制限):";
+"dialog.general.clearScreenOnClose" = "接続終了時に画面をクリアする";
+"dialog.general.saveWindowPosition" = "ウインドウ位置を保存する";
+"dialog.general.backWrap" = "バックラップを有効にする";
+"dialog.general.vtCompatTab" = "VT互換タブ";
+
+/* その他の設定 - エンコーディング (新規項目) */
+"dialog.coding.narrow" = "1 (半角)";
+"dialog.coding.wide" = "2 (全角)";
+"dialog.coding.emojiOverride" = "絵文字幅を上書きする";
+"dialog.coding.fallbackCP932" = "未定義文字にCP932フォールバックを使用する";
+
+/* その他の設定 - コピーと貼り付け (新規項目) */
+"dialog.copyPaste.mouseSelectDelay" = "選択開始遅延 (ミリ秒):";
+
+/* その他の設定 - 制御シーケンス (新規項目) */
+"dialog.sequence.accept8BitCtrl" = "8ビット制御コードを受け入れる";
+"dialog.sequence.send8BitCtrl" = "8ビット制御シーケンスを送信する";
+"dialog.sequence.alternateScreen" = "代替スクリーンバッファを有効にする";
+"dialog.sequence.bracketedPaste" = "ブラケットペーストモードを有効にする";
+"dialog.sequence.bracketedControlOnly" = "ブラケットペースト制御のみ";
+"dialog.sequence.allowWrongSequence" = "不正なエスケープシーケンスを許可する";
+"dialog.sequence.maxOSCBuffer" = "OSCバッファ最大サイズ:";
+"dialog.sequence.enableLineMode" = "ラインモードを有効にする";
+
+/* その他の設定 - マウス (新規項目) */
+"dialog.mouse.translateWheelToCursor" = "代替画面でホイールをカーソルキーに変換する";
+"dialog.mouse.disableWheelToCursorByCtrl" = "Ctrl押下時にホイール変換を無効にする";
+
+/* その他の設定 - ログ (新規項目) */
+"dialog.log.timestampFormat" = "タイムスタンプ形式:";
+
+/* その他の設定 - 表示 (新規項目) */
+"dialog.visual.killFocusCursor" = "フォーカス喪失時にポリゴンカーソルを表示する";
+"dialog.visual.pcBoldColor" = "PC式太字カラーマッピング";
+"dialog.visual.windowExtended" = "ウインドウ拡張設定";
+"dialog.visual.attrColorSettings" = "属性色設定";
+"dialog.visual.colorNormal" = "通常:";
+"dialog.visual.colorBold" = "太字:";
+"dialog.visual.colorBlink" = "点滅:";
+"dialog.visual.colorReverse" = "反転:";
+"dialog.visual.colorURL" = "URL:";
+"dialog.visual.colorUnderline" = "下線:";
+"dialog.visual.colorStrikethrough" = "取り消し線:";
+"dialog.visual.enableBoldDisplay" = "太字テキストの描画を有効にする";
+"dialog.visual.hideWindowFrame" = "フレームなしのウインドウ表示";
+"dialog.visual.aixtermColors" = "aixterm 16色モード";
+"dialog.visual.xterm256Colors" = "xterm 256色モード";
+"dialog.visual.useStandardBGColor" = "標準背景色を常に使用する";
+
+/* その他の設定 - フォント (新規項目) */
+"dialog.font.resizeFontToFit" = "描画幅に合わせてフォントサイズを変更する";
+
+/* その他の設定 - スクロール (新規項目) */
+"dialog.general.scrollThreshold" = "スクロール閾値:";
+"dialog.general.scrollClearScreen" = "スクロール時に画面をクリアする";
+
+/* その他の設定 - シリアル (新規項目) */
+"dialog.general.clearBuffOnOpen" = "ポートオープン時にバッファをクリアする";
+"dialog.general.autoReconnect" = "シリアルポート自動再接続";
+
+/* その他の設定 - ビープ (新規項目) */
+"dialog.general.beepOverUsedCount" = "ビープ過多検知回数:";
+"dialog.general.beepOverUsedTime" = "ビープ過多検知時間 (秒):";
+"dialog.general.beepSuppressTime" = "ビープ抑制時間 (秒):";
+
+/* その他の設定 - ブロードキャスト (新規項目) */
+"dialog.general.maxBroadcastHistory" = "ブロードキャスト履歴の最大数:";
+
+/* その他の設定 - デバッグ (新規項目) */
+"dialog.debug.debugModes" = "デバッグモード:";
+
+/* その他の設定 - URL (新規項目) */
+"dialog.mouse.joinSplitURL" = "行をまたがるURLを結合する";
+"dialog.mouse.joinSplitURLIgnoreEOL" = "行末無視文字:";
+
+/* その他の設定 - ファイル転送 (新規項目) */
+"dialog.general.zmodemAuto" = "ZMODEM自動受信";
+"dialog.general.confirmDragDrop" = "ファイルのドラッグ＆ドロップ確認";
+"dialog.general.autoFileRename" = "ファイル競合時に自動リネーム";
+
+/* テーマタブ (新規項目) */
+"dialog.theme.bgImage" = "背景画像";
+"dialog.theme.bgImagePath" = "画像パス:";
+"dialog.theme.browse" = "参照…";
+"dialog.theme.alphaNormal" = "通常テキスト:";
+"dialog.theme.alphaReverse" = "反転テキスト:";
+"dialog.theme.alphaOther" = "その他:";
+"dialog.theme.colorEditor" = "テーマカラーエディタ";
+"dialog.theme.foreground" = "前景色:";
+"dialog.theme.background" = "背景色:";
+"dialog.theme.cursor" = "カーソル:";
+"dialog.theme.url" = "URL:";
+"dialog.theme.selFg" = "選択前景色:";
+"dialog.theme.selBg" = "選択背景色:";
+
+/* 不足していたローカライズキー */
+
+/* マクロステータスパネル - 行番号表示 */
+"macroStatus.linePrefix" = "行: %d";
+
+/* 印刷中止ダイアログ */
+"dialog.printAbort.printing" = "印刷中...";
+
+/* ステータスダイアログ */
+"dialog.status.title" = "Tera Term: ステータス";
+"dialog.status.processing" = "処理中...";
+
+/* TEKウィンドウ */
+"dialog.tek.title" = "Tera Term: TEK";
+
+/* 転送ウィンドウタイトル */
+"window.title.transfer" = "転送: %@ - %@";
+
+/* Kermit取得ダイアログ */
+"dialog.kermitGet.title" = "Tera Term: Kermit取得";
+"dialog.kermitGet.placeholder" = "リモートファイル名";
+
+/* ANSIカラー名（ツールチップ） */
+"color.black" = "黒";
+"color.red" = "赤";
+"color.green" = "緑";
+"color.yellow" = "黄";
+"color.blue" = "青";
+"color.magenta" = "マゼンタ";
+"color.cyan" = "シアン";
+"color.white" = "白";
+"color.brightBlack" = "明るい黒";
+"color.brightRed" = "明るい赤";
+"color.brightGreen" = "明るい緑";
+"color.brightYellow" = "明るい黄";
+"color.brightBlue" = "明るい青";
+"color.brightMagenta" = "明るいマゼンタ";
+"color.brightCyan" = "明るいシアン";
+"color.brightWhite" = "明るい白";
+
+/* 描画API名 */
+"dialog.font.apiDefault" = "デフォルト";
+"dialog.font.apiCoreText" = "CoreText";
+"dialog.font.apiCoreGraphics" = "CoreGraphics";
+
+/* UIタブ */
+"dialog.ui.systemDefault" = "（システムデフォルト）";
+
+/* プラグインタブ */
+"dialog.plugin.directoryColumn" = "ディレクトリ";
+
+/* Telnetグループボックス（TCP/IPダイアログ） */
+"dialog.tcpip.telnetGroup" = "Telnet";
+
+/* デフォルトポート項目 */
+"dialog.general.portTCPIP" = "TCP/IP";
+"dialog.general.portSerial" = "シリアル";
+
+/* マクロ */
+"macroStatus.lineFmt" = "行: %d";
+
+/* 入力ダイアログのデフォルトタイトル */
+"dialog.input.defaultTitle" = "入力";
+
+/* メッセージダイアログのデフォルトタイトル */
+"dialog.message.defaultTitle" = "メッセージ";
+
+/* ファイル転送読み込みエラー */
+"dialog.fileTransfer.readError.title" = "ファイルを読み込めません";
+"dialog.fileTransfer.readError.message" = "ファイル \"%@\" を読み込めません。ファイルのアクセス権を確認してください。";
+
+/* YMODEMオプションパネル */
+"dialog.yopt.ymodem" = "YMODEM";
+"dialog.yopt.ymodemG" = "YMODEM-G";
+"dialog.yopt.binary" = "バイナリ";
+"dialog.yopt.option" = "オプション";
+
+/* YMODEMダイアログタイトル */
+"dialog.ymodem.sendTitle" = "Tera Term: YMODEM 送信";
+"dialog.ymodem.receiveTitle" = "Tera Term: YMODEM 受信";
+
+/* マクロ - パスワードダイアログ */
+"dialog.macro.password" = "パスワード";
+
+/* マクロエラーメッセージ */
+"macro.error.closeParen" = "\")\" が必要です。";
+"macro.error.cantCall" = "サブルーチンを呼び出せません。";
+"macro.error.cantConnect" = "マクロをリンクできません。";
+"macro.error.cantOpen" = "ファイルを開けません。";
+"macro.error.divByZero" = "ゼロ除算です。";
+"macro.error.invalidCtl" = "無効な制御です。";
+"macro.error.labelAlreadyDef" = "ラベルが既に定義されています。";
+"macro.error.labelReq" = "ラベルが必要です。";
+"macro.error.linkFirst" = "先にマクロをリンクしてください。'connect' マクロを使用してください。";
+"macro.error.stackOver" = "スタックオーバーフローです。";
+"macro.error.syntax" = "構文エラーです。";
+"macro.error.tooManyLabels" = "ラベルが多すぎます。";
+"macro.error.tooManyVar" = "変数が多すぎます。";
+"macro.error.typeMismatch" = "型が一致しません。";
+"macro.error.varNotInit" = "変数が初期化されていません。";
+"macro.error.closeComment" = "\"*/\" が必要です。";
+"macro.error.outOfRange" = "インデックスが範囲外です。";
+"macro.error.closeBracket" = "\"]\" が必要です。";
+"macro.error.fewMemory" = "メモリを確保できません。";
+"macro.error.notSupported" = "不明なコマンドです。";
+"macro.error.cantExec" = "コマンドを実行できません。";
+"macro.error.atLine" = "%d 行目のエラー";
+
+/* キーマップエラーメッセージ */
+"error.keymap.fileNotFound" = "キーボード設定ファイルが見つかりません: %@";
+"error.keymap.encodingFailed" = "キーボード設定ファイルの文字エンコーディングを検出できませんでした。";
+"error.keymap.parseError" = "キーボード設定ファイルの解析エラー: %@";
+
+/* ファイル転送エラーメッセージ */
+"transfer.error.noFile" = "ファイルが指定されていません。";
+"transfer.error.cannotOpen" = "ファイルを開けません。";
+"transfer.error.tooManyRetries" = "リトライ回数が上限に達しました。";
+"transfer.error.fileNotFound" = "ファイルが見つかりません。";
+"transfer.error.kermit" = "Kermitエラー: %@";
+"transfer.error.bplusRemoteFailure" = "B-Plus: リモート側で障害が発生しました。";
+"transfer.error.quickvanRetries" = "Quick-VAN: リトライ回数が上限に達しました。";
+"transfer.error.quickvanNaks" = "Quick-VAN: NAK回数が上限に達しました。";
+
+/* 接続エラーメッセージ (追加) */
+"error.connection.shellLaunchFailed" = "シェルの起動に失敗しました。";
+"error.connection.shellExitedImmediately" = "シェルが直ちに終了しました。";
+
+/* SSHエラーメッセージ (追加) */
+"error.ssh.ptyReadError" = "接続確立前にPTY読み取りエラーが発生しました。";
+"error.ssh.processExited" = "接続確立前にSSHプロセスが終了しました。";
+"error.ssh.terminated255" = "SSH接続が終了しました (終了コード 255)。";
+"error.ssh.exitedWithCode" = "SSHが終了コード %d で終了しました。";
+
+/* デバッグ / コンソールログメッセージ */
+"debug.config.dirCreateFailed" = "ディレクトリの作成に失敗しました: %@";
+"debug.config.oldFormat" = "古い設定形式を検出しました。再作成します…";
+"debug.config.unknownKey" = "不明なキーをスキップ [%@] %@=%@";
+"debug.config.saveFailed" = "設定の保存に失敗しました: %@";
+"debug.settings.saveFailed" = "設定の保存に失敗しました: %@";
+"debug.keymap.warnings" = "キーマップ警告: %@";
+"debug.keymap.loadFailed" = "キーマップの読み込みに失敗しました: %@";
+"debug.tcp.writeRetryExceeded" = "send: 書き込みリトライ上限超過 (%d 回リトライ, %d/%d バイト送信済み)";
+"debug.snapshot.zeroSize" = "ビューのサイズがゼロです – スキップ %@";
+"debug.snapshot.bitmapFailed" = "%@ のビットマップ作成に失敗しました";
+"debug.snapshot.dirFailed" = "ディレクトリを作成できません: %@";
+"debug.snapshot.pngFailed" = "%@ のPNGエンコードに失敗しました";
+"debug.snapshot.saved" = "保存しました: %@";
+"debug.snapshot.writeFailed" = "書き込みに失敗しました: %@";
+"debug.snapshot.allGenerated" = "すべてのスナップショットを生成しました。";
+"debug.snapshot.allValidationGenerated" = "%d 個の検証スナップショットをすべて生成しました。";
+"debug.snapshot.sizeExceeds" = "警告: %@ の fittingSize (%dx%d) が境界 (%dx%d) を超えています";

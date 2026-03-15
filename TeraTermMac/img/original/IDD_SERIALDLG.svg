@@ -1,0 +1,96 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="560" height="560" font-family="MS UI Gothic, Meiryo, sans-serif" font-size="11">
+  <defs>
+    <style>
+      .title-bar { fill: #0078d4; }
+      .title-text { fill: white; font-size: 11px; font-weight: bold; }
+      .dialog-bg { fill: #f0f0f0; stroke: #999; stroke-width: 1; }
+      .group-box { fill: none; stroke: #999; stroke-width: 1; }
+      .label { fill: #000; font-size: 11px; }
+      .edit-box { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .combo-box { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .button { fill: #e1e1e1; stroke: #adadad; stroke-width: 1; }
+      .button-default { fill: #0078d4; stroke: #005a9e; stroke-width: 1; }
+      .button-text { fill: #000; font-size: 11px; text-anchor: middle; }
+      .button-text-default { fill: #fff; font-size: 11px; text-anchor: middle; }
+      .checkbox { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .radio { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .combo-arrow { fill: #606060; }
+      .text-area { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .scrollbar { fill: #c0c0c0; stroke: #999; stroke-width: 1; }
+      .sample-box { fill: #000; stroke: #333; stroke-width: 2; }
+      .link { fill: #0066cc; font-size: 11px; text-decoration: underline; }
+      .tab-active { fill: #f0f0f0; stroke: #999; stroke-width: 1; }
+      .tab-inactive { fill: #d0d0d0; stroke: #999; stroke-width: 1; }
+      .tab-text { fill: #000; font-size: 10px; text-anchor: middle; }
+      .listbox { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .progress-bar { fill: #0078d4; }
+      .progress-bg { fill: #e0e0e0; stroke: #999; stroke-width: 1; }
+    </style>
+  </defs>
+  <!-- Title bar -->
+  <rect class="title-bar" x="0" y="0" width="560" height="22" rx="4"/>
+  <text class="title-text" x="8" y="15">Tera Term: シリアルポートの設定と接続</text>
+  <rect class="dialog-bg" x="0" y="22" width="560" height="538"/>
+  <text class="label" x="30" y="42">ポート:</text>
+  <rect class="combo-box" x="150" y="30" width="124" height="20"/>
+  <rect fill="#e1e1e1" x="254" y="30" width="20" height="20" stroke="#7a7a7a" stroke-width="1"/>
+  <polygon class="combo-arrow" points="259,38 269,38 264,45"/>
+  <text class="label" x="30" y="66">スピード:</text>
+  <rect class="combo-box" x="150" y="54" width="124" height="20"/>
+  <rect fill="#e1e1e1" x="254" y="54" width="20" height="20" stroke="#7a7a7a" stroke-width="1"/>
+  <polygon class="combo-arrow" points="259,62 269,62 264,69"/>
+  <text class="label" x="156" y="68">9600</text>
+  <text class="label" x="30" y="90">データ:</text>
+  <rect class="combo-box" x="150" y="78" width="124" height="20"/>
+  <rect fill="#e1e1e1" x="254" y="78" width="20" height="20" stroke="#7a7a7a" stroke-width="1"/>
+  <polygon class="combo-arrow" points="259,86 269,86 264,93"/>
+  <text class="label" x="156" y="92">8 bit</text>
+  <text class="label" x="30" y="114">パリティ:</text>
+  <rect class="combo-box" x="150" y="102" width="124" height="20"/>
+  <rect fill="#e1e1e1" x="254" y="102" width="20" height="20" stroke="#7a7a7a" stroke-width="1"/>
+  <polygon class="combo-arrow" points="259,110 269,110 264,117"/>
+  <text class="label" x="156" y="116">none</text>
+  <text class="label" x="30" y="138">ストップビット:</text>
+  <rect class="combo-box" x="150" y="126" width="124" height="20"/>
+  <rect fill="#e1e1e1" x="254" y="126" width="20" height="20" stroke="#7a7a7a" stroke-width="1"/>
+  <polygon class="combo-arrow" points="259,134 269,134 264,141"/>
+  <text class="label" x="156" y="140">1 bit</text>
+  <text class="label" x="30" y="162">フロー制御:</text>
+  <rect class="combo-box" x="150" y="150" width="124" height="20"/>
+  <rect fill="#e1e1e1" x="254" y="150" width="20" height="20" stroke="#7a7a7a" stroke-width="1"/>
+  <polygon class="combo-arrow" points="259,158 269,158 264,165"/>
+  <text class="label" x="156" y="164">none</text>
+  <rect class="checkbox" x="30" y="180" width="13" height="13"/>
+  <text class="label" x="48" y="191">CTS</text>
+  <rect class="checkbox" x="92" y="180" width="13" height="13"/>
+  <text class="label" x="110" y="191">RTS</text>
+  <rect class="combo-box" x="150" y="178" width="124" height="20"/>
+  <rect fill="#e1e1e1" x="254" y="178" width="20" height="20" stroke="#7a7a7a" stroke-width="1"/>
+  <polygon class="combo-arrow" points="259,186 269,186 264,193"/>
+  <rect class="checkbox" x="30" y="202" width="13" height="13"/>
+  <text class="label" x="48" y="213">DSR</text>
+  <rect class="checkbox" x="92" y="202" width="13" height="13"/>
+  <text class="label" x="110" y="213">DTR</text>
+  <rect class="combo-box" x="150" y="200" width="124" height="20"/>
+  <rect fill="#e1e1e1" x="254" y="200" width="20" height="20" stroke="#7a7a7a" stroke-width="1"/>
+  <polygon class="combo-arrow" points="259,208 269,208 264,215"/>
+  <rect class="checkbox" x="30" y="224" width="13" height="13"/>
+  <text class="label" x="48" y="235">RING</text>
+  <rect class="checkbox" x="92" y="224" width="13" height="13"/>
+  <text class="label" x="110" y="235">RLSD</text>
+  <rect class="group-box" x="24" y="248" width="304" height="64"/>
+  <text class="label" x="32" y="248" font-weight="bold">送信遅延</text>
+  <rect class="edit-box" x="44" y="268" width="40" height="20"/>
+  <text class="label" x="50" y="282">0</text>
+  <text class="label" x="92" y="282">ミリ秒/字</text>
+  <rect class="edit-box" x="186" y="268" width="40" height="20"/>
+  <text class="label" x="192" y="282">0</text>
+  <text class="label" x="232" y="282">ミリ秒/行</text>
+  <rect class="text-area" x="20" y="320" width="516" height="144"/>
+  <rect class="button-default" x="310" y="30" width="72" height="24" rx="3"/>
+  <text class="button-text-default" x="346" y="46">OK</text>
+  <rect class="button" x="310" y="60" width="72" height="24" rx="3"/>
+  <text class="button-text" x="346" y="76">キャンセル</text>
+  <rect class="button" x="310" y="90" width="72" height="24" rx="3"/>
+  <text class="button-text" x="346" y="106">ヘルプ(&H)</text>
+</svg>

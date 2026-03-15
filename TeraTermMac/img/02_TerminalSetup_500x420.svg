@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="500" height="420" viewBox="0 0 500 420">
+  <defs>
+    <style>
+      .bg { fill: #ECECEC; }
+      .border { fill: none; stroke: red; stroke-width: 2; }
+      .box { fill: #F6F6F6; stroke: #C0C0C0; stroke-width: 1; rx: 4; }
+      .label { font-family: -apple-system, 'Helvetica Neue', sans-serif; font-size: 13px; fill: #333; }
+      .label-right { font-family: -apple-system, 'Helvetica Neue', sans-serif; font-size: 13px; fill: #333; text-anchor: end; }
+      .title { font-family: -apple-system, 'Helvetica Neue', sans-serif; font-size: 13px; fill: #333; font-weight: 600; }
+      .boxtitle { font-family: -apple-system, 'Helvetica Neue', sans-serif; font-size: 12px; fill: #555; font-weight: 600; }
+      .field { fill: #FFF; stroke: #B0B0B0; stroke-width: 1; rx: 3; }
+      .popup { fill: #FFF; stroke: #B0B0B0; stroke-width: 1; rx: 3; }
+      .check-box { fill: none; stroke: #666; stroke-width: 1.5; rx: 2; }
+      .check-mark { fill: none; stroke: #007AFF; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+      .btn { fill: #F0F0F0; stroke: #B0B0B0; stroke-width: 1; rx: 5; }
+      .btn-primary { fill: #007AFF; stroke: #006AE0; stroke-width: 1; rx: 5; }
+      .btn-label { font-family: -apple-system, 'Helvetica Neue', sans-serif; font-size: 13px; fill: #333; text-anchor: middle; }
+      .btn-label-w { font-family: -apple-system, 'Helvetica Neue', sans-serif; font-size: 13px; fill: #FFF; text-anchor: middle; }
+      .size-label { font-family: monospace; font-size: 10px; fill: red; }
+      .sep { stroke: #C0C0C0; stroke-width: 1; }
+      .dim { font-family: -apple-system, 'Helvetica Neue', sans-serif; font-size: 11px; fill: #999; }
+      .gap-marker { fill: none; stroke: #FF6600; stroke-width: 1; stroke-dasharray: 2,2; }
+      .gap-label { font-family: monospace; font-size: 9px; fill: #FF6600; }
+    </style>
+  </defs>
+
+  <!-- Background -->
+  <rect width="500" height="420" class="bg"/>
+  <rect x="1" y="1" width="498" height="418" class="border"/>
+
+  <!-- Title bar -->
+  <rect x="0" y="0" width="500" height="22" fill="#E8E8E8" stroke="#C0C0C0" stroke-width="1"/>
+  <text x="250" y="15" class="title" text-anchor="middle">Tera Term: Terminal setup</text>
+  <circle cx="14" cy="11" r="5" fill="#FF5F57"/>
+  <circle cx="30" cy="11" r="5" fill="#FEBC2E"/>
+  <circle cx="46" cy="11" r="5" fill="#28C840"/>
+
+  <!-- ════════ Terminal Size Group Box (left) ════════ -->
+  <rect x="20" y="35" width="220" height="155" class="box"/>
+  <text x="30" y="50" class="boxtitle">Terminal size</text>
+
+  <!-- Width field -->
+  <rect x="34" y="60" width="60" height="22" class="field"/>
+  <text x="54" y="75" class="label" text-anchor="middle">80</text>
+
+  <!-- X label -->
+  <text x="107" y="75" class="label" text-anchor="middle">X</text>
+
+  <!-- Height field -->
+  <rect x="120" y="60" width="60" height="22" class="field"/>
+  <text x="140" y="75" class="label" text-anchor="middle">24</text>
+
+  <!-- Gap annotation: rs + 10 = 18pt between fields and checkbox -->
+  <line x1="195" y1="82" x2="195" y2="100" class="gap-marker"/>
+  <text x="200" y="94" class="gap-label">+18pt</text>
+
+  <!-- Term size = Win size checkbox -->
+  <rect x="34" y="100" width="13" height="13" class="check-box"/>
+  <polyline points="37,107 40,111 47,103" class="check-mark"/>
+  <text x="52" y="112" class="label">Term size = Win size</text>
+
+  <!-- Auto window resize checkbox -->
+  <rect x="34" y="122" width="13" height="13" class="check-box"/>
+  <polyline points="37,129 40,133 47,125" class="check-mark"/>
+  <text x="52" y="134" class="label">Auto window resize</text>
+
+  <!-- ════════ New-line Group Box (right) ════════ -->
+  <rect x="252" y="35" width="228" height="155" class="box"/>
+  <text x="262" y="50" class="boxtitle">New-line</text>
+
+  <!-- Receive row -->
+  <text x="325" y="75" class="label-right">Receive:</text>
+  <rect x="335" y="60" width="100" height="22" class="popup"/>
+  <text x="345" y="75" class="label">CR</text>
+  <polygon points="423,68 429,68 426,74" fill="#666"/>
+
+  <!-- Transmit row -->
+  <text x="325" y="105" class="label-right">Transmit:</text>
+  <rect x="335" y="90" width="100" height="22" class="popup"/>
+  <text x="345" y="105" class="label">CR</text>
+  <polygon points="423,98 429,98 426,104" fill="#666"/>
+
+  <!-- ════════ Terminal ID row ════════ -->
+  <text x="110" y="215" class="label-right">Terminal ID:</text>
+  <rect x="118" y="200" width="100" height="22" class="popup"/>
+  <text x="128" y="215" class="label">VT100</text>
+  <polygon points="206,208 212,208 209,214" fill="#666"/>
+
+  <!-- Local echo checkbox -->
+  <rect x="276" y="204" width="13" height="13" class="check-box"/>
+  <text x="294" y="216" class="label">Local echo</text>
+
+  <!-- ════════ Answerback row ════════ -->
+  <text x="110" y="247" class="label-right">Answerback:</text>
+  <rect x="118" y="232" width="120" height="22" class="field"/>
+  <text x="128" y="247" class="label" fill="#999"></text>
+
+  <!-- Auto switch checkbox -->
+  <rect x="276" y="236" width="13" height="13" class="check-box"/>
+  <text x="294" y="248" class="label">Auto switch (VT&lt;-&gt;TEK)</text>
+
+  <!-- ════════ Separator ════════ -->
+  <line x1="0" y1="340" x2="500" y2="340" class="sep"/>
+
+  <!-- ════════ Buttons ════════ -->
+  <rect x="20" y="355" width="80" height="24" class="btn"/>
+  <text x="60" y="371" class="btn-label">Help</text>
+
+  <rect x="310" y="355" width="80" height="24" class="btn"/>
+  <text x="350" y="371" class="btn-label">Cancel</text>
+
+  <rect x="400" y="355" width="80" height="24" class="btn-primary"/>
+  <text x="440" y="371" class="btn-label-w">OK</text>
+
+  <!-- Size annotation -->
+  <text x="490" y="415" class="size-label" text-anchor="end">500 x 420</text>
+</svg>

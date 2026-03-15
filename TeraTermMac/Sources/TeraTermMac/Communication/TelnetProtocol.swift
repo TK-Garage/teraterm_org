@@ -84,10 +84,27 @@ class TelnetProtocol {
     private var subNegOption: UInt8 = 0
     private var outputBuffer = Data()
 
-    // Telnet state
-    var binaryMode: Bool = false
-    var echoMode: Bool = false
-    var suppressGA: Bool = false
+    // Thread safety: protects binaryMode/echoMode/suppressGA which are read
+    // by escapeData() on sendQueue while mutated by processIncoming() on main.
+    private let stateLock = NSLock()
+
+    // Telnet state — access via stateLock when crossing thread boundaries
+    private var _binaryMode: Bool = false
+    private var _echoMode: Bool = false
+    private var _suppressGA: Bool = false
+
+    var binaryMode: Bool {
+        get { stateLock.lock(); defer { stateLock.unlock() }; return _binaryMode }
+        set { stateLock.lock(); _binaryMode = newValue; stateLock.unlock() }
+    }
+    var echoMode: Bool {
+        get { stateLock.lock(); defer { stateLock.unlock() }; return _echoMode }
+        set { stateLock.lock(); _echoMode = newValue; stateLock.unlock() }
+    }
+    var suppressGA: Bool {
+        get { stateLock.lock(); defer { stateLock.unlock() }; return _suppressGA }
+        set { stateLock.lock(); _suppressGA = newValue; stateLock.unlock() }
+    }
 
     enum IACState {
         case normal

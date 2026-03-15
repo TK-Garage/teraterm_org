@@ -52,6 +52,18 @@ class TerminalEmulator {
     // Charset reporting
     var sendCharSet: CharSetState = CharSetState()
 
+    // CR/LF receive state for AUTO mode (port of vtterm.c PrevCharacter/PrevCRorLFGeneratedCRLF)
+    private var prevControlChar: UInt8 = 0
+    private var prevCRorLFGeneratedCRLF: Bool = false
+
+    // Macro receive buffer: accumulates received text for TTL wait commands.
+    // Only filled when macroReceiveEnabled is true (i.e. a macro is running).
+    var macroReceiveBuffer: String = ""
+    var macroReceiveEnabled: Bool = false
+
+    // Cap the buffer to prevent unbounded growth even while a macro is running
+    private static let macroReceiveBufferLimit = 1_000_000
+
     init(settings: TerminalSettings) {
         self.settings = settings
         self.terminalID = settings.terminalID
@@ -68,6 +80,15 @@ class TerminalEmulator {
 
     func processData(_ data: Data) {
         parser.parse(data)
+        // Feed macro receive buffer for TTL wait commands (only when macro is active)
+        if macroReceiveEnabled, let text = String(data: data, encoding: .utf8) {
+            macroReceiveBuffer += text
+            // Trim from the front if the buffer exceeds the limit
+            if macroReceiveBuffer.count > Self.macroReceiveBufferLimit {
+                let excess = macroReceiveBuffer.count - Self.macroReceiveBufferLimit
+                macroReceiveBuffer.removeFirst(excess)
+            }
+        }
         delegate?.terminalDidUpdateDisplay()
     }
 
@@ -476,6 +497,7 @@ class TerminalEmulator {
 extension TerminalEmulator: VTParserDelegate {
 
     func parserDidReceivePrintable(_ text: String) {
+        prevControlChar = 0  // Reset AUTO CR/LF deduplication state on printable chars
         for char in text {
             if modes.insertMode {
                 buffer.insertCharacters(1)
@@ -490,39 +512,82 @@ extension TerminalEmulator: VTParserDelegate {
     }
 
     func parserDidRequestBell() {
+        prevControlChar = 0x07
         delegate?.terminalDidRing()
     }
 
     func parserDidRequestBackspace() {
+        prevControlChar = 0x08
         buffer.backspace()
     }
 
     func parserDidRequestTab() {
+        prevControlChar = 0x09
         buffer.tab()
     }
 
+    // Port of vtterm.c ProcessLF()
     func parserDidRequestLineFeed() {
-        buffer.lineFeed()
-        if modes.newLineMode {
+        switch settings.crReceive {
+        case .lf:
+            // CRReceive=LF: LF received → treat as CR+LF
             buffer.carriageReturn()
+            buffer.lineFeed()
+        case .auto_:
+            // AUTO mode: CR or LF generates CR+LF; consecutive CR+LF pair is deduplicated
+            if prevControlChar != 0x0D || !prevCRorLFGeneratedCRLF {
+                buffer.carriageReturn()
+                buffer.lineFeed()
+                prevCRorLFGeneratedCRLF = true
+            } else {
+                prevCRorLFGeneratedCRLF = false
+            }
+        default:
+            // CRReceive=CR or CRLF: standard VT100 behavior
+            buffer.lineFeed()
+            if modes.newLineMode {
+                buffer.carriageReturn()
+            }
         }
+        prevControlChar = 0x0A
     }
 
+    // Port of vtterm.c ProcessCR()
     func parserDidRequestCarriageReturn() {
-        buffer.carriageReturn()
+        switch settings.crReceive {
+        case .auto_:
+            // AUTO mode: CR or LF generates CR+LF; consecutive CR+LF pair is deduplicated
+            if prevControlChar != 0x0A || !prevCRorLFGeneratedCRLF {
+                buffer.carriageReturn()
+                buffer.lineFeed()
+                prevCRorLFGeneratedCRLF = true
+            } else {
+                prevCRorLFGeneratedCRLF = false
+            }
+        default:
+            buffer.carriageReturn()
+            if settings.crReceive == .crlf {
+                // CRReceive=CRLF: CR received → add LF
+                buffer.lineFeed()
+            }
+        }
+        prevControlChar = 0x0D
     }
 
     func parserDidRequestShiftOut() {
+        prevControlChar = 0x0E
         charSet.gl = 1  // Switch to G1
     }
 
     func parserDidRequestShiftIn() {
+        prevControlChar = 0x0F
         charSet.gl = 0  // Switch to G0
     }
 
     // MARK: - ESC Sequence Handler
 
     func parserDidReceiveESC(intermediates: [UInt8], final: UInt8) {
+        prevControlChar = 0  // Reset AUTO CR/LF state after escape sequence
         if intermediates.isEmpty {
             switch final {
             case 0x37: // ESC 7 - DECSC (Save Cursor)
@@ -617,6 +682,7 @@ extension TerminalEmulator: VTParserDelegate {
     // MARK: - CSI Sequence Handler
 
     func parserDidReceiveCSI(params: CSIParams, final: UInt8) {
+        prevControlChar = 0  // Reset AUTO CR/LF state after CSI sequence
         if let marker = params.privateMarker {
             handlePrivateCSI(marker: marker, params: params, final: final)
             return
@@ -892,6 +958,10 @@ extension TerminalEmulator: VTParserDelegate {
                 buffer.scrollLeft(params.param(0, default: 1))
             default: break
             }
+        case 0x21: // ! - DECSTR
+            if final == 0x70 { // CSI ! p - Soft Terminal Reset
+                softReset()
+            }
         case 0x2A: // *
             break
         case 0x24: // $
@@ -938,6 +1008,7 @@ extension TerminalEmulator: VTParserDelegate {
     // MARK: - OSC Sequence Handler
 
     func parserDidReceiveOSC(command: Int, data: String) {
+        prevControlChar = 0  // Reset AUTO CR/LF state after OSC sequence
         switch command {
         case 0: // Change icon name and window title
             windowTitle = data
@@ -1026,6 +1097,7 @@ extension TerminalEmulator: VTParserDelegate {
     // MARK: - DCS Sequence Handler
 
     func parserDidReceiveDCS(params: CSIParams, intermediates: [UInt8], data: String) {
+        prevControlChar = 0  // Reset AUTO CR/LF state after DCS sequence
         // Handle Device Control String sequences
         // DECRQSS, DECUDK, etc.
         if let inter = intermediates.first {

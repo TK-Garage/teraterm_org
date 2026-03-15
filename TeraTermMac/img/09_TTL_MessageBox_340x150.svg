@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="340" height="150" viewBox="0 0 340 150">
+  <defs>
+    <style>
+      .bg { fill: #ECECEC; }
+      .border { fill: none; stroke: red; stroke-width: 2; }
+      .msg-title { font-family: -apple-system, 'Helvetica Neue', sans-serif; font-size: 15px; fill: #111; font-weight: 600; }
+      .msg-body { font-family: -apple-system, 'Helvetica Neue', sans-serif; font-size: 13px; fill: #444; }
+      .btn { fill: #F0F0F0; stroke: #B0B0B0; stroke-width: 1; rx: 5; }
+      .btn-primary { fill: #007AFF; stroke: #006AE0; stroke-width: 1; rx: 5; }
+      .btn-label-w { font-family: -apple-system, sans-serif; font-size: 13px; fill: #FFF; text-anchor: middle; }
+      .size-label { font-family: monospace; font-size: 10px; fill: red; }
+      .icon { fill: #007AFF; }
+    </style>
+  </defs>
+
+  <rect width="340" height="150" class="bg" rx="10"/>
+  <rect x="1" y="1" width="338" height="148" class="border" rx="10"/>
+
+  <!-- App icon placeholder -->
+  <rect x="20" y="20" width="40" height="40" rx="8" class="icon" opacity="0.15"/>
+  <text x="40" y="47" font-family="-apple-system" font-size="22" fill="#007AFF" text-anchor="middle">i</text>
+
+  <!-- Title & message -->
+  <text x="75" y="38" class="msg-title">Message Title</text>
+  <text x="75" y="58" class="msg-body">This is the message body text.</text>
+
+  <!-- OK button -->
+  <rect x="230" y="100" width="80" height="26" class="btn-primary"/>
+  <text x="270" y="117" class="btn-label-w">OK</text>
+
+  <text x="330" y="146" class="size-label" text-anchor="end">340 x 150</text>
+</svg>

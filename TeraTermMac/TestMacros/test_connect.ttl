@@ -1,0 +1,11 @@
+; test_connect.ttl - Connection commands test
+; Tests: connect, disconnect, testlink
+
+; Test link status (should be disconnected)
+testlink
+; result should be 0
+
+; Note: actual connect/disconnect requires a running terminal
+; These are placeholder tests for the command parsing
+
+end

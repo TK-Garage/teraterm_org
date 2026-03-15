@@ -1,0 +1,107 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="490" height="520" font-family="MS UI Gothic, Meiryo, sans-serif" font-size="11">
+  <defs>
+    <style>
+      .title-bar { fill: #0078d4; }
+      .title-text { fill: white; font-size: 11px; font-weight: bold; }
+      .dialog-bg { fill: #f0f0f0; stroke: #999; stroke-width: 1; }
+      .group-box { fill: none; stroke: #999; stroke-width: 1; }
+      .label { fill: #000; font-size: 11px; }
+      .edit-box { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .combo-box { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .button { fill: #e1e1e1; stroke: #adadad; stroke-width: 1; }
+      .button-default { fill: #0078d4; stroke: #005a9e; stroke-width: 1; }
+      .button-text { fill: #000; font-size: 11px; text-anchor: middle; }
+      .button-text-default { fill: #fff; font-size: 11px; text-anchor: middle; }
+      .checkbox { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .radio { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .combo-arrow { fill: #606060; }
+      .text-area { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .scrollbar { fill: #c0c0c0; stroke: #999; stroke-width: 1; }
+      .sample-box { fill: #000; stroke: #333; stroke-width: 2; }
+      .link { fill: #0066cc; font-size: 11px; text-decoration: underline; }
+      .tab-active { fill: #f0f0f0; stroke: #999; stroke-width: 1; }
+      .tab-inactive { fill: #d0d0d0; stroke: #999; stroke-width: 1; }
+      .tab-text { fill: #000; font-size: 10px; text-anchor: middle; }
+      .listbox { fill: #fff; stroke: #7a7a7a; stroke-width: 1; }
+      .progress-bar { fill: #0078d4; }
+      .progress-bg { fill: #e0e0e0; stroke: #999; stroke-width: 1; }
+    </style>
+  </defs>
+  <!-- Title bar -->
+  <rect class="title-bar" x="0" y="0" width="490" height="22" rx="4"/>
+  <text class="title-text" x="8" y="15">Tera Term: ウィンドウの設定</text>
+  <rect class="dialog-bg" x="0" y="22" width="490" height="498"/>
+  <text class="label" x="56" y="46" text-anchor="end">タイトル:</text>
+  <rect class="edit-box" x="102" y="34" width="278" height="20"/>
+  <text class="label" x="108" y="48">Tera Term</text>
+  <rect class="group-box" x="20" y="60" width="152" height="120"/>
+  <text class="label" x="28" y="60" font-weight="bold">カーソルの形</text>
+  <circle class="radio" cx="38" cy="88" r="6"/>
+  <circle fill="#000" cx="38" cy="88" r="3"/>
+  <text class="label" x="50" y="92">四角</text>
+  <circle class="radio" cx="38" cy="108" r="6"/>
+  <text class="label" x="50" y="112">垂直線</text>
+  <circle class="radio" cx="38" cy="128" r="6"/>
+  <text class="label" x="50" y="132">下線</text>
+  <rect class="checkbox" x="196" y="64" width="13" height="13"/>
+  <text class="label" x="214" y="75">タイトルバーを隠す</text>
+  <rect class="checkbox" x="196" y="84" width="13" height="13"/>
+  <text class="label" x="214" y="95">ウインドウ枠を隠す</text>
+  <rect class="checkbox" x="196" y="104" width="13" height="13"/>
+  <text class="label" x="214" y="115">メニューバーを隠す</text>
+  <rect class="checkbox" x="196" y="124" width="13" height="13"/>
+  <text class="label" x="214" y="135">16色モード(PC形式)</text>
+  <rect class="checkbox" x="196" y="144" width="13" height="13"/>
+  <text class="label" x="214" y="155">16色モード(aixterm形式)</text>
+  <rect class="checkbox" x="196" y="164" width="13" height="13"/>
+  <text class="label" x="214" y="175">256色モード(xterm形式)</text>
+  <rect class="group-box" x="20" y="190" width="450" height="246"/>
+  <text class="label" x="28" y="190" font-weight="bold">カラー</text>
+  <circle class="radio" cx="38" cy="224" r="6"/>
+  <circle fill="#000" cx="38" cy="224" r="3"/>
+  <text class="label" x="50" y="228">文字</text>
+  <circle class="radio" cx="38" cy="246" r="6"/>
+  <text class="label" x="50" y="250">背景</text>
+  <rect class="button" x="158" y="228" width="100" height="24" rx="3"/>
+  <text class="button-text" x="208" y="244">色入れ替え</text>
+  <text class="label" x="36" y="278">赤:</text>
+  <text class="label" x="84" y="278">255</text>
+  <rect class="scrollbar" x="118" y="270" width="200" height="16" rx="2"/>
+  <rect fill="#0078d4" x="308" y="270" width="10" height="16" rx="2"/>
+  <text class="label" x="36" y="302">緑:</text>
+  <text class="label" x="84" y="302">255</text>
+  <rect class="scrollbar" x="118" y="294" width="200" height="16" rx="2"/>
+  <rect fill="#0078d4" x="308" y="294" width="10" height="16" rx="2"/>
+  <text class="label" x="36" y="326">青:</text>
+  <text class="label" x="84" y="326">255</text>
+  <rect class="scrollbar" x="118" y="318" width="200" height="16" rx="2"/>
+  <rect fill="#0078d4" x="308" y="318" width="10" height="16" rx="2"/>
+  <rect class="sample-box" x="330" y="212" width="114" height="126"/>
+  <text fill="#fff" x="360" y="280" font-size="12">サンプル</text>
+  <text class="label" x="36" y="356">属性:</text>
+  <circle class="radio" cx="100" cy="356" r="6"/>
+  <circle fill="#000" cx="100" cy="356" r="3"/>
+  <text class="label" x="112" y="360">標準</text>
+  <circle class="radio" cx="160" cy="356" r="6"/>
+  <text class="label" x="172" y="360">太字</text>
+  <circle class="radio" cx="210" cy="356" r="6"/>
+  <text class="label" x="222" y="360">点滅</text>
+  <circle class="radio" cx="260" cy="356" r="6"/>
+  <text class="label" x="272" y="360">反転</text>
+  <circle class="radio" cx="310" cy="356" r="6"/>
+  <text class="label" x="322" y="360">URL</text>
+  <circle class="radio" cx="350" cy="356" r="6"/>
+  <text class="label" x="362" y="360">下線</text>
+  <rect class="checkbox" x="36" y="380" width="13" height="13"/>
+  <text class="label" x="54" y="391">常に標準の背景色を使う</text>
+  <text class="label" x="20" y="410">スクロールバッファ:</text>
+  <rect class="edit-box" x="150" y="398" width="60" height="20"/>
+  <text class="label" x="156" y="412">10000</text>
+  <text class="label" x="216" y="410">行</text>
+  <rect class="button-default" x="130" y="476" width="64" height="24" rx="3"/>
+  <text class="button-text-default" x="162" y="492">OK</text>
+  <rect class="button" x="206" y="476" width="80" height="24" rx="3"/>
+  <text class="button-text" x="246" y="492">キャンセル</text>
+  <rect class="button" x="298" y="476" width="72" height="24" rx="3"/>
+  <text class="button-text" x="334" y="492">ヘルプ(&H)</text>
+</svg>

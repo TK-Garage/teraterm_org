@@ -1,0 +1,101 @@
+; ============================================================
+; Debug TTL — Reproduce "Error at line 312: Variable not initialized"
+;
+; This script isolates the strsplit/strjoin issue found in
+; comprehensive_offline_stress.ttl (lines 312-313).
+;
+; macOS strsplit syntax (differs from TeraTerm original):
+;   strsplit <source_string> <delimiter> <dest_array_var>
+;   -> result = element count
+;   -> dest_array_var = strArray of split parts
+;
+; macOS strjoin syntax (differs from TeraTerm original):
+;   strjoin <dest_var> <src_array_var> <delimiter>
+;   -> dest_var = joined string
+;
+; NOTE: TeraTerm original uses groupmatchstr1..9 and variadic
+; strjoin, but macOS implementation uses strArray variables.
+; ============================================================
+
+logfile = '/tmp/ttl_debug_line312.log'
+fileopen fh logfile 0
+filewriteln fh '=== Debug: strsplit/strjoin issue ==='
+filewriteln fh ''
+
+; --- Test 1: Reproduce the WRONG usage (commented out) ---
+; These are the TeraTerm-original syntax, NOT supported on macOS:
+;
+; strsplit 'a,b,c,d' ','                ; WRONG: needs 3 args (missing destArrayVar)
+; strjoin rejoined ',' groupmatchstr1 groupmatchstr2 ...  ; WRONG: variadic not supported
+;
+filewriteln fh 'Test 1: WRONG usage (skipped to avoid error)'
+
+; --- Test 2: Correct strsplit usage (macOS strArray) ---
+filewriteln fh ''
+filewriteln fh 'Test 2: Correct strsplit usage'
+
+strsplit 'a,b,c,d' ',' parts
+sprintf2 msg '  result (count) = %d' result
+filewriteln fh msg
+sprintf2 msg '  parts[0] = "%s"' parts[0]
+filewriteln fh msg
+sprintf2 msg '  parts[1] = "%s"' parts[1]
+filewriteln fh msg
+sprintf2 msg '  parts[2] = "%s"' parts[2]
+filewriteln fh msg
+sprintf2 msg '  parts[3] = "%s"' parts[3]
+filewriteln fh msg
+
+if result = 4 then
+  filewriteln fh '  -> PASS: strsplit returned 4 elements'
+else
+  sprintf2 msg '  -> FAIL: expected 4, got %d' result
+  filewriteln fh msg
+endif
+
+if parts[0] = 'a' then
+  filewriteln fh '  -> PASS: parts[0] = "a"'
+else
+  sprintf2 msg '  -> FAIL: parts[0] = "%s"' parts[0]
+  filewriteln fh msg
+endif
+
+; --- Test 3: Correct strjoin usage (macOS strArray) ---
+filewriteln fh ''
+filewriteln fh 'Test 3: Correct strjoin usage'
+
+strjoin rejoined parts ','
+sprintf2 msg '  rejoined = "%s"' rejoined
+filewriteln fh msg
+
+if rejoined = 'a,b,c,d' then
+  filewriteln fh '  -> PASS: round-trip strsplit/strjoin matches'
+else
+  filewriteln fh '  -> FAIL: round-trip mismatch'
+endif
+
+; --- Test 4: Verify with different delimiter ---
+filewriteln fh ''
+filewriteln fh 'Test 4: Split then join with colon delimiter'
+
+strsplit 'x:y:z' ':' items
+sprintf2 msg '  split count = %d' result
+filewriteln fh msg
+
+if result = 3 then
+  strjoin rebuilt items ':'
+  sprintf2 msg '  rebuilt = "%s"' rebuilt
+  filewriteln fh msg
+  if rebuilt = 'x:y:z' then
+    filewriteln fh '  -> PASS'
+  else
+    filewriteln fh '  -> FAIL'
+  endif
+endif
+
+; --- Summary ---
+filewriteln fh ''
+filewriteln fh '=== Debug complete ==='
+fileclose fh
+
+end

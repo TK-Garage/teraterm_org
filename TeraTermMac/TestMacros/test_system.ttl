@@ -1,0 +1,32 @@
+; test_system.ttl - System commands test
+; Tests: exec, getenv, getdate, gettime, gethostname, getdir, getttdir
+
+; getenv
+getenv 'HOME' homedir
+; homedir should be set
+
+; getdate
+getdate datestr
+; datestr should be current date
+
+; gettime
+gettime timestr
+; timestr should be current time
+
+; gethostname
+gethostname hostname
+; hostname should be set
+
+; getdir
+getdir curdir
+; curdir should be current directory
+
+; random
+random rnd 100
+; rnd should be 0-99
+
+; uptime
+uptime ut
+; ut should be > 0
+
+end

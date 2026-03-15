@@ -1,0 +1,679 @@
+# TERATERM.INI 設定項目マッピング
+
+オリジナル Tera Term (Windows) の `TERATERM.INI` 設定フォーマットと、
+Tera Term Mac での対応状況を記載する。
+
+---
+
+## INI ファイル仕様
+
+### 保存先
+
+| 項目 | Windows (オリジナル) | macOS (移植版) |
+|------|---------------------|---------------|
+| パス | `%APPDATA%\teraterm\TERATERM.INI` またはインストールディレクトリ | `~/Library/Application Support/com.teraterm.mac/TERATERM.INI` |
+
+### デフォルト保存フォーマット（Mac 標準）
+
+| 項目 | 値 |
+|------|-----|
+| 文字コード | UTF-8 (BOM なし) |
+| 改行コード | LF (`\n`) — macOS 標準 |
+| 書き込み方式 | アトミック書き込み（一時ファイル経由で安全に置換） |
+
+### 読み込み時の自動判定
+
+読み込み時は文字コード・改行コードを自動判定する。
+Windows 版で作成した INI ファイルをそのまま読み込み可能。
+
+| 項目 | 自動判定対象 |
+|------|------------|
+| 文字コード | UTF-8 (BOM あり/なし) → Shift_JIS (CP932) → EUC-JP → ISO Latin-1 |
+| 改行コード | CRLF (`\r\n`) / LF (`\n`) / CR (`\r`) を自動検出 |
+
+### Windows 版との主な違い
+
+| 項目 | Windows (オリジナル) | macOS (移植版) |
+|------|---------------------|---------------|
+| 文字コード (保存) | システム依存 (多くは Shift_JIS または UTF-16 LE + BOM) | UTF-8 (BOM なし) |
+| 改行コード (保存) | CRLF (`\r\n`) | LF (`\n`) |
+| 文字コード (読込) | システムロケール依存 (`GetPrivateProfileString` API) | 自動判定 (UTF-8 / Shift_JIS / EUC-JP / Latin-1) |
+| 改行コード (読込) | CRLF 前提 | 自動判定 (CRLF / LF / CR) |
+| API | Win32 `GetPrivateProfileString` / `WritePrivateProfileString` | 独自 `INISerializer` (Swift) |
+| バージョン管理 | なし | `Version` キーで管理。古いバージョンは自動再作成 |
+
+---
+
+## セクション: [Tera Term]
+
+### バージョン・メタ情報
+
+| INI キー | 型 | デフォルト値 | 説明 | Mac 対応 | Mac プロパティ |
+|---------|---|------------|------|---------|--------------|
+| Version | string | "5.6" | 設定ファイルのバージョン | o | TeraTermConfig.version |
+| Port | string | "tcpip" | 接続タイプ ("tcpip" / "serial") | o | portType |
+
+### 端末エミュレーション
+
+| INI キー | 型 | デフォルト値 | 説明 | Mac 対応 | Mac プロパティ |
+|---------|---|------------|------|---------|--------------|
+| TerminalSize | string | "80,24" | 端末サイズ "幅,高さ" | o | terminalWidth, terminalHeight |
+| TermIsWin | on/off | off | 端末サイズ=ウィンドウサイズ | o | termIsWin (default: true) |
+| AutoWinResize | on/off | off | 自動ウィンドウリサイズ | o | autoWinResize |
+| TerminalID | string | "" | 端末ID (VT100/VT220/etc.) | o | terminalID |
+| Answerback | string | "" | ENQ 応答文字列 (Hex エンコード) | o | answerback |
+| TermType | string | "xterm" | Telnet/SSH 端末タイプ | o | termType |
+| TerminalUID | string | "FFFFFFFF" | 端末ユニークID (8桁Hex) | o | TeraTermConfig.terminalUID |
+| TerminalSpeed | string | "38400" | 端末速度 (Telnet/SSH用) | o | terminalSpeed |
+
+### 改行設定
+
+| INI キー | 型 | デフォルト値 | 説明 | Mac 対応 | Mac プロパティ |
+|---------|---|------------|------|---------|--------------|
+| CRReceive | string | "CR" | 受信改行 ("CR"/"CRLF"/"LF"/"AUTO") | o | crReceive |
+| CRSend | string | "CR" | 送信改行 ("CR"/"CRLF"/"LF") | o | crSend |
+
+### 文字コード
+
+| INI キー | 型 | デフォルト値 | 説明 | Mac 対応 | Mac プロパティ |
+|---------|---|------------|------|---------|--------------|
+| KanjiReceive | string | "" | 受信漢字コード (UTF-8/SJIS/EUC/JIS等) | o | encoding |
+| KanjiSend | string | "" | 送信漢字コード | o | sendEncoding |
+| KatakanaReceive | string | "8" | 受信カタカナ ("7"=7bit/"8"=8bit) | o | TeraTermConfig.katakanaReceive |
+| KatakanaSend | string | "8" | 送信カタカナ | o | TeraTermConfig.katakanaSend |
+| KanjiIn | string | "B" | JIS KanjiIn designator ("@"/"B") | o | TeraTermConfig.kanjiIn |
+| KanjiOut | string | "J" | JIS KanjiOut designator ("J"/"B"/"H") | o | TeraTermConfig.kanjiOut |
+
+### ローカルエコー
+
+| INI キー | 型 | デフォルト値 | 説明 | Mac 対応 | Mac プロパティ |
+|---------|---|------------|------|---------|--------------|
+| LocalEcho | on/off | off | ローカルエコー有効 | o | localEcho |
+
+### カーソル
+
+| INI キー | 型 | デフォルト値 | 説明 | Mac 対応 | Mac プロパティ |
+|---------|---|------------|------|---------|--------------|
+| CursorShape | string | "block" | カーソル形状 ("block"/"vertical"/"horizontal") | o | cursorShape |
+| NonblinkingCursor | on/off | off | カーソル点滅無効 | o | cursorBlink (反転) |
+| KillFocusCursor | on/off | on | フォーカス喪失時ポリゴンカーソル | o | killFocusCursor |
+
+### ウィンドウ表示
+
+| INI キー | 型 | デフォルト値 | 説明 | Mac 対応 | Mac プロパティ |
+|---------|---|------------|------|---------|--------------|
+| Title | string | "Tera Term" | ウィンドウタイトル | o | title |
+| TitleFormat | int | 13 | タイトル書式ビットフィールド | o | titleFormat |
+| HideTitle | on/off | off | タイトルバー非表示 | x | - |
+| PopupMenu | on/off | off | ポップアップメニュー有効 | x | - |
+| VTPos | string | "-2147483648,-2147483648" | VTウィンドウ位置 "x,y" | x | - |
+| TEKPos | string | "-2147483648,-2147483648" | TEKウィンドウ位置 "x,y" | o | TeraTermConfig.tekPos |
+| SaveVTWinPos | on/off | off | VTウィンドウ位置を保存 | o | saveVTWinPos |
+
+### スクロール
+
+| INI キー | 型 | デフォルト値 | 説明 | Mac 対応 | Mac プロパティ |
+|---------|---|------------|------|---------|--------------|
+| EnableScrollBuff | on/off | on | スクロールバッファ有効 | o | enableScrollBuffer |
+| ScrollBuffSize | int | 100 | スクロールバッファ行数 | o | scrollBufferSize (default: 10000) |
+| MaxBuffSize | int | 10000 | スクロールバッファ最大値 | o | scrollBufferMax (default: 500000) |
+| ScrollThreshold | int | 12 | スクロール閾値 | o | scrollThreshold |
+| ScrollWindowClearScreen | on/off | on | スクロール時画面クリア | o | scrollWindowClearScreen |
+
+### 色設定
+
+| INI キー | 型 | デフォルト値 | 説明 | Mac 対応 | Mac プロパティ |
+|---------|---|------------|------|---------|--------------|
+| VTColor | string | "0,0,0,255,255,255" | VT文字色/背景色 "fg_r,fg_g,fg_b,bg_r,bg_g,bg_b" | o | vtColor / colorTheme |
+| VTBoldColor | string | "0,0,255,255,255,255" | 太字色/背景色 | o | attrColorBold |
+| VTBlinkColor | string | "255,0,0,255,255,255" | 点滅色/背景色 | o | attrColorBlink |
+| VTReverseColor | string | "255,255,255,0,0,0" | 反転色/背景色 | o | attrColorReverse |
+| VTUnderlineColor | string | "255,0,255,255,255,255" | 下線色/背景色 | o | attrColorUnderline |
+| URLColor | string | "0,255,0,255,255,255" | URL色/背景色 | o | attrColorURL / urlColor |
+| TEKColor | string | "0,0,0,255,255,255" | TEK文字色/背景色 | o | TeraTermConfig.tekColor |
+| ANSIColor | string | (16色定義) | ANSI 16色パレット "id,r,g,b,..." | o | colorTheme.ansiColors |
+| EnableBoldAttrColor | on/off | on | 太字属性色有効 | o | enableBoldColor |
+| EnableBlinkAttrColor | on/off | on | 点滅属性色有効 | o | enableBlinkColor |
+| EnableReverseAttrColor | on/off | off | 反転属性色有効 | o | enableReverseColor |
+| EnableURLColor | on/off | on | URL色有効 | o | enableURLColor |
+| EnableANSIColor | on/off | on | ANSIカラー有効 | o | enableANSIColor |
+| PcBoldColor | on/off | off | PC式太字カラーマッピング | o | pcBoldColor |
+| Aixterm16Color | on/off | off | aixterm 16色モード | o | enableAixtermColors |
+| Xterm256Color | on/off | on | xterm 256色モード | o | enableXterm256Colors |
+| UseTextColor | on/off | off | テキスト色をANSIカラーに使用 | o | TeraTermConfig.useTextColor |
+| UseNormalBGColor | on/off | off | 標準背景色を常に使用 | o | useStandardBGColor |
+| TEKColorEmulation | on/off | off | TEKカラーエミュレーション | o | TeraTermConfig.tekColorEmulation |
+
+### フォント
+
+| INI キー | 型 | デフォルト値 | 説明 | Mac 対応 | Mac プロパティ |
+|---------|---|------------|------|---------|--------------|
+| VTFont | string | "Terminal,0,-13,1" | VTフォント "name,width,height,charset" | o | fontName, fontSize |
+| TEKFont | string | "Courier,0,-13,0" | TEKフォント | o | tekFontName, tekFontSize |
+| EnableBold | on/off | on | 太字フォント描画有効 | o | enableBoldFont |
+| URLUnderline | on/off | on | URL下線表示 | o | enableURLUnderline |
+| UnderlineAttrFont | on/off | on | 下線属性フォント有効 | o | enableUnderlineDecoration |
+| UnderlineAttrColor | on/off | on | 下線属性色有効 | o | enableUnderlineColor |
+| VTFontSpace | string | "0,0,0,0" | フォント間隔 "dx,dw,dy,dh" | o | charSpaceH, charSpaceV |
+| PrnFont | string | NULL | プリンタフォント | x | - |
+| FontQuality | string | "default" | フォント品質 ("default"/"nonantialiased"/"antialiased"/"cleartype") | o | fontQuality |
+| FontScaling | on/off | off | フォントスケーリング | o | resizeFontToFitWidth |
+| DrawingResizedFont | on/off | on | リサイズフォント描画 | o | resizeFontToFitWidth |
+| DlgFont | string | NULL | ダイアログフォント "name,point,charset" | o | dialogFontName, dialogFontSize |
+| VTDrawAPI | string | "Auto" | 描画API ("Auto"/"GDI"/"DirectWrite") | o | drawingAPI |
+| VTDrawACP | int | 0 | 描画ANSI コードページ (0=自動) | o | codePage |
+
+### キーボード
+
+| INI キー | 型 | デフォルト値 | 説明 | Mac 対応 | Mac プロパティ |
+|---------|---|------------|------|---------|--------------|
+| BSKey | string | "BS" | BSキー送信 ("BS"/"DEL") | o | bsKey |
+| DeleteKey | on/off | off | Deleteキー有効 | o | deleteKey |
+| MetaKey | string | "off" | Metaキー ("off"/"on"/"left"/"right") | o | metaKey |
+| Meta8Bit | string | "off" | Meta 8bit設定 ("off"/"raw"/"text") | o | TeraTermConfig.meta8Bit |
+| DisableAppKeypad | on/off | off | アプリケーションキーパッド無効 | o | disableAppKeypad |
+| DisableAppCursor | on/off | off | アプリケーションカーソル無効 | o | disableAppCursor |
+| StrictKeyMapping | on/off | off | 厳密キーマッピング | o | TeraTermConfig.strictKeyMapping |
+| RussKeyb | string | "" | ロシア語キーボード | o | TeraTermConfig.russKeyb |
+| IME | on/off | on | IME有効 (Windows専用) | x | - |
+| IMEInline | on/off | on | IMEインライン入力 (Windows専用) | x | - |
+| IMERelatedCursor | on/off | off | IME連動カーソル変更 | o | cursorChangeIME |
+
+### ビープ
+
+| INI キー | 型 | デフォルト値 | 説明 | Mac 対応 | Mac プロパティ |
+|---------|---|------------|------|---------|--------------|
+| Beep | string | "on" | ビープ種別 ("on"/"off"/"visual") | o | beepType |
+| BeepOnConnect | on/off | off | 接続時ビープ | o | beepOnConnect |
+| BeepOverUsedCount | int | 5 | ビープ過多検知回数 | o | beepOverUsedCount |
+| BeepOverUsedTime | int | 2 | ビープ過多検知時間 (秒) | o | beepOverUsedTime |
+| BeepSuppressTime | int | 5 | ビープ抑制時間 (秒) | o | beepSuppressTime |
+| BeepVBellWait | int | 10 | ビジュアルベル待機時間 (ms) | o | TeraTermConfig.beepVBellWait |
+| NotifySound | on/off | on | 通知音有効 | o | notifySound |
+
+### 接続 (TCP/IP)
+
+| INI キー | 型 | デフォルト値 | 説明 | Mac 対応 | Mac プロパティ |
+|---------|---|------------|------|---------|--------------|
+| Telnet | on/off | on | Telnet有効 | o | telnet |
+| TCPPort | int | 23 | TCPポート番号 | o | tcpPort / defaultPort |
+| TelPort | int | 23 | Telnetポート番号 | o | TeraTermConfig.telPort |
+| AutoWinClose | on/off | on | 切断時自動ウィンドウ閉じ | o | autoWindowClose |
+| HistoryList | on/off | off | 接続履歴リスト | o | hostHistory |
+| ConnectingTimeout | int | 0 | 接続タイムアウト (秒, 0=無限) | o | connectingTimeout |
+| TelAutoDetect | on/off | on | Telnet自動検出 | o | TeraTermConfig.telAutoDetect |
+| TelBin | on/off | off | Telnetバイナリフラグ | o | TeraTermConfig.telBin |
+| TelEcho | on/off | off | Telnetエコーフラグ | o | TeraTermConfig.telEcho |
+| TelKeepAliveInterval | int | 300 | Telnetキープアライブ間隔 (秒) | o | tcpKeepAliveInterval |
+| TCPLocalEcho | on/off | off | 非Telnetローカルエコー | o | TeraTermConfig.tcpLocalEcho |
+| TCPCRSend | string | "" | 非Telnet改行送信 ("CR"/"CRLF"/"") | o | TeraTermConfig.tcpCRSend |
+| DisableTCPEchoCR | - | FALSE | TCPLocalEcho/TCPCRSend無効 | o | TeraTermConfig.disableTCPEchoCR |
+| HostDialogOnStartup | on/off | on | 起動時接続ダイアログ表示 | x | - |
+
+### シリアルポート
+
+| INI キー | 型 | デフォルト値 | 説明 | Mac 対応 | Mac プロパティ |
+|---------|---|------------|------|---------|--------------|
+| ComPort | int | 1 | COMポート番号 | o | serialPort |
+| BaudRate | int | 9600 | ボーレート | o | baudRate |
+| Parity | string | "none" | パリティ ("none"/"odd"/"even"/"mark"/"space") | o | parity |
+| DataBit | string | "8" | データビット ("7"/"8") | o | dataBits |
+| StopBit | string | "1" | ストップビット ("1"/"2") | o | stopBits |
+| FlowCtrl | string | "none" | フロー制御 ("none"/"x"/"hard"/"rtscts"/"dsrdtr") | o | flowControl |
+| DelayPerChar | int | 0 | 文字遅延 (ms) | o | serialDelayPerChar |
+| DelayPerLine | int | 0 | 行遅延 (ms) | o | serialDelayPerLine |
+| MaxComPort | int | 256 | 最大COMポート番号 | x | - |
+| ClearComBuffOnOpen | on/off | on | ポートオープン時バッファクリア | o | clearComBuffOnOpen |
+| WaitCom | on/off | off | COMポート接続待ち | o | TeraTermConfig.waitCom |
+| AutoComPortReconnect | on/off | on | シリアルポート自動再接続 | o | autoComPortReconnect |
+| AutoComPortReconnectDelayNormal | int | 500 | 自動再接続遅延 (ms) | o | TeraTermConfig.autoComPortReconnectDelayNormal |
+| AutoComPortReconnectDelayIllegal | int | 2000 | 異常時再接続遅延 (ms) | o | TeraTermConfig.autoComPortReconnectDelayIllegal |
+| AutoComPortReconnectRetryInterval | int | 1000 | 再接続リトライ間隔 (ms) | o | TeraTermConfig.autoComPortReconnectRetryInterval |
+| AutoComPortReconnectRetryCount | int | 3 | 再接続リトライ回数 | o | TeraTermConfig.autoComPortReconnectRetryCount |
+| FlowCtrlRTS | int | -1 | RTS フロー制御詳細設定 | x | - |
+| FlowCtrlDTR | int | -1 | DTR フロー制御詳細設定 | x | - |
+
+### ログ
+
+| INI キー | 型 | デフォルト値 | 説明 | Mac 対応 | Mac プロパティ |
+|---------|---|------------|------|---------|--------------|
+| LogAutoStart | on/off | off | ログ自動開始 | o | logAutoStart |
+| LogDefaultName | string | "teraterm.log" | デフォルトログファイル名 | o | logDefaultName |
+| LogDefaultPath | string | (LogDir) | デフォルトログ保存先パス | o | logDefaultDirectory |
+| LogTimestamp | on/off | off | タイムスタンプ付加 | o | logTimestamp |
+| LogTimestampFormat | string | "%Y-%m-%d %H:%M:%S.%N" | タイムスタンプ書式 | o | logTimestampFormat |
+| LogTimestampType | string | "Local" | タイムスタンプ種別 ("Local"/"UTC"/"LoggingElapsed"/"ConnectionElapsed") | o | logTimestampType |
+| LogTypePlainText | on/off | off | プレーンテキストログ | o | logPlainText (default: true) |
+| LogBinary | on/off | off | バイナリログ | o | logBinary |
+| LogAppend | on/off | off | ログ追記モード | o | logAppend |
+| LogHideDialog | on/off | off | ログダイアログ非表示 | o | logHideDialog |
+| LogIncludeScreenBuffer | on/off | off | 画面バッファ含む | o | logIncludeScreenBuffer |
+| LogRotate | int | 0 | ログローテーションモード | o | logRotateEnabled |
+| LogRotateSize | int | 0 | ローテーションサイズ | o | logRotateSize |
+| LogRotateSizeType | int | 0 | ローテーションサイズ種別 | o | TeraTermConfig.logRotateSizeType |
+| LogRotateStep | int | 0 | ローテーションステップ | o | logRotateStep |
+| DeferredLogWriteMode | on/off | on | 遅延ログ書込みモード | o | TeraTermConfig.deferredLogWriteMode |
+| LogLockExclusive | on/off | on | ログファイル排他ロック | x | - |
+| ViewlogEditor | string | "notepad.exe" | ログビューアエディタ | o | logViewEditor |
+| ViewlogEditorArg | string | NULL | ログビューア引数 | o | logEditorArguments |
+| LogBOM | - | - | UTF-8 BOM 書き込み | o | logBOM |
+
+### ファイル転送
+
+| INI キー | 型 | デフォルト値 | 説明 | Mac 対応 | Mac プロパティ |
+|---------|---|------------|------|---------|--------------|
+| TransBin | on/off | off | バイナリ転送フラグ | o | TeraTermConfig.transBin |
+| XmodemOpt | string | "checksum" | XMODEM方式 ("checksum"/"crc"/"1k"/"1ksum") | o | xmodemOption |
+| XmodemBin | on/off | on | XMODEMバイナリ | o | TeraTermConfig.xmodemBin |
+| XModemRcvCommand | string | "" | XMODEM受信コマンド | o | TeraTermConfig.xModemRcvCommand |
+| YModemRcvCommand | string | "rb" | YMODEM受信コマンド | o | TeraTermConfig.yModemRcvCommand |
+| ZmodemDataLen | int | 1024 | ZMODEMデータ長 | o | zmodemDataLen |
+| ZmodemWinSize | int | 32767 | ZMODEMウィンドウサイズ | o | zmodemWindowSize |
+| ZModemRcvCommand | string | "rz" | ZMODEM受信コマンド | o | TeraTermConfig.zModemRcvCommand |
+| ZmodemAuto | on/off | off | ZMODEM自動起動 | o | zmodemAutoReceive |
+| ZmodemEscCtl | on/off | off | ZMODEM ESCCTLフラグ | o | TeraTermConfig.zmodemEscCtl |
+| FileDir | string | "" | ファイル転送ディレクトリ | o | fileTransferFolder |
+| FileSendFilter | string | "" | ファイル送信フィルタ | o | TeraTermConfig.fileSendFilter |
+| ScpSendDir | string | "" | SCP送信先ディレクトリ | o | TeraTermConfig.scpSendDir |
+| FTHideDialog | on/off | off | ファイル転送ダイアログ非表示 | o | TeraTermConfig.ftHideDialog |
+| AutoFileRename | on/off | off | ファイル自動リネーム | o | autoFileRename |
+| ConfirmFileDragAndDrop | on/off | on | D&Dファイル送信確認 | o | confirmFileDragAndDrop |
+
+### XMODEM/YMODEM/ZMODEMタイムアウト
+
+| INI キー | 型 | デフォルト値 | 説明 | Mac 対応 |
+|---------|---|------------|------|---------|
+| XmodemTimeouts | string | "10,3,10,20,60" | XMODEMタイムアウト (init,initCRC,short,long,vlong) | o | TeraTermConfig.xmodemTimeouts |
+| YmodemTimeouts | string | "10,3,10,20,60" | YMODEMタイムアウト | o | TeraTermConfig.ymodemTimeouts |
+| ZmodemTimeouts | string | "10,0,10,3" | ZMODEMタイムアウト (normal,tcpip,init,fin) | o | TeraTermConfig.zmodemTimeouts |
+
+### 制御シーケンス
+
+| INI キー | 型 | デフォルト値 | 説明 | Mac 対応 | Mac プロパティ |
+|---------|---|------------|------|---------|--------------|
+| Accept8BitCtrl | on/off | on | 8bit制御コード受付 | o | accept8BitCtrl |
+| AllowWrongSequence | on/off | off | 不正シーケンス許可 | o | allowWrongSequence |
+| AcceptTitleChangeRequest | string | "overwrite" | タイトル変更要求 ("off"/"overwrite"/"ahead"/"last") | o | titleChangeRequest, titleChangeMode |
+| WindowCtrlSequence | on/off | on | ウィンドウ制御シーケンス | o | windowControlSequence |
+| CursorCtrlSequence | on/off | off | カーソル制御シーケンス | o | cursorControlSequence |
+| WindowReportSequence | on/off | on | ウィンドウレポートシーケンス | o | windowInfoReportSequence |
+| TitleReportSequence | string | "Empty" | タイトルレポート ("accept"/"ignore"/"empty") | o | titleReportRequest |
+| ClipboardAccessFromRemote | string | "off" | リモートクリップボード ("off"/"read"/"write"/"on") | o | clipboardAccessFromRemote, clipboardAccessMode |
+| NotifyClipboardAccess | on/off | on | クリップボードアクセス通知 | o | notifyClipboardAccess |
+| ClearScrollBufferFromRemote | on/off | on | リモートスクロールバッファクリア | o | acceptScrollBufferClear |
+| ClearOnResize | on/off | off | リサイズ時画面クリア | o | clearOnResize |
+| AlternateScreenBuffer | on/off | on | 代替スクリーンバッファ | o | alternateScreenBuffer |
+| EnableStatusLine | on/off | on | ステータスライン有効 | o | TeraTermConfig.enableStatusLine |
+| EnableLineMode | on/off | on | ラインモード有効 | o | enableLineMode |
+| PrinterCtrlSequence | on/off | off | プリンタ制御シーケンス受付 | o | disablePrintSequence (反転) |
+| UseInvalidDECRQSSResponse | on/off | off | 無効DECRPSS (テスト用) | o | TeraTermConfig.useInvalidDECRQSSResponse |
+| TabStopModifySequence | string | "on" | タブストップ変更シーケンス | o | TeraTermConfig.tabStopModifySequence |
+| ISO2022ShiftFunction | string | "on" | ISO2022シフト機能 | o | TeraTermConfig.iso2022ShiftFunction |
+| MaxOSCBufferSize | int | 4096 | OSCバッファ最大サイズ | o | maxOSCBufferSize |
+| Send8BitCtrl | on/off | off | 8bit制御シーケンス送信 | o | send8BitCtrl |
+
+### コピー＆ペースト
+
+| INI キー | 型 | デフォルト値 | 説明 | Mac 対応 | Mac プロパティ |
+|---------|---|------------|------|---------|--------------|
+| AutoTextCopy | on/off | on | 選択時自動コピー | o | autoTextCopy |
+| EnableContinuedLineCopy | on/off | off | 連続行コピー | o | continuedLineCopy (default: true) |
+| SelectOnlyByLButton | on/off | on | 左ボタンのみ選択 | o | leftClickOnlySelection |
+| SelectOnActivate | on/off | on | アクティブ化時選択有効 | o | enableSelectionOnActivate |
+| DisablePasteMouseRButton | on/off | off | 右クリックペースト無効 | o | disableRightClickPaste |
+| DisablePasteMouseMButton | on/off | on | 中クリックペースト無効 | o | disableMiddleClickPaste |
+| ConfirmPasteMouseRButton | on/off | off | 右クリックペースト確認 | o | confirmRightClickPaste |
+| ConfirmChangePaste | on/off | on | ペースト変更確認 | o | clipboardConfirmPaste |
+| ConfirmChangePasteCR | on/off | on | 改行付きペースト確認 | o | confirmPasteNewLine |
+| ConfirmChangePasteStringFile | string | "" | 危険文字列判定ファイル | o | dangerousKeywordFile |
+| TrimTrailingNLonPaste | on/off | off | ペースト末尾改行削除 | o | trimTrailingNewline |
+| PasteDelayPerLine | int | 10 | ペースト行遅延 (ms, 0-5000) | o | pasteDelay (default: 5) |
+| PasteDialogSize | string | "330,220" | ペースト確認ダイアログサイズ "w,h" | x | - |
+| DelimList | string | (Hex encoded) | ダブルクリック区切り文字 | o | delimiterList |
+| DelimDBCS | on/off | on | DBCS文字を区切りとみなす | o | TeraTermConfig.delimDBCS |
+| MouseSelectStartDelay | int | 0 | マウス選択開始遅延 (ms) | o | mouseSelectStartDelay |
+
+### マウス
+
+| INI キー | 型 | デフォルト値 | 説明 | Mac 対応 | Mac プロパティ |
+|---------|---|------------|------|---------|--------------|
+| MouseEventTracking | on/off | on | マウスイベントトラッキング | o | mouseTracking |
+| MouseWheelScrollLine | int | 3 | ホイールスクロール行数 | o | mouseWheelScrollLines |
+| MouseCursor | string | "IBEAM" | マウスカーソル形状 | o | mouseCursorType |
+| TranslateWheelToCursor | on/off | on | ホイールをカーソルキーに変換 | o | translateWheelToCursor |
+| DisableMouseTrackingByCtrl | on/off | on | Ctrl時マウストラッキング無効 | o | disableControlKeyMouseEvent |
+| DisableWheelToCursorByCtrl | on/off | on | Ctrl時ホイール→カーソル無効 | o | disableWheelToCursorByCtrl |
+
+### ウィンドウ透過度
+
+| INI キー | 型 | デフォルト値 | 説明 | Mac 対応 | Mac プロパティ |
+|---------|---|------------|------|---------|--------------|
+| AlphaBlend | int | 255 | 非アクティブ時透過度 (0-255) | o | windowOpacityInactive |
+| AlphaBlendActive | int | (=AlphaBlend) | アクティブ時透過度 (0-255) | o | windowOpacityActive |
+
+### ブロードキャスト
+
+| INI キー | 型 | デフォルト値 | 説明 | Mac 対応 | Mac プロパティ |
+|---------|---|------------|------|---------|--------------|
+| BroadcastCommandHistory | on/off | off | ブロードキャストコマンド履歴 | o | broadcastHistory |
+| AcceptBroadcast | on/off | on | ブロードキャスト受信 | o | broadcastSendToThisOnly (反転) |
+| MaxBroadcatHistory | int | 99 | 最大ブロードキャスト履歴数 | o | maxBroadcastHistory |
+
+### デバッグ
+
+| INI キー | 型 | デフォルト値 | 説明 | Mac 対応 | Mac プロパティ |
+|---------|---|------------|------|---------|--------------|
+| Debug | on/off | off | デバッグモード | o | debugCharInfoPopup |
+| DebugModes | string | "all" | デバッグモード種別 ("all"/"none"/"normal"/"hex"/"noout") | o | debugModes |
+
+### URL
+
+| INI キー | 型 | デフォルト値 | 説明 | Mac 対応 | Mac プロパティ |
+|---------|---|------------|------|---------|--------------|
+| EnableClickableUrl | on/off | off | クリック可能URL有効 | o | enableURLColor / enableURLUnderline |
+| ClickableUrlBrowser | string | "" | URLブラウザパス | x | - |
+| ClickableUrlBrowserArg | string | "" | URLブラウザ引数 | x | - |
+| JoinSplitURL | on/off | off | 分割URL結合 | o | joinSplitURL |
+| JoinSplitURLIgnoreEOLChar | string | "\\" | 分割URL行末無視文字 | o | joinSplitURLIgnoreEOLChar |
+
+### Cygwin (Windows専用)
+
+| INI キー | 型 | デフォルト値 | 説明 | Mac 対応 |
+|---------|---|------------|------|---------|
+| CygwinDirectory | string | "c:\\cygwin" | Cygwinインストールパス | x |
+
+### メニュー制御 (Windows専用)
+
+| INI キー | 型 | デフォルト値 | 説明 | Mac 対応 |
+|---------|---|------------|------|---------|
+| EnablePopupMenu | on/off | on | ポップアップメニュー有効 | x |
+| EnableShowMenu | on/off | on | メニュー表示有効 | x |
+| WindowMenu | on/off | on | ウィンドウメニュー表示 | x |
+| DisableAcceleratorSendBreak | on/off | off | Breakアクセラレータ無効 | x |
+| DisableAcceleratorDuplicateSession | on/off | off | セッション複製アクセラレータ無効 | x |
+| AcceleratorNewConnection | on/off | on | 新規接続アクセラレータ | x |
+| AcceleratorCygwinConnection | on/off | on | Cygwin接続アクセラレータ | x |
+| DisableMenuSendBreak | on/off | off | Breakメニュー無効 | x |
+| DisableMenuDuplicateSession | on/off | off | セッション複製メニュー無効 | x |
+| DisableMenuNewConnection | on/off | off | 新規接続メニュー無効 | x |
+
+### プリンタ (Windows専用)
+
+| INI キー | 型 | デフォルト値 | 説明 | Mac 対応 |
+|---------|---|------------|------|---------|
+| PassThruDelay | int | 3 | パススルー印刷遅延 | x |
+| PassThruPort | string | "" | パススルー印刷ポート | x |
+| PrnMargin | string | "50,50,50,50" | 印刷マージン "左,右,上,下" | x |
+| PrnConvFF | on/off | off | FFをNLに変換 | x |
+| VTPPI | string | "0,0" | VT印刷PPI | x |
+| TEKPPI | string | "0,0" | TEK印刷PPI | o | TeraTermConfig.tekPPI |
+
+### Kermit
+
+| INI キー | 型 | デフォルト値 | 説明 | Mac 対応 |
+|---------|---|------------|------|---------|
+| KmtLog | on/off | off | Kermitログ | o | TeraTermConfig.kmtLog |
+| KmtLongPacket | on/off | off | Kermit長パケット | o | TeraTermConfig.kmtLongPacket |
+| KmtFileAttr | on/off | off | Kermitファイル属性 | o | TeraTermConfig.kmtFileAttr |
+
+### B-Plus
+
+| INI キー | 型 | デフォルト値 | 説明 | Mac 対応 |
+|---------|---|------------|------|---------|
+| BPAuto | on/off | off | B-Plus自動起動 | o | TeraTermConfig.bpAuto |
+| BPEscCtl | on/off | off | B-Plus ESCCTLフラグ | o | TeraTermConfig.bpEscCtl |
+| BPLog | on/off | off | B-Plusログ | o | TeraTermConfig.bpLog |
+
+### Quick-VAN
+
+| INI キー | 型 | デフォルト値 | 説明 | Mac 対応 |
+|---------|---|------------|------|---------|
+| QVLog | on/off | off | Quick-VANログ | o | TeraTermConfig.qvLog |
+| QVWinSize | int | 8 | Quick-VANウィンドウサイズ | o | TeraTermConfig.qvWinSize |
+
+### プロトコル制御ログ
+
+| INI キー | 型 | デフォルト値 | 説明 | Mac 対応 |
+|---------|---|------------|------|---------|
+| TelLog | on/off | off | Telnetログ | o | TeraTermConfig.telLog |
+| XmodemLog | on/off | off | XMODEMログ | o | TeraTermConfig.xmodemLog |
+| YmodemLog | on/off | off | YMODEMログ | o | TeraTermConfig.ymodemLog |
+| ZmodemLog | on/off | off | ZMODEMログ | o | TeraTermConfig.zmodemLog |
+
+### その他特殊オプション
+
+| INI キー | 型 | デフォルト値 | 説明 | Mac 対応 | Mac プロパティ |
+|---------|---|------------|------|---------|--------------|
+| AutoWinSwitch | on/off | off | VT/TEK自動切り替え | o | TeraTermConfig.autoWinSwitch |
+| CtrlInKanji | on/off | on | 漢字中の制御コード | o | TeraTermConfig.ctrlInKanji |
+| FixedJIS | on/off | off | 固定JIS | o | TeraTermConfig.fixedJIS |
+| BackWrap | on/off | off | バックラップ | o | backWrap |
+| AutoInvoke | on/off | off | 自動インボーク | o | TeraTermConfig.autoInvoke |
+| ConfirmDisconnect | on/off | on | 切断確認 | o | confirmOnDisconnect |
+| VTCompatTab | on/off | off | VT互換タブ | o | vtCompatTab |
+| VTIcon | string | "Default" | VTウィンドウアイコン | x | - |
+| TEKIcon | string | "Default" | TEKウィンドウアイコン | o | TeraTermConfig.tekIcon |
+| TEKGINMouseCode | int | 32 | TEK GINマウスキーコード | o | TeraTermConfig.tekGINMouseCode |
+| SendBreakTime | int | 1000 | Breakシグナル時間 (ms) | o | TeraTermConfig.sendBreakTime |
+| MaximizedBugTweak | int | 2 | 最大化バグ回避 (Windows専用) | x | - |
+| DuplicateSession | - | - | セッション複製 (Windows専用) | x | - |
+| Wait4allMacroCommand | on/off | off | 全マクロコマンド待ち | o | TeraTermConfig.wait4allMacroCommand |
+| ClearScreenOnCloseConnection | on/off | off | 接続終了時画面クリア | o | clearScreenOnCloseConnection |
+| FileSendHighSpeedMode | on/off | on | 高速ファイル送信 | o | TeraTermConfig.fileSendHighSpeedMode |
+| FallbackToCP932 | on/off | off | CP932フォールバック | o | fallbackToCP932 |
+| StartupMacro | string | "" | 起動時マクロファイル | o | TeraTermConfig.startupMacro |
+| AutoScrollOnlyInBottomLine | on/off | off | 最終行のみ自動スクロール | o | TeraTermConfig.autoScrollOnlyInBottomLine |
+| JumpList | on/off | on | ジャンプリスト (Windows専用) | x | - |
+| LockTUID | on/off | on | 端末UID固定 | o | TeraTermConfig.lockTUID |
+| WindowCornerDontround | on/off | off | ウィンドウ角丸め禁止 | o | cornerRounding |
+| IniAutoBackup | on/off | on | INI自動バックアップ | o | TeraTermConfig.iniAutoBackup |
+| BracketedSupport | on/off | on | Bracketed paste mode対応 | o | bracketedPasteMode |
+| BracketedControlOnly | on/off | off | Bracketedモード制御のみ | o | bracketedControlOnly |
+
+### Unicode設定
+
+| INI キー | 型 | デフォルト値 | 説明 | Mac 対応 | Mac プロパティ |
+|---------|---|------------|------|---------|--------------|
+| UnicodeAmbiguousWidth | int | 0 (=auto) | 曖昧幅 (1=半角, 2=全角, 0=自動) | o | unicodeAmbiguousWidth |
+| UnicodeEmojiOverride | on/off | off | 絵文字幅オーバーライド | o | unicodeEmojiOverride |
+| UnicodeEmojiWidth | int | 0 (=auto) | 絵文字幅 (1=半角, 2=全角) | o | unicodeEmojiWidth |
+| UnicodeToDecSpMapping | int | 3 | Unicode→DEC特殊文字マッピング | o | TeraTermConfig.unicodeToDecSpMapping |
+| DecSpMappingDir | int | 2 | DEC特殊マッピング方向 | o | TeraTermConfig.decSpMappingDir |
+
+### Sendfile設定
+
+| INI キー | 型 | デフォルト値 | 説明 | Mac 対応 |
+|---------|---|------------|------|---------|
+| SendfileDelayType | string | "NoDelay" | 送信遅延種別 ("NoDelay"/"PerChar"/"PerLine"/"PerSendSize") | o | TeraTermConfig.sendfileDelayType |
+| SendfileDelayTick | int | 0 | 送信遅延Tick | o | TeraTermConfig.sendfileDelayTick |
+| SendfileSize | int | 4096 | 送信サイズ | o | TeraTermConfig.sendfileSize |
+| SendfileSequential | on/off | off | 順次送信 | o | TeraTermConfig.sendfileSequential |
+| SendfileSkipOptionDialog | on/off | off | オプションダイアログスキップ | o | TeraTermConfig.sendfileSkipOptionDialog |
+
+### Receivefile設定
+
+| INI キー | 型 | デフォルト値 | 説明 | Mac 対応 |
+|---------|---|------------|------|---------|
+| FileReceiveFilter | string | "" | 受信ファイルフィルタ | o | TeraTermConfig.fileReceiveFilter |
+| ReceivefileSkipOptionDialog | on/off | off | オプションダイアログスキップ | o | TeraTermConfig.receivefileSkipOptionDialog |
+| ReceivefileAutoStopWaitTime | int | 5 | 自動停止待機時間 (秒) | o | TeraTermConfig.receivefileAutoStopWaitTime |
+
+### UI言語
+
+| INI キー | 型 | デフォルト値 | 説明 | Mac 対応 | Mac プロパティ |
+|---------|---|------------|------|---------|--------------|
+| UILanguageFile | string | "" | UI言語ファイルパス | o | language |
+
+---
+
+## セクション: [BG]
+
+テーマ / 背景画像設定 (eterm_lookfeel)
+
+| INI キー | 型 | デフォルト値 | 説明 | Mac 対応 | Mac プロパティ |
+|---------|---|------------|------|---------|--------------|
+| BGEnable | int | 0 | 背景テーマ (0=無効/1=固定/2=ランダム) | o | themeEnabled |
+| BGThemeFile | string | "" | テーマファイルパス | o | themeFile |
+| BGSPIPath | string | "" | Susieプラグインパス | o | susiePath |
+| BGFastSizeMove | int | 0 | 高速サイズ変更 | o | fastSizeMove |
+| BGNoCopyBits | int | 0 | CopyBits無効 | x | - |
+| BGNoFrame | int | 0 | フレーム無し | o | hideWindowFrame |
+
+---
+
+## セクション: [TTSSH] (TTSSH プラグイン)
+
+SSH 関連設定。オリジナルは TTSSH プラグインが管理するため、`TERATERM.INI` 内の
+`[TTSSH]` セクションに保存される。Mac 版では `TerminalSettings` に統合。
+
+| INI キー | 型 | デフォルト値 | 説明 | Mac 対応 | Mac プロパティ |
+|---------|---|------------|------|---------|--------------|
+| SSHVersion | int | 2 | SSHバージョン (1/2) | o | sshVersion |
+| DefaultAuthMethod | int | 0 | デフォルト認証方式 | o | sshAuthMethod |
+| DefaultUserName | string | "" | デフォルトユーザー名 | o | sshDefaultUsername |
+| DefaultUserNameMode | int | 0 | ユーザー名入力モード | o | sshDefaultUsernameMode |
+| DefaultForwarding | string | "" | デフォルトポート転送 | o | sshPortForwardings |
+| HeartBeat | int | 60 | ハートビート間隔 (秒) | o | sshHeartbeat |
+| ForwardAgent | on/off | off | エージェント転送 | o | sshForwardAgent |
+| ConfirmForwardAgent | on/off | on | エージェント転送確認 | o | sshConfirmAgentForwarding |
+| NotifyForwardAgent | on/off | off | エージェントアクセス通知 | o | sshNotifyAgentAccess |
+| VerifyHostKeyDNS | on/off | off | DNSホストキー検証 | o | sshVerifyHostKeyDNS |
+| KnownHostsFile | string | "" | known_hostsファイル | o | sshKnownHostsFile |
+| KnownHostsReadOnlyFile | string | "" | 読み取り専用known_hosts | o | sshReadOnlyHostsFile |
+| HostKeyRotation | int | 0 | ホストキーローテーション (0=無効/1=有効/2=確認) | o | sshHostKeyRotation |
+| LogLevel | int | 0 | SSHログレベル | o | sshLogLevel |
+| CompressionLevel | int | 0 | 圧縮レベル (0-9) | o | sshCompressionLevel |
+| XForwarding | on/off | off | X転送 | o | sshXForwarding |
+| CheckAuthBeforeLogin | on/off | off | ログイン前認証確認 | o | sshCheckAuthBeforeLogin |
+| CipherOrder | string | (暗号リスト) | 暗号アルゴリズム優先順位 | o | sshCipherOrder |
+| KexOrder | string | (鍵交換リスト) | 鍵交換アルゴリズム順位 | o | sshKexOrder |
+| HostKeyOrder | string | (ホスト鍵リスト) | ホスト鍵アルゴリズム順位 | o | sshHostKeyOrder |
+| MACOrder | string | (MACリスト) | MACアルゴリズム順位 | o | sshMACOrder |
+| CompOrder | string | (圧縮リスト) | 圧縮アルゴリズム順位 | o | sshCompressionOrder |
+
+---
+
+## セクション: [Proxy] (TTSSH プラグイン)
+
+| INI キー | 型 | デフォルト値 | 説明 | Mac 対応 | Mac プロパティ |
+|---------|---|------------|------|---------|--------------|
+| ProxyType | int | 0 | プロキシ種別 (0=なし/1=HTTP/2=SOCKS4/3=SOCKS5/4=Telnet) | o | proxyType |
+| ProxyHost | string | "" | プロキシホスト名 | o | proxyHost |
+| ProxyPort | int | 0 | プロキシポート | o | proxyPort |
+| ProxyUser | string | "" | プロキシユーザー名 | o | proxyUsername |
+| ProxyPass | string | "" | プロキシパスワード | o | proxyPassword |
+
+---
+
+## セクション: [Experimental]
+
+| INI キー | 型 | デフォルト値 | 説明 | Mac 対応 |
+|---------|---|------------|------|---------|
+| TreePropertySheet | on/off | off | ツリー形式プロパティシート | x |
+
+---
+
+## 対応状況サマリ
+
+| カテゴリ | オリジナル項目数 | Mac対応数 | 未対応数 |
+|---------|---------------|----------|---------|
+| バージョン・メタ | 2 | 2 | 0 |
+| 端末エミュレーション | 8 | 8 | 0 |
+| 改行 | 2 | 2 | 0 |
+| 文字コード | 6 | 6 | 0 |
+| ローカルエコー | 1 | 1 | 0 |
+| カーソル | 3 | 3 | 0 |
+| ウィンドウ表示 | 7 | 4 | 3 |
+| スクロール | 5 | 5 | 0 |
+| 色設定 | 19 | 19 | 0 |
+| フォント | 14 | 13 | 1 |
+| キーボード | 11 | 9 | 2 |
+| ビープ | 7 | 7 | 0 |
+| 接続 (TCP/IP) | 14 | 13 | 1 |
+| シリアルポート | 18 | 15 | 3 |
+| ログ | 20 | 19 | 1 |
+| ファイル転送 | 16 | 16 | 0 |
+| XMODEM/YMODEM/ZMODEMタイムアウト | 3 | 3 | 0 |
+| 制御シーケンス | 20 | 20 | 0 |
+| コピー＆ペースト | 16 | 15 | 1 |
+| マウス | 6 | 6 | 0 |
+| 透過度 | 2 | 2 | 0 |
+| ブロードキャスト | 3 | 3 | 0 |
+| デバッグ | 2 | 2 | 0 |
+| URL | 5 | 3 | 2 |
+| Unicode | 5 | 5 | 0 |
+| メニュー制御 | 10 | 0 | 10 |
+| プリンタ | 6 | 0 | 6 |
+| Kermit | 3 | 3 | 0 |
+| B-Plus | 3 | 3 | 0 |
+| Quick-VAN | 2 | 2 | 0 |
+| プロトコルログ | 4 | 4 | 0 |
+| その他特殊 | 25 | 20 | 5 |
+| Sendfile/Receivefile | 8 | 8 | 0 |
+| UI言語 | 1 | 1 | 0 |
+| [BG] テーマ | 6 | 5 | 1 |
+| [TTSSH] SSH | 22 | 22 | 0 |
+| [Proxy] | 5 | 5 | 0 |
+| [Experimental] | 1 | 0 | 1 |
+| **合計** | **約312** | **約278** | **約34** |
+
+### 凡例
+
+- **o** : Mac 版で対応済み（プロパティにマッピングあり）
+- **x** : Mac 版で未対応（Windows 専用機能、または未実装）
+- **型**: `on/off` = GetOnOff (off=0,on=非0), `int` = GetPrivateProfileInt, `string` = GetPrivateProfileString
+- INI ファイルの値は全てテキスト表現。bool は `on`/`off` 文字列で保存。
+
+---
+
+## 多言語対応 (Localization) 状況
+
+全てのメニュー項目、ダイアログラベル、ボタン、ツールチップは `NSLocalizedString` 経由で
+`Localizable.strings` から取得する設計。
+
+### 対応言語
+
+| 言語 | リソース | ステータス |
+|------|---------|-----------|
+| English (en) | `en.lproj/Localizable.strings` | Yes — 完全対応 |
+| 日本語 (ja) | `ja.lproj/Localizable.strings` | Yes — 完全対応 |
+
+### ローカライズ済みUIコンポーネント
+
+| コンポーネント | ローカライズ | NSStackView動的レイアウト | テスト済み |
+|--------------|------------|------------------------|----------|
+| メインメニュー (File/Edit/Setup/Code/Control/Window/Help) | Yes | N/A (NSMenu) | Yes |
+| 接続ダイアログ (IDD_HOSTDLG) | Yes | Yes | Yes |
+| 端末設定ダイアログ (IDD_TERMDLG) | Yes | Yes (LocalizedTerminalSetupViewController) | Yes |
+| ウインドウ設定ダイアログ (IDD_WINDLG) | Yes | — | Yes |
+| キーボード設定ダイアログ | Yes | — | Yes |
+| シリアルポート設定ダイアログ (IDD_SERIALDLG) | Yes | — | Yes |
+| SSH認証ダイアログ | Yes | — | Yes |
+| SSH設定ダイアログ群 (IDD_SSHSETUP等) | Yes | — | Yes |
+| プロキシ設定ダイアログ (IDD_SETTING) | Yes | — | Yes |
+| その他の設定 13タブ (AdditionalSettings) | Yes | — | Yes |
+| ファイル転送ダイアログ群 | Yes | — | Yes |
+| ブロードキャストダイアログ | Yes | — | Yes |
+| セキュリティダイアログ群 (Unknown Host等) | Yes | — | Yes |
+| マクロダイアログ群 (messagebox等) | Yes | — | Yes |
+| SCP ダイアログ | Yes | — | Yes |
+
+### テスト検証体制
+
+| テスト種別 | ファイル | 内容 |
+|-----------|--------|------|
+| XCUITest 言語切替 | `MultilingualSettingsTests.swift` | `-AppleLanguages (ja/en)` で起動し、メニュー・ボタン翻訳を検証 |
+| ローカライズキー検証 | `MultilingualSettingsTests.swift` | 全ての重要キーが en/ja 両方で値を持つことを確認 |
+| はみ出し検知 | `MultilingualSnapshotTests.swift` | NSButton/NSTextField のフレーム幅 vs テキスト幅を比較 |
+| PNG スナップショット | `MultilingualSnapshotTests.swift` | 各言語のダイアログ状態を PNG で保存し、視覚的に検証 |
+| NSStackView検証 | `MultilingualSettingsTests.swift` | Compression Resistance が高いことを確認し、ラベル切れを防止 |
+
+### INI の Language プロパティとの連携
+
+INI ファイルの `UILanguageFile` キーに言語設定が保存されている場合、
+`TerminalSettings.language` プロパティにマッピングされる。
+アプリ起動時にこの値を `UserDefaults.standard.set(["ja"], forKey: "AppleLanguages")`
+等で適用することで、INI ファイルの言語設定をシステム言語より優先させることが可能。
+
+ただし macOS では OS 標準のローカライズ機構を尊重し、INI からの言語上書きは
+Additional Settings > UI タブ の「言語」設定からのみ行う設計とする。

@@ -1,0 +1,686 @@
+/*
+ * Copyright (C) 1994-1998 T. Teranishi
+ * (C) 2004- TeraTerm Project
+ * All rights reserved.
+ *
+ * Ported to Swift/macOS
+ *
+ * Unified Settings Dialog — combines all Setup menu dialogs AND
+ * Additional Settings into a single tabbed window.
+ *
+ * Tabs (2 rows):
+ *   Row 1: Terminal | Window | Keyboard | Serial Port | TCP/IP | General
+ *          | Proxy | SSH | SSH Auth | SSH Forwarding | SSH Key Gen
+ *   Row 2: General* | Coding | Copy&Paste | Sequence | Mouse | Log | Visual
+ *          | Font | TEK Font | Theme | UI | Plugin | Local Shell | Debug
+ *
+ * Menu items remain functional: selecting one opens this unified dialog
+ * with the corresponding tab pre-selected.
+ */
+
+#if canImport(AppKit)
+import AppKit
+
+// MARK: - Tab Identifier
+
+/// Identifies each tab in the unified settings dialog.
+/// Used by menu actions to select the appropriate tab on open.
+enum UnifiedSettingsTab: String, CaseIterable {
+    // Row 1 — basic setup
+    case terminal       = "Terminal"
+    case window         = "Window"
+    case keyboard       = "Keyboard"
+    case serialPort     = "SerialPort"
+    case tcpip          = "TCPIP"
+    case general        = "General"
+    // Row 2 — network / SSH
+    case proxy          = "Proxy"
+    case ssh            = "SSH"
+    case sshAuth        = "SSHAuth"
+    case sshForwarding  = "SSHForwarding"
+    case sshKeyGen      = "SSHKeyGen"
+    // Row 3 — additional settings (formerly separate dialog)
+    case addlGeneral    = "AddlGeneral"
+    case addlCoding     = "AddlCoding"
+    case addlCopyPaste  = "AddlCopyPaste"
+    case addlSequence   = "AddlSequence"
+    case addlMouse      = "AddlMouse"
+    case addlLog        = "AddlLog"
+    case addlVisual     = "AddlVisual"
+    case addlFont       = "AddlFont"
+    case addlTEKFont    = "AddlTEKFont"
+    case addlTheme      = "AddlTheme"
+    case addlUI         = "AddlUI"
+    case addlPlugin     = "AddlPlugin"
+    case addlLocalShell = "AddlLocalShell"
+    case addlDebug      = "AddlDebug"
+
+    var localizedTitle: String {
+        switch self {
+        case .terminal:      return TTL("menu.setup.terminal")
+        case .window:        return TTL("menu.setup.window")
+        case .keyboard:      return TTL("menu.setup.keyboard")
+        case .serialPort:    return TTL("menu.setup.serialPort")
+        case .tcpip:         return TTL("menu.setup.tcpip")
+        case .general:       return TTL("menu.setup.general")
+        case .proxy:         return TTL("menu.setup.proxy")
+        case .ssh:           return TTL("menu.setup.ssh")
+        case .sshAuth:       return TTL("menu.setup.sshAuth")
+        case .sshForwarding: return TTL("menu.setup.sshForward")
+        case .sshKeyGen:     return TTL("menu.setup.sshKeyGen")
+        case .addlGeneral:   return TTL("tab.general")
+        case .addlCoding:    return TTL("tab.coding")
+        case .addlCopyPaste: return TTL("tab.copyPaste")
+        case .addlSequence:  return TTL("tab.sequence")
+        case .addlMouse:     return TTL("tab.mouse")
+        case .addlLog:       return TTL("tab.log")
+        case .addlVisual:    return TTL("tab.visual")
+        case .addlFont:      return TTL("tab.font")
+        case .addlTEKFont:   return TTL("tab.tekFont")
+        case .addlTheme:     return TTL("tab.theme")
+        case .addlUI:        return TTL("tab.ui")
+        case .addlPlugin:    return TTL("tab.plugin")
+        case .addlLocalShell: return TTL("tab.localShell")
+        case .addlDebug:     return TTL("tab.debug")
+        }
+    }
+
+    /// Whether this tab is an "additional settings" tab
+    var isAdditionalSettingsTab: Bool {
+        return Self.row2.contains(self)
+    }
+
+    /// First row tabs (basic setup + network / SSH)
+    static let row1: [UnifiedSettingsTab] = [
+        .terminal, .window, .keyboard, .serialPort, .tcpip, .general,
+        .proxy, .ssh, .sshAuth, .sshForwarding, .sshKeyGen
+    ]
+
+    /// Second row tabs (additional settings)
+    static let row2: [UnifiedSettingsTab] = [
+        .addlGeneral, .addlCoding, .addlCopyPaste, .addlSequence,
+        .addlMouse, .addlLog, .addlVisual, .addlFont, .addlTEKFont,
+        .addlTheme, .addlUI, .addlPlugin, .addlLocalShell, .addlDebug
+    ]
+}
+
+// MARK: - Unified Settings Controller
+
+final class UnifiedSettingsController: NSObject, NSWindowDelegate, NSTabViewDelegate {
+
+    private var window: NSWindow?
+    private var tabView: NSTabView?
+    private var settings: TerminalSettings
+    private var viewControllers: [UnifiedSettingsTab: BaseSetupDialogController] = [:]
+    /// Additional settings tabs (row 3) — uses the AdditionalSettingsTab protocol
+    private var additionalTabs: [UnifiedSettingsTab: AdditionalSettingsTab] = [:]
+    var onApply: (() -> Void)?
+
+    /// Callback for applying keyboard-specific settings (terminal ID)
+    var onApplyKeyboard: (() -> Void)?
+
+    /// Callback for applying serial port settings
+    var onApplySerialPort: (() -> Void)?
+
+    /// All tabs in display order (row1 + row2)
+    private var allTabs: [UnifiedSettingsTab] = []
+
+    /// 2-row segmented controls for tab selection
+    private var segmentedControls: [NSSegmentedControl] = []
+
+    /// Height constraint for the tab view content area (animated on tab change)
+    private var tabViewHeightConstraint: NSLayoutConstraint?
+
+    /// Minimum height for the tab view content
+    private let minTabViewHeight: CGFloat = 300
+
+    /// Parent window reference (for modeless operation)
+    private weak var parentWindow: NSWindow?
+
+    init(settings: TerminalSettings) {
+        self.settings = settings
+        super.init()
+        // ターミナルウィンドウのリサイズ通知を監視して設定値を更新する
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(terminalDidResize(_:)),
+            name: TerminalWindowController.terminalDidResizeNotification,
+            object: nil
+        )
+    }
+
+    deinit {
+        NotificationCenter.default.removeObserver(self)
+    }
+
+    @objc private func terminalDidResize(_ notification: Notification) {
+        guard let userInfo = notification.userInfo,
+              let columns = userInfo["columns"] as? Int,
+              let rows = userInfo["rows"] as? Int else { return }
+        notifyTerminalResize(columns: columns, rows: rows)
+    }
+
+    /// Show the unified settings dialog as a modeless window.
+    /// The parent terminal window remains interactive (resizable) while
+    /// this dialog is open. Returns the dialog window.
+    @discardableResult
+    func show(on parent: NSWindow, selectedTab: UnifiedSettingsTab = .terminal) -> NSWindow? {
+        if let existingWindow = window {
+            // Already open — just switch tab and bring to front
+            selectTab(selectedTab)
+            existingWindow.makeKeyAndOrderFront(nil)
+            return existingWindow
+        }
+
+        parentWindow = parent
+        buildWindow()
+        guard let win = window else { return nil }
+
+        selectTab(selectedTab)
+
+        // Set initial height to fit selected tab (no animation)
+        setHeightToFitSelectedTab()
+
+        // Center over parent window
+        win.layoutIfNeeded()
+        let parentFrame = parent.frame
+        let dialogSize = win.frame.size
+        let x = parentFrame.midX - dialogSize.width / 2
+        let y = parentFrame.midY - dialogSize.height / 2
+        win.setFrameOrigin(NSPoint(x: x, y: y))
+
+        // Keep within screen bounds
+        if let screen = parent.screen ?? NSScreen.main {
+            var frame = win.frame
+            let visible = screen.visibleFrame
+            frame.origin.x = max(visible.minX, min(frame.origin.x, visible.maxX - frame.width))
+            frame.origin.y = max(visible.minY, min(frame.origin.y, visible.maxY - frame.height))
+            win.setFrame(frame, display: true)
+        }
+
+        // Show as modeless — parent window stays interactive (resizable)
+        win.level = .floating
+        win.makeKeyAndOrderFront(nil)
+
+        return win
+    }
+
+    /// Show without a parent window (still modeless)
+    func showModal(selectedTab: UnifiedSettingsTab = .terminal) {
+        if window != nil { return }
+        buildWindow()
+        guard let win = window else { return }
+        selectTab(selectedTab)
+        setHeightToFitSelectedTab()
+        win.center()
+        win.level = .floating
+        win.makeKeyAndOrderFront(nil)
+    }
+
+    /// Clean up after the dialog is closed.
+    private func cleanUp() {
+        window = nil
+        viewControllers.removeAll()
+        additionalTabs.removeAll()
+        parentWindow = nil
+    }
+
+    /// Notify the TerminalSetupViewController (if visible) of a terminal resize.
+    func notifyTerminalResize(columns: Int, rows: Int) {
+        if let termVC = viewControllers[.terminal] as? TerminalSetupViewController {
+            termVC.updateTerminalSize(columns: columns, rows: rows)
+        }
+    }
+
+    // MARK: - Tab Selection
+
+    private func selectTab(_ tab: UnifiedSettingsTab) {
+        guard let tv = tabView,
+              let index = allTabs.firstIndex(of: tab) else { return }
+        tv.selectTabViewItem(at: index)
+        updateSegmentedSelection(for: tab)
+    }
+
+    /// Update the segmented controls to reflect the selected tab.
+    private func updateSegmentedSelection(for tab: UnifiedSettingsTab) {
+        let rows: [[UnifiedSettingsTab]] = [
+            UnifiedSettingsTab.row1, UnifiedSettingsTab.row2
+        ]
+        for (rowIdx, row) in rows.enumerated() {
+            guard rowIdx < segmentedControls.count else { continue }
+            let seg = segmentedControls[rowIdx]
+            if let segIdx = row.firstIndex(of: tab) {
+                seg.selectedSegment = segIdx
+            } else {
+                // Deselect this row — no native API; set to -1 equivalent
+                seg.selectedSegment = -1
+            }
+        }
+    }
+
+    @objc private func segmentClicked(_ sender: NSSegmentedControl) {
+        let rows: [[UnifiedSettingsTab]] = [
+            UnifiedSettingsTab.row1, UnifiedSettingsTab.row2
+        ]
+        guard let rowIdx = segmentedControls.firstIndex(of: sender),
+              rowIdx < rows.count else { return }
+        let row = rows[rowIdx]
+        let segIdx = sender.selectedSegment
+        guard segIdx >= 0, segIdx < row.count else { return }
+        let tab = row[segIdx]
+        selectTab(tab)
+    }
+
+    // MARK: - NSTabViewDelegate
+
+    func tabView(_ tabView: NSTabView, didSelect tabViewItem: NSTabViewItem?) {
+        // Update segmented control selection
+        if let identifier = tabViewItem?.identifier as? String,
+           let tab = UnifiedSettingsTab(rawValue: identifier) {
+            updateSegmentedSelection(for: tab)
+        }
+        // Animate window height to fit the selected tab's content
+        // (only when window is visible — initial sizing is handled separately)
+        if window?.isVisible == true {
+            animateHeightToFitSelectedTab()
+        }
+    }
+
+    /// Set the window height to fit the selected tab without animation (for initial display).
+    private func setHeightToFitSelectedTab() {
+        guard let win = window,
+              let tv = tabView,
+              let selectedItem = tv.selectedTabViewItem,
+              let itemView = selectedItem.view else { return }
+
+        var contentHeight: CGFloat = minTabViewHeight
+        if let scrollView = itemView as? NSScrollView,
+           let documentView = scrollView.documentView {
+            documentView.layoutSubtreeIfNeeded()
+            let fittingHeight = documentView.fittingSize.height
+            contentHeight = max(minTabViewHeight, fittingHeight + 8)
+        }
+
+        if let screen = win.screen ?? NSScreen.main {
+            let maxHeight = screen.visibleFrame.height - 100
+            let nonTabHeight = win.frame.height - (tabViewHeightConstraint?.constant ?? 420)
+            let maxTabHeight = maxHeight - nonTabHeight
+            contentHeight = min(contentHeight, maxTabHeight)
+        }
+
+        tabViewHeightConstraint?.constant = contentHeight
+    }
+
+    /// Calculate the ideal height for the currently selected tab's content
+    /// and animate the window frame to fit.
+    private func animateHeightToFitSelectedTab() {
+        guard let win = window,
+              let tv = tabView,
+              let selectedItem = tv.selectedTabViewItem,
+              let itemView = selectedItem.view else { return }
+
+        // The item view is a scroll view wrapping the content.
+        // Measure the document view's fitting height.
+        var contentHeight: CGFloat = minTabViewHeight
+        if let scrollView = itemView as? NSScrollView,
+           let documentView = scrollView.documentView {
+            documentView.layoutSubtreeIfNeeded()
+            let fittingHeight = documentView.fittingSize.height
+            // Add bezel border padding of the NSTabView
+            contentHeight = max(minTabViewHeight, fittingHeight + 8)
+        }
+
+        // Clamp to screen height minus some margin
+        if let screen = win.screen ?? NSScreen.main {
+            let maxHeight = screen.visibleFrame.height - 100
+            let nonTabHeight = win.frame.height - (tabViewHeightConstraint?.constant ?? 420)
+            let maxTabHeight = maxHeight - nonTabHeight
+            contentHeight = min(contentHeight, maxTabHeight)
+        }
+
+        // Animate the height change
+        let oldHeight = tabViewHeightConstraint?.constant ?? 420
+        guard abs(contentHeight - oldHeight) > 1 else { return }
+
+        let heightDelta = contentHeight - oldHeight
+        var newFrame = win.frame
+        // Grow/shrink from the top (keep bottom edge stable)
+        newFrame.size.height += heightDelta
+        newFrame.origin.y -= heightDelta
+
+        let isGrowing = heightDelta > 0
+
+        // When growing: set constraint first so content expands into the enlarging window.
+        // When shrinking: defer constraint update until after the window finishes shrinking,
+        // otherwise the content area collapses instantly before the window catches up.
+        if isGrowing {
+            tabViewHeightConstraint?.constant = contentHeight
+        }
+
+        NSAnimationContext.runAnimationGroup({ context in
+            context.duration = 0.25
+            context.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+            win.animator().setFrame(newFrame, display: true)
+        }, completionHandler: { [weak self] in
+            if !isGrowing {
+                self?.tabViewHeightConstraint?.constant = contentHeight
+            }
+        })
+    }
+
+    // MARK: - Apply All
+
+    private func applyAll() {
+        for (tab, vc) in viewControllers {
+            vc.applySettings()
+            if tab == .keyboard {
+                onApplyKeyboard?()
+            }
+            if tab == .serialPort {
+                onApplySerialPort?()
+            }
+        }
+        // Apply additional settings tabs (row 3)
+        for (_, tc) in additionalTabs {
+            tc.apply(to: settings)
+        }
+    }
+
+    // MARK: - Build Window
+
+    /// Create an NSSegmentedControl for one row of tabs.
+    private func makeSegmentedRow(tabs: [UnifiedSettingsTab]) -> NSSegmentedControl {
+        let seg = NSSegmentedControl()
+        seg.translatesAutoresizingMaskIntoConstraints = false
+        seg.segmentCount = tabs.count
+        seg.segmentStyle = .rounded
+        seg.trackingMode = .selectOne
+        for (i, tab) in tabs.enumerated() {
+            seg.setLabel(tab.localizedTitle, forSegment: i)
+            seg.setWidth(0, forSegment: i)  // auto-size
+        }
+        seg.target = self
+        seg.action = #selector(segmentClicked(_:))
+        return seg
+    }
+
+    private func buildWindow() {
+        // NSTabView with hidden tabs — we provide a custom 2-row tab bar
+        let tv = NSTabView()
+        tv.translatesAutoresizingMaskIntoConstraints = false
+        tv.tabViewType = .noTabsBezelBorder
+
+        // Build ordered tab list
+        allTabs = UnifiedSettingsTab.row1 + UnifiedSettingsTab.row2
+
+        // Create tab view items for all tabs
+        for tab in allTabs {
+            let item = NSTabViewItem(identifier: tab.rawValue)
+            item.label = tab.localizedTitle
+
+            if tab.isAdditionalSettingsTab {
+                // Additional settings tabs (row 2)
+                let tc = createAdditionalTab(for: tab)
+                additionalTabs[tab] = tc
+                item.view = wrapForTabView(tc.contentView)
+            } else {
+                // Setup tabs (row 1)
+                let vc = createViewController(for: tab)
+                viewControllers[tab] = vc
+                vc.loadViewIfNeeded()
+                item.view = wrapForTabView(vc.view)
+            }
+            tv.addTabViewItem(item)
+        }
+
+        // ── 2-row segmented tab bar ──
+        let seg1 = makeSegmentedRow(tabs: UnifiedSettingsTab.row1)
+        let seg2 = makeSegmentedRow(tabs: UnifiedSettingsTab.row2)
+        segmentedControls = [seg1, seg2]
+
+        let tabBarStack = NSStackView(views: [seg1, seg2])
+        tabBarStack.translatesAutoresizingMaskIntoConstraints = false
+        tabBarStack.orientation = .vertical
+        tabBarStack.alignment = .centerX
+        tabBarStack.spacing = 4
+
+        // Row labels (optional section headers)
+        let rowSeparator = NSBox()
+        rowSeparator.translatesAutoresizingMaskIntoConstraints = false
+        rowSeparator.boxType = .separator
+
+        // HIG button bar: [Help(?)] --- [Cancel] [OK]
+        let buttonBar = DialogButtonBar.build(
+            okTarget: self, okAction: #selector(okAction(_:)),
+            cancelTarget: self, cancelAction: #selector(cancelAction(_:)),
+            helpTarget: self, helpAction: #selector(helpAction(_:))
+        )
+        let footerBar = buttonBar.bar
+
+        let container = NSView()
+        container.translatesAutoresizingMaskIntoConstraints = false
+        container.addSubview(tabBarStack)
+        container.addSubview(tv)
+        container.addSubview(footerBar)
+
+        // Set delegate for tab change notifications
+        tv.delegate = self
+
+        let m: CGFloat = 16
+
+        // Dynamic height constraint for the tab view (animated on tab change)
+        let heightConstraint = tv.heightAnchor.constraint(equalToConstant: 420)
+        heightConstraint.priority = .defaultHigh
+        tabViewHeightConstraint = heightConstraint
+
+        NSLayoutConstraint.activate([
+            // Tab bar at top
+            tabBarStack.topAnchor.constraint(equalTo: container.topAnchor, constant: m),
+            tabBarStack.leadingAnchor.constraint(greaterThanOrEqualTo: container.leadingAnchor, constant: m),
+            tabBarStack.trailingAnchor.constraint(lessThanOrEqualTo: container.trailingAnchor, constant: -m),
+            tabBarStack.centerXAnchor.constraint(equalTo: container.centerXAnchor),
+
+            // Tab content below tab bar
+            tv.topAnchor.constraint(equalTo: tabBarStack.bottomAnchor, constant: 8),
+            tv.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: m),
+            tv.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -m),
+
+            // Footer below tab content
+            footerBar.topAnchor.constraint(equalTo: tv.bottomAnchor, constant: m),
+            footerBar.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: m),
+            footerBar.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -m),
+            footerBar.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -m),
+
+            tv.widthAnchor.constraint(greaterThanOrEqualToConstant: 720),
+            tv.heightAnchor.constraint(greaterThanOrEqualToConstant: minTabViewHeight),
+            heightConstraint,
+        ])
+
+        let contentVC = NSViewController()
+        contentVC.view = container
+        let win = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 800, height: 620),
+            styleMask: [.titled, .closable, .resizable],
+            backing: .buffered,
+            defer: true)
+        win.contentViewController = contentVC
+        win.contentMinSize = NSSize(width: 760, height: 400)
+        win.isReleasedWhenClosed = false
+        win.title = TTL("dialog.unifiedSettings.title")
+        win.delegate = self
+        self.window = win
+        self.tabView = tv
+    }
+
+    // MARK: - NSWindowDelegate
+
+    /// 閉じるボタン（×）をインターセプトしてアニメーション付きで閉じる。
+    func windowShouldClose(_ sender: NSWindow) -> Bool {
+        dismissAnimated(code: .cancel)
+        return false
+    }
+
+    // MARK: - Create View Controllers
+
+    /// Create the appropriate view controller for each tab.
+    /// Each VC is a standalone BaseSetupDialogController with its footer
+    /// buttons hidden (the unified dialog provides its own OK/Cancel).
+    private func createViewController(for tab: UnifiedSettingsTab) -> BaseSetupDialogController {
+        let vc: BaseSetupDialogController
+        switch tab {
+        case .terminal:
+            vc = TerminalSetupViewController(settings: settings)
+        case .window:
+            vc = WindowSetupViewController(settings: settings)
+        case .keyboard:
+            vc = KeyboardSetupDialogController(settings: settings)
+        case .serialPort:
+            vc = SerialPortSetupViewController(settings: settings)
+        case .tcpip:
+            vc = TCPIPDialogController(settings: settings)
+        case .general:
+            vc = GeneralSetupDialogController(settings: settings)
+        case .proxy:
+            vc = ProxySetupDialogController(settings: settings)
+        case .ssh:
+            vc = SSHSetupDialogController(settings: settings)
+        case .sshAuth:
+            vc = SSHAuthSetupDialogController(settings: settings)
+        case .sshForwarding:
+            vc = SSHForwardingSetupDialogController(settings: settings)
+        case .sshKeyGen:
+            vc = SSHKeyGenDialogController()
+        default:
+            fatalError("createViewController called with additional-settings tab: \(tab)")
+        }
+        // Hide the individual OK/Cancel/Help buttons — the unified
+        // dialog provides its own set at the bottom.
+        vc.hidesFooterButtons = true
+        return vc
+    }
+
+    // MARK: - Create Additional Settings Tabs
+
+    /// Create the AdditionalSettingsTab instance for each row-3 tab.
+    private func createAdditionalTab(for tab: UnifiedSettingsTab) -> AdditionalSettingsTab {
+        switch tab {
+        case .addlGeneral:   return GeneralTab(settings: settings)
+        case .addlCoding:    return CodingTab(settings: settings)
+        case .addlCopyPaste: return CopyPasteTab(settings: settings)
+        case .addlSequence:  return SequenceTab(settings: settings)
+        case .addlMouse:     return MouseTab(settings: settings)
+        case .addlLog:       return LogTab(settings: settings)
+        case .addlVisual:    return VisualTab(settings: settings)
+        case .addlFont:      return FontTab(settings: settings)
+        case .addlTEKFont:   return TEKFontTab(settings: settings)
+        case .addlTheme:     return ThemeTab(settings: settings)
+        case .addlUI:        return UITab(settings: settings)
+        case .addlPlugin:    return PluginTab(settings: settings)
+        case .addlLocalShell: return LocalShellTab(settings: settings)
+        case .addlDebug:     return DebugTab(settings: settings)
+        default:
+            fatalError("createAdditionalTab called with non-additional-settings tab: \(tab)")
+        }
+    }
+
+    // MARK: - Tab View Helpers
+
+    /// Wrap a content view in a scroll view for use in NSTabView.
+    /// NSTabView manages item views via frame-based layout. If the content
+    /// uses Auto Layout (`translatesAutoresizingMaskIntoConstraints = false`),
+    /// the tab view cannot resize it and content overflows the window.
+    /// This wrapper:
+    ///   1. Uses autoresizing masks so the tab view can set the frame
+    ///   2. Embeds an NSScrollView so tall content is scrollable
+    ///   3. Pins the Auto Layout content width to the scroll view
+    private func wrapForTabView(_ contentView: NSView) -> NSView {
+        let scrollView = NSScrollView()
+        scrollView.translatesAutoresizingMaskIntoConstraints = true
+        scrollView.autoresizingMask = [.width, .height]
+        scrollView.hasVerticalScroller = true
+        scrollView.hasHorizontalScroller = false
+        scrollView.borderType = .noBorder
+        scrollView.drawsBackground = false
+        scrollView.autohidesScrollers = true
+
+        // The document view (flipped so content starts at top)
+        let documentView = FlippedView()
+        documentView.translatesAutoresizingMaskIntoConstraints = false
+
+        // Ensure content uses Auto Layout
+        if contentView.translatesAutoresizingMaskIntoConstraints {
+            contentView.translatesAutoresizingMaskIntoConstraints = false
+        }
+        documentView.addSubview(contentView)
+
+        NSLayoutConstraint.activate([
+            contentView.topAnchor.constraint(equalTo: documentView.topAnchor),
+            contentView.leadingAnchor.constraint(equalTo: documentView.leadingAnchor),
+            contentView.trailingAnchor.constraint(equalTo: documentView.trailingAnchor),
+            contentView.bottomAnchor.constraint(equalTo: documentView.bottomAnchor),
+        ])
+
+        scrollView.documentView = documentView
+
+        // Pin the document view width to the scroll view's clip view
+        // so content never extends horizontally beyond the visible area.
+        // Height is free to grow — the scroll view handles it.
+        let clipView = scrollView.contentView
+        NSLayoutConstraint.activate([
+            documentView.widthAnchor.constraint(equalTo: clipView.widthAnchor),
+        ])
+
+        return scrollView
+    }
+
+    // MARK: - Animated Dismiss
+
+    /// フェードアウトアニメーション付きでダイアログを閉じる。
+    private func dismissAnimated(code: NSApplication.ModalResponse) {
+        guard let win = window else { return }
+        if let parent = win.sheetParent {
+            parent.endSheet(win, returnCode: code)
+            return
+        }
+        let parent = parentWindow
+        NSAnimationContext.runAnimationGroup({ context in
+            context.duration = 0.15
+            win.animator().alphaValue = 0
+        }, completionHandler: { [weak self] in
+            if code == .OK {
+                self?.applyAll()
+                self?.onApply?()
+            }
+            win.orderOut(nil)
+            win.alphaValue = 1
+            self?.cleanUp()
+            // ダイアログ終了後、親ウィンドウをキーウィンドウに復帰させる
+            parent?.makeKeyAndOrderFront(nil)
+        })
+    }
+
+    // MARK: - Actions
+
+    @objc private func okAction(_ sender: Any?) {
+        dismissAnimated(code: .OK)
+    }
+
+    @objc private func cancelAction(_ sender: Any?) {
+        dismissAnimated(code: .cancel)
+    }
+
+    @objc private func helpAction(_ sender: Any?) {
+        if let url = URL(string: "https://teratermproject.github.io/") {
+            NSWorkspace.shared.open(url)
+        }
+    }
+}
+
+// MARK: - FlippedView
+
+/// NSView subclass with flipped coordinate system (origin at top-left).
+/// Used as the document view inside NSScrollView so content starts at the top.
+private class FlippedView: NSView {
+    override var isFlipped: Bool { true }
+}
+#endif

@@ -26,6 +26,8 @@ enum ConnectionType {
     case tcpip(host: String, port: Int)
     case serial(device: String, baudRate: Int, dataBits: Int, parity: Parity, stopBits: Int, flowControl: FlowControl)
     case localShell(command: String, arguments: [String], environment: [String: String])
+    case ssh(host: String, port: Int, username: String, password: String,
+             authMethod: SSHAuthMethod, keyFile: String, forwardAgent: Bool)
 }
 
 // MARK: - Connection Delegate
@@ -81,6 +83,11 @@ class ConnectionManager {
             )
         case .localShell(let command, let arguments, let environment):
             connection = LocalShellConnection(command: command, arguments: arguments, environment: environment)
+        case .ssh(let host, let port, let username, let password, let authMethod, let keyFile, let forwardAgent):
+            connection = SSHConnection(
+                host: host, port: port, username: username, password: password,
+                authMethod: authMethod, keyFile: keyFile, forwardAgent: forwardAgent,
+                termType: settings.termType)
         }
 
         connection.delegate = self
@@ -101,14 +108,46 @@ class ConnectionManager {
                 stopBits: settings.stopBits,
                 flowControl: settings.flowControl
             ))
+        case .localShell:
+            connectLocalShell()
         case .file, .namedPipe:
             break
         }
     }
 
     func connectLocalShell() {
-        let shell = ProcessInfo.processInfo.environment["SHELL"] ?? "/bin/zsh"
-        connect(type: .localShell(command: shell, arguments: ["-l"], environment: [:]))
+        let shellPath: String
+        if settings.localShellPath.isEmpty {
+            shellPath = ProcessInfo.processInfo.environment["SHELL"] ?? "/bin/zsh"
+        } else {
+            shellPath = settings.localShellPath
+        }
+
+        var args: [String] = []
+        if settings.localShellLoginShell {
+            args.append("-l")
+        }
+
+        var env: [String: String] = [:]
+        env["TERM"] = settings.localShellTermEnv
+
+        // Parse custom environment variables (KEY=VALUE format)
+        for envStr in [settings.localShellEnv1, settings.localShellEnv2] {
+            if !envStr.isEmpty, let eqIdx = envStr.firstIndex(of: "=") {
+                let key = String(envStr[envStr.startIndex..<eqIdx])
+                let value = String(envStr[envStr.index(after: eqIdx)...])
+                if !key.isEmpty {
+                    env[key] = value
+                }
+            }
+        }
+
+        // chdir to HOME
+        if settings.localShellHomeChdir {
+            env["__TERATERM_HOME_CHDIR"] = "1"
+        }
+
+        connect(type: .localShell(command: shellPath, arguments: args, environment: env))
     }
 
     // MARK: - Disconnect
@@ -133,6 +172,64 @@ class ConnectionManager {
         if let tcp = currentConnection as? TCPConnection {
             // Send Telnet Break
             tcp.send(Data([0xFF, 0xF3])) // IAC BREAK
+        } else if let serial = currentConnection as? SerialConnection {
+            serial.sendBreak()
+        } else if let ssh = currentConnection as? SSHConnection {
+            ssh.sendBreak()
+        }
+    }
+
+    /// Reset (close and immediately re-open) the current port/connection.
+    func resetPort() {
+        guard let conn = currentConnection else { return }
+
+        if let serial = conn as? SerialConnection {
+            let device = serial.device
+            let baud = serial.baudRate
+            let data = serial.dataBits
+            let par = serial.parity
+            let stop = serial.stopBits
+            let flow = serial.flowControl
+            serial.disconnect()
+            let newConn = SerialConnection(
+                device: device, baudRate: baud, dataBits: data,
+                parity: par, stopBits: stop, flowControl: flow)
+            newConn.delegate = self
+            currentConnection = newConn
+            newConn.connect()
+        } else if let tcp = conn as? TCPConnection {
+            let host = tcp.host
+            let port = tcp.port
+            tcp.disconnect()
+            let newConn = TCPConnection(host: host, port: port)
+            newConn.delegate = self
+            currentConnection = newConn
+            newConn.connect()
+        } else if let pty = conn as? LocalShellConnection {
+            let cmd = pty.command
+            let args = pty.arguments
+            let env = pty.environment
+            pty.disconnect()
+            let newConn = LocalShellConnection(command: cmd, arguments: args, environment: env)
+            newConn.delegate = self
+            currentConnection = newConn
+            newConn.connect()
+        } else if let ssh = conn as? SSHConnection {
+            let h = ssh.host
+            let p = ssh.port
+            let u = ssh.username
+            let pw = ssh.password  // reset後も認証情報を維持
+            let m = ssh.authMethod
+            let k = ssh.keyFile
+            let f = ssh.forwardAgent
+            let t = ssh.termType
+            ssh.disconnect()
+            let newConn = SSHConnection(
+                host: h, port: p, username: u, password: pw,
+                authMethod: m, keyFile: k, forwardAgent: f, termType: t)
+            newConn.delegate = self
+            currentConnection = newConn
+            newConn.connect()
         }
     }
 }
@@ -176,9 +273,13 @@ class TCPConnection: Connection {
     private(set) var state: ConnectionState = .disconnected
     private var inputStream: InputStream?
     private var outputStream: OutputStream?
-    private var readQueue = DispatchQueue(label: "com.teraterm.tcp.read")
-    private var writeQueue = DispatchQueue(label: "com.teraterm.tcp.write")
-    private var isRunning = false
+    private let readQueue = DispatchQueue(label: "com.teraterm.tcp.read")
+    private let writeQueue = DispatchQueue(label: "com.teraterm.tcp.write")
+
+    // Thread safety: lock protects _isRunning and stream access from read/write queues
+    private let stateLock = NSLock()
+    private var _isRunning = false
+    private var _disconnected = false
 
     var isConnected: Bool {
         if case .connected = state { return true }
@@ -210,15 +311,19 @@ class TCPConnection: Connection {
 
             guard let input = readStream?.takeRetainedValue() as InputStream?,
                   let output = writeStream?.takeRetainedValue() as OutputStream? else {
-                DispatchQueue.main.async {
-                    self.state = .error("Failed to create streams")
-                    self.delegate?.connectionDidFail(error: ConnectionError.streamCreationFailed)
+                let error = ConnectionError.streamCreationFailed(host: self.host, port: self.port)
+                DispatchQueue.main.async { [weak self] in
+                    guard let self = self else { return }
+                    self.state = .error(error.localizedDescription)
+                    self.delegate?.connectionDidFail(error: error)
                 }
                 return
             }
 
+            self.stateLock.lock()
             self.inputStream = input
             self.outputStream = output
+            self.stateLock.unlock()
 
             // Enable SSL/TLS if needed (can be extended)
             input.open()
@@ -232,37 +337,103 @@ class TCPConnection: Connection {
             }
 
             if input.streamStatus == .open {
-                self.isRunning = true
-                DispatchQueue.main.async {
-                    self.state = .connected
-                    self.delegate?.connectionDidConnect()
+                self.stateLock.lock()
+                self._isRunning = true
+                self.stateLock.unlock()
+
+                DispatchQueue.main.async { [weak self] in
+                    self?.state = .connected
+                    self?.delegate?.connectionDidConnect()
                 }
                 self.startReading()
             } else {
-                DispatchQueue.main.async {
-                    self.state = .error("Connection failed")
-                    self.delegate?.connectionDidFail(error: input.streamError ?? ConnectionError.connectionFailed)
+                let error = self.classifyStreamError(
+                    streamError: input.streamError, host: self.host, port: self.port)
+                DispatchQueue.main.async { [weak self] in
+                    guard let self = self else { return }
+                    self.state = .error(error.localizedDescription)
+                    self.delegate?.connectionDidFail(error: error)
                 }
             }
         }
     }
 
     func disconnect() {
-        isRunning = false
-        inputStream?.close()
-        outputStream?.close()
+        stateLock.lock()
+        let wasRunning = _isRunning
+        _isRunning = false
+        let input = inputStream
+        let output = outputStream
         inputStream = nil
         outputStream = nil
-        state = .disconnected
-        delegate?.connectionDidDisconnect()
+        let alreadyDisconnected = _disconnected
+        _disconnected = true
+        stateLock.unlock()
+
+        guard !alreadyDisconnected else { return }
+
+        input?.close()
+        output?.close()
+
+        if wasRunning || state != .disconnected {
+            let notifyDelegate = { [weak self] in
+                self?.state = .disconnected
+                self?.delegate?.connectionDidDisconnect()
+            }
+            if Thread.isMainThread {
+                notifyDelegate()
+            } else {
+                DispatchQueue.main.async(execute: notifyDelegate)
+            }
+        }
     }
 
+    /// TCP 送信時の n==0 (バッファフル) リトライ上限。
+    /// 各リトライは 1ms sleep するため、最大約 5 秒間待機する。
+    /// ネットワーク混雑やリモート側の受信遅延を考慮し、十分な猶予を確保。
+    private static let sendMaxRetries = 5000
+
     func send(_ data: Data) {
-        guard isConnected, let output = outputStream else { return }
-        writeQueue.async {
+        stateLock.lock()
+        let running = _isRunning
+        let output = outputStream
+        stateLock.unlock()
+
+        guard running, let output = output else { return }
+        writeQueue.async { [weak self] in
+            // 全バイト送信完了までループ（部分書き込み対応）
             data.withUnsafeBytes { buffer in
-                guard let ptr = buffer.baseAddress?.assumingMemoryBound(to: UInt8.self) else { return }
-                output.write(ptr, maxLength: data.count)
+                guard let basePtr = buffer.baseAddress?.assumingMemoryBound(to: UInt8.self) else { return }
+                var offset = 0
+                let total = data.count
+                var retries = 0
+                while offset < total {
+                    let n = output.write(basePtr + offset, maxLength: total - offset)
+                    if n > 0 {
+                        offset += n
+                        retries = 0
+                    } else if n == 0 {
+                        // ストリームが一時的に書き込み不可
+                        retries += 1
+                        if retries > TCPConnection.sendMaxRetries {
+                            // リトライ上限到達 → 送信失敗として切断・通知
+                            NSLog("[TCPConnection] %@",
+                                  TTL("debug.tcp.writeRetryExceeded", retries, offset, total))
+                            DispatchQueue.main.async { [weak self] in
+                                self?.delegate?.connectionDidFail(error: ConnectionError.sendFailed)
+                                self?.disconnect()
+                            }
+                            return
+                        }
+                        Thread.sleep(forTimeInterval: 0.001)
+                    } else {
+                        // 書き込みエラー → 切断
+                        DispatchQueue.main.async { [weak self] in
+                            self?.disconnect()
+                        }
+                        return
+                    }
+                }
             }
         }
     }
@@ -271,14 +442,52 @@ class TCPConnection: Connection {
         send(Data(string.utf8))
     }
 
+    /// Classify a stream error into a specific ConnectionError with host/port context.
+    private func classifyStreamError(streamError: Error?, host: String, port: Int) -> ConnectionError {
+        if let nsError = streamError as NSError? {
+            let desc = nsError.localizedDescription.lowercased()
+            // POSIX error domain
+            if nsError.domain == NSPOSIXErrorDomain {
+                switch nsError.code {
+                case Int(ECONNREFUSED):
+                    return .connectionRefused(host: host, port: port)
+                case Int(ETIMEDOUT):
+                    return .connectionTimeout(host: host, port: port)
+                default:
+                    break
+                }
+            }
+            // Check for DNS / host-not-found patterns in any domain
+            if desc.contains("nodename nor servname") || desc.contains("host not found")
+                || desc.contains("no address associated") || desc.contains("name or service not known") {
+                return .hostNotFound(host: host)
+            }
+            if desc.contains("connection refused") || desc.contains("actively refused") {
+                return .connectionRefused(host: host, port: port)
+            }
+            if desc.contains("timed out") || desc.contains("timeout") {
+                return .connectionTimeout(host: host, port: port)
+            }
+            return .connectionFailed(host: host, port: port, detail: nsError.localizedDescription)
+        }
+        return .connectionFailed(host: host, port: port, detail: nil)
+    }
+
     private func startReading() {
         readQueue.async { [weak self] in
-            guard let self = self else { return }
             let bufferSize = 16384  // 16KB matching original CommInQueSize
             var buffer = [UInt8](repeating: 0, count: bufferSize)
 
-            while self.isRunning {
-                guard let input = self.inputStream else { break }
+            while true {
+                guard let self = self else { break }
+
+                self.stateLock.lock()
+                let running = self._isRunning
+                let input = self.inputStream
+                self.stateLock.unlock()
+
+                guard running, let input = input else { break }
+
                 guard input.hasBytesAvailable else {
                     Thread.sleep(forTimeInterval: 0.01)
                     continue
@@ -287,18 +496,18 @@ class TCPConnection: Connection {
                 let bytesRead = input.read(&buffer, maxLength: bufferSize)
                 if bytesRead > 0 {
                     let data = Data(buffer[0..<bytesRead])
-                    DispatchQueue.main.async {
-                        self.delegate?.connectionDidReceiveData(data)
+                    DispatchQueue.main.async { [weak self] in
+                        self?.delegate?.connectionDidReceiveData(data)
                     }
                 } else if bytesRead < 0 {
-                    DispatchQueue.main.async {
-                        self.disconnect()
+                    DispatchQueue.main.async { [weak self] in
+                        self?.disconnect()
                     }
                     break
                 } else {
                     // EOF
-                    DispatchQueue.main.async {
-                        self.disconnect()
+                    DispatchQueue.main.async { [weak self] in
+                        self?.disconnect()
                     }
                     break
                 }
@@ -321,8 +530,13 @@ class SerialConnection: Connection {
 
     private(set) var state: ConnectionState = .disconnected
     private var fileDescriptor: Int32 = -1
-    private var readQueue = DispatchQueue(label: "com.teraterm.serial.read")
-    private var isRunning = false
+    private let readQueue = DispatchQueue(label: "com.teraterm.serial.read")
+    private let writeQueue = DispatchQueue(label: "com.teraterm.serial.write")
+
+    // Thread safety
+    private let stateLock = NSLock()
+    private var _isRunning = false
+    private var _disconnected = false
 
     var isConnected: Bool {
         if case .connected = state { return true }
@@ -346,18 +560,26 @@ class SerialConnection: Connection {
             guard let self = self else { return }
 
             // Open serial port
-            self.fileDescriptor = open(self.device, O_RDWR | O_NOCTTY | O_NONBLOCK)
-            guard self.fileDescriptor >= 0 else {
-                DispatchQueue.main.async {
-                    self.state = .error("Failed to open \(self.device)")
-                    self.delegate?.connectionDidFail(error: ConnectionError.serialPortOpenFailed)
+            let fd = open(self.device, O_RDWR | O_NOCTTY | O_NONBLOCK)
+            guard fd >= 0 else {
+                let posixError = String(cString: strerror(errno))
+                let error = ConnectionError.serialPortOpenFailed(
+                    device: self.device, detail: posixError)
+                DispatchQueue.main.async { [weak self] in
+                    guard let self = self else { return }
+                    self.state = .error(error.localizedDescription)
+                    self.delegate?.connectionDidFail(error: error)
                 }
                 return
             }
 
+            self.stateLock.lock()
+            self.fileDescriptor = fd
+            self.stateLock.unlock()
+
             // Configure serial port
             var options = termios()
-            tcgetattr(self.fileDescriptor, &options)
+            tcgetattr(fd, &options)
 
             // Set baud rate
             let speed = self.speedConstant(for: self.baudRate)
@@ -417,37 +639,83 @@ class SerialConnection: Connection {
             options.c_cc.16 = 1   // VMIN
             options.c_cc.17 = 0   // VTIME
 
-            tcsetattr(self.fileDescriptor, TCSANOW, &options)
+            tcsetattr(fd, TCSANOW, &options)
 
             // Clear O_NONBLOCK after configuration
-            var flags = fcntl(self.fileDescriptor, F_GETFL)
+            var flags = fcntl(fd, F_GETFL)
             flags &= ~O_NONBLOCK
-            _ = fcntl(self.fileDescriptor, F_SETFL, flags)
+            _ = fcntl(fd, F_SETFL, flags)
 
-            self.isRunning = true
-            DispatchQueue.main.async {
-                self.state = .connected
-                self.delegate?.connectionDidConnect()
+            self.stateLock.lock()
+            self._isRunning = true
+            self.stateLock.unlock()
+
+            DispatchQueue.main.async { [weak self] in
+                self?.state = .connected
+                self?.delegate?.connectionDidConnect()
             }
             self.startReading()
         }
     }
 
     func disconnect() {
-        isRunning = false
-        if fileDescriptor >= 0 {
-            close(fileDescriptor)
-            fileDescriptor = -1
+        stateLock.lock()
+        let wasRunning = _isRunning
+        _isRunning = false
+        let fd = fileDescriptor
+        fileDescriptor = -1
+        let alreadyDisconnected = _disconnected
+        _disconnected = true
+        stateLock.unlock()
+
+        guard !alreadyDisconnected else { return }
+
+        if fd >= 0 {
+            close(fd)
         }
-        state = .disconnected
-        delegate?.connectionDidDisconnect()
+
+        if wasRunning || state != .disconnected {
+            let notifyDelegate = { [weak self] in
+                self?.state = .disconnected
+                self?.delegate?.connectionDidDisconnect()
+            }
+            if Thread.isMainThread {
+                notifyDelegate()
+            } else {
+                DispatchQueue.main.async(execute: notifyDelegate)
+            }
+        }
     }
 
     func send(_ data: Data) {
-        guard isConnected && fileDescriptor >= 0 else { return }
-        data.withUnsafeBytes { buffer in
-            guard let ptr = buffer.baseAddress else { return }
-            write(fileDescriptor, ptr, data.count)
+        stateLock.lock()
+        let running = _isRunning
+        let fd = fileDescriptor
+        stateLock.unlock()
+
+        guard running, fd >= 0 else { return }
+        writeQueue.async { [weak self] in
+            data.withUnsafeBytes { buffer in
+                guard let basePtr = buffer.baseAddress else { return }
+                var offset = 0
+                let total = data.count
+                while offset < total {
+                    let n = write(fd, basePtr + offset, total - offset)
+                    if n > 0 {
+                        offset += n
+                    } else if n < 0 {
+                        if errno == EINTR { continue }
+                        if errno == EAGAIN {
+                            Thread.sleep(forTimeInterval: 0.001)
+                            continue
+                        }
+                        DispatchQueue.main.async { [weak self] in
+                            self?.disconnect()
+                        }
+                        return
+                    }
+                }
+            }
         }
     }
 
@@ -455,18 +723,37 @@ class SerialConnection: Connection {
         send(Data(string.utf8))
     }
 
+    func sendBreak() {
+        stateLock.lock()
+        let running = _isRunning
+        let fd = fileDescriptor
+        stateLock.unlock()
+
+        guard running, fd >= 0 else { return }
+        // tcsendbreak(fd, 0) sends a break for 0.25–0.5 seconds
+        tcsendbreak(fd, 0)
+    }
+
     private func startReading() {
         readQueue.async { [weak self] in
-            guard let self = self else { return }
             let bufferSize = 4096
             var buffer = [UInt8](repeating: 0, count: bufferSize)
 
-            while self.isRunning && self.fileDescriptor >= 0 {
-                let bytesRead = read(self.fileDescriptor, &buffer, bufferSize)
+            while true {
+                guard let self = self else { break }
+
+                self.stateLock.lock()
+                let running = self._isRunning
+                let fd = self.fileDescriptor
+                self.stateLock.unlock()
+
+                guard running, fd >= 0 else { break }
+
+                let bytesRead = read(fd, &buffer, bufferSize)
                 if bytesRead > 0 {
                     let data = Data(buffer[0..<bytesRead])
-                    DispatchQueue.main.async {
-                        self.delegate?.connectionDidReceiveData(data)
+                    DispatchQueue.main.async { [weak self] in
+                        self?.delegate?.connectionDidReceiveData(data)
                     }
                 } else if bytesRead < 0 {
                     if errno == EAGAIN || errno == EINTR {
@@ -510,10 +797,16 @@ class LocalShellConnection: Connection {
 
     private(set) var state: ConnectionState = .disconnected
     private var masterFD: Int32 = -1
-    private var slaveFD: Int32 = -1
     private var childPID: pid_t = 0
-    private var readQueue = DispatchQueue(label: "com.teraterm.pty.read")
-    private var isRunning = false
+    private let readQueue = DispatchQueue(label: "com.teraterm.pty.read")
+    private let writeQueue = DispatchQueue(label: "com.teraterm.pty.write")
+
+    // Thread safety
+    private let stateLock = NSLock()
+    private var _isRunning = false
+    private var _disconnected = false
+    /// 接続通知済みフラグ（readQueue 上でのみ更新、main queue へは通知のみ投げる）
+    private var _hasNotifiedConnect = false
 
     var isConnected: Bool {
         if case .connected = state { return true }
@@ -521,8 +814,18 @@ class LocalShellConnection: Connection {
     }
 
     // Window size for PTY
-    var windowSize: (cols: UInt16, rows: UInt16) = (80, 24) {
-        didSet {
+    private var _windowSize: (cols: UInt16, rows: UInt16) = (80, 24)
+    var windowSize: (cols: UInt16, rows: UInt16) {
+        get {
+            stateLock.lock()
+            let size = _windowSize
+            stateLock.unlock()
+            return size
+        }
+        set {
+            stateLock.lock()
+            _windowSize = newValue
+            stateLock.unlock()
             updateWindowSize()
         }
     }
@@ -540,9 +843,13 @@ class LocalShellConnection: Connection {
         // Create PTY pair
         var masterFD: Int32 = 0
 
+        stateLock.lock()
+        let winSize = _windowSize
+        stateLock.unlock()
+
         var ws = winsize()
-        ws.ws_col = windowSize.cols
-        ws.ws_row = windowSize.rows
+        ws.ws_col = winSize.cols
+        ws.ws_row = winSize.rows
         ws.ws_xpixel = 0
         ws.ws_ypixel = 0
 
@@ -550,24 +857,38 @@ class LocalShellConnection: Connection {
         let pid = forkpty(&masterFD, nil, nil, &ws)
 
         if pid < 0 {
-            state = .error("forkpty failed")
+            state = .error(TTL("error.connection.ptyFailed"))
             delegate?.connectionDidFail(error: ConnectionError.ptyCreationFailed)
             return
         }
 
         if pid == 0 {
             // Child process
+            // chdir to HOME if requested
+            var shouldChdir = false
+
             // Set environment
             for (key, value) in environment {
-                setenv(key, value, 1)
+                if key == "__TERATERM_HOME_CHDIR" {
+                    shouldChdir = true
+                } else {
+                    setenv(key, value, 1)
+                }
             }
 
-            // Set TERM
-            setenv("TERM", "xterm-256color", 1)
+            // Set TERM if not already set by environment
+            if environment["TERM"] == nil {
+                setenv("TERM", "xterm-256color", 1)
+            }
 
             // Set LANG for UTF-8
             if getenv("LANG") == nil {
                 setenv("LANG", "en_US.UTF-8", 1)
+            }
+
+            // chdir to HOME
+            if shouldChdir, let home = getenv("HOME") {
+                _ = chdir(home)
             }
 
             // Execute shell
@@ -580,44 +901,86 @@ class LocalShellConnection: Connection {
         }
 
         // Parent process
+        stateLock.lock()
         self.masterFD = masterFD
         self.childPID = pid
-        self.isRunning = true
+        self._isRunning = true
+        stateLock.unlock()
 
         // Set non-blocking
         let flags = fcntl(masterFD, F_GETFL)
         _ = fcntl(masterFD, F_SETFL, flags | O_NONBLOCK)
 
-        state = .connected
-        delegate?.connectionDidConnect()
-
+        // 接続通知は startReading 内で子プロセスの生存確認後に行う
         startReading()
     }
 
     func disconnect() {
-        isRunning = false
+        stateLock.lock()
+        let wasRunning = _isRunning
+        _isRunning = false
+        let fd = masterFD
+        masterFD = -1
+        let pid = childPID
+        childPID = 0
+        let alreadyDisconnected = _disconnected
+        _disconnected = true
+        stateLock.unlock()
 
-        if childPID > 0 {
-            kill(childPID, SIGHUP)
+        guard !alreadyDisconnected else { return }
+
+        if pid > 0 {
+            kill(pid, SIGHUP)
             var status: Int32 = 0
-            waitpid(childPID, &status, WNOHANG)
-            childPID = 0
+            waitpid(pid, &status, WNOHANG)
         }
 
-        if masterFD >= 0 {
-            close(masterFD)
-            masterFD = -1
+        if fd >= 0 {
+            close(fd)
         }
 
-        state = .disconnected
-        delegate?.connectionDidDisconnect()
+        if wasRunning || state != .disconnected {
+            let notifyDelegate = { [weak self] in
+                self?.state = .disconnected
+                self?.delegate?.connectionDidDisconnect()
+            }
+            if Thread.isMainThread {
+                notifyDelegate()
+            } else {
+                DispatchQueue.main.async(execute: notifyDelegate)
+            }
+        }
     }
 
     func send(_ data: Data) {
-        guard isConnected && masterFD >= 0 else { return }
-        data.withUnsafeBytes { buffer in
-            guard let ptr = buffer.baseAddress else { return }
-            write(masterFD, ptr, data.count)
+        stateLock.lock()
+        let running = _isRunning
+        let fd = masterFD
+        stateLock.unlock()
+
+        guard running, fd >= 0 else { return }
+        writeQueue.async { [weak self] in
+            data.withUnsafeBytes { buffer in
+                guard let basePtr = buffer.baseAddress else { return }
+                var offset = 0
+                let total = data.count
+                while offset < total {
+                    let n = write(fd, basePtr + offset, total - offset)
+                    if n > 0 {
+                        offset += n
+                    } else if n < 0 {
+                        if errno == EINTR { continue }
+                        if errno == EAGAIN {
+                            Thread.sleep(forTimeInterval: 0.001)
+                            continue
+                        }
+                        DispatchQueue.main.async { [weak self] in
+                            self?.disconnect()
+                        }
+                        return
+                    }
+                }
+            }
         }
     }
 
@@ -626,13 +989,18 @@ class LocalShellConnection: Connection {
     }
 
     func updateWindowSize() {
-        guard masterFD >= 0 else { return }
+        stateLock.lock()
+        let fd = masterFD
+        let size = _windowSize
+        stateLock.unlock()
+
+        guard fd >= 0 else { return }
         var ws = winsize()
-        ws.ws_col = windowSize.cols
-        ws.ws_row = windowSize.rows
+        ws.ws_col = size.cols
+        ws.ws_row = size.rows
         ws.ws_xpixel = 0
         ws.ws_ypixel = 0
-        _ = ioctl(masterFD, TIOCSWINSZ, &ws)
+        _ = ioctl(fd, TIOCSWINSZ, &ws)
     }
 
     func resize(cols: UInt16, rows: UInt16) {
@@ -641,30 +1009,82 @@ class LocalShellConnection: Connection {
 
     private func startReading() {
         readQueue.async { [weak self] in
-            guard let self = self else { return }
             let bufferSize = 16384
             var buffer = [UInt8](repeating: 0, count: bufferSize)
 
-            while self.isRunning && self.masterFD >= 0 {
-                let bytesRead = read(self.masterFD, &buffer, bufferSize)
+            while true {
+                guard let self = self else { break }
+
+                self.stateLock.lock()
+                let running = self._isRunning
+                let fd = self.masterFD
+                self.stateLock.unlock()
+
+                guard running, fd >= 0 else { break }
+
+                let bytesRead = read(fd, &buffer, bufferSize)
                 if bytesRead > 0 {
+                    // 接続通知の判定・更新は readQueue 上で完結させる
+                    let needsConnectNotify: Bool
+                    if !self._hasNotifiedConnect {
+                        self._hasNotifiedConnect = true
+                        needsConnectNotify = true
+                    } else {
+                        needsConnectNotify = false
+                    }
                     let data = Data(buffer[0..<bytesRead])
-                    DispatchQueue.main.async {
+                    DispatchQueue.main.async { [weak self] in
+                        guard let self = self else { return }
+                        if needsConnectNotify {
+                            // 初回データ受信で子プロセス生存を確認してから通知（1回だけ）
+                            self.state = .connected
+                            self.delegate?.connectionDidConnect()
+                        }
                         self.delegate?.connectionDidReceiveData(data)
                     }
                 } else if bytesRead < 0 {
                     if errno == EAGAIN || errno == EINTR {
+                        // 接続待ち中は子プロセスの生存を確認
+                        if !self._hasNotifiedConnect {
+                            var status: Int32 = 0
+                            let r = waitpid(self.childPID, &status, WNOHANG)
+                            if r > 0 {
+                                // 子プロセスが既に終了 (execvp 失敗等)
+                                DispatchQueue.main.async { [weak self] in
+                                    guard let self = self else { return }
+                                    self.state = .error(TTL("error.connection.shellLaunchFailed"))
+                                    self.delegate?.connectionDidFail(
+                                        error: ConnectionError.ptyCreationFailed)
+                                    self.disconnect()
+                                }
+                                break
+                            }
+                        }
                         Thread.sleep(forTimeInterval: 0.005)
                         continue
                     }
                     // Process likely exited
-                    DispatchQueue.main.async {
+                    let wasConnected = self._hasNotifiedConnect
+                    DispatchQueue.main.async { [weak self] in
+                        guard let self = self else { return }
+                        if !wasConnected {
+                            self.state = .error(TTL("error.connection.shellLaunchFailed"))
+                            self.delegate?.connectionDidFail(
+                                error: ConnectionError.ptyCreationFailed)
+                        }
                         self.disconnect()
                     }
                     break
                 } else {
                     // EOF - process exited
-                    DispatchQueue.main.async {
+                    let wasConnected = self._hasNotifiedConnect
+                    DispatchQueue.main.async { [weak self] in
+                        guard let self = self else { return }
+                        if !wasConnected {
+                            self.state = .error(TTL("error.connection.shellExitedImmediately"))
+                            self.delegate?.connectionDidFail(
+                                error: ConnectionError.ptyCreationFailed)
+                        }
                         self.disconnect()
                     }
                     break
@@ -677,19 +1097,73 @@ class LocalShellConnection: Connection {
 // MARK: - Connection Errors
 
 enum ConnectionError: LocalizedError {
-    case streamCreationFailed
-    case connectionFailed
-    case serialPortOpenFailed
+    case streamCreationFailed(host: String, port: Int)
+    case connectionFailed(host: String, port: Int, detail: String?)
+    case connectionRefused(host: String, port: Int)
+    case connectionTimeout(host: String, port: Int)
+    case hostNotFound(host: String)
+    case sshNotSupported(host: String, port: Int)
+    case sshConnectionFailed(host: String, port: Int, detail: String?)
+    case sshForkFailed(detail: String?)
+    case sshNotFound
+    case serialPortOpenFailed(device: String, detail: String?)
     case ptyCreationFailed
     case sendFailed
 
     var errorDescription: String? {
         switch self {
-        case .streamCreationFailed: return "Failed to create network streams"
-        case .connectionFailed: return "Connection failed"
-        case .serialPortOpenFailed: return "Failed to open serial port"
-        case .ptyCreationFailed: return "Failed to create pseudo-terminal"
-        case .sendFailed: return "Failed to send data"
+        case .streamCreationFailed(let host, let port):
+            return TTL("error.connection.streamFailed", host, port)
+        case .connectionFailed(let host, let port, let detail):
+            let base = TTL("error.connection.failed", host, port)
+            if let detail = detail { return "\(base)\n\(detail)" }
+            return base
+        case .connectionRefused(let host, let port):
+            return TTL("error.connection.refused", host, port)
+        case .connectionTimeout(let host, let port):
+            return TTL("error.connection.timeout", host, port)
+        case .hostNotFound(let host):
+            return TTL("error.connection.hostNotFound", host)
+        case .sshNotSupported(let host, let port):
+            return TTL("error.connection.sshNotSupported", host, port)
+        case .sshConnectionFailed(let host, let port, let detail):
+            let base = TTL("error.connection.sshFailed", host, port)
+            if let detail = detail { return "\(base)\n\(detail)" }
+            return base
+        case .sshForkFailed(let detail):
+            let base = TTL("error.connection.sshProcessFailed")
+            if let detail = detail { return "\(base)\n\(detail)" }
+            return base
+        case .sshNotFound:
+            return TTL("error.connection.sshNotFound")
+        case .serialPortOpenFailed(let device, let detail):
+            let base = TTL("error.connection.serialFailed", device)
+            if let detail = detail { return "\(base)\n\(detail)" }
+            return base
+        case .ptyCreationFailed:
+            return TTL("error.connection.ptyFailed")
+        case .sendFailed:
+            return TTL("error.connection.sendFailed")
+        }
+    }
+
+    /// Title string for the error alert dialog (port of original Tera Term MessageBox titles).
+    var alertTitle: String {
+        switch self {
+        case .hostNotFound:
+            return TTL("error.connection.title.dns")
+        case .connectionRefused:
+            return TTL("error.connection.title.refused")
+        case .connectionTimeout:
+            return TTL("error.connection.title.timeout")
+        case .sshNotSupported:
+            return TTL("error.connection.title.ssh")
+        case .sshConnectionFailed, .sshForkFailed, .sshNotFound:
+            return TTL("error.connection.title.sshError")
+        case .serialPortOpenFailed:
+            return TTL("error.connection.title.serial")
+        default:
+            return TTL("error.connection.title")
         }
     }
 }

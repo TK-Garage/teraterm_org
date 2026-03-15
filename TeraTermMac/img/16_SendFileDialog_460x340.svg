@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="460" height="340" viewBox="0 0 460 340">
+  <defs>
+    <style>
+      .bg { fill: #ECECEC; }
+      .border { fill: none; stroke: red; stroke-width: 2; }
+      .label { font-family: -apple-system, sans-serif; font-size: 13px; fill: #333; }
+      .title { font-family: -apple-system, sans-serif; font-size: 13px; fill: #333; font-weight: 600; }
+      .field { fill: #FFF; stroke: #B0B0B0; stroke-width: 1; rx: 3; }
+      .btn { fill: #F0F0F0; stroke: #B0B0B0; stroke-width: 1; rx: 5; }
+      .btn-primary { fill: #007AFF; stroke: #006AE0; stroke-width: 1; rx: 5; }
+      .btn-label { font-family: -apple-system, sans-serif; font-size: 13px; fill: #333; text-anchor: middle; }
+      .btn-label-w { font-family: -apple-system, sans-serif; font-size: 13px; fill: #FFF; text-anchor: middle; }
+      .sep { stroke: #C0C0C0; stroke-width: 1; }
+      .radio-circle { fill: none; stroke: #666; stroke-width: 1.5; }
+      .radio-dot { fill: #007AFF; }
+      .check-box { fill: none; stroke: #666; stroke-width: 1.5; rx: 2; }
+      .check-mark { fill: none; stroke: #007AFF; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+      .popup { fill: #FFF; stroke: #B0B0B0; stroke-width: 1; rx: 3; }
+      .popup-arrow { fill: #666; }
+      .size-label { font-family: monospace; font-size: 10px; fill: red; }
+    </style>
+  </defs>
+  <rect width="460" height="340" class="bg"/>
+  <rect x="1" y="1" width="458" height="338" class="border"/>
+
+  <!-- Title bar -->
+  <rect x="0" y="0" width="460" height="22" fill="#E8E8E8" stroke="#C0C0C0" stroke-width="1"/>
+  <text x="230" y="15" class="title" text-anchor="middle">Send file</text>
+  <circle cx="14" cy="11" r="5" fill="#FF5F57"/>
+  <circle cx="30" cy="11" r="5" fill="#FEBC2E"/>
+  <circle cx="46" cy="11" r="5" fill="#28C840"/>
+
+  <!-- Filename label -->
+  <text x="20" y="48" class="label">Filename (drop file in this dialog):</text>
+
+  <!-- Filename field + browse button -->
+  <rect x="20" y="56" width="380" height="22" class="field"/>
+  <text x="28" y="71" class="label" fill="#999">/path/to/file.txt</text>
+  <rect x="408" y="56" width="30" height="22" class="btn"/>
+  <text x="423" y="71" class="btn-label">...</text>
+
+  <!-- File reading method -->
+  <text x="20" y="100" class="label">File reading method:</text>
+
+  <!-- Bulk read radio (selected) -->
+  <circle cx="36" cy="118" r="6" class="radio-circle"/>
+  <circle cx="36" cy="118" r="3" class="radio-dot"/>
+  <text x="48" y="122" class="label">Bulk read</text>
+
+  <!-- Sequential read radio -->
+  <circle cx="160" cy="118" r="6" class="radio-circle"/>
+  <text x="172" y="122" class="label">Sequential read</text>
+
+  <!-- Binary checkbox -->
+  <rect x="20" y="138" width="13" height="13" class="check-box"/>
+  <text x="38" y="149" class="label">Binary</text>
+
+  <!-- Delay type -->
+  <text x="20" y="176" class="label">Delay type:</text>
+  <rect x="110" y="162" width="140" height="22" class="popup"/>
+  <text x="118" y="177" class="label">No delay</text>
+  <polygon points="238,170 244,170 241,176" class="popup-arrow"/>
+
+  <!-- Send size -->
+  <text x="20" y="204" class="label">Send size(bytes):</text>
+  <rect x="140" y="190" width="140" height="22" class="popup"/>
+  <text x="148" y="205" class="label">All</text>
+  <polygon points="268,198 274,198 271,204" class="popup-arrow"/>
+
+  <!-- Delay time -->
+  <text x="20" y="232" class="label">Delay time(ms):</text>
+  <rect x="140" y="218" width="60" height="22" class="field"/>
+  <text x="148" y="233" class="label">0</text>
+
+  <!-- Separator -->
+  <line x1="0" y1="258" x2="460" y2="258" class="sep"/>
+
+  <!-- Buttons -->
+  <rect x="200" y="274" width="70" height="24" class="btn-primary"/>
+  <text x="235" y="290" class="btn-label-w">OK</text>
+
+  <rect x="280" y="274" width="70" height="24" class="btn"/>
+  <text x="315" y="290" class="btn-label">Cancel</text>
+
+  <rect x="370" y="274" width="70" height="24" class="btn"/>
+  <text x="405" y="290" class="btn-label">Help</text>
+
+  <text x="450" y="336" class="size-label" text-anchor="end">460 x 340</text>
+</svg>

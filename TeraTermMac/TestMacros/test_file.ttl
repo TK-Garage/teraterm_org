@@ -1,0 +1,37 @@
+; test_file.ttl - File I/O commands test
+; Tests: fileopen, fileclose, fileread, filereadln, filewrite, filewriteln
+;        fileseek, filestat, filedelete, foldercreate, folderdelete
+
+; Create test file
+fileopen fh '/tmp/ttl_test_file.txt' 0
+filewriteln fh 'Line 1'
+filewriteln fh 'Line 2'
+filewriteln fh 'Line 3'
+fileclose fh
+
+; Read test file
+fileopen fh '/tmp/ttl_test_file.txt' 0 1
+filereadln fh line1
+; line1 should be 'Line 1'
+filereadln fh line2
+; line2 should be 'Line 2'
+fileclose fh
+
+; File stat
+filestat '/tmp/ttl_test_file.txt' fsize
+; fsize should be > 0
+
+; File seek
+fileopen fh '/tmp/ttl_test_file.txt' 0 1
+fileseek fh 0
+filereadln fh first_line
+fileclose fh
+
+; Cleanup
+filedelete '/tmp/ttl_test_file.txt'
+
+; Folder operations
+foldercreate '/tmp/ttl_test_dir'
+folderdelete '/tmp/ttl_test_dir'
+
+end

@@ -1,0 +1,741 @@
+; ============================================================
+; Tera Term Macro — Boundary & Limit Stress Test
+;
+; Tests variable limits, string max length, integer boundary,
+; array bounds, call stack depth, loop nesting, and parser
+; edge cases WITHOUT requiring a connection.
+;
+; Results are written to /tmp/ttl_boundary_stress.log
+; ============================================================
+
+; --- Configuration ---
+logfile = '/tmp/ttl_boundary_stress.log'
+pass_count = 0
+fail_count = 0
+test_num   = 0
+
+fileopen fh logfile 0
+if fh < 0 then
+  end
+endif
+
+filewriteln fh '============================================'
+filewriteln fh 'TTL Boundary & Limit Stress Test'
+getdate datestr
+gettime timestr
+sprintf2 header 'Run: %s %s' datestr timestr
+filewriteln fh header
+filewriteln fh '============================================'
+filewriteln fh ''
+
+; ############################################################
+;  SECTION 1 — STRING LENGTH LIMITS
+; ############################################################
+filewriteln fh '=== Section 1: String Length Limits ==='
+
+; 1-1 Build string to 512 chars (MaxStrLen)
+test_num = test_num + 1
+s = ''
+for i 1 512
+  strconcat s 'A'
+next
+strlen s
+if result == 512 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] String length 512 chars' test_num
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] String length 512 chars (got %d)' test_num result
+endif
+filewriteln fh msg
+
+; 1-2 Build beyond 512 - should not crash (Swift has no 512 limit)
+test_num = test_num + 1
+s = ''
+for i 1 600
+  strconcat s 'B'
+next
+strlen s
+if result = 600 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] String length 600 chars (no truncation)' test_num
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] String length expected 600, got %d' test_num result
+endif
+filewriteln fh msg
+
+; 1-3 Empty string length
+test_num = test_num + 1
+s = ''
+strlen s
+if result == 0 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] Empty string length = 0' test_num
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] Empty string length = %d' test_num result
+endif
+filewriteln fh msg
+
+; 1-4 Japanese UTF-8 string
+test_num = test_num + 1
+s = 'テラターム'
+strlen s
+if result == 5 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] Japanese string length = 5' test_num
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] Japanese string length = %d' test_num result
+endif
+filewriteln fh msg
+
+filewriteln fh ''
+
+; ############################################################
+;  SECTION 2 — INTEGER BOUNDARY VALUES
+; ############################################################
+filewriteln fh '=== Section 2: Integer Boundary Values ==='
+
+; 2-1 32-bit max: 2147483647
+test_num = test_num + 1
+x = 2147483647
+if x == 2147483647 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] Int32 max = 2147483647' test_num
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] Int32 max value mismatch' test_num
+endif
+filewriteln fh msg
+
+; 2-2 Negative value
+test_num = test_num + 1
+x = 0 - 100
+if x == (0 - 100) then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] Negative value -100' test_num
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] Negative value mismatch' test_num
+endif
+filewriteln fh msg
+
+; 2-3 Hex parsing
+test_num = test_num + 1
+x = $7FFFFFFF
+if x == 2147483647 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] Hex $7FFFFFFF = 2147483647' test_num
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] Hex $7FFFFFFF mismatch' test_num
+endif
+filewriteln fh msg
+
+; 2-4 Operator precedence
+test_num = test_num + 1
+x = 2 + 3 * 4
+if x == 14 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] Precedence: 2+3*4=14' test_num
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] Precedence: 2+3*4=%d' test_num x
+endif
+filewriteln fh msg
+
+; 2-5 Parenthesized expression
+test_num = test_num + 1
+x = (2 + 3) * 4
+if x == 20 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] Parens: (2+3)*4=20' test_num
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] Parens: (2+3)*4=%d' test_num x
+endif
+filewriteln fh msg
+
+; 2-6 Bitwise AND, OR, XOR
+test_num = test_num + 1
+a = $FF & $0F
+b = $F0 | $0F
+c = $FF ^ $0F
+if a == $0F then
+  if b == $FF then
+    if c == $F0 then
+      pass_count = pass_count + 1
+      sprintf2 msg 'PASS [%d] Bitwise AND/OR/XOR' test_num
+    else
+      fail_count = fail_count + 1
+      sprintf2 msg 'FAIL [%d] Bitwise XOR' test_num
+    endif
+  else
+    fail_count = fail_count + 1
+    sprintf2 msg 'FAIL [%d] Bitwise OR' test_num
+  endif
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] Bitwise AND' test_num
+endif
+filewriteln fh msg
+
+; 2-7 Shift operators
+test_num = test_num + 1
+x = 1 << 8
+y = 256 >> 4
+if x == 256 then
+  if y == 16 then
+    pass_count = pass_count + 1
+    sprintf2 msg 'PASS [%d] Shift: 1<<8=256, 256>>4=16' test_num
+  else
+    fail_count = fail_count + 1
+    sprintf2 msg 'FAIL [%d] Right shift' test_num
+  endif
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] Left shift' test_num
+endif
+filewriteln fh msg
+
+filewriteln fh ''
+
+; ############################################################
+;  SECTION 3 — ARRAY BOUNDARY VALUES
+; ############################################################
+filewriteln fh '=== Section 3: Array Boundary Values ==='
+
+; 3-1 intdim 1024 elements, set first and last
+test_num = test_num + 1
+intdim iarr 1024
+iarr[0] = 1
+iarr[1023] = 9999
+if iarr[0] == 1 then
+  if iarr[1023] == 9999 then
+    pass_count = pass_count + 1
+    sprintf2 msg 'PASS [%d] intdim 1024: first=%d last=%d' test_num iarr[0] iarr[1023]
+  else
+    fail_count = fail_count + 1
+    sprintf2 msg 'FAIL [%d] intdim 1024: last value wrong' test_num
+  endif
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] intdim 1024: first value wrong' test_num
+endif
+filewriteln fh msg
+
+; 3-2 strdim 1024 elements
+test_num = test_num + 1
+strdim sarr 1024
+sarr[0] = 'start'
+sarr[1023] = 'end'
+if sarr[0] == 'start' then
+  if sarr[1023] == 'end' then
+    pass_count = pass_count + 1
+    sprintf2 msg 'PASS [%d] strdim 1024: first=%s last=%s' test_num sarr[0] sarr[1023]
+  else
+    fail_count = fail_count + 1
+    sprintf2 msg 'FAIL [%d] strdim 1024: last value wrong' test_num
+  endif
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] strdim 1024: first value wrong' test_num
+endif
+filewriteln fh msg
+
+; 3-3 Fill and verify 100 elements
+test_num = test_num + 1
+intdim data 100
+for i 0 99
+  data[i] = i * 2
+next
+verify_ok = 1
+for i 0 99
+  expected = i * 2
+  if data[i] != expected then
+    verify_ok = 0
+  endif
+next
+if verify_ok == 1 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] Array fill/verify 100 elements' test_num
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] Array fill/verify 100 elements' test_num
+endif
+filewriteln fh msg
+
+filewriteln fh ''
+
+; ############################################################
+;  SECTION 4 — FLOW CONTROL NESTING
+; ############################################################
+filewriteln fh '=== Section 4: Flow Control Nesting ==='
+
+; 4-1 10-level if-elseif chain
+test_num = test_num + 1
+x = 7
+r = 0
+if x == 1 then
+  r = 1
+elseif x == 2 then
+  r = 2
+elseif x == 3 then
+  r = 3
+elseif x == 4 then
+  r = 4
+elseif x == 5 then
+  r = 5
+elseif x == 6 then
+  r = 6
+elseif x == 7 then
+  r = 7
+elseif x == 8 then
+  r = 8
+elseif x == 9 then
+  r = 9
+else
+  r = 0
+endif
+if r == 7 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] 10-level if-elseif: r=%d' test_num r
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] 10-level if-elseif: r=%d' test_num r
+endif
+filewriteln fh msg
+
+; 4-2 Nested while loop (1000 iterations)
+test_num = test_num + 1
+count = 0
+while count < 1000
+  count = count + 1
+endwhile
+if count == 1000 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] While loop 1000 iterations' test_num
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] While loop count=%d' test_num count
+endif
+filewriteln fh msg
+
+; 4-3 Mixed: if inside while inside for
+test_num = test_num + 1
+total = 0
+for i 1 10
+  j = 0
+  while j < 5
+    if j == 3 then
+      total = total + i
+    endif
+    j = j + 1
+  endwhile
+next
+; total = sum(1..10) = 55 (each i added once when j==3)
+if total == 55 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] Mixed if/while/for: total=%d' test_num total
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] Mixed if/while/for: total=%d (expected 55)' test_num total
+endif
+filewriteln fh msg
+
+; 4-4 Break from while
+test_num = test_num + 1
+x = 0
+while 1
+  x = x + 1
+  if x == 42 then
+    break
+  endif
+endwhile
+if x == 42 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] Break from while: x=%d' test_num x
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] Break from while: x=%d' test_num x
+endif
+filewriteln fh msg
+
+; 4-5 Continue in for loop (sum odd numbers 1..10)
+test_num = test_num + 1
+total = 0
+for i 1 10
+  x = i % 2
+  if x == 0 then
+    continue
+  endif
+  total = total + i
+next
+; 1+3+5+7+9 = 25
+if total == 25 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] Continue (odd sum): total=%d' test_num total
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] Continue (odd sum): total=%d (expected 25)' test_num total
+endif
+filewriteln fh msg
+
+; 4-6 Do-until loop
+test_num = test_num + 1
+x = 0
+do
+  x = x + 1
+loop until x == 10
+if x == 10 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] Do-until: x=%d' test_num x
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] Do-until: x=%d (expected 10)' test_num x
+endif
+filewriteln fh msg
+
+; 4-7 Goto forward
+test_num = test_num + 1
+x = 0
+goto skip_assign
+x = 999
+:skip_assign
+x = 42
+if x == 42 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] Goto forward: x=%d' test_num x
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] Goto forward: x=%d' test_num x
+endif
+filewriteln fh msg
+
+filewriteln fh ''
+
+; ############################################################
+;  SECTION 5 — CALL STACK DEPTH
+; ############################################################
+filewriteln fh '=== Section 5: Call Stack Depth ==='
+
+; 5-1 10-level call nesting
+test_num = test_num + 1
+depth_result = 0
+call depth1
+if depth_result == 10 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] 10-level call nesting' test_num
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] 10-level call nesting: depth=%d' test_num depth_result
+endif
+filewriteln fh msg
+
+goto after_depth_subs
+
+:depth1
+call depth2
+return
+:depth2
+call depth3
+return
+:depth3
+call depth4
+return
+:depth4
+call depth5
+return
+:depth5
+call depth6
+return
+:depth6
+call depth7
+return
+:depth7
+call depth8
+return
+:depth8
+call depth9
+return
+:depth9
+call depth10
+return
+:depth10
+depth_result = 10
+return
+
+:after_depth_subs
+
+filewriteln fh ''
+
+; ############################################################
+;  SECTION 6 — STRING OPERATIONS BOUNDARY
+; ############################################################
+filewriteln fh '=== Section 6: String Operations Boundary ==='
+
+; 6-1 strsplit many segments (results go to strArray variable)
+test_num = test_num + 1
+s = 'a,b,c,d,e,f,g,h,i,j'
+strsplit s ',' parts
+if result = 10 then
+  if parts[0] = 'a' then
+    if parts[8] = 'i' then
+      pass_count = pass_count + 1
+      sprintf2 msg 'PASS [%d] strsplit 10 segments' test_num
+    else
+      fail_count = fail_count + 1
+      sprintf2 msg 'FAIL [%d] strsplit 9th element' test_num
+    endif
+  else
+    fail_count = fail_count + 1
+    sprintf2 msg 'FAIL [%d] strsplit first element' test_num
+  endif
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] strsplit count=%d (expected 10)' test_num result
+endif
+filewriteln fh msg
+
+; 6-2 strcompare case sensitivity
+test_num = test_num + 1
+strcompare 'ABC' 'abc'
+r1 = result
+strcompare 'abc' 'abc'
+r2 = result
+if r1 != 0 then
+  if r2 == 0 then
+    pass_count = pass_count + 1
+    sprintf2 msg 'PASS [%d] strcompare case sensitivity' test_num
+  else
+    fail_count = fail_count + 1
+    sprintf2 msg 'FAIL [%d] strcompare equal strings' test_num
+  endif
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] strcompare ABC vs abc should differ' test_num
+endif
+filewriteln fh msg
+
+; 6-3 str2int / int2str roundtrip
+test_num = test_num + 1
+str2int x '12345'
+int2str s x
+if s == '12345' then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] str2int/int2str roundtrip' test_num
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] str2int/int2str roundtrip: got %s' test_num s
+endif
+filewriteln fh msg
+
+; 6-4 sprintf2 formats
+test_num = test_num + 1
+sprintf2 s1 'dec=%d hex=%x' 255 255
+if s1 == 'dec=255 hex=ff' then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] sprintf2 dec/hex format' test_num
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] sprintf2: got %s' test_num s1
+endif
+filewriteln fh msg
+
+; 6-5 tolower / toupper
+test_num = test_num + 1
+s1 = 'Hello World'
+tolower s1
+s2 = 'Hello World'
+toupper s2
+if s1 == 'hello world' then
+  if s2 == 'HELLO WORLD' then
+    pass_count = pass_count + 1
+    sprintf2 msg 'PASS [%d] tolower/toupper' test_num
+  else
+    fail_count = fail_count + 1
+    sprintf2 msg 'FAIL [%d] toupper: got %s' test_num s2
+  endif
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] tolower: got %s' test_num s1
+endif
+filewriteln fh msg
+
+; 6-6 Char code parsing
+test_num = test_num + 1
+s1 = #65#66#67
+if s1 == 'ABC' then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] Char codes #65#66#67 = ABC' test_num
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] Char codes: got %s' test_num s1
+endif
+filewriteln fh msg
+
+filewriteln fh ''
+
+; ############################################################
+;  SECTION 7 — FIBONACCI / COMPLEX ARITHMETIC
+; ############################################################
+filewriteln fh '=== Section 7: Complex Arithmetic ==='
+
+; 7-1 Fibonacci(12) = 144
+test_num = test_num + 1
+a = 1
+b = 1
+for i 1 10
+  c = a + b
+  a = b
+  b = c
+next
+if b == 144 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] Fibonacci(12) = %d' test_num b
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] Fibonacci(12) = %d (expected 144)' test_num b
+endif
+filewriteln fh msg
+
+; 7-2 Sum 1..100 = 5050
+test_num = test_num + 1
+sum = 0
+for i 1 100
+  sum = sum + i
+next
+if sum == 5050 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] Sum 1..100 = %d' test_num sum
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] Sum 1..100 = %d (expected 5050)' test_num sum
+endif
+filewriteln fh msg
+
+; 7-3 Deeply nested parentheses
+test_num = test_num + 1
+x = (((((1 + 2) * 3) + 4) * 5) + 6)
+; ((((3)*3)+4)*5)+6 = ((9+4)*5)+6 = 65+6 = 71
+if x == 71 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] Deep parens = %d' test_num x
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] Deep parens = %d (expected 71)' test_num x
+endif
+filewriteln fh msg
+
+; 7-4 Logical operators
+test_num = test_num + 1
+a = (1 && 1)
+b = (1 && 0)
+c = (0 || 1)
+d = (0 || 0)
+if a == 1 then
+  if b == 0 then
+    if c == 1 then
+      if d == 0 then
+        pass_count = pass_count + 1
+        sprintf2 msg 'PASS [%d] Logical AND/OR' test_num
+      else
+        fail_count = fail_count + 1
+        sprintf2 msg 'FAIL [%d] Logical 0||0' test_num
+      endif
+    else
+      fail_count = fail_count + 1
+      sprintf2 msg 'FAIL [%d] Logical 0||1' test_num
+    endif
+  else
+    fail_count = fail_count + 1
+    sprintf2 msg 'FAIL [%d] Logical 1&&0' test_num
+  endif
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] Logical 1&&1' test_num
+endif
+filewriteln fh msg
+
+filewriteln fh ''
+
+; ############################################################
+;  SECTION 8 — FILE I/O BOUNDARY
+; ############################################################
+filewriteln fh '=== Section 8: File I/O Boundary ==='
+
+; 8-1 Write 100 lines, read them back
+test_num = test_num + 1
+tmpfile = '/tmp/ttl_boundary_io_test.txt'
+fileopen wfh tmpfile 0
+for i 1 100
+  sprintf2 line 'Line-%d' i
+  filewriteln wfh line
+next
+fileclose wfh
+
+fileopen rfh tmpfile 0 1
+count = 0
+:io_readloop
+filereadln rfh s
+if result == 0 then
+  count = count + 1
+  goto io_readloop
+endif
+fileclose rfh
+filedelete tmpfile
+
+if count == 100 then
+  pass_count = pass_count + 1
+  sprintf2 msg 'PASS [%d] File I/O: wrote/read 100 lines' test_num
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] File I/O: read %d lines (expected 100)' test_num count
+endif
+filewriteln fh msg
+
+; 8-2 filesearch existing vs non-existing
+test_num = test_num + 1
+tmpfile = '/tmp/ttl_boundary_fsearch.txt'
+fileopen wfh tmpfile 0
+filewriteln wfh 'test'
+fileclose wfh
+filesearch tmpfile
+found = result
+filedelete tmpfile
+filesearch tmpfile
+notfound = result
+if found == 1 then
+  if notfound == 0 then
+    pass_count = pass_count + 1
+    sprintf2 msg 'PASS [%d] filesearch existing/deleted' test_num
+  else
+    fail_count = fail_count + 1
+    sprintf2 msg 'FAIL [%d] filesearch deleted file found' test_num
+  endif
+else
+  fail_count = fail_count + 1
+  sprintf2 msg 'FAIL [%d] filesearch existing file not found' test_num
+endif
+filewriteln fh msg
+
+filewriteln fh ''
+
+; ############################################################
+;  SUMMARY
+; ############################################################
+filewriteln fh '============================================'
+total = pass_count + fail_count
+sprintf2 summary 'Total: %d  Pass: %d  Fail: %d' total pass_count fail_count
+filewriteln fh summary
+if fail_count == 0 then
+  filewriteln fh 'ALL TESTS PASSED'
+else
+  filewriteln fh 'SOME TESTS FAILED'
+endif
+filewriteln fh '============================================'
+
+fileclose fh
+end

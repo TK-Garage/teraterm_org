@@ -53,59 +53,138 @@ enum TerminalID: Int, Codable, CaseIterable {
 // MARK: - Character Encoding (port of tttypes_charset.h)
 
 enum CharacterEncoding: Int, Codable, CaseIterable {
+    // Unicode
     case utf8 = 1
+    case utf16 = 30
+    case utf16be = 31
+    case utf16le = 32
+    case utf32 = 33
+    case utf32be = 34
+    case utf32le = 35
+
+    // Japanese
     case sjis = 2
     case eucjp = 3
-    case jis = 4
+    case jis = 4       // ISO-2022-JP
+
+    // Chinese
+    case gb2312 = 21
+    case gbk = 36
+    case big5 = 22
+    case big5hkscs = 37
+
+    // Korean
+    case eucKR = 20
+
+    // Western / ISO 8859
     case iso8859_1 = 5
     case iso8859_2 = 6
     case iso8859_3 = 7
     case iso8859_4 = 8
-    case iso8859_5 = 9
-    case iso8859_6 = 10
-    case iso8859_7 = 11
-    case iso8859_8 = 12
+    case iso8859_5 = 9      // Cyrillic
+    case iso8859_6 = 10     // Arabic
+    case iso8859_7 = 11     // Greek
+    case iso8859_8 = 12     // Hebrew
     case iso8859_9 = 13
     case iso8859_10 = 14
-    case iso8859_11 = 15
+    case iso8859_11 = 15    // Thai (TIS-620)
     case iso8859_13 = 16
     case iso8859_14 = 17
     case iso8859_15 = 18
     case iso8859_16 = 19
-    case cp949 = 20     // Korean
-    case gb2312 = 21    // Chinese Simplified
-    case big5 = 22      // Chinese Traditional
-    case cp866 = 23     // Russian DOS
-    case cp1251 = 24    // Russian Windows
-    case koi8r = 25     // Russian KOI8-R
+
+    // DOS / Windows
+    case cp437 = 38         // DOS Latin US
+    case cp932 = 39         // DOS Japanese (≒ Shift_JIS superset)
+    case cp1252 = 40        // Windows Latin 1
+    case cp1251 = 24        // Windows Cyrillic
+    case cp1253 = 41        // Windows Greek
+    case cp1255 = 42        // Windows Hebrew
+    case cp1256 = 43        // Windows Arabic
+    case cp866 = 23         // DOS Russian
+    case koi8r = 25
+
+    // Encoding group for menu display
+    enum Group: CaseIterable {
+        case unicode
+        case japanese
+        case chinese
+        case korean
+        case western
+        case dosWindows
+    }
+
+    var group: Group {
+        switch self {
+        case .utf8, .utf16, .utf16be, .utf16le, .utf32, .utf32be, .utf32le:
+            return .unicode
+        case .sjis, .eucjp, .jis:
+            return .japanese
+        case .gb2312, .gbk, .big5, .big5hkscs:
+            return .chinese
+        case .eucKR:
+            return .korean
+        case .iso8859_1, .iso8859_2, .iso8859_3, .iso8859_4, .iso8859_5,
+             .iso8859_6, .iso8859_7, .iso8859_8, .iso8859_9, .iso8859_10,
+             .iso8859_11, .iso8859_13, .iso8859_14, .iso8859_15, .iso8859_16:
+            return .western
+        case .cp437, .cp932, .cp1252, .cp1251, .cp1253, .cp1255, .cp1256,
+             .cp866, .koi8r:
+            return .dosWindows
+        }
+    }
+
+    static func encodings(in group: Group) -> [CharacterEncoding] {
+        allCases.filter { $0.group == group }
+    }
 
     var displayName: String {
         switch self {
-        case .utf8: return "UTF-8"
-        case .sjis: return "Shift_JIS"
-        case .eucjp: return "EUC-JP"
-        case .jis: return "JIS"
-        case .iso8859_1: return "ISO 8859-1 (Latin-1)"
-        case .iso8859_2: return "ISO 8859-2 (Latin-2)"
-        case .iso8859_3: return "ISO 8859-3 (Latin-3)"
-        case .iso8859_4: return "ISO 8859-4 (Latin-4)"
-        case .iso8859_5: return "ISO 8859-5 (Cyrillic)"
-        case .iso8859_6: return "ISO 8859-6 (Arabic)"
-        case .iso8859_7: return "ISO 8859-7 (Greek)"
-        case .iso8859_8: return "ISO 8859-8 (Hebrew)"
-        case .iso8859_9: return "ISO 8859-9 (Latin-5)"
+        // Unicode
+        case .utf8:       return "Unicode (UTF-8)"
+        case .utf16:      return "Unicode (UTF-16)"
+        case .utf16be:    return "Unicode (UTF-16BE)"
+        case .utf16le:    return "Unicode (UTF-16LE)"
+        case .utf32:      return "Unicode (UTF-32)"
+        case .utf32be:    return "Unicode (UTF-32BE)"
+        case .utf32le:    return "Unicode (UTF-32LE)"
+        // Japanese
+        case .sjis:       return "Japanese (Shift JIS)"
+        case .eucjp:      return "Japanese (EUC-JP)"
+        case .jis:        return "Japanese (ISO-2022-JP)"
+        // Chinese
+        case .gb2312:     return "Chinese Simplified (GB2312)"
+        case .gbk:        return "Chinese Simplified (GBK)"
+        case .big5:       return "Chinese Traditional (Big5)"
+        case .big5hkscs:  return "Chinese Traditional (Big5-HKSCS)"
+        // Korean
+        case .eucKR:      return "Korean (EUC-KR)"
+        // Western
+        case .iso8859_1:  return "Western (ISO Latin 1)"
+        case .iso8859_2:  return "Central European (ISO Latin 2)"
+        case .iso8859_3:  return "ISO 8859-3 (Latin-3)"
+        case .iso8859_4:  return "ISO 8859-4 (Latin-4)"
+        case .iso8859_5:  return "Cyrillic (ISO 8859-5)"
+        case .iso8859_6:  return "Arabic (ISO 8859-6)"
+        case .iso8859_7:  return "Greek (ISO 8859-7)"
+        case .iso8859_8:  return "Hebrew (ISO 8859-8)"
+        case .iso8859_9:  return "ISO 8859-9 (Latin-5)"
         case .iso8859_10: return "ISO 8859-10 (Latin-6)"
-        case .iso8859_11: return "ISO 8859-11 (Thai)"
+        case .iso8859_11: return "Thai (TIS-620)"
         case .iso8859_13: return "ISO 8859-13 (Latin-7)"
         case .iso8859_14: return "ISO 8859-14 (Latin-8)"
         case .iso8859_15: return "ISO 8859-15 (Latin-9)"
         case .iso8859_16: return "ISO 8859-16 (Latin-10)"
-        case .cp949: return "CP949 (Korean)"
-        case .gb2312: return "GB2312 (Chinese Simplified)"
-        case .big5: return "Big5 (Chinese Traditional)"
-        case .cp866: return "CP866 (Russian DOS)"
-        case .cp1251: return "CP1251 (Russian Windows)"
-        case .koi8r: return "KOI8-R (Russian)"
+        // DOS / Windows
+        case .cp437:      return "DOS Latin US"
+        case .cp932:      return "DOS Japanese"
+        case .cp1252:     return "Windows Latin 1"
+        case .cp1251:     return "Windows Cyrillic"
+        case .cp1253:     return "Windows Greek"
+        case .cp1255:     return "Windows Hebrew"
+        case .cp1256:     return "Windows Arabic"
+        case .cp866:      return "DOS Russian"
+        case .koi8r:      return "KOI8-R"
         }
     }
 }
@@ -117,6 +196,47 @@ enum PortType: Int, Codable {
     case serial = 1
     case file = 2
     case namedPipe = 3
+    case localShell = 4
+}
+
+// MARK: - Service Type (port of IDC_HOSTTELNET / IDC_HOSTSSH / IDC_HOSTOTHER)
+
+enum ServiceType: Int, Codable {
+    case telnet = 0
+    case ssh = 1
+    case other = 2
+
+    var defaultPort: Int {
+        switch self {
+        case .telnet: return 23
+        case .ssh: return 22
+        case .other: return 0
+        }
+    }
+}
+
+// MARK: - SSH Version (port of IDC_SSH_VERSION)
+
+enum SSHVersion: Int, Codable, CaseIterable {
+    case ssh1 = 1
+    case ssh2 = 2
+
+    var displayName: String {
+        switch self {
+        case .ssh1: return "SSH1"
+        case .ssh2: return "SSH2"
+        }
+    }
+}
+
+// MARK: - SSH Authentication Method (port of IDD_SSHAUTH)
+
+enum SSHAuthMethod: Int, Codable {
+    case password = 0
+    case publicKey = 1
+    case rhosts = 2
+    case challengeResponse = 3
+    case pageant = 4
 }
 
 // MARK: - Cursor Shape
@@ -154,12 +274,44 @@ enum Parity: Int, Codable {
     case space = 4
 }
 
+// MARK: - Protocol Family (port of AF_UNSPEC/AF_INET/AF_INET6 selection)
+
+enum ProtocolFamily: Int, Codable, CaseIterable {
+    case auto_ = 0   // AF_UNSPEC
+    case ipv6 = 1    // AF_INET6
+    case ipv4 = 2    // AF_INET
+
+    var displayName: String {
+        switch self {
+        case .auto_: return "AUTO"
+        case .ipv6: return "IPv6"
+        case .ipv4: return "IPv4"
+        }
+    }
+}
+
 // MARK: - Beep Type
 
 enum BeepType: Int, Codable {
     case none = 0
     case system = 1
     case visual = 2
+}
+
+// MARK: - Log Timestamp Type
+
+enum LogTimestampType: Int, Codable, CaseIterable {
+    case local = 0
+    case utc = 1
+    case elapsed = 2
+
+    var displayName: String {
+        switch self {
+        case .local: return "Local Time"
+        case .utc: return "UTC"
+        case .elapsed: return "Elapsed Time"
+        }
+    }
 }
 
 // MARK: - Color Theme
@@ -216,6 +368,8 @@ class TerminalSettings: Codable {
     var terminalHeight: Int = 24
     var autoWinResize: Bool = false
     var termIsWin: Bool = true
+    var terminalSpeed: String = "38400"           // Terminal speed for Telnet/SSH negotiation
+    var killFocusCursor: Bool = true              // Show polygon cursor when window loses focus
 
     // Character Handling
     var encoding: CharacterEncoding = .utf8
@@ -225,7 +379,7 @@ class TerminalSettings: Codable {
 
     // New line
     var crSend: NewLineMode = .cr
-    var crReceive: NewLineMode = .cr
+    var crReceive: NewLineMode = .auto_
 
     // Cursor
     var cursorShape: CursorShape = .block
@@ -235,6 +389,8 @@ class TerminalSettings: Codable {
     var enableScrollBuffer: Bool = true
     var scrollBufferSize: Int = 10000
     var scrollBufferMax: Int = 500000
+    var scrollThreshold: Int = 12                 // Scroll threshold lines
+    var scrollWindowClearScreen: Bool = true       // Clear screen on scroll
 
     // Display
     var fontName: String = "Menlo"
@@ -244,17 +400,38 @@ class TerminalSettings: Codable {
     // Unicode
     var unicodeAmbiguousWidth: Int = 1  // 1=narrow, 2=wide
     var unicodeEmojiWidth: Int = 2
+    var unicodeEmojiOverride: Bool = false         // Override emoji width
 
     // Window
     var title: String = "Tera Term"
     var titleFormat: Int = 0  // 0=title, 1=hostname, etc.
-    var windowAlpha: Double = 1.0
+    /// Computed from `windowOpacityActive` (0–100) for backward compatibility.
+    var windowAlpha: Double {
+        get { Double(windowOpacityActive) / 100.0 }
+        set { windowOpacityActive = Int((newValue * 100).rounded()) }
+    }
+
+    /// Computed from `windowOpacityInactive` (0–100).
+    var windowAlphaInactive: Double {
+        get { Double(windowOpacityInactive) / 100.0 }
+        set { windowOpacityInactive = Int((newValue * 100).rounded()) }
+    }
 
     // Connection
     var portType: PortType = .tcpip
+    var serviceType: ServiceType = .telnet
     var defaultPort: Int = 23
     var hostname: String = ""
     var telnet: Bool = true
+    var protocolFamily: ProtocolFamily = .auto_
+    var connectingTimeout: Int = 0                // Connection timeout (0=infinite)
+    var hostHistory: [String] = []
+    var sshVersion: SSHVersion = .ssh2
+    var sshAuthMethod: SSHAuthMethod = .password
+    var sshUsername: String = ""
+    var sshKeyFile: String = ""
+    var sshRememberPassword: Bool = false
+    var sshForwardAgent: Bool = false
     var termType: String = "xterm"
 
     // Serial Port
@@ -264,14 +441,29 @@ class TerminalSettings: Codable {
     var parity: Parity = .none
     var stopBits: Int = 1
     var flowControl: FlowControl = .none
+    var clearComBuffOnOpen: Bool = true            // Clear buffer on port open
+    var autoComPortReconnect: Bool = true          // Auto-reconnect serial port
+
+    // Local Shell (macOS port of Cygwin tab)
+    var localShellPath: String = ""                // Empty = use $SHELL or /bin/zsh
+    var localShellLoginShell: Bool = true          // Launch as login shell (-l)
+    var localShellHomeChdir: Bool = true           // chdir to $HOME on launch
+    var localShellTermEnv: String = "xterm-256color" // TERM environment variable
+    var localShellEnv1: String = ""                // Custom environment variable 1 (KEY=VALUE)
+    var localShellEnv2: String = ""                // Custom environment variable 2 (KEY=VALUE)
 
     // Keyboard
     var bsKey: Int = 8  // 8=BS, 127=DEL
     var deleteKey: Int = 127
     var metaKey: Int = 0  // 0=off, 1=on
+    var disableAppKeypad: Bool = false   // Disable application keypad mode (DECKPAM)
+    var disableAppCursor: Bool = false   // Disable application cursor key mode (DECCKM)
 
     // Beep
     var beepType: BeepType = .system
+    var beepOverUsedCount: Int = 5                // Beep overuse detection count
+    var beepOverUsedTime: Int = 2                 // Beep overuse detection time (seconds)
+    var beepSuppressTime: Int = 5                 // Beep suppression time (seconds)
 
     // Log
     var logAutoStart: Bool = false
@@ -279,19 +471,262 @@ class TerminalSettings: Codable {
     var logDefaultName: String = "teraterm.log"
     var logTimestamp: Bool = false
     var logPlainText: Bool = true
+    var logTimestampFormat: String = "%Y-%m-%d %H:%M:%S.%N"  // Timestamp format
 
     // File Transfer
     var xmodemOption: Int = 1  // 1=checksum, 2=CRC, 3=1K
     var zmodemDataLen: Int = 1024
     var zmodemWindowSize: Int = 32767
+    var zmodemAutoReceive: Bool = false            // ZMODEM auto-receive
+    var confirmFileDragAndDrop: Bool = true        // Confirm file drag and drop
+    var autoFileRename: Bool = false               // Auto-rename files on conflict
+
+    // Serial Transmit Delay (milliseconds)
+    var serialDelayPerChar: Int = 0
+    var serialDelayPerLine: Int = 0
 
     // Mouse
     var mouseTracking: Bool = true
     var mouseWheelScrollLines: Int = 3
+    var translateWheelToCursor: Bool = true        // Translate wheel to cursor keys
+    var disableWheelToCursorByCtrl: Bool = true    // Disable wheel-to-cursor by Ctrl
 
     // Misc
     var confirmOnDisconnect: Bool = true
     var beepOnConnect: Bool = false
+    var clipboardConfirmPaste: Bool = true
+    var autoScrollOnOutput: Bool = true
+    var clearOnResize: Bool = false
+    var clearScreenOnCloseConnection: Bool = false // Clear screen on disconnect
+    var backWrap: Bool = false                     // Back wrap
+    var vtCompatTab: Bool = false                  // VT compatible tab
+    var fallbackToCP932: Bool = false              // CP932 fallback
+    var saveVTWinPos: Bool = false                 // Save VT window position
+    var cursorChangeIME: Bool = true
+    var notifySound: Bool = true
+
+    // Title Format
+    var titleFormatTCP: Bool = true
+    var titleFormatSerial: Bool = true
+    var titleFormatSession: Bool = false
+
+    // Copy and Paste
+    var continuedLineCopy: Bool = true
+    var confirmPasteNewLine: Bool = true
+    var pasteDelay: Int = 5
+    var autoTextCopy: Bool = true
+    var delimiterList: String = " ;,()\"'"
+    var disableRightClickPaste: Bool = false
+    var confirmRightClickPaste: Bool = false
+    var disableMiddleClickPaste: Bool = false
+    var leftClickOnlySelection: Bool = false
+    var trimTrailingNewline: Bool = false
+    var confirmDangerousClipboard: Bool = true
+    var dangerousKeywordFile: String = ""
+    var enableSelectionOnActivate: Bool = false
+    var mouseSelectStartDelay: Int = 0            // Mouse selection start delay (ms)
+
+    // Control Sequence
+    var titleChangeRequest: Bool = false
+    var titleReportRequest: Bool = false
+    var windowControlSequence: Bool = true
+    var cursorControlSequence: Bool = true
+    var clipboardAccessFromRemote: Bool = false
+    var disableControlKeyMouseEvent: Bool = false
+    var titleChangeMode: Int = 0  // 0=overwrite, 1=prepend, 2=append
+    var windowInfoReportSequence: Bool = true
+    var clipboardAccessMode: Int = 0  // 0=off, 1=read/write, 2=read only, 3=write only
+    var notifyClipboardAccess: Bool = true
+    var acceptScrollBufferClear: Bool = false
+    var disablePrintSequence: Bool = false
+    var accept8BitCtrl: Bool = true               // Accept 8-bit control codes
+    var send8BitCtrl: Bool = false                // Send 8-bit control sequences
+    var alternateScreenBuffer: Bool = true         // Alternate screen buffer support
+    var bracketedPasteMode: Bool = true            // Bracketed paste mode
+    var bracketedControlOnly: Bool = false         // Bracketed control only
+    var allowWrongSequence: Bool = false           // Allow wrong escape sequences
+    var maxOSCBufferSize: Int = 4096              // Max OSC buffer size
+    var enableLineMode: Bool = true               // Enable line mode
+
+    // Broadcast
+    var broadcastHistory: [String] = []
+    var broadcastSendToThisOnly: Bool = false
+    var broadcastSendEnter: Bool = true
+    var broadcastRealtime: Bool = false
+    var maxBroadcastHistory: Int = 99             // Maximum broadcast history entries
+
+    // Debug
+    var debugCharInfoPopup: Bool = false
+    var debugModes: String = "all"                // Debug mode type
+
+    // Font additional
+    var vtFontProportional: Bool = false
+    var vtFontHidden: Bool = false
+    var tekFontName: String = "Menlo"
+    var tekFontSize: Double = 14.0
+    var tekFontProportional: Bool = false
+    var tekFontHidden: Bool = false
+    var drawingAPI: Int = 0
+    var codePage: Int = 65001
+    var charSpaceH: Int = 0
+    var charSpaceV: Int = 0
+    var fontQuality: Int = 0
+
+    // Visual
+    var windowOpacityActive: Int = 100
+    var windowOpacityInactive: Int = 100
+    var mouseCursorType: Int = 0
+    var flickerlessMoveEnabled: Bool = false
+    var cornerRounding: Int = 0
+    var attrBold: Bool = true
+    var attrBlink: Bool = true
+    var attrReverse: Bool = true
+    var attrUnderline: Bool = true
+    var attrStrikethrough: Bool = false
+    var pcBoldColor: Bool = false                  // PC-style bold color mapping
+    var enableBoldColor: Bool = true
+    var enableBoldFont: Bool = true
+    var enableBlinkColor: Bool = true
+    var enableReverseColor: Bool = true
+    var enableUnderlineColor: Bool = true
+    var enableUnderlineDecoration: Bool = true
+    var enableURLColor: Bool = true
+    var enableURLUnderline: Bool = true
+    var joinSplitURL: Bool = false                // Join split URLs across lines
+    var joinSplitURLIgnoreEOLChar: String = "\\\\"  // EOL char to ignore when joining URLs
+    var enableANSIColor: Bool = true
+    var useTextColor: Bool = false            // Force theme fg/bg, ignore SGR/ANSI colors
+    var fontRenderingQuality: Int = 0  // 0=Default, 1=AntiAlias, 2=Subpixel
+
+    // Window extended settings (port of IDD_WINDLG)
+    var hideTitleBar: Bool = false            // Hide title bar (IDC_HIDETITLE)
+    var hideMenuBar: Bool = false             // Hide menu bar (IDC_HIDEMENU)
+
+    // Window extended settings (port of IDD_TABSHEET_VISUAL window section)
+    var enableBoldDisplay: Bool = true       // Enable bold text rendering
+    var hideWindowFrame: Bool = false         // Frameless window display
+    var enableAixtermColors: Bool = false     // aixterm 16 color mode
+    var enableXterm256Colors: Bool = true     // xterm 256 color mode
+    var useStandardBGColor: Bool = false      // Always use standard background color
+    // Attribute-specific colors (Normal/Bold/Blink/Reverse/URL/Underline/Strikethrough)
+    var attrColorNormal: TerminalColor = TerminalColor(r: 255, g: 255, b: 255)
+    var attrColorBold: TerminalColor = TerminalColor(r: 255, g: 255, b: 0)
+    var attrColorBlink: TerminalColor = TerminalColor(r: 255, g: 128, b: 0)
+    var attrColorReverse: TerminalColor = TerminalColor(r: 0, g: 255, b: 255)
+    var attrColorURL: TerminalColor = TerminalColor(r: 0, g: 128, b: 255)
+    var attrColorUnderline: TerminalColor = TerminalColor(r: 0, g: 255, b: 0)
+    var enableStrikethroughColor: Bool = false
+    var attrColorStrikethrough: TerminalColor = TerminalColor(r: 255, g: 64, b: 64)
+
+    // Font extended settings
+    var resizeFontToFitWidth: Bool = false   // Resize font to fit drawing width
+
+    // Background image settings (Theme)
+    var bgImagePath: String = ""              // Background image file path
+    var bgImageAlphaNormal: Double = 1.0      // Transparency for normal text (0.0-1.0)
+    var bgImageAlphaReverse: Double = 1.0     // Transparency for reverse text (0.0-1.0)
+    var bgImageAlphaOther: Double = 1.0       // Transparency for other elements (0.0-1.0)
+
+    // Plugin
+    var pluginDirectories: [String] = []
+
+    // Theme
+    var themeEnabled: Bool = false
+    var themeFile: String = ""
+    var startupTheme: String = ""
+    var fastSizeMove: Bool = false
+    var susiePath: String = ""
+
+    // UI
+    var language: String = "Japanese"
+    var dialogFontName: String = ""
+    var dialogFontSize: Double = 0
+    var dialogFontProportional: Bool = false
+    var dialogFontHidden: Bool = false
+
+    // TCP/IP additional
+    var tcpKeepAlive: Bool = true
+    var tcpKeepAliveInterval: Int = 300
+    var autoWindowClose: Bool = true
+    var hostHistorySize: Int = 20                // ホスト履歴の保存件数
+    var antiIdle: Bool = false                   // アイドル防止 on/off
+    var antiIdleString: String = "\\0"           // アイドル防止送信文字列
+    var antiIdleInterval: Int = 60               // アイドル防止間隔（秒）
+    var telnetAutoDetect: Bool = true            // Telnet: Auto detect
+    var telnetBinaryOption: Bool = false          // Telnet: Binary option
+    var telnetBinaryMode: Bool = false            // Telnet: Binary mode
+    var telnetIgnoreDisconnect: Bool = false      // Telnet: Ignore disconnect
+
+    // Log additional
+    var logViewEditor: String = ""
+    var logEditorArguments: String = ""
+    var logAppend: Bool = false
+    var logBinary: Bool = false
+    var logHideDialog: Bool = false
+    var logIncludeScreenBuffer: Bool = false
+    var logRotateEnabled: Bool = false
+    var logRotateSize: Int = 0
+    var logRotateStep: Int = 0
+    var logBOM: Bool = false              // Write UTF-8 BOM at start of log
+    var logTimestampType: Int = 0         // 0=Local, 1=UTC, 2=Elapsed time
+
+    // File Transfer folder
+    var fileTransferFolder: String = ""
+
+    // Proxy
+    var proxyType: Int = 0  // 0=none, 1=HTTP, 2=SOCKS4, 3=SOCKS5, 4=Telnet
+    var proxyHost: String = ""
+    var proxyPort: Int = 0
+    var proxyUsername: String = ""
+    var proxyPassword: String = ""
+
+    // SSH Setup
+    var sshHeartbeat: Int = 60
+    var sshConfirmAgentForwarding: Bool = true
+    var sshNotifyAgentAccess: Bool = false
+    var sshVerifyHostKeyDNS: Bool = false
+    var sshKnownHostsFile: String = ""
+    var sshReadOnlyHostsFile: String = ""
+    var sshHostKeyRotation: Int = 0  // 0=disabled, 1=enabled, 2=ask
+    var sshLogLevel: Int = 0
+    var sshCompressionLevel: Int = 0  // 0-9, 0=off
+
+    // SSH algorithm orders (SSH2)
+    var sshCipherOrder: [String] = [
+        "aes256-gcm@openssh.com", "aes128-gcm@openssh.com",
+        "chacha20-poly1305@openssh.com",
+        "aes256-ctr", "aes192-ctr", "aes128-ctr",
+        "aes256-cbc", "aes192-cbc", "aes128-cbc",
+        "3des-cbc",
+    ]
+    var sshKexOrder: [String] = [
+        "curve25519-sha256", "curve25519-sha256@libssh.org",
+        "ecdh-sha2-nistp521", "ecdh-sha2-nistp384", "ecdh-sha2-nistp256",
+        "diffie-hellman-group18-sha512", "diffie-hellman-group16-sha512",
+        "diffie-hellman-group14-sha256", "diffie-hellman-group14-sha1",
+        "diffie-hellman-group-exchange-sha256",
+    ]
+    var sshHostKeyOrder: [String] = [
+        "ssh-ed25519", "ssh-ed25519-cert-v01@openssh.com",
+        "ecdsa-sha2-nistp521", "ecdsa-sha2-nistp384", "ecdsa-sha2-nistp256",
+        "rsa-sha2-512", "rsa-sha2-256", "ssh-rsa",
+    ]
+    var sshMACOrder: [String] = [
+        "hmac-sha2-512-etm@openssh.com", "hmac-sha2-256-etm@openssh.com",
+        "hmac-sha2-512", "hmac-sha2-256", "hmac-sha1",
+    ]
+    var sshCompressionOrder: [String] = [
+        "none", "zlib@openssh.com", "zlib",
+    ]
+
+    // SSH Forwarding
+    var sshPortForwardings: [String] = []
+    var sshXForwarding: Bool = false
+
+    // SSH Auth Setup
+    var sshDefaultUsernameMode: Int = 0  // 0=don't enter, 1=default, 2=logon
+    var sshDefaultUsername: String = ""
+    var sshCheckAuthBeforeLogin: Bool = false
 
     // Paths
     var setupDirectory: String = ""
@@ -318,7 +753,7 @@ class TerminalSettings: Codable {
             try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
             try data.write(to: fileURL)
         } catch {
-            print("Failed to save settings: \(error)")
+            NSLog("[TerminalSettings] %@", TTL("debug.settings.saveFailed", "\(error)"))
         }
     }
 
@@ -334,7 +769,8 @@ class TerminalSettings: Codable {
     }
 
     private var defaultSettingsURL: URL {
-        let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+        let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
+            ?? URL(fileURLWithPath: NSHomeDirectory()).appendingPathComponent("Library/Application Support")
         return appSupport.appendingPathComponent("TeraTermMac/settings.json")
     }
 }

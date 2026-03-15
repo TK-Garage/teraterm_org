@@ -1,0 +1,69 @@
+; test_control.ttl - Control flow commands test
+; Tests: if, elseif, else, endif, for, next, while, endwhile
+;        do, loop, break, goto, call, return, exit
+
+; if/else/endif
+x = 10
+if x > 5
+  result = 1
+else
+  result = 0
+endif
+
+; elseif
+y = 5
+if y > 10
+  result = 3
+elseif y = 5
+  result = 2
+else
+  result = 1
+endif
+
+; for/next loop
+sum = 0
+for i 1 10
+  sum = sum + i
+next
+; sum should be 55
+
+; while/endwhile
+count = 0
+while count < 5
+  count = count + 1
+endwhile
+; count should be 5
+
+; do/loop with break
+counter = 0
+do
+  counter = counter + 1
+  if counter >= 3
+    break
+  endif
+loop
+
+; goto
+goto skip_section
+  unreachable = 1
+:skip_section
+reached = 1
+
+; call/return
+call my_subroutine
+after_call = 1
+goto end_test
+
+:my_subroutine
+  sub_executed = 1
+  return
+
+:end_test
+
+; ifdefined
+test_var = 42
+ifdefined test_var
+; result should be 1
+
+; exit
+exit

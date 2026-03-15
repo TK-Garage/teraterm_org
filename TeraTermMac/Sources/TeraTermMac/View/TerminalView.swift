@@ -56,8 +56,27 @@ class TerminalView: NSView {
     // 256-color palette cache
     private var colorPalette: [NSColor] = []
 
+    // Content inset to avoid titlebar / window rounded corners
+    var topInset: CGFloat = 0
+
+    // Horizontal margins following macOS HIG (NSTextView uses 5pt default)
+    var leftInset: CGFloat = 5
+    var rightInset: CGFloat = 5
+
     // Scroll
     private var scrollbackOffset: Int = 0
+
+    // Vertical scroller – always visible (legacy style)
+    private var verticalScroller: NSScroller!
+
+    // Display refresh batching — coalesce rapid updates into a single
+    // draw pass to reduce CPU usage and input lag under high throughput.
+    private var refreshPending: Bool = false
+    private var refreshTimer: DispatchSourceTimer?
+    private var refreshIdleCount: Int = 0
+
+    // Cached background color to avoid per-cell NSColor allocation in draw()
+    private var _cachedBackgroundColor: NSColor?
 
     // IME
     private var markedText: NSMutableAttributedString?
@@ -66,6 +85,9 @@ class TerminalView: NSView {
 
     override var acceptsFirstResponder: Bool { true }
     override var isFlipped: Bool { true }
+
+    // Prevent NSVisualEffectView vibrancy from altering text/background colors
+    override var allowsVibrancy: Bool { false }
 
     // MARK: - Initialization
 
@@ -81,10 +103,22 @@ class TerminalView: NSView {
 
     private func commonInit() {
         wantsLayer = true
-        layer?.backgroundColor = NSColor.black.cgColor
+        // Use clear background so NSVisualEffectView glass effect shows through.
+        // The terminal background is drawn in draw() with configurable alpha.
+        layer?.backgroundColor = NSColor.clear.cgColor
 
         // Build 256-color palette
         build256ColorPalette()
+
+        // Vertical scroller for scrollback – legacy style, always visible.
+        verticalScroller = NSScroller(frame: .zero)
+        verticalScroller.scrollerStyle = .legacy
+        verticalScroller.isEnabled = true
+        verticalScroller.target = self
+        verticalScroller.action = #selector(scrollerAction(_:))
+        verticalScroller.knobProportion = 1.0
+        verticalScroller.alphaValue = 1
+        addSubview(verticalScroller)
 
         updateFont()
         startCursorBlink()
@@ -92,6 +126,7 @@ class TerminalView: NSView {
 
     deinit {
         cursorBlinkTimer?.invalidate()
+        refreshTimer?.cancel()
     }
 
     // MARK: - Font Setup (port of vtdisp.c font handling)
@@ -137,8 +172,10 @@ class TerminalView: NSView {
     // MARK: - Size Calculation
 
     private func recalculateSize() {
-        let newCols = max(1, Int(bounds.width / cellWidth))
-        let newRows = max(1, Int(bounds.height / cellHeight))
+        let availableHeight = bounds.height - topInset
+        let availableWidth = bounds.width - leftInset - rightInset - scrollerWidth
+        let newCols = max(1, Int(availableWidth / cellWidth))
+        let newRows = max(1, Int(availableHeight / cellHeight))
 
         if newCols != columns || newRows != rows {
             columns = newCols
@@ -152,17 +189,93 @@ class TerminalView: NSView {
     }
 
     func preferredSize(columns: Int, rows: Int) -> NSSize {
-        return NSSize(width: CGFloat(columns) * cellWidth, height: CGFloat(rows) * cellHeight)
+        return NSSize(width: CGFloat(columns) * cellWidth + leftInset + rightInset + scrollerWidth,
+                      height: CGFloat(rows) * cellHeight + topInset)
     }
 
     override func setFrameSize(_ newSize: NSSize) {
         super.setFrameSize(newSize)
+        layoutScroller()
         recalculateSize()
     }
 
     override func resize(withOldSuperviewSize oldSize: NSSize) {
         super.resize(withOldSuperviewSize: oldSize)
+        layoutScroller()
         recalculateSize()
+    }
+
+    // MARK: - Vertical Scroller
+
+    /// Legacy scrollers reserve space beside the terminal content.
+    var scrollerWidth: CGFloat {
+        NSScroller.scrollerWidth(for: .regular, scrollerStyle: .legacy)
+    }
+
+    private func layoutScroller() {
+        let sw = scrollerWidth
+        verticalScroller.frame = NSRect(
+            x: bounds.width - sw,
+            y: topInset,
+            width: sw,
+            height: bounds.height - topInset
+        )
+    }
+
+    /// Update scroller appearance to match the terminal background brightness
+    /// so the scrollbar knob stays visible on dark or light backgrounds.
+    private func updateScrollerAppearance() {
+        let bg = backgroundColor
+        var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0
+        let converted = bg.usingColorSpace(.sRGB) ?? bg
+        converted.getRed(&r, green: &g, blue: &b, alpha: nil)
+        let luminance = 0.299 * r + 0.587 * g + 0.114 * b
+        let name: NSAppearance.Name = luminance < 0.5 ? .darkAqua : .aqua
+        verticalScroller.appearance = NSAppearance(named: name)
+    }
+
+    /// Synchronize the scroller knob position / proportion with the buffer state.
+    func updateScroller() {
+        guard let buffer = buffer else {
+            verticalScroller.isEnabled = false
+            verticalScroller.knobProportion = 1.0
+            return
+        }
+        let scrollbackLines = buffer.totalLines - buffer.height
+        if scrollbackLines <= 0 {
+            verticalScroller.isEnabled = false
+            verticalScroller.knobProportion = 1.0
+            return
+        }
+        verticalScroller.isEnabled = true
+        let proportion = Double(buffer.height) / Double(buffer.totalLines)
+        let position = 1.0 - Double(buffer.scrollOffset) / Double(scrollbackLines)
+        verticalScroller.knobProportion = CGFloat(proportion)
+        verticalScroller.doubleValue = position
+    }
+
+    @objc private func scrollerAction(_ sender: NSScroller) {
+        guard let buffer = buffer else { return }
+        let scrollbackLines = buffer.totalLines - buffer.height
+        guard scrollbackLines > 0 else { return }
+
+        switch sender.hitPart {
+        case .knob, .knobSlot:
+            let newOffset = Int(round((1.0 - sender.doubleValue) * Double(scrollbackLines)))
+            buffer.scrollOffset = max(0, min(newOffset, scrollbackLines))
+        case .decrementLine:
+            buffer.scrollOffset = min(buffer.scrollOffset + 1, scrollbackLines)
+        case .incrementLine:
+            buffer.scrollOffset = max(buffer.scrollOffset - 1, 0)
+        case .decrementPage:
+            buffer.scrollOffset = min(buffer.scrollOffset + buffer.height, scrollbackLines)
+        case .incrementPage:
+            buffer.scrollOffset = max(buffer.scrollOffset - buffer.height, 0)
+        default:
+            break
+        }
+        updateScroller()
+        needsDisplay = true
     }
 
     // MARK: - Drawing (port of vtdisp.c rendering)
@@ -171,19 +284,34 @@ class TerminalView: NSView {
         guard let context = NSGraphicsContext.current?.cgContext else { return }
         guard let buffer = buffer else {
             // Draw empty screen
-            context.setFillColor(backgroundColor.cgColor)
+            let bg = cachedBackgroundColor
+            context.setFillColor(bg.cgColor)
             context.fill(dirtyRect)
+            layer?.backgroundColor = bg.cgColor
             return
         }
 
-        // Draw background
-        context.setFillColor(backgroundColor.cgColor)
-        context.fill(bounds)
+        // Draw background – fill entire bounds so right/bottom edges match
+        // the terminal background color even when text grid doesn't cover
+        // the full view area.
+        let bg = cachedBackgroundColor
+        context.setFillColor(bg.cgColor)
+        context.fill(dirtyRect)
 
-        // Draw each visible row
-        for row in 0..<rows {
-            guard let line = buffer.line(at: row) else { continue }
-            drawLine(context: context, line: line, row: row, buffer: buffer)
+        // Also set the layer background to match, preventing any edge
+        // color mismatch when the window composites layers.
+        layer?.backgroundColor = bg.cgColor
+
+        // Compute the range of rows that intersect the dirty rect
+        let firstDirtyRow = max(0, Int((dirtyRect.minY - topInset) / cellHeight))
+        let lastDirtyRow = min(rows - 1, Int((dirtyRect.maxY - topInset) / cellHeight))
+
+        // Draw only dirty rows
+        if firstDirtyRow <= lastDirtyRow {
+            for row in firstDirtyRow...lastDirtyRow {
+                guard let line = buffer.line(at: row) else { continue }
+                drawLine(context: context, line: line, row: row, buffer: buffer)
+            }
         }
 
         // Draw cursor
@@ -193,35 +321,130 @@ class TerminalView: NSView {
 
         // Draw selection overlay
         drawSelection(context: context, buffer: buffer)
+
+        // Draw IME marked (composing) text
+        if let markedText = markedText, markedText.length > 0 {
+            drawMarkedText(context: context, buffer: buffer, markedText: markedText)
+        }
+    }
+
+    private func drawMarkedText(context: CGContext, buffer: TerminalBuffer, markedText: NSAttributedString) {
+        guard let font = ctFont else { return }
+
+        let cursorX = leftInset + CGFloat(buffer.cursorX) * cellWidth
+        let cursorY = topInset + CGFloat(buffer.cursorY) * cellHeight
+        let text = markedText.string
+
+        // Calculate total width of marked text
+        let attrs: [NSAttributedString.Key: Any] = [.font: font as Any]
+        let attrStr = NSAttributedString(string: text, attributes: attrs)
+        let line = CTLineCreateWithAttributedString(attrStr)
+        let textWidth = CGFloat(CTLineGetTypographicBounds(line, nil, nil, nil))
+
+        // Draw background highlight for composing text
+        let bgRect = CGRect(x: cursorX, y: cursorY, width: textWidth, height: cellHeight)
+        context.setFillColor(NSColor(white: 0.3, alpha: 0.8).cgColor)
+        context.fill(bgRect)
+
+        // Draw the composing text
+        let fgColor: NSColor = .white
+        let drawAttrs: [NSAttributedString.Key: Any] = [
+            .font: font as Any,
+            .foregroundColor: fgColor,
+        ]
+        let drawStr = NSAttributedString(string: text, attributes: drawAttrs)
+        let drawLine = CTLineCreateWithAttributedString(drawStr)
+
+        context.saveGState()
+        context.textMatrix = CGAffineTransform(scaleX: 1.0, y: -1.0)
+        context.textPosition = CGPoint(x: cursorX, y: cursorY + fontAscent)
+        CTLineDraw(drawLine, context)
+        context.restoreGState()
+
+        // Draw underline to indicate composing state
+        context.setStrokeColor(fgColor.cgColor)
+        context.setLineWidth(1.0)
+        let underlineY = cursorY + fontAscent + 1
+        context.move(to: CGPoint(x: cursorX, y: underlineY))
+        context.addLine(to: CGPoint(x: cursorX + textWidth, y: underlineY))
+        context.strokePath()
     }
 
     private func drawLine(context: CGContext, line: BufferLine, row: Int, buffer: TerminalBuffer) {
-        let y = CGFloat(row) * cellHeight
+        let y = topInset + CGFloat(row) * cellHeight
+        let bg = cachedBackgroundColor
 
+        // Pass 1: Draw cell backgrounds
         for col in 0..<min(columns, line.cells.count) {
             let cell = line.cells[col]
             if cell.isWideTrail { continue }
 
-            let x = CGFloat(col) * cellWidth
+            let x = leftInset + CGFloat(col) * cellWidth
             let charWidth = cell.isWide ? cellWidth * 2 : cellWidth
 
-            // Draw cell background
             let bgColor = resolveBackgroundColor(cell, inSelection: buffer.selection.contains(x: col, y: row))
-            if bgColor != backgroundColor {
+            if bgColor != bg {
                 context.setFillColor(bgColor.cgColor)
                 context.fill(CGRect(x: x, y: y, width: charWidth, height: cellHeight))
             }
+        }
 
-            // Draw character
-            if cell.character != " " || !cell.combiningCharacters.isEmpty {
-                let fgColor = resolveForegroundColor(cell, inSelection: buffer.selection.contains(x: col, y: row))
-                drawCharacter(context: context, cell: cell, x: x, y: y, color: fgColor, width: charWidth)
+        // Pass 2: Draw each character at its grid-aligned position.
+        // Each cell is drawn individually so characters never drift from the
+        // fixed cellWidth grid (CTLine natural advances can accumulate sub-pixel
+        // errors across long runs, causing cursor/character misalignment).
+        let colCount = min(columns, line.cells.count)
+        context.saveGState()
+        context.textMatrix = CGAffineTransform(scaleX: 1.0, y: -1.0)
+        for col in 0..<colCount {
+            let cell = line.cells[col]
+            if cell.isWideTrail { continue }
+
+            let x = leftInset + CGFloat(col) * cellWidth
+            let charWidth = cell.isWide ? cellWidth * 2 : cellWidth
+
+            // Draw decorations (underline, strikethrough, etc.)
+            if !cell.attributes.isEmpty {
+                let inSel = buffer.selection.contains(x: col, y: row)
+                drawDecorations(context: context, cell: cell, x: x, y: y, width: charWidth,
+                              color: resolveForegroundColor(cell, inSelection: inSel))
             }
 
-            // Draw underline styles
-            drawDecorations(context: context, cell: cell, x: x, y: y, width: charWidth,
-                          color: resolveForegroundColor(cell, inSelection: false))
+            // Skip blank cells
+            if cell.character == " " && cell.combiningCharacters.isEmpty { continue }
+
+            let inSel = buffer.selection.contains(x: col, y: row)
+            let fgColor = resolveForegroundColor(cell, inSelection: inSel)
+            let drawFont = selectFont(for: cell)
+            let str = cellString(cell)
+
+            let attrs: [NSAttributedString.Key: Any] = [
+                .font: drawFont as Any,
+                .foregroundColor: fgColor,
+            ]
+            let attrStr = NSAttributedString(string: str, attributes: attrs)
+            let ctLine = CTLineCreateWithAttributedString(attrStr)
+            context.textPosition = CGPoint(x: x, y: y + fontAscent)
+            CTLineDraw(ctLine, context)
         }
+        context.restoreGState()
+    }
+
+    /// Select the appropriate CTFont for a cell's bold/italic attributes.
+    private func selectFont(for cell: BufferCharacter) -> CTFont {
+        guard let font = ctFont else { return CTFontCreateWithName("Menlo" as CFString, 13, nil) }
+        if cell.attributes.contains(.bold), let bf = boldFont { return bf }
+        if cell.attributes.contains(.italic), let itf = italicFont { return itf }
+        return font
+    }
+
+    /// Build the string representation of a cell including combining characters.
+    private func cellString(_ cell: BufferCharacter) -> String {
+        var str = String(cell.character)
+        for combining in cell.combiningCharacters {
+            str.append(Character(combining))
+        }
+        return str
     }
 
     private func drawCharacter(context: CGContext, cell: BufferCharacter, x: CGFloat, y: CGFloat, color: NSColor, width: CGFloat) {
@@ -309,8 +532,8 @@ class TerminalView: NSView {
     // MARK: - Cursor Drawing
 
     private func drawCursor(context: CGContext, buffer: TerminalBuffer) {
-        let x = CGFloat(buffer.cursorX) * cellWidth
-        let y = CGFloat(buffer.cursorY) * cellHeight
+        let x = leftInset + CGFloat(buffer.cursorX) * cellWidth
+        let y = topInset + CGFloat(buffer.cursorY) * cellHeight
         let cursorColor = NSColor(
             red: CGFloat(settings.colorTheme.cursorColor.r) / 255.0,
             green: CGFloat(settings.colorTheme.cursorColor.g) / 255.0,
@@ -353,11 +576,14 @@ class TerminalView: NSView {
         )
         context.setFillColor(selColor.cgColor)
 
-        for row in max(0, sel.startY)...min(rows - 1, sel.endY) {
+        let rowStart = max(0, sel.startY)
+        let rowEnd = min(rows - 1, sel.endY)
+        guard rowStart <= rowEnd else { return }
+        for row in rowStart...rowEnd {
             let startCol = (row == sel.startY) ? sel.startX : 0
             let endCol = (row == sel.endY) ? sel.endX : columns
-            let x = CGFloat(startCol) * cellWidth
-            let y = CGFloat(row) * cellHeight
+            let x = leftInset + CGFloat(startCol) * cellWidth
+            let y = topInset + CGFloat(row) * cellHeight
             let w = CGFloat(endCol - startCol) * cellWidth
             context.fill(CGRect(x: x, y: y, width: w, height: cellHeight))
         }
@@ -367,95 +593,177 @@ class TerminalView: NSView {
 
     private var backgroundColor: NSColor {
         let c = modes.reverseVideo ? settings.colorTheme.foreground : settings.colorTheme.background
+        let alpha = CGFloat(settings.windowAlpha)
         return NSColor(
             red: CGFloat(c.r) / 255.0,
             green: CGFloat(c.g) / 255.0,
             blue: CGFloat(c.b) / 255.0,
-            alpha: CGFloat(settings.windowAlpha)
+            alpha: alpha
         )
     }
 
-    private func resolveBackgroundColor(_ cell: BufferCharacter, inSelection: Bool) -> NSColor {
+    /// Cached version of backgroundColor — reused within a single draw pass
+    /// to avoid repeated NSColor allocation for every cell comparison.
+    private var cachedBackgroundColor: NSColor {
+        if let cached = _cachedBackgroundColor { return cached }
+        let color = backgroundColor
+        _cachedBackgroundColor = color
+        return color
+    }
+
+    func invalidateBackgroundColorCache() {
+        _cachedBackgroundColor = nil
+    }
+
+    // MARK: - Color Resolution Helpers
+
+    func nsColor(from tc: TerminalColor, alpha: CGFloat = 1.0) -> NSColor {
+        NSColor(red: CGFloat(tc.r) / 255.0, green: CGFloat(tc.g) / 255.0, blue: CGFloat(tc.b) / 255.0, alpha: alpha)
+    }
+
+    func nsColor(r: UInt8, g: UInt8, b: UInt8) -> NSColor {
+        NSColor(red: CGFloat(r) / 255.0, green: CGFloat(g) / 255.0, blue: CGFloat(b) / 255.0, alpha: 1.0)
+    }
+
+    /// Resolve foreground and background colors for a cell.
+    ///
+    /// Port of GetDrawAttr() in vtdisp.c.  Priority order:
+    ///  0. `useTextColor == true` → force theme fg/bg, ignore SGR/ANSI.
+    ///  1. Selection overrides everything.
+    ///  2. Attribute colors (URL > Underline > Bold > Blink > Normal/Reverse)
+    ///     — only applied when the corresponding enable*Color flag is true.
+    ///  3. ANSI palette override — only when `enableANSIColor == true` AND
+    ///     `useTextColor == false` AND the cell carries an explicit ANSI fg/bg.
+    ///  4. Reverse swaps fg/bg (XOR with DECSCNM reverseVideo).
+    ///  5. Dim reduces alpha.
+    func resolveColors(_ cell: BufferCharacter, inSelection: Bool) -> (fg: NSColor, bg: NSColor) {
+        // --- selection shortcut ---
         if inSelection {
-            let c = settings.colorTheme.selectionBackground
-            return NSColor(red: CGFloat(c.r) / 255.0, green: CGFloat(c.g) / 255.0, blue: CGFloat(c.b) / 255.0, alpha: 1.0)
+            return (fg: nsColor(from: settings.colorTheme.selectionForeground),
+                    bg: nsColor(from: settings.colorTheme.selectionBackground))
         }
 
         let color = cell.color
         let attrs = cell.attributes
 
-        // Handle reverse video
+        // --- effective reverse (attr XOR global DECSCNM) ---
         let reversed = attrs.contains(.reverse) != modes.reverseVideo
 
-        if reversed {
-            // Use foreground as background
-            if color.isFgRGB {
-                return NSColor(red: CGFloat(color.fgR) / 255.0, green: CGFloat(color.fgG) / 255.0, blue: CGFloat(color.fgB) / 255.0, alpha: 1.0)
-            } else if color.isFg256 || !color.isFgDefault {
-                return palette256Color(Int(color.foreground))
+        // --- invisible text: fg == bg ---
+        if attrs.contains(.invisible) {
+            let bg = resolveRawBackgroundColor(color, reversed: reversed)
+            return (fg: bg, bg: bg)
+        }
+
+        // --- Step 1: base theme colors + reverse handling ---
+        var textColor: NSColor
+        var backColor: NSColor
+
+        if !reversed {
+            textColor = nsColor(from: settings.colorTheme.foreground)
+            backColor = nsColor(from: settings.colorTheme.background)
+        } else {
+            if settings.enableReverseColor {
+                textColor = nsColor(from: settings.attrColorReverse)
+                backColor = nsColor(from: settings.colorTheme.foreground)
             } else {
-                let c = settings.colorTheme.foreground
-                return NSColor(red: CGFloat(c.r) / 255.0, green: CGFloat(c.g) / 255.0, blue: CGFloat(c.b) / 255.0, alpha: 1.0)
+                textColor = nsColor(from: settings.colorTheme.background)
+                backColor = nsColor(from: settings.colorTheme.foreground)
             }
         }
 
-        if color.isBgRGB {
-            return NSColor(red: CGFloat(color.bgR) / 255.0, green: CGFloat(color.bgG) / 255.0, blue: CGFloat(color.bgB) / 255.0, alpha: 1.0)
-        } else if color.isBg256 || !color.isBgDefault {
-            return palette256Color(Int(color.background))
+        // --- Step 2: attribute color override (URL > Underline > Bold > Blink) ---
+        if let ac = resolveAttributeColor(attrs) {
+            if !reversed {
+                textColor = nsColor(from: ac)
+                backColor = nsColor(from: settings.colorTheme.background)
+            } else {
+                textColor = nsColor(from: settings.colorTheme.background)
+                backColor = nsColor(from: ac)
+            }
         }
 
+        // --- Step 3: ANSI / SGR color override ---
+        // Skipped entirely when useTextColor is on (forces theme colors) or
+        // when enableANSIColor is off (disables ANSI palette).
+        if !settings.useTextColor && settings.enableANSIColor {
+            // Foreground ANSI override
+            if color.isFgRGB {
+                let c = nsColor(r: color.fgR, g: color.fgG, b: color.fgB)
+                if !reversed { textColor = c } else { backColor = c }
+            } else if color.isFg256 || !color.isFgDefault {
+                var idx = Int(color.foreground)
+                // PC-style bold: brighten standard colors 0-7 → 8-15
+                if attrs.contains(.bold) && idx < 8 && settings.pcBoldColor {
+                    idx += 8
+                }
+                let c = palette256Color(idx)
+                if !reversed { textColor = c } else { backColor = c }
+            }
+
+            // Background ANSI override (skip when useStandardBGColor forces theme bg)
+            if !settings.useStandardBGColor {
+                if color.isBgRGB {
+                    let c = nsColor(r: color.bgR, g: color.bgG, b: color.bgB)
+                    if !reversed { backColor = c } else { textColor = c }
+                } else if color.isBg256 || !color.isBgDefault {
+                    let idx = Int(color.background)
+                    let c = palette256Color(idx)
+                    if !reversed { backColor = c } else { textColor = c }
+                }
+            }
+        }
+
+        // --- Step 4: dim attribute ---
+        if attrs.contains(.dim) {
+            textColor = textColor.withAlphaComponent(0.5)
+        }
+
+        return (fg: textColor, bg: backColor)
+    }
+
+    /// Determine the attribute-specific foreground color, if any.
+    /// Priority: URL > Underline > Strikethrough > Bold > Blink > nil
+    private func resolveAttributeColor(_ attrs: CharAttributes) -> TerminalColor? {
+        if settings.enableURLColor            && attrs.contains(.url)           { return settings.attrColorURL }
+        if settings.enableUnderlineColor      && attrs.contains(.underline)     { return settings.attrColorUnderline }
+        if settings.enableStrikethroughColor  && attrs.contains(.strikethrough) { return settings.attrColorStrikethrough }
+        if settings.enableBoldColor           && attrs.contains(.bold)          { return settings.attrColorBold }
+        if settings.enableBlinkColor          && attrs.contains(.blink)         { return settings.attrColorBlink }
+        return nil
+    }
+
+    /// Raw background color without attribute/ANSI logic (used for invisible text).
+    private func resolveRawBackgroundColor(_ color: ColorIndex, reversed: Bool) -> NSColor {
+        // useTextColor → always theme colors, no ANSI
+        let ansiAllowed = !settings.useTextColor && settings.enableANSIColor
+
+        if reversed {
+            if ansiAllowed {
+                if color.isFgRGB {
+                    return nsColor(r: color.fgR, g: color.fgG, b: color.fgB)
+                } else if color.isFg256 || !color.isFgDefault {
+                    return palette256Color(Int(color.foreground))
+                }
+            }
+            return nsColor(from: settings.colorTheme.foreground)
+        }
+        if ansiAllowed && !settings.useStandardBGColor {
+            if color.isBgRGB {
+                return nsColor(r: color.bgR, g: color.bgG, b: color.bgB)
+            } else if color.isBg256 || !color.isBgDefault {
+                return palette256Color(Int(color.background))
+            }
+        }
         return backgroundColor
     }
 
+    private func resolveBackgroundColor(_ cell: BufferCharacter, inSelection: Bool) -> NSColor {
+        resolveColors(cell, inSelection: inSelection).bg
+    }
+
     private func resolveForegroundColor(_ cell: BufferCharacter, inSelection: Bool) -> NSColor {
-        if inSelection {
-            let c = settings.colorTheme.selectionForeground
-            return NSColor(red: CGFloat(c.r) / 255.0, green: CGFloat(c.g) / 255.0, blue: CGFloat(c.b) / 255.0, alpha: 1.0)
-        }
-
-        let color = cell.color
-        let attrs = cell.attributes
-
-        let reversed = attrs.contains(.reverse) != modes.reverseVideo
-
-        if reversed {
-            // Use background as foreground
-            if color.isBgRGB {
-                return NSColor(red: CGFloat(color.bgR) / 255.0, green: CGFloat(color.bgG) / 255.0, blue: CGFloat(color.bgB) / 255.0, alpha: 1.0)
-            } else if color.isBg256 || !color.isBgDefault {
-                return palette256Color(Int(color.background))
-            } else {
-                let c = settings.colorTheme.background
-                return NSColor(red: CGFloat(c.r) / 255.0, green: CGFloat(c.g) / 255.0, blue: CGFloat(c.b) / 255.0, alpha: 1.0)
-            }
-        }
-
-        if attrs.contains(.invisible) {
-            return backgroundColor
-        }
-
-        var resultColor: NSColor
-
-        if color.isFgRGB {
-            resultColor = NSColor(red: CGFloat(color.fgR) / 255.0, green: CGFloat(color.fgG) / 255.0, blue: CGFloat(color.fgB) / 255.0, alpha: 1.0)
-        } else if color.isFg256 || !color.isFgDefault {
-            var idx = Int(color.foreground)
-            // Bold brightens colors 0-7
-            if attrs.contains(.bold) && idx < 8 {
-                idx += 8
-            }
-            resultColor = palette256Color(idx)
-        } else {
-            let c = settings.colorTheme.foreground
-            resultColor = NSColor(red: CGFloat(c.r) / 255.0, green: CGFloat(c.g) / 255.0, blue: CGFloat(c.b) / 255.0, alpha: 1.0)
-        }
-
-        if attrs.contains(.dim) {
-            resultColor = resultColor.withAlphaComponent(0.5)
-        }
-
-        return resultColor
+        resolveColors(cell, inSelection: inSelection).fg
     }
 
     // MARK: - 256 Color Palette
@@ -514,22 +822,54 @@ class TerminalView: NSView {
 
     private var cursorRect: NSRect {
         guard let buffer = buffer else { return .zero }
-        let x = CGFloat(buffer.cursorX) * cellWidth
-        let y = CGFloat(buffer.cursorY) * cellHeight
+        let x = leftInset + CGFloat(buffer.cursorX) * cellWidth
+        let y = topInset + CGFloat(buffer.cursorY) * cellHeight
         return NSRect(x: x, y: y, width: cellWidth, height: cellHeight)
     }
 
     // MARK: - Key Event Handling
 
     override func keyDown(with event: NSEvent) {
-        // Check for IME input first
-        if event.type == .keyDown {
+        // ユーザー入力時は最下行（入力行）に表示を移動する
+        scrollToBottom()
+
+        // IME変換中はすべてのキーをIMEに渡す
+        if hasMarkedText() {
             interpretKeyEvents([event])
             return
         }
 
-        let termEvent = convertKeyEvent(event)
-        terminalDelegate?.terminalViewDidReceiveKeyEvent(termEvent)
+        // 特殊キー（Return、Backspace、矢印、Fnキーなど）はkeyCodeを保持して
+        // 直接デリゲートに渡す。interpretKeyEvents経由だとkeyCodeが失われ、
+        // CR/LF設定などの特殊処理が効かなくなるため。
+        let keyCode = event.keyCode
+        let isSpecialKey: Bool
+        switch keyCode {
+        case 0x24, 0x4C:  // Return, Enter (numpad)
+            isSpecialKey = true
+        case 0x33, 0x75:  // Backspace, Forward Delete
+            isSpecialKey = true
+        case 0x7E, 0x7D, 0x7B, 0x7C:  // Arrow keys
+            isSpecialKey = true
+        case 0x30, 0x35:  // Tab, Escape
+            isSpecialKey = true
+        case 0x73, 0x77, 0x74, 0x79, 0x72:  // Home, End, PageUp, PageDown, Insert
+            isSpecialKey = true
+        case 0x7A, 0x78, 0x63, 0x76, 0x60, 0x61,
+             0x62, 0x64, 0x65, 0x6D, 0x67, 0x6F:  // F1-F12
+            isSpecialKey = true
+        default:
+            isSpecialKey = event.modifierFlags.contains(.control)
+                || event.modifierFlags.contains(.command)
+        }
+
+        if isSpecialKey {
+            let termEvent = convertKeyEvent(event)
+            terminalDelegate?.terminalViewDidReceiveKeyEvent(termEvent)
+        } else {
+            // 通常の文字入力はIME経由（日本語入力対応）
+            interpretKeyEvents([event])
+        }
     }
 
     override func flagsChanged(with event: NSEvent) {
@@ -621,13 +961,19 @@ class TerminalView: NSView {
             let mods = mouseModifiers(event)
             terminalDelegate?.terminalViewDidReceiveMouseEvent(button: 2, x: pos.x, y: pos.y, isRelease: false, modifiers: mods)
         } else {
-            // Show context menu
+            // Show context menu with SF Symbols
             let menu = NSMenu()
-            menu.addItem(withTitle: "Copy", action: #selector(copyText(_:)), keyEquivalent: "c")
-            menu.addItem(withTitle: "Paste", action: #selector(pasteText(_:)), keyEquivalent: "v")
+            let copyItem = menu.addItem(withTitle: TTL("contextMenu.copy"), action: #selector(copyText(_:)), keyEquivalent: "c")
+            let pasteItem = menu.addItem(withTitle: TTL("contextMenu.paste"), action: #selector(pasteText(_:)), keyEquivalent: "v")
             menu.addItem(NSMenuItem.separator())
-            menu.addItem(withTitle: "Select All", action: #selector(selectAllText(_:)), keyEquivalent: "a")
-            menu.addItem(withTitle: "Clear Buffer", action: #selector(clearBuffer(_:)), keyEquivalent: "")
+            let selItem = menu.addItem(withTitle: TTL("contextMenu.selectAll"), action: #selector(selectAllText(_:)), keyEquivalent: "a")
+            let clrItem = menu.addItem(withTitle: TTL("contextMenu.clearBuffer"), action: #selector(clearBuffer(_:)), keyEquivalent: "")
+            if #available(macOS 11.0, *) {
+                copyItem.image = NSImage(systemSymbolName: "doc.on.doc", accessibilityDescription: nil)
+                pasteItem.image = NSImage(systemSymbolName: "doc.on.clipboard", accessibilityDescription: nil)
+                selItem.image = NSImage(systemSymbolName: "selection.pin.in.out", accessibilityDescription: nil)
+                clrItem.image = NSImage(systemSymbolName: "trash", accessibilityDescription: nil)
+            }
             NSMenu.popUpContextMenu(menu, with: event, for: self)
         }
     }
@@ -656,6 +1002,7 @@ class TerminalView: NSView {
                 } else {
                     buffer.scrollOffset = max(buffer.scrollOffset - lines, 0)
                 }
+                updateScroller()
                 needsDisplay = true
             }
         }
@@ -665,8 +1012,8 @@ class TerminalView: NSView {
 
     private func cellPosition(for event: NSEvent) -> (x: Int, y: Int) {
         let point = convert(event.locationInWindow, from: nil)
-        let x = max(0, min(Int(point.x / cellWidth), columns - 1))
-        let y = max(0, min(Int(point.y / cellHeight), rows - 1))
+        let x = max(0, min(Int((point.x - leftInset) / cellWidth), columns - 1))
+        let y = max(0, min(Int((point.y - topInset) / cellHeight), rows - 1))
         return (x, y)
     }
 
@@ -747,6 +1094,7 @@ class TerminalView: NSView {
     @objc func clearBuffer(_ sender: Any?) {
         buffer?.eraseInDisplay(3) // Clear scrollback
         buffer?.eraseInDisplay(2) // Clear screen
+        buffer?.moveCursorTo(x: 0, y: 0)
         needsDisplay = true
     }
 
@@ -767,8 +1115,51 @@ class TerminalView: NSView {
 
     // MARK: - Refresh
 
+    /// Coalesced display refresh — batches rapid updates so the view
+    /// redraws at most once per ~8 ms (≈120 fps), preventing redundant
+    /// draw cycles that cause input lag under high data throughput.
     func refresh() {
-        needsDisplay = true
+        guard !refreshPending else { return }
+        refreshPending = true
+        refreshIdleCount = 0
+
+        if refreshTimer == nil {
+            let timer = DispatchSource.makeTimerSource(queue: .main)
+            timer.schedule(deadline: .now(), repeating: .milliseconds(8))
+            timer.setEventHandler { [weak self] in
+                guard let self = self else { return }
+                if self.refreshPending {
+                    self.refreshPending = false
+                    self.refreshIdleCount = 0
+                    self.invalidateBackgroundColorCache()
+                    self.needsDisplay = true
+                    // Update scroller outside draw() to avoid layout-in-draw
+                    // and prevent NSRemoteView position ambiguity warnings.
+                    self.updateScroller()
+                    self.updateScrollerAppearance()
+                } else {
+                    // Auto-cancel after ~250ms idle (≈32 ticks × 8ms)
+                    self.refreshIdleCount += 1
+                    if self.refreshIdleCount > 32 {
+                        self.refreshTimer?.cancel()
+                        self.refreshTimer = nil
+                    }
+                }
+            }
+            timer.resume()
+            refreshTimer = timer
+        }
+    }
+
+    /// Scroll to the bottom (most recent output) and refresh display.
+    /// Called when the user types to ensure they see the input line.
+    func scrollToBottom() {
+        guard let buffer = buffer else { return }
+        if buffer.scrollOffset != 0 {
+            buffer.scrollOffset = 0
+            updateScroller()
+            needsDisplay = true
+        }
     }
 }
 
@@ -788,16 +1179,15 @@ extension TerminalView: NSTextInputClient {
         markedText = nil
         imeMarkedRange = NSRange(location: NSNotFound, length: 0)
 
-        // Send as key events
-        for char in text {
-            let event = TerminalKeyEvent(
-                keyCode: 0,
-                characters: String(char),
-                modifiers: [],
-                isKeyDown: true
-            )
-            terminalDelegate?.terminalViewDidReceiveKeyEvent(event)
-        }
+        // Send as a single key event with the full text to avoid per-character
+        // overhead (each delegate call previously enqueued a separate send).
+        let event = TerminalKeyEvent(
+            keyCode: 0,
+            characters: text,
+            modifiers: [],
+            isKeyDown: true
+        )
+        terminalDelegate?.terminalViewDidReceiveKeyEvent(event)
     }
 
     func setMarkedText(_ string: Any, selectedRange: NSRange, replacementRange: NSRange) {
@@ -839,8 +1229,8 @@ extension TerminalView: NSTextInputClient {
 
     func firstRect(forCharacterRange range: NSRange, actualRange: NSRangePointer?) -> NSRect {
         guard let buffer = buffer else { return .zero }
-        let x = CGFloat(buffer.cursorX) * cellWidth
-        let y = CGFloat(buffer.cursorY) * cellHeight
+        let x = leftInset + CGFloat(buffer.cursorX) * cellWidth
+        let y = topInset + CGFloat(buffer.cursorY) * cellHeight
         let screenRect = window?.convertToScreen(convert(CGRect(x: x, y: y, width: cellWidth, height: cellHeight), to: nil)) ?? .zero
         return screenRect
     }

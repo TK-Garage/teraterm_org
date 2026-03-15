@@ -1,0 +1,18 @@
+/* Keycode.app - Japanese localization */
+
+"keycode.window.title" = "Keycode";
+"keycode.prompt" = "Push any key.";
+"keycode.initial" = "---";
+"keycode.result" = "Key code is %d.";
+"keycode.optionHint" = "Option+key のコードは 単独コード + 2048 で計算してください";
+"keycode.optionDetected" = "Option+%@ が押されました（単独コード %d + 2048 = %d）";
+
+/* Menu */
+"keycode.menu.about" = "%@ について";
+"keycode.menu.hide" = "%@ を隠す";
+"keycode.menu.hideOthers" = "ほかを隠す";
+"keycode.menu.showAll" = "すべてを表示";
+"keycode.menu.quit" = "%@ を終了";
+"keycode.menu.window" = "ウインドウ";
+"keycode.menu.minimize" = "しまう";
+"keycode.menu.close" = "閉じる";

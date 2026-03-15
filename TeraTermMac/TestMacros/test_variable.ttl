@@ -1,0 +1,56 @@
+; test_variable.ttl - Variable operation commands test
+; Tests: assignment, int2str, str2int, str2code, code2str, intdim, strdim
+
+; Integer assignment
+a = 10
+b = 20
+c = a + b
+; c should be 30
+
+; String assignment
+name = 'TeraTerm'
+
+; int2str
+int2str numstr 255
+; numstr should be '255'
+
+; str2int
+str2int val '123'
+; val should be 123
+
+; str2code - get character code
+str2code code 'A' 0
+; code should be 65
+
+; code2str - character code to string
+code2str ch 65
+; ch should be 'A'
+
+; intdim - integer array
+intdim arr 5
+arr[0] = 10
+arr[1] = 20
+arr[2] = 30
+arr[3] = 40
+arr[4] = 50
+
+; strdim - string array
+strdim sarr 3
+sarr[0] = 'hello'
+sarr[1] = 'world'
+sarr[2] = 'test'
+
+; Arithmetic
+x = 10
+x = x * 3
+; x should be 30
+
+y = 100
+y = y / 4
+; y should be 25
+
+z = 17
+z = z % 5
+; z should be 2
+
+end

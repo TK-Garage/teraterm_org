@@ -16,10 +16,26 @@ class EncodingConverter {
 
     static func cfStringEncoding(for encoding: CharacterEncoding) -> CFStringEncoding {
         switch encoding {
+        // Unicode
         case .utf8:       return CFStringBuiltInEncodings.UTF8.rawValue
+        case .utf16:      return CFStringBuiltInEncodings.UTF16.rawValue
+        case .utf16be:    return CFStringBuiltInEncodings.UTF16BE.rawValue
+        case .utf16le:    return CFStringBuiltInEncodings.UTF16LE.rawValue
+        case .utf32:      return CFStringBuiltInEncodings.UTF32.rawValue
+        case .utf32be:    return CFStringBuiltInEncodings.UTF32BE.rawValue
+        case .utf32le:    return CFStringBuiltInEncodings.UTF32LE.rawValue
+        // Japanese
         case .sjis:       return CFStringEncoding(CFStringEncodings.shiftJIS.rawValue)
         case .eucjp:      return CFStringEncoding(CFStringEncodings.EUC_JP.rawValue)
         case .jis:        return CFStringEncoding(CFStringEncodings.ISO_2022_JP.rawValue)
+        // Chinese
+        case .gb2312:     return CFStringEncoding(CFStringEncodings.GB_2312_80.rawValue)
+        case .gbk:        return CFStringEncoding(CFStringEncodings.GBK_95.rawValue)
+        case .big5:       return CFStringEncoding(CFStringEncodings.big5.rawValue)
+        case .big5hkscs:  return CFStringEncoding(CFStringEncodings.big5_HKSCS_1999.rawValue)
+        // Korean
+        case .eucKR:      return CFStringEncoding(CFStringEncodings.EUC_KR.rawValue)
+        // Western / ISO 8859
         case .iso8859_1:  return CFStringBuiltInEncodings.isoLatin1.rawValue
         case .iso8859_2:  return CFStringEncoding(CFStringEncodings.isoLatin2.rawValue)
         case .iso8859_3:  return CFStringEncoding(CFStringEncodings.isoLatin3.rawValue)
@@ -35,11 +51,15 @@ class EncodingConverter {
         case .iso8859_14: return CFStringEncoding(CFStringEncodings.isoLatin8.rawValue)
         case .iso8859_15: return CFStringEncoding(CFStringEncodings.isoLatin9.rawValue)
         case .iso8859_16: return CFStringEncoding(CFStringEncodings.isoLatin10.rawValue)
-        case .cp949:      return CFStringEncoding(CFStringEncodings.EUC_KR.rawValue)
-        case .gb2312:     return CFStringEncoding(CFStringEncodings.GB_2312_80.rawValue)
-        case .big5:       return CFStringEncoding(CFStringEncodings.big5.rawValue)
-        case .cp866:      return CFStringEncoding(CFStringEncodings.dosRussian.rawValue)
+        // DOS / Windows
+        case .cp437:      return CFStringEncoding(CFStringEncodings.dosLatin1.rawValue)
+        case .cp932:      return CFStringEncoding(CFStringEncodings.dosJapanese.rawValue)
+        case .cp1252:     return CFStringBuiltInEncodings.windowsLatin1.rawValue
         case .cp1251:     return CFStringEncoding(CFStringEncodings.windowsCyrillic.rawValue)
+        case .cp1253:     return CFStringEncoding(CFStringEncodings.windowsGreek.rawValue)
+        case .cp1255:     return CFStringEncoding(CFStringEncodings.windowsHebrew.rawValue)
+        case .cp1256:     return CFStringEncoding(CFStringEncodings.windowsArabic.rawValue)
+        case .cp866:      return CFStringEncoding(CFStringEncodings.dosRussian.rawValue)
         case .koi8r:      return CFStringEncoding(CFStringEncodings.KOI8_R.rawValue)
         }
     }

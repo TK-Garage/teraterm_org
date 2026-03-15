@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="460" height="80" viewBox="0 0 460 80">
+  <defs>
+    <style>
+      .bg { fill: #F0F0F0; }
+      .border { fill: none; stroke: red; stroke-width: 2; }
+      .box { fill: #F6F6F6; stroke: #C0C0C0; stroke-width: 1; rx: 4; }
+      .boxtitle { font-family: -apple-system, sans-serif; font-size: 12px; fill: #555; font-weight: 600; }
+      .label { font-family: -apple-system, sans-serif; font-size: 13px; fill: #333; }
+      .radio-circle { fill: none; stroke: #666; stroke-width: 1.5; }
+      .radio-dot { fill: #007AFF; }
+      .check-box { fill: none; stroke: #666; stroke-width: 1.5; rx: 2; }
+      .check-mark { fill: none; stroke: #007AFF; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+      .size-label { font-family: monospace; font-size: 10px; fill: red; }
+    </style>
+  </defs>
+  <rect width="460" height="80" class="bg"/>
+  <rect x="1" y="1" width="458" height="78" class="border"/>
+
+  <!-- Group Box -->
+  <rect x="10" y="5" width="440" height="55" class="box"/>
+  <text x="20" y="20" class="boxtitle">Option</text>
+
+  <!-- Checksum radio (selected) -->
+  <circle cx="30" cy="42" r="6" class="radio-circle"/>
+  <circle cx="30" cy="42" r="3" class="radio-dot"/>
+  <text x="42" y="46" class="label">Checksum</text>
+
+  <!-- CRC radio -->
+  <circle cx="130" cy="42" r="6" class="radio-circle"/>
+  <text x="142" y="46" class="label">CRC</text>
+
+  <!-- 1K checkbox -->
+  <rect x="190" y="35" width="13" height="13" class="check-box"/>
+  <text x="208" y="46" class="label">1K</text>
+
+  <!-- Binary checkbox (checked) -->
+  <rect x="260" y="35" width="13" height="13" class="check-box"/>
+  <polyline points="263,42 266,46 273,38" class="check-mark"/>
+  <text x="278" y="46" class="label">Binary</text>
+
+  <text x="450" y="76" class="size-label" text-anchor="end">460 x 80 (accessory)</text>
+</svg>
