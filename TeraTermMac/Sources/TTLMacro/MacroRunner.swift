@@ -489,13 +489,22 @@ class MacroRunner {
     private func handleAssignment(_ parts: [String]) {
         let varName = parts[0].lowercased()
         let exprStr = parts.dropFirst(2).joined(separator: " ")
-        // Try integer expression first
-        let resolved = resolveValue(exprStr)
-        switch resolved {
-        case .integer:
+        // Check if expression contains operators, indicating an arithmetic expression
+        let hasOperators = exprStr.contains("+") || exprStr.contains("-") || exprStr.contains("*")
+            || exprStr.contains("/") || exprStr.contains("%") || exprStr.contains("&")
+            || exprStr.contains("|") || exprStr.contains("^") || exprStr.contains("<<")
+            || exprStr.contains(">>")
+        if hasOperators {
+            // Evaluate as integer expression (handles variable references within)
             variables[varName] = .integer(evalIntExpr(exprStr))
-        default:
-            variables[varName] = resolved
+        } else {
+            let resolved = resolveValue(exprStr)
+            switch resolved {
+            case .integer:
+                variables[varName] = .integer(evalIntExpr(exprStr))
+            default:
+                variables[varName] = resolved
+            }
         }
     }
 
@@ -685,7 +694,7 @@ class MacroRunner {
         // Directory - [IMPLEMENTED]
         case "findfirst":   cmdFindFirst(args) // [IMPLEMENTED]
         case "findnext":    cmdFindNext(args) // [IMPLEMENTED]
-        case "findclose":   cmdFindClose() // [IMPLEMENTED]
+        case "findclose":   cmdFindClose(args) // [IMPLEMENTED]
         case "foldercreate": cmdFolderCreate(args) // [IMPLEMENTED]
         case "folderdelete": cmdFolderDelete(args) // [IMPLEMENTED]
         case "foldersearch": cmdFolderSearch(args) // [IMPLEMENTED]
@@ -1383,9 +1392,14 @@ extension MacroRunner {
                 guard let self = self else { return }
                 if let data = data, let str = String(data: data, encoding: .utf8) {
                     accumulated += str
+                    // Cap accumulated buffer to prevent unbounded memory growth
+                    let maxAccumulatedSize = 1_048_576 // 1MB
+                    if accumulated.count > maxAccumulatedSize {
+                        accumulated = String(accumulated.suffix(maxAccumulatedSize / 2))
+                    }
                 }
 
-                let searchStr = ln ? accumulated : accumulated
+                let searchStr = accumulated
                 for (idx, pattern) in patterns.enumerated() {
                     if searchStr.contains(pattern) {
                         self.resultValue = idx + 1
@@ -1899,15 +1913,35 @@ extension MacroRunner {
     func cmdStrSpecial(_ args: [String]) { // [IMPLEMENTED]
         guard !args.isEmpty else { return }
         let destVar = args[0].lowercased()
-        var str = variables[destVar]?.strValue ?? ""
-        // Process escape sequences
-        str = str.replacingOccurrences(of: "\\n", with: "\n")
-        str = str.replacingOccurrences(of: "\\r", with: "\r")
-        str = str.replacingOccurrences(of: "\\t", with: "\t")
-        str = str.replacingOccurrences(of: "\\\\", with: "\\")
-        str = str.replacingOccurrences(of: "\\\"", with: "\"")
-        str = str.replacingOccurrences(of: "\\'", with: "'")
-        variables[destVar] = .string(str)
+        let str = variables[destVar]?.strValue ?? ""
+        // Single-pass state machine to correctly handle escape sequences.
+        // Processing \\n must yield backslash+n, not backslash+newline.
+        var result = ""
+        var i = str.startIndex
+        while i < str.endIndex {
+            if str[i] == "\\" {
+                let next = str.index(after: i)
+                if next < str.endIndex {
+                    switch str[next] {
+                    case "n":  result.append("\n")
+                    case "r":  result.append("\r")
+                    case "t":  result.append("\t")
+                    case "\\": result.append("\\")
+                    case "\"": result.append("\"")
+                    case "'":  result.append("'")
+                    default:   result.append("\\"); result.append(str[next])
+                    }
+                    i = str.index(after: next)
+                } else {
+                    result.append("\\")
+                    i = next
+                }
+            } else {
+                result.append(str[i])
+                i = str.index(after: i)
+            }
+        }
+        variables[destVar] = .string(result)
     }
 
     // MARK: strtrim - [IMPLEMENTED]
@@ -2006,21 +2040,42 @@ extension MacroRunner {
                         replacement = String(Int(fmtArgs[argIdx]) ?? 0, radix: 16).uppercased()
                         argIdx += 1
                     case "0"..."9":
-                        // Handle width specifier like %02d
+                        // Handle width specifier like %02d, %10s
                         var specEnd = result.index(after: i)
                         while specEnd < result.endIndex && (result[specEnd].isNumber || result[specEnd] == ".") {
                             specEnd = result.index(after: specEnd)
                         }
-                        if specEnd < result.endIndex {
-                            let spec = result[result.index(after: i)...specEnd]
-                            if result[specEnd] == "d" || result[specEnd] == "s" {
-                                replacement = fmtArgs[argIdx]
-                                argIdx += 1
-                            } else {
-                                replacement = String(spec)
-                            }
+                        guard specEnd < result.endIndex else {
+                            // Incomplete format specifier at end of string, skip
+                            i = result.endIndex
+                            continue
                         }
-                        let rangeToReplace = i..<result.index(after: specEnd < result.endIndex ? specEnd : result.index(after: i))
+                        let formatType = result[specEnd]
+                        let widthStr = String(result[result.index(after: i)..<specEnd])
+                        if formatType == "d" {
+                            let val = Int(fmtArgs[argIdx]) ?? 0
+                            let width = Int(widthStr.filter { $0.isNumber }) ?? 0
+                            let padChar: Character = widthStr.hasPrefix("0") ? "0" : " "
+                            var numStr = String(val)
+                            while numStr.count < width { numStr = String(padChar) + numStr }
+                            replacement = numStr
+                            argIdx += 1
+                        } else if formatType == "s" {
+                            replacement = fmtArgs[argIdx]
+                            argIdx += 1
+                        } else if formatType == "x" || formatType == "X" {
+                            let val = Int(fmtArgs[argIdx]) ?? 0
+                            let width = Int(widthStr.filter { $0.isNumber }) ?? 0
+                            let padChar: Character = widthStr.hasPrefix("0") ? "0" : " "
+                            var numStr = String(val, radix: 16)
+                            if formatType == "X" { numStr = numStr.uppercased() }
+                            while numStr.count < width { numStr = String(padChar) + numStr }
+                            replacement = numStr
+                            argIdx += 1
+                        } else {
+                            replacement = "%" + widthStr + String(formatType)
+                        }
+                        let rangeToReplace = i...specEnd
                         result.replaceSubrange(rangeToReplace, with: replacement)
                         i = result.index(i, offsetBy: replacement.count, limitedBy: result.endIndex) ?? result.endIndex
                         continue
@@ -2313,11 +2368,12 @@ extension MacroRunner {
             return
         }
 
-        // Read until newline
+        // Buffered read until newline (4KB chunks instead of 1-byte-at-a-time)
         var lineData = Data()
+        let chunkSize = 4096
         while true {
-            let byte = handle.readData(ofLength: 1)
-            if byte.isEmpty {
+            let chunk = handle.readData(ofLength: chunkSize)
+            if chunk.isEmpty {
                 if lineData.isEmpty {
                     resultValue = 1 // EOF
                     variables[destVar] = .string("")
@@ -2326,9 +2382,22 @@ extension MacroRunner {
                 }
                 break
             }
-            if byte[0] == 0x0A { break } // LF
-            if byte[0] != 0x0D { lineData.append(byte) } // Skip CR
+            if let lfIndex = chunk.firstIndex(of: 0x0A) {
+                // Found newline - append data up to it, seek back past remainder
+                let bytesBeforeLF = chunk.distance(from: chunk.startIndex, to: lfIndex)
+                lineData.append(chunk[chunk.startIndex..<lfIndex])
+                let bytesConsumed = bytesBeforeLF + 1 // include LF
+                let bytesExtra = chunk.count - bytesConsumed
+                if bytesExtra > 0 {
+                    handle.seek(toFileOffset: handle.offsetInFile - UInt64(bytesExtra))
+                }
+                break
+            } else {
+                lineData.append(chunk)
+            }
         }
+        // Strip CR characters
+        lineData = lineData.filter { $0 != 0x0D }
 
         resultValue = 0
         variables[destVar] = .string(String(data: lineData, encoding: .utf8) ?? "")
@@ -2453,7 +2522,7 @@ extension MacroRunner {
     func cmdFileSeek(_ args: [String]) { // [IMPLEMENTED]
         guard args.count >= 2 else { return }
         let handleId = resolveInt(args[0])
-        let offset = UInt64(resolveInt(args[1]))
+        let offsetInt = resolveInt(args[1])
         let origin = args.count > 2 ? resolveInt(args[2]) : 0
 
         guard let handle = fileHandles[handleId] else {
@@ -2463,16 +2532,19 @@ extension MacroRunner {
         }
 
         switch origin {
-        case 0: handle.seek(toFileOffset: offset) // SEEK_SET
-        case 1: handle.seek(toFileOffset: handle.offsetInFile + offset) // SEEK_CUR
+        case 0: // SEEK_SET
+            handle.seek(toFileOffset: UInt64(max(0, offsetInt)))
+        case 1: // SEEK_CUR - supports negative offsets
+            let current = Int64(handle.offsetInFile)
+            let newPos = max(0, current + Int64(offsetInt))
+            handle.seek(toFileOffset: UInt64(newPos))
         case 2: // SEEK_END
             handle.seekToEndOfFile()
-            let end = handle.offsetInFile
-            if offset <= end {
-                handle.seek(toFileOffset: end - offset)
-            }
+            let end = Int64(handle.offsetInFile)
+            let newPos = max(0, end + Int64(offsetInt))
+            handle.seek(toFileOffset: UInt64(newPos))
         default:
-            handle.seek(toFileOffset: offset)
+            handle.seek(toFileOffset: UInt64(max(0, offsetInt)))
         }
         resultValue = 0
         variables["result"] = .integer(0)
@@ -2557,19 +2629,24 @@ extension MacroRunner {
                 }
             }
         } else {
-            // Search forward
+            // Search forward with larger buffer for performance
+            let bufferSize = max(8192, searchData.count * 2)
             while true {
-                let chunk = handle.readData(ofLength: searchData.count)
+                let readPos = handle.offsetInFile
+                let chunk = handle.readData(ofLength: bufferSize)
                 if chunk.isEmpty { break }
-                if chunk == searchData {
-                    handle.seek(toFileOffset: handle.offsetInFile - UInt64(searchData.count))
+                if let range = chunk.range(of: searchData) {
+                    let matchOffset = readPos + UInt64(chunk.distance(from: chunk.startIndex, to: range.lowerBound))
+                    handle.seek(toFileOffset: matchOffset)
                     resultValue = 1
                     variables["result"] = .integer(1)
                     return
                 }
-                // Back up by (searchData.count - 1) for overlapping search
-                let backCount = max(1, searchData.count - 1)
-                handle.seek(toFileOffset: handle.offsetInFile - UInt64(backCount))
+                // Overlap by searchData.count - 1 to catch matches spanning chunk boundaries
+                if chunk.count >= searchData.count {
+                    let overlap = searchData.count - 1
+                    handle.seek(toFileOffset: handle.offsetInFile - UInt64(overlap))
+                }
             }
         }
 
@@ -2669,9 +2746,19 @@ extension MacroRunner {
 
     // MARK: findclose - [IMPLEMENTED]
 
-    func cmdFindClose() { // [IMPLEMENTED]
-        dirSearchResults.removeAll()
-        dirSearchIndex.removeAll()
+    func cmdFindClose(_ args: [String]) { // [IMPLEMENTED]
+        if !args.isEmpty {
+            // Close a specific search handle
+            let searchId = resolveInt(args[0])
+            if searchId >= 0 && searchId < dirSearchResults.count {
+                dirSearchResults[searchId] = []
+                dirSearchIndex[searchId] = 0
+            }
+        } else {
+            // Close all search handles
+            dirSearchResults.removeAll()
+            dirSearchIndex.removeAll()
+        }
     }
 
     // MARK: foldercreate - [IMPLEMENTED]
@@ -2854,6 +2941,9 @@ extension MacroRunner {
     }
 
     // MARK: exec - [IMPLEMENTED]
+    // WARNING: Passes user-controlled input to /bin/sh -c. This is by TTL specification
+    // design (exec command runs shell commands), but callers should be aware of the
+    // inherent command injection risk when running untrusted macro scripts.
 
     func cmdExec(_ args: [String]) { // [IMPLEMENTED]
         guard !args.isEmpty else { return }
@@ -3783,8 +3873,8 @@ extension MacroRunner {
                 // Still in progress, poll again at 0.5s intervals
                 self.execTimer = Timer.scheduledTimer(
                     withTimeInterval: MacroXPCEndpoint.transferPollInterval,
-                    repeats: false) { _ in
-                    self.pollTransferStatus()
+                    repeats: false) { [weak self] _ in
+                    self?.pollTransferStatus()
                 }
             }
         })

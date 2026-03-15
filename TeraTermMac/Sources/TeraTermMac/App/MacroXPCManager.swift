@@ -27,6 +27,9 @@ class MacroXPCManager: NSObject {
     private let logger = OSLog(subsystem: MacroConstants.teraTermMacBundleId, category: "MacroXPC")
     private var endpointPollTimer: Timer?
 
+    /// PID of the launched TTLMacro process, used to read the correct endpoint file
+    private var launchedMacroPID: Int32?
+
     /// Whether transfer is in progress (exclusion flag)
     private(set) var isTransferInProgress: Bool = false
 
@@ -116,8 +119,11 @@ class MacroXPCManager: NSObject {
                            error.localizedDescription)
                     completion(false)
                 } else {
-                    os_log("TTLMacro.app launched successfully",
-                           log: self?.logger ?? .default, type: .info)
+                    if let pid = app?.processIdentifier {
+                        self?.launchedMacroPID = pid
+                        os_log("TTLMacro.app launched with PID %d",
+                               log: self?.logger ?? .default, type: .info, pid)
+                    }
                     completion(true)
                 }
             }
@@ -149,21 +155,33 @@ class MacroXPCManager: NSObject {
                 return
             }
 
-            // Try to read endpoint file
-            // We check all possible PID-based files
+            // Try to read endpoint file for the specific launched PID
             let fm = FileManager.default
-            let tmpDir = NSTemporaryDirectory()
-            if let files = try? fm.contentsOfDirectory(atPath: tmpDir) {
-                for file in files where file.hasPrefix("ttlmacro_endpoint_") && file.hasSuffix(".dat") {
-                    let filePath = (tmpDir as NSString).appendingPathComponent(file)
-                    if let data = fm.contents(atPath: filePath) {
-                        if let endpoint = try? NSKeyedUnarchiver.unarchivedObject(
-                            ofClass: NSXPCListenerEndpoint.self, from: data) {
+            if let pid = self.launchedMacroPID {
+                // Use PID-specific endpoint file to avoid connecting to wrong instance
+                let filePath = MacroXPCEndpoint.endpointFilePath(pid: pid)
+                if let data = fm.contents(atPath: filePath),
+                   let endpoint = try? NSKeyedUnarchiver.unarchivedObject(
+                       ofClass: NSXPCListenerEndpoint.self, from: data) {
+                    timer.invalidate()
+                    self.endpointPollTimer = nil
+                    try? fm.removeItem(atPath: filePath)
+                    self.establishXPCConnection(endpoint: endpoint)
+                    completion(true)
+                    return
+                }
+            } else {
+                // Fallback: scan all endpoint files (when PID is unknown)
+                let tmpDir = NSTemporaryDirectory()
+                if let files = try? fm.contentsOfDirectory(atPath: tmpDir) {
+                    for file in files where file.hasPrefix("ttlmacro_endpoint_") && file.hasSuffix(".dat") {
+                        let filePath = (tmpDir as NSString).appendingPathComponent(file)
+                        if let data = fm.contents(atPath: filePath),
+                           let endpoint = try? NSKeyedUnarchiver.unarchivedObject(
+                               ofClass: NSXPCListenerEndpoint.self, from: data) {
                             timer.invalidate()
                             self.endpointPollTimer = nil
-                            // Remove the endpoint file
                             try? fm.removeItem(atPath: filePath)
-                            // Establish connection
                             self.establishXPCConnection(endpoint: endpoint)
                             completion(true)
                             return
@@ -532,7 +550,8 @@ extension MacroXPCManager: MacroClientProtocol {
     func getTransferStatus(reply: @escaping (String, Int, Int) -> Void) {
         DispatchQueue.main.async { [weak self] in
             if self?.isTransferInProgress == true {
-                reply(TransferStatusString.idle.rawValue, 0, 0)
+                // TODO: Track actual transfer progress (bytes transferred, total size)
+                reply(TransferStatusString.sending.rawValue, 0, 0)
             } else {
                 reply(TransferStatusString.idle.rawValue, 0, 0)
             }
