@@ -249,7 +249,7 @@ All commands are case-insensitive (`Send` = `send` = `SEND`).
 | `connect` | `<hoststring>` | `result`: 1=success, 0=failure | Establish connection. | Yes |
 | `disconnect` | -- | -- | Disconnect. | Yes |
 | `cygconnect` | -- | `result`: 1=success, 0=failure | Open local shell (PTY) connection. On macOS, maps to local shell instead of Cygwin. | Partial (macOS adaptation) |
-| `testlink` | -- | `result`: 2=connected, 0=disconnected | Test connection state. | Yes |
+| `testlink` | -- | `result`: 0=unlinked, 1=linked but not connected, 2=linked and connected | Test link and connection state. XPC 接続状態(linked)とホスト接続状態(connected)を個別に判定する。 | Yes |
 | `unlink` | -- | -- | Unlink macro from terminal. No error if not connected. | Yes |
 
 ### Wait
@@ -606,7 +606,7 @@ Processing locations:
 | 1 | `ttlSendData(_ data: Data)` | `sendToTerminal(data:reply:)` | TeraTermMac側 | バイナリデータ送信 |
 | 2 | `ttlSendString(_ text: String)` | `sendToTerminal(data:reply:)` | TeraTermMac側 | UTF-8エンコードしてData送信 |
 | 3 | `ttlSendLine(_ text: String)` | `sendToTerminal(data:reply:)` | TeraTermMac側 | text+CR をData送信 |
-| 4 | `ttlIsConnected() -> Bool` | `isConnected(reply:)` | TeraTermMac側 | 接続状態確認 |
+| 4 | `ttlIsConnected() -> Bool` | `isConnected(reply:)` | TeraTermMac側 | ホスト接続状態確認 |
 | 5 | `ttlGetReceivedData(clear:) -> String` | `recvFromTerminal(timeout:reply:)` | TeraTermMac側 | 受信バッファ取得 |
 | 6 | `ttlFlushReceiveBuffer()` | `flushReceiveBuffer(reply:)` | TeraTermMac側 | バッファクリア |
 | 7 | `ttlDisconnect()` | `disconnectFromHost(reply:)` | TeraTermMac側 | 切断 |
@@ -671,6 +671,30 @@ Processing locations:
 | 61 | `setEcho(flag:reply:)` | TeraTermMac側 | ローカルエコー設定 |
 | 62 | `displayString(text:reply:)` | TeraTermMac側 | 端末表示(非送信) |
 | 63 | `sendPasswordData(data:reply:)` | TeraTermMac側 | パスワード安全送信 |
+
+### testlink の実装方式
+
+`testlink` コマンドはリンク状態とホスト接続状態の 2 段階を判定する。XPC アーキテクチャにおいて、オリジナル Tera Term の DDE リンクに相当する状態を自然に再現できる。
+
+| result | 状態 | 判定方法 |
+|:------:|------|----------|
+| 0 | 未リンク（TTLMacro ↔ TeraTermMac 間の XPC 接続が未確立） | XPC connection が nil または invalidated |
+| 1 | リンク済み・未接続（XPC 接続はあるがホスト未接続） | XPC connection が有効 かつ `isConnected(reply:)` が false |
+| 2 | リンク済み・接続中（XPC 接続あり かつ ホスト接続あり） | XPC connection が有効 かつ `isConnected(reply:)` が true |
+
+```
+TTLMacro.app                          TeraTermMac.app
+    |                                       |
+    | 1. XPC connection 状態を確認           |
+    |    connection == nil → result=0        |
+    |                                       |
+    | 2. XPC 経由で接続状態を問い合わせ       |
+    | --- isConnected(reply:) -------------> |
+    | <-- reply(false) -------------------- |  → result=1
+    | <-- reply(true) --------------------- |  → result=2
+```
+
+> **オリジナル TT との対応**: オリジナルでは `Linked`（DDE リンク状態）と `ComReady`（通信ポート接続状態）の 2 変数で管理。teraterm_mac では XPC 接続状態が `Linked` に、`isConnected` の結果が `ComReady` に対応する。
 
 ### TTLMacro側で完結するコマンド (XPC不要)
 
