@@ -61,6 +61,15 @@ class MockMacroService: NSObject, MacroServiceProtocol {
         reply()
     }
 
+    // --- Debugger stubs ---
+    func stepLine(reply: @escaping () -> Void) { reply() }
+    func stepOver(reply: @escaping () -> Void) { reply() }
+    func stepOut(reply: @escaping () -> Void) { reply() }
+    func addBreakpoint(line: Int, reply: @escaping () -> Void) { reply() }
+    func removeBreakpoint(line: Int, reply: @escaping () -> Void) { reply() }
+    func clearBreakpoints(reply: @escaping () -> Void) { reply() }
+    func getVariables(reply: @escaping ([String: String]) -> Void) { reply([:]) }
+
     func reset() {
         runMacroCalled = false
         lastScriptPath = nil
