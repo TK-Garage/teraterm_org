@@ -336,7 +336,7 @@ extension MacroXPCManager: MacroClientProtocol {
                 DispatchQueue.main.asyncAfter(deadline: .now() + TimeInterval(timeout)) { [weak self] in
                     if let handler = self?.terminalDataHandler {
                         self?.terminalDataHandler = nil
-                        handler(nil as Data?)
+                        handler(Data())
                     }
                 }
             }
@@ -821,9 +821,8 @@ extension MacroXPCManager: MacroClientProtocol {
 
     func restoreSetup(path: String, reply: @escaping () -> Void) {
         DispatchQueue.main.async { [weak self] in
-            if let settings = TerminalSettings.load(from: path) {
-                self?.activeWindowController?.settings = settings
-            }
+            let settings = TerminalSettings.load(from: URL(fileURLWithPath: path))
+            self?.activeWindowController?.settings = settings
             reply()
         }
     }
@@ -919,7 +918,7 @@ extension MacroXPCManager: MacroClientProtocol {
     }
 
     func sendToSession(sessionId: String, data: Data, reply: @escaping (Bool) -> Void) {
-        DispatchQueue.main.async { [weak self] in
+        DispatchQueue.main.async {
             guard let delegate = NSApp.delegate as? AppDelegate else {
                 reply(false)
                 return

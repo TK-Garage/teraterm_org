@@ -67,13 +67,13 @@ extension SerialConnection {
         }
 
         var status: Int32 = 0
-        ioctl(fd, UInt(TIOCMGET), &status)
+        _ = ioctl(fd, UInt(TIOCMGET), &status)
         if value {
             status |= bit
         } else {
             status &= ~bit
         }
-        ioctl(fd, UInt(TIOCMSET), &status)
+        _ = ioctl(fd, UInt(TIOCMSET), &status)
     }
 
     /// Read modem status bits (CTS, DSR, DCD, RI) via ioctl.
@@ -83,7 +83,7 @@ extension SerialConnection {
         guard fd >= 0 else { return 0 }
 
         var status: Int32 = 0
-        ioctl(fd, UInt(TIOCMGET), &status)
+        _ = ioctl(fd, UInt(TIOCMGET), &status)
 
         // Map to Windows-compatible modem status bits for TTL compatibility:
         // Bit 4: CTS, Bit 5: DSR, Bit 6: RI, Bit 7: DCD
@@ -259,7 +259,7 @@ extension TerminalSettings {
         self.crSend = loaded.crSend
         self.fontName = loaded.fontName
         self.fontSize = loaded.fontSize
-        self.terminalType = loaded.terminalType
+        self.terminalID = loaded.terminalID
     }
 }
 
