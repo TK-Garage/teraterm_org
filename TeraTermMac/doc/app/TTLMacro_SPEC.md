@@ -592,6 +592,260 @@ TeraTermMac/
 
 ---
 
+## アプリアイコン仕様
+
+### 概要
+
+TTLMacro.app はオリジナル Tera Term の TTPMACRO.EXE アイコンをモチーフとした専用アプリアイコンを持つ。macOS の Asset Catalog（`.xcassets`）形式で管理する。
+
+### アイコンファイル一覧
+
+| ファイル名 | サイズ | 用途 |
+|-----------|--------|------|
+| `icon_16.png` | 16×16 | Finder リスト表示（1x） |
+| `icon_32.png` | 32×32 | Finder リスト表示（2x）/ 通常表示（1x） |
+| `icon_64.png` | 64×64 | Finder 通常表示（2x） |
+| `icon_128.png` | 128×128 | Finder プレビュー（1x） |
+| `icon_256.png` | 256×256 | Finder プレビュー（2x）/ 大表示（1x） |
+| `icon_512.png` | 512×512 | Finder 大表示（2x）/ App Store（1x） |
+| `icon_1024.png` | 1024×1024 | App Store（2x） |
+
+### Asset Catalog 配置
+
+```
+Sources/TTLMacro/Resources/Assets.xcassets/
+└── AppIcon.appiconset/
+    ├── Contents.json        ← サイズ・スケールのマッピング定義
+    ├── icon_16.png
+    ├── icon_32.png
+    ├── icon_64.png
+    ├── icon_128.png
+    ├── icon_256.png
+    ├── icon_512.png
+    └── icon_1024.png
+```
+
+### Contents.json のマッピング
+
+| size | scale | filename |
+|------|-------|----------|
+| 16x16 | 1x | `icon_16.png` |
+| 16x16 | 2x | `icon_32.png` |
+| 32x32 | 1x | `icon_32.png` |
+| 32x32 | 2x | `icon_64.png` |
+| 128x128 | 1x | `icon_128.png` |
+| 128x128 | 2x | `icon_256.png` |
+| 256x256 | 1x | `icon_256.png` |
+| 256x256 | 2x | `icon_512.png` |
+| 512x512 | 1x | `icon_512.png` |
+| 512x512 | 2x | `icon_1024.png` |
+
+### アイコン画像の要件
+
+- フォーマット: PNG（8-bit/color RGBA、非インターレース）
+- 背景: 透過推奨
+- デザイン: オリジナル TTPMACRO.EXE アイコンをモチーフとしたプレースホルダー画像
+- アイコン差し替え時は同名ファイルを上書きして Xcode でリビルド
+
+### Info.plist 設定
+
+TTLMacro.app は `LSUIElement = true` で設定されており、Dock にアイコンを表示しないメニューバーアプリとして動作する。
+
+| キー | 値 | 説明 |
+|------|-----|------|
+| `CFBundleIdentifier` | `com.yourapp.TeraTermMac.TTLMacro` | バンドル ID |
+| `CFBundleName` | `TTLMacro` | アプリ名 |
+| `LSUIElement` | `true` | Dock 非表示（メニューバーアプリ） |
+| `CFBundleDocumentTypes` | `.ttl` | TTL マクロファイルに関連付け |
+
+---
+
+## メニューバー（ステータスバー）仕様
+
+### 概要
+
+TTLMacro.app は `LSUIElement = true` のため Dock に表示されず、macOS メニューバー（ステータスバー）にアイコンとメニューを表示して操作する。`StatusBarManager` クラスが `NSStatusBar` / `NSStatusItem` を管理する。
+
+### StatusBarManagerDelegate プロトコル
+
+```swift
+protocol StatusBarManagerDelegate: AnyObject {
+    func statusBarDidRequestOpen()    // マクロファイルを開く
+    func statusBarDidRequestPause()   // マクロ一時停止
+    func statusBarDidRequestResume()  // マクロ再開
+    func statusBarDidRequestStop()    // マクロ停止（確認ダイアログあり）
+    func statusBarDidRequestQuit()    // アプリ終了
+}
+```
+
+### メニュー状態遷移
+
+```
+                 showIdleMenu()
+                      |
+                      v
+              +---------------+
+              |     idle      |  <-- 初期状態 / 完了後
+              +---------------+
+                      |
+            showRunningMenu(macroPath:)
+                      |
+                      v
+              +---------------+
+         +--->|   running     |
+         |    +---------------+
+         |       |         |
+   resumeAction  |    pauseAction
+         |       |         |
+         |       v         v
+         |  stopAction  +---------------+
+         |       |      |    paused     |
+         |       |      +---------------+
+         |       |         |
+         |       |    stopAction
+         |       v         |
+         |  +-----------------+
+         +--|  idle（停止後）  |
+            +-----------------+
+```
+
+### 状態別メニュー構成
+
+#### idle 状態（マクロ未実行）
+
+| 項目 | アクション | 有効 |
+|------|-----------|:----:|
+| マクロを開く... | `statusBarDidRequestOpen()` | Yes |
+| ─────── | （セパレータ） | -- |
+| TTLMacro を終了 | `statusBarDidRequestQuit()` | Yes |
+
+#### running 状態（マクロ実行中）
+
+| 項目 | アクション | 有効 |
+|------|-----------|:----:|
+| ▶ マクロ実行中 | （ラベルのみ） | No |
+| 実行行数: %d 行目 | （ラベルのみ、リアルタイム更新） | No |
+| ─────── | （セパレータ） | -- |
+| 一時停止 | `statusBarDidRequestPause()` | Yes |
+| 中断 | `statusBarDidRequestStop()` | Yes |
+| ─────── | （セパレータ） | -- |
+| TTLMacro を終了 | -- | No（実行中は無効） |
+
+#### paused 状態（マクロ一時停止中）
+
+| 項目 | アクション | 有効 |
+|------|-----------|:----:|
+| ⏸ 一時停止中 | （ラベルのみ） | No |
+| 実行行数: %d 行目 | （ラベルのみ） | No |
+| ─────── | （セパレータ） | -- |
+| 再開 | `statusBarDidRequestResume()` | Yes |
+| 中断 | `statusBarDidRequestStop()` | Yes |
+| ─────── | （セパレータ） | -- |
+| TTLMacro を終了 | -- | No（一時停止中は無効） |
+
+### ステータスバーアイコン
+
+| 状態 | SF Symbol 名 | フォールバック（macOS < 11.0） |
+|------|-------------|-------------------------------|
+| idle | `applescript` | テキスト "M" |
+| running | アニメーション（下記参照） | テキスト "M" |
+| paused | `pause.circle` | テキスト "M" |
+
+### アイコンアニメーション
+
+実行中のステータスバーアイコンはフレームアニメーションで動作状態を視覚的に示す。
+
+| 設定項目 | 値 |
+|---------|-----|
+| アニメーション間隔 | 0.3 秒（`MacroConstants.animationInterval`） |
+| macOS 13+ フレーム | `["applescript", "applescript.fill"]` |
+| macOS 11-12 フレーム | `["circle", "circle.fill", "circle.dotted"]` |
+| 実装 | `Timer.scheduledTimer` によるフレーム循環 |
+
+### 停止確認ダイアログ
+
+「中断」メニュー選択時に `MacroDialogHelper.showStopConfirmation()` で確認ダイアログを表示する。
+
+| 項目 | 値 |
+|------|-----|
+| タイトル | マクロを中断しますか？ |
+| メッセージ | 実行中のマクロを中断します。 |
+| ボタン | 中断 / キャンセル |
+| スタイル | `NSAlert.Style.warning` |
+
+### 定数（MacroConstants）
+
+| 定数名 | 値 | 説明 |
+|--------|-----|------|
+| `animationInterval` | 0.3 秒 | ステータスバーアイコンのアニメーション間隔 |
+| `menuVisibleUpdateInterval` | 0.1 秒 | メニュー展開中の行番号更新間隔 |
+| `menuHiddenUpdateInterval` | 1.0 秒 | メニュー非展開時の行番号更新間隔 |
+
+---
+
+## デバッグモード仕様
+
+### 概要
+
+`setdebug` コマンドにより TTLMacro のデバッグモードを切り替える。デバッグモード有効時はマクロ実行の詳細情報を追跡できる。
+
+### setdebug コマンド
+
+```
+setdebug <flag>
+```
+
+| 引数 | 型 | 説明 |
+|------|-----|------|
+| `flag` | 整数 | 1=デバッグモード有効、0=無効 |
+
+引数省略時はデバッグモードを有効にする。
+
+### 実装（MacroRunner 内）
+
+```swift
+private var debugMode: Bool = false
+
+func cmdSetDebug(_ args: [String]) {
+    debugMode = args.isEmpty ? true : resolveInt(args[0]) != 0
+}
+```
+
+### 行実行通知
+
+マクロ実行中、各行の実行時に以下の通知が発行される。デバッグモードの有無に関わらず常に送信される。
+
+```swift
+onLineExecuted?(currentLineNumber, line)
+clientProxy?.didExecuteLine(lineNumber: currentLineNumber, lineText: line, reply: {})
+```
+
+| コールバック | 送信先 | 用途 |
+|------------|--------|------|
+| `onLineExecuted` | TTLMacro 内部（StatusBarManager） | ステータスバーの行番号更新 |
+| `didExecuteLine` | TeraTermMac（XPC 経由） | ターミナル側のマクロ実行監視 |
+
+### TeraTermMac 側のデバッグ設定
+
+TeraTermMac.app の「追加設定」ダイアログにデバッグタブがあり、以下の設定を提供する。
+
+| 設定項目 | 設定キー | デフォルト値 | 説明 |
+|---------|---------|-------------|------|
+| 文字情報ポップアップ | `debugCharInfoPopup` | `false` | 文字にマウスオーバーで文字コード情報を表示 |
+| デバッグモード | `debugModes` | `"all"` | デバッグ出力モード |
+
+### デバッグモード種別
+
+| 値 | 説明 |
+|-----|------|
+| `"all"` | すべてのデバッグ出力を表示 |
+| `"none"` | デバッグ出力を無効化 |
+| `"normal"` | 通常のテキスト出力のみ |
+| `"hex"` | 16 進ダンプ表示 |
+| `"noout"` | 出力を抑制 |
+
+---
+
 ## TTLInterpreterDelegate → XPC マッピング表
 
 TTLInterpreterDelegate の全メソッドと XPC プロトコルの対応。
