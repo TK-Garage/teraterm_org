@@ -593,10 +593,6 @@ class MacroRunner {
         case "include":     cmdInclude(args) // [IMPLEMENTED]
         case "ifdefined":   cmdIfDefined(args) // [IMPLEMENTED]
 
-        // Arithmetic - [IMPLEMENTED]
-        case "inc":         cmdInc(args) // [IMPLEMENTED]
-        case "dec":         cmdDec(args) // [IMPLEMENTED]
-
         // Send/receive - [IMPLEMENTED]
         case "send":        cmdSend(args, addCR: false) // [IMPLEMENTED]
         case "sendln":      cmdSend(args, addCR: true) // [IMPLEMENTED]
@@ -605,7 +601,6 @@ class MacroRunner {
         case "sendbreak":   cmdSendBreak() // [IMPLEMENTED]
         case "sendkcode":   cmdSendKCode(args) // [IMPLEMENTED]
         case "sendfile":    cmdSendFile(args) // [IMPLEMENTED]
-        case "recv":        cmdRecv(args) // [IMPLEMENTED]
         case "recvln":      cmdRecvLn() // [IMPLEMENTED]
         case "flushrecv":   cmdFlushRecv() // [IMPLEMENTED]
 
@@ -617,7 +612,6 @@ class MacroRunner {
         case "waitn":       cmdWaitN(args) // [IMPLEMENTED]
         case "wait4all":    cmdWait4All(args) // [IMPLEMENTED]
         case "waitevent":   cmdWaitEvent() // [IMPLEMENTED]
-        case "waitmatch":   cmdWaitMatch(args) // [IMPLEMENTED]
 
         // Pause - [IMPLEMENTED]
         case "pause":       cmdPause(args) // [IMPLEMENTED]
@@ -629,8 +623,6 @@ class MacroRunner {
         case "testlink":    cmdTestLink() // [IMPLEMENTED]
         case "unlink":      cmdUnlink() // [IMPLEMENTED]
         case "cygconnect":  cmdCygConnect() // [IMPLEMENTED]
-        case "settimeout":  cmdSetTimeout(args) // [IMPLEMENTED]
-        case "timeout":     cmdSetTimeout(args) // [IMPLEMENTED]
 
         // String operations - [IMPLEMENTED]
         case "strlen":      cmdStrLen(args) // [IMPLEMENTED]
@@ -760,7 +752,7 @@ class MacroRunner {
         case "logwrite":    cmdLogWrite(args) // [IMPLEMENTED]
         case "loginfo":     cmdLogInfo(args) // [IMPLEMENTED]
         case "logrotate":   cmdLogRotate(args) // [IMPLEMENTED]
-        case "logautoclose", "logautoclosemode": cmdLogAutoClose(args) // [IMPLEMENTED]
+        case "logautoclosemode": cmdLogAutoClose(args) // [IMPLEMENTED]
 
         // Checksum - [IMPLEMENTED]
         case "crc16":       cmdChecksum(args, type: "crc16") // [IMPLEMENTED]
@@ -1206,19 +1198,6 @@ extension MacroRunner {
         }
     }
 
-    // MARK: inc/dec - [IMPLEMENTED]
-
-    func cmdInc(_ args: [String]) { // [IMPLEMENTED]
-        guard let varName = args.first?.lowercased() else { return }
-        let current = variables[varName]?.intValue ?? 0
-        variables[varName] = .integer(current + 1)
-    }
-
-    func cmdDec(_ args: [String]) { // [IMPLEMENTED]
-        guard let varName = args.first?.lowercased() else { return }
-        let current = variables[varName]?.intValue ?? 0
-        variables[varName] = .integer(current - 1)
-    }
 }
 
 // MARK: - Send/Receive Commands
@@ -1323,27 +1302,6 @@ extension MacroRunner {
         }
         clientProxy?.sendToTerminal(data: sendData, reply: { [weak self] in
             self?.scheduleNextLine()
-        })
-        cancelExecTimer()
-    }
-
-    // MARK: recv - [IMPLEMENTED]
-
-    func cmdRecv(_ args: [String]) { // [IMPLEMENTED]
-        let timeout = timeoutValue
-        clientProxy?.recvFromTerminal(timeout: timeout, reply: { [weak self] data in
-            guard let self = self else { return }
-            if let data = data, let str = String(data: data, encoding: .utf8) {
-                self.inputStr = str
-                self.variables["inputstr"] = .string(str)
-                self.resultValue = 1
-            } else {
-                self.inputStr = ""
-                self.variables["inputstr"] = .string("")
-                self.resultValue = 0
-            }
-            self.variables["result"] = .integer(self.resultValue)
-            self.scheduleNextLine()
         })
         cancelExecTimer()
     }
@@ -1453,13 +1411,6 @@ extension MacroRunner {
         }
 
         poll()
-    }
-
-    // MARK: waitmatch - [IMPLEMENTED]
-
-    func cmdWaitMatch(_ args: [String]) { // [IMPLEMENTED]
-        // Same as wait but with regex matching
-        cmdWaitRegex(args)
     }
 
     // MARK: waitrecv - [IMPLEMENTED]
@@ -1732,13 +1683,6 @@ extension MacroRunner {
         })
     }
 
-    // MARK: settimeout/timeout - [IMPLEMENTED]
-
-    func cmdSetTimeout(_ args: [String]) { // [IMPLEMENTED]
-        let val = args.isEmpty ? 0 : resolveInt(args[0])
-        timeoutValue = val
-        variables["timeout"] = .integer(val)
-    }
 }
 
 // MARK: - String Operation Commands
@@ -3655,7 +3599,7 @@ extension MacroRunner {
         })
     }
 
-    // MARK: logautoclose - [IMPLEMENTED]
+    // MARK: logautoclosemode - [IMPLEMENTED]
 
     func cmdLogAutoClose(_ args: [String]) { // [IMPLEMENTED]
         // Store setting locally; actual auto-close handled by log system

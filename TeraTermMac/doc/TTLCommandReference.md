@@ -2279,21 +2279,6 @@ s = "double quotes"
 以下は本ドキュメント（TTLCommandReference.md）の仕様と実際の Swift 実装（MacroRunner.swift / TTLInterpreter.swift）を比較して検出した差異の一覧。
 §25 の OS/安全による意図的差異とは異なり、仕様上の未実装または独自拡張を記録する。
 
-### 26.1 未実装の仕様
-
 | コマンド | 分類 | 内容 |
 |----------|:----:|------|
 | `testlink` | 両方 | `result = 1`（リンク済み・未接続）が未実装。現在は 0/2 のみ返す。マクロ実行アプリと通信アプリの分離後に対応予定（§12 参照） |
-
-### 26.2 teraterm_mac 独自拡張コマンド
-
-以下のコマンドはオリジナル Tera Term の予約語テーブルに存在しない。MacroRunner にのみ実装されている teraterm_mac 独自の拡張であり、オリジナル Tera Term で使用した場合は構文エラーとなる。
-
-| コマンド | 実装内容 | オリジナル TT での動作 |
-|----------|---------|----------------------|
-| `inc` | 整数変数をインクリメント（`inc <intvar>`） | 構文エラー |
-| `dec` | 整数変数をデクリメント（`dec <intvar>`） | 構文エラー |
-| `recv` | データを受信（タイムアウト付き）。result + inputstr に格納。`recvln` の行区切りなし版 | 構文エラー（`recvln` のみ存在） |
-| `waitmatch` | `waitregex` のエイリアス | 構文エラー（`waitregex` のみ存在） |
-| `settimeout` / `timeout`（コマンド形式） | タイムアウト値を設定（`settimeout <seconds>`）。システム変数 `timeout` にも反映 | 構文エラー（`timeout` はシステム変数としてのみ存在し、`timeout = <value>` 形式の代入で設定） |
-| `logautoclose` | `logautoclosemode` のエイリアス | 構文エラー（`logautoclosemode` のみ存在） |

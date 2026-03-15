@@ -317,7 +317,7 @@ All commands are case-insensitive (`Send` = `send` = `SEND`).
 | `logwrite` | `<text>` (string) | -- | Write text to log file. | Yes |
 | `loginfo` | -- | -- | Get log info. | Yes |
 | `logrotate` | -- | -- | Rotate log file. | Yes |
-| `logautoclose` | `<mode>` (int) | -- | Set log auto-close mode. | Yes |
+| `logautoclosemode` | `<mode>` (int) | -- | Set log auto-close mode. | Yes |
 
 ### Serial
 
@@ -866,7 +866,7 @@ TTLMacro.app                          TeraTermMac.app
 ### タイムアウトと排他制御
 
 - ポーリング間隔: 0.5秒
-- デフォルトタイムアウト: 600秒 (`settimeout` の値を参照)
+- デフォルトタイムアウト: 600秒 (システム変数 `timeout` の値を参照)
 - 待機中も `pause` / `stop` を受付 (DispatchQueue非同期ポーリング + キャンセルフラグ)
 - 転送中に別の転送コマンド実行時: `macroDidFail(error: "Transfer already in progress", line: N)`
 - TeraTermMac.app側で `isTransferInProgress` フラグを管理
