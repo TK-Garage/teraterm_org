@@ -805,15 +805,15 @@ filemarkptr fh
 ファイルの統計情報を取得する。
 
 ```ttl
-filestat <filename> <size> <mtime> <drive>
+filestat <filename> <size> [<mtime> [<drive>]]
 ```
 
 | 引数 | 型 | 説明 |
 |------|------|------|
 | `<filename>` | 文字列 | ファイルまたはフォルダのパス |
 | `<size>` | 整数変数 | ファイルサイズ（バイト）の格納先 |
-| `<mtime>` | 文字列変数 | 最終更新日時の格納先 |
-| `<drive>` | 文字列変数 | ドライブ情報の格納先（macOS では空文字列） |
+| `[<mtime>]` | 文字列変数 | 最終更新日時の格納先（省略可） |
+| `[<drive>]` | 文字列変数 | ドライブ情報の格納先（省略可、macOS では空文字列） |
 
 **result**: 0 = 成功、-1 = エラー
 
@@ -1711,6 +1711,8 @@ var2clipb <string>
 |------|------|------|
 | `<string>` | 文字列 | クリップボードに設定する文字列 |
 
+**result**: 0 = 失敗、1 = 成功
+
 ```ttl
 var2clipb 'copied text'
 ```
@@ -1882,16 +1884,25 @@ setexitcode 0
 
 ### `rotateleft` / `rotateright`
 
-ビット回転。
+ビット回転（32ビット整数の循環シフト）。
 
 ```ttl
-val = $80000000
-rotateleft val 1
-; val = 1
+rotateleft <intvar> <intval> <count>
+rotateright <intvar> <intval> <count>
+```
 
-val = 1
-rotateright val 1
-; val = $80000000
+| 引数 | 型 | 説明 |
+|------|------|------|
+| `<intvar>` | 整数変数 | 結果の格納先 |
+| `<intval>` | 整数 | 回転する値 |
+| `<count>` | 整数 | 回転ビット数 |
+
+```ttl
+rotateleft b $80000000 4
+; b = $00000008
+
+rotateright b $00000008 4
+; b = $80000000
 ```
 
 ---
