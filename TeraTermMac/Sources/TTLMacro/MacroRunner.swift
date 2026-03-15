@@ -10,6 +10,9 @@
 
 import Foundation
 import TTLMacroShared
+#if canImport(AudioToolbox)
+import AudioToolbox
+#endif
 
 // MARK: - TTL Value Type
 
@@ -2276,7 +2279,7 @@ extension MacroRunner {
 
     func cmdInputBox(_ args: [String], password: Bool) { // [IMPLEMENTED]
         let prompt = args.isEmpty ? "" : resolveString(args[0])
-        let title = args.count > 1 ? resolveString(args[1]) : ""
+        _ = args.count > 1 ? resolveString(args[1]) : ""  // title: TODO pass via XPC when showDialog supports it
         let defaultVal = args.count > 2 ? resolveString(args[2]) : ""
         cancelExecTimer()
 
@@ -3698,7 +3701,9 @@ extension MacroRunner {
     // MARK: beep - [IMPLEMENTED]
 
     func cmdBeep() { // [IMPLEMENTED]
-        NSSound.beep()
+        #if canImport(AudioToolbox)
+        AudioServicesPlaySystemSound(SystemSoundID(1005))  // System alert beep
+        #endif
     }
 
     // MARK: setdebug - [IMPLEMENTED]
@@ -4021,11 +4026,11 @@ extension MacroRunner {
         let remotePath = resolveString(args[0])
         let localDir = args.count > 1 ? resolveString(args[1]) : ""
 
-        // Send Kermit GET command, then start receive
+        // Send Kermit GET command, then start receive into localDir
         let getCmd = "get \(remotePath)\r"
         if let data = getCmd.data(using: .utf8) {
             clientProxy?.sendToTerminal(data: data, reply: { [weak self] in
-                self?.cmdFileTransferRecv([], proto: "kermit")
+                self?.cmdFileTransferRecv(localDir.isEmpty ? [] : [localDir], proto: "kermit")
             })
         }
         cancelExecTimer()
