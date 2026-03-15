@@ -272,7 +272,7 @@ sendfile '/tmp/data.bin' 1        ; バイナリモード（生データ送信�
 | `<filename>` | 文字列 | 送信するファイルのパス |
 | `<binary_flag>` | 整数 | 0=テキストモード（改行変換）, 1=バイナリモード（生データ） |
 
-> **macOS 実装メモ**: 現在の macOS 版実装では `<binary_flag>` を無視し、常にバイナリモードで送信する。テキストモードの改行変換（CR/LF → LF 等）は未実装。
+> **macOS 実装メモ**: 現行の macOS 版実装では `<binary_flag>` を無視し常にバイナリモードで送信する。オリジナル準拠のテキストモード（改行変換: CR → CR/CRLF、制御文字除去）に対応予定。
 
 ### `recvln`
 
@@ -548,27 +548,31 @@ strremove s 6 6
 
 ### `strreplace`
 
-文字列を置換。全出現箇所を置換する。
+正規表現による文字列置換。指定位置から検索し、最初にマッチした箇所を置換する。
 
 ```ttl
-s = 'foo bar foo'
-strreplace s 'foo' 'baz'
-; s = 'baz bar baz', result = 1
+strreplace <strvar> <index> <regex> <newstr>
 
-s = 'remove--dashes'
-strreplace s '--' ''
-; s = 'removedashes'（空文字列で削除）
+s = 'foo bar foo'
+strreplace s 1 'foo' 'baz'
+; s = 'baz bar foo', result = 1, matchstr = 'foo'
+
+s = 'abc123def'
+strreplace s 1 '[0-9]+' ''
+; s = 'abcdef', result = 1, matchstr = '123'
 ```
 
 | 引数 | 型 | 説明 |
 |------|------|------|
-| `<strvar>` | 文字列変数 | 対象（インプレース変更） |
-| `<target>` | 文字列 | 検索する文字列 |
-| `<replacement>` | 文字列 | 置換文字列（空で削除） |
+| `<strvar>` | 文字列変数 | 検索・置換対象の文字列 |
+| `<index>` | 整数 | 検索開始位置（1 起算） |
+| `<regex>` | 文字列 | 検索する正規表現パターン |
+| `<newstr>` | 文字列 | 置換文字列（空文字列でマッチ部分を削除） |
 
-> **注意**: オリジナル Tera Term では `strreplace <strvar> <index> <regex> <newstr>` の 4 引数で正規表現を使用するが、macOS 版では 3 引数の単純文字列置換（§25 参照）。
+**result**: 1 = 置換成功、0 = パターンが見つからない、-1 = 無効な正規表現
+**matchstr**: マッチした文字列が格納される
 
-**result**: 1 = 置換あり、0 = マッチなし、-1 = 無効な正規表現
+> **macOS 実装メモ**: 現行の macOS 版実装は 3 引数の単純文字列置換（`strreplace <strvar> <target> <replacement>`）で動作が異なる。オリジナル準拠の 4 引数・正規表現方式に変更予定。
 
 ### `strspecial`
 
@@ -582,66 +586,83 @@ strspecial s
 
 ### `strtrim`
 
-前後の空白を除去。トリム方向を指定可能。
+文字列の前後から指定文字を除去する。
 
 ```ttl
+strtrim <strvar> <trimchars>
+
 s = '  hello  '
-strtrim s
-; s = 'hello'（両端）
+strtrim s ' '
+; s = 'hello'（前後のスペースを除去）
 
-s = '   leading'
-strtrim s 1
-; s = 'leading'（前方のみ）
+s = '---title---'
+strtrim s '-'
+; s = 'title'（前後のハイフンを除去）
 
-s = 'trailing   '
-strtrim s 2
-; s = 'trailing'（後方のみ）
+s = '##*info*##'
+strtrim s '#*'
+; s = 'info'（前後の # と * を除去）
 ```
 
 | 引数 | 型 | 説明 |
 |------|------|------|
-| `<strvar>` | 文字列変数 | 対象 |
-| `[<trimType>]` | 整数 | 0=両端（デフォルト）、1=前方のみ、2=後方のみ |
+| `<strvar>` | 文字列変数 | トリム対象の文字列 |
+| `<trimchars>` | 文字列 | 除去する文字のセット（各文字が個別に除去対象） |
 
-> **注意**: オリジナル Tera Term では `strtrim <strvar> <trimchars>` で除去文字セット（文字列）を指定するが、macOS 版では整数のトリム方向を指定する（§25 参照）。
+> **macOS 実装メモ**: 現行の macOS 版実装は `strtrim <strvar> [<trimType>]`（整数: 0=両端, 1=前方, 2=後方）で空白のみ除去する方式。オリジナル準拠の文字セット指定方式に変更予定。
 
 ### `strsplit`
 
-区切り文字で分割。
-
-> **macOS 固有動作**: オリジナル Tera Term では `groupmatchstr1`〜`groupmatchstr9` に格納される（最大 9 分割）。macOS 版では内部の文字列配列に格納される（§25 参照）。
+区切り文字で文字列を分割し、`groupmatchstr1`〜`groupmatchstr9` に格納する。
 
 ```ttl
-strsplit 'a,b,c,d' ',' destarray
+strsplit <strval> <separator> [<count>]
+
+strsplit 'a,b,c,d' ','
 ; result = 4
-; オリジナル TT: groupmatchstr1='a', groupmatchstr2='b', ...
-; macOS 版: destarray に配列として格納
+; groupmatchstr1 = 'a', groupmatchstr2 = 'b'
+; groupmatchstr3 = 'c', groupmatchstr4 = 'd'
+
+strsplit 'a,b,c,d' ',' 2
+; result = 2
+; groupmatchstr1 = 'a', groupmatchstr2 = 'b,c,d'
 ```
 
 | 引数 | 型 | 説明 |
 |------|------|------|
-| `<string>` | 文字列 | 分割する文字列 |
-| `<separator>` | 文字列 | 区切り文字 |
-| `<destvar>` | 変数 | 格納先（macOS 版） |
+| `<strval>` | 文字列 | 分割する文字列 |
+| `<separator>` | 文字列 | 区切り文字（1 文字） |
+| `[<count>]` | 整数 | 最大分割数（1〜9、デフォルト 9） |
 
-**result**: 分割された要素数
+**result**: 分割された要素数（9 を超える場合は 10）
+**groupmatchstr1〜9**: 分割結果。未使用の変数は空文字列にクリアされる。`count` を超える残りは最後の変数にまとめられる。
+
+> **macOS 実装メモ**: 現行の macOS 版実装は `strsplit <src> <delim> <destArrayVar>` で独自の文字列配列に格納する方式（分割数制限なし）。オリジナル準拠の `groupmatchstr` 方式に変更予定。
 
 ### `strjoin`
 
-区切り文字で結合。
-
-> **macOS 固有動作**: オリジナル Tera Term では `groupmatchstr1`〜`groupmatchstr9` を結合する（`strsplit` の逆操作）。macOS 版では文字列配列変数を指定して結合する（§25 参照）。
+`groupmatchstr1`〜`groupmatchstr9` を区切り文字で結合する（`strsplit` の逆操作）。
 
 ```ttl
-strjoin buf srcarray ','
-; buf = srcarray の各要素をカンマで結合した文字列
+strjoin <strvar> <separator> [<count>]
+
+; strsplit で分割した結果を再結合
+strsplit 'a,b,c' ','
+strjoin buf ','
+; buf = 'a,b,c'
+
+; 最初の 2 要素のみ結合
+strjoin buf ',' 2
+; buf = 'a,b'
 ```
 
 | 引数 | 型 | 説明 |
 |------|------|------|
-| `<destvar>` | 文字列変数 | 結合結果の格納先 |
-| `<srcvar>` | 変数 | 元の配列変数（macOS 版） |
+| `<strvar>` | 文字列変数 | 結合結果の格納先 |
 | `<separator>` | 文字列 | 区切り文字 |
+| `[<count>]` | 整数 | 結合する `groupmatchstr` の数（デフォルト 9） |
+
+> **macOS 実装メモ**: 現行の macOS 版実装は `strjoin <destVar> <srcArrayVar> <delimiter>` で独自の配列変数を指定する方式。オリジナル準拠の `groupmatchstr` 結合方式に変更予定。
 
 ### `tolower`
 
@@ -1014,19 +1035,34 @@ endif
 
 ### `listbox`
 
-リスト選択ダイアログ。
-
-> **macOS 固有動作**: オリジナル Tera Term では `strdim` で作成した文字列配列を渡し、戻り値は 0 起算（-1 = キャンセル）。macOS 版では改行区切りの文字列を `<message>` に渡す簡略化方式を使用する（§25 参照）。
+リスト選択ダイアログ。`strdim` で作成した文字列配列から項目を選択する。
 
 ```ttl
-listbox 'Apple\nBanana\nCherry' 'Select Fruit'
+listbox <message> <title> <string array> [<selected>]
+
+strdim items 3
+items[0] = 'Apple'
+items[1] = 'Banana'
+items[2] = 'Cherry'
+listbox '果物を選んでください' 'Select Fruit' items
 if result >= 0 then
-  ; inputstr に選択項目
+  ; result = 選択インデックス（0 起算）
 endif
+
+; 初期選択指定
+listbox 'Select' 'Title' items 1   ; Banana を初期選択
 ```
 
+| 引数 | 型 | 説明 |
+|------|------|------|
+| `<message>` | 文字列 | ダイアログに表示するメッセージ |
+| `<title>` | 文字列 | ダイアログのタイトル |
+| `<string array>` | 文字列配列 | `strdim` で作成した選択肢の配列 |
+| `[<selected>]` | 整数 | 初期選択インデックス（0 起算） |
+
 **result**: 選択インデックス（0 起算）、-1 = キャンセル
-**inputstr**: 選択された項目
+
+> **macOS 実装メモ**: 現行の macOS 版実装は改行区切り文字列で項目を渡す簡略化方式（`listbox 'A\nB\nC' 'Title'`）。オリジナル準拠の `strdim` 配列方式に変更予定。
 
 ### `statusbox`
 
@@ -1044,27 +1080,33 @@ closesbox
 
 ### `filenamebox`
 
-ファイル選択ダイアログ。
-
-> **macOS 固有動作**: オリジナル Tera Term では `filenamebox <message> <flag> [<initdir>]` で結果を `inputstr` に格納するが、macOS 版では第1引数に格納先変数を指定する（§25 参照）。
+ファイル選択ダイアログ。選択結果は `inputstr` に格納される。
 
 ```ttl
-filenamebox filepath 'Select a file'
-if result == 1 then
-  ; filepath にパスが入る
+filenamebox <title> [<dialogtype> [<initialdir>]]
+
+filenamebox 'Select a file'
+if result > 0 then
+  ; inputstr に選択されたファイルパスが入る
 endif
 
-; 保存モード
-filenamebox filepath 'Save as' 1
+; 保存ダイアログ
+filenamebox 'Save as' 1
+
+; 初期ディレクトリ指定
+filenamebox 'Open file' 0 '/tmp'
 ```
 
 | 引数 | 型 | 説明 |
 |------|------|------|
-| `<strvar>` | 文字列変数 | 選択パス格納先 |
-| `[<title>]` | 文字列 | タイトル |
-| `[<savemode>]` | 整数 | 0=開く, 1=保存 |
+| `<title>` | 文字列 | ダイアログのタイトル |
+| `[<dialogtype>]` | 整数 | 0=開くダイアログ（デフォルト）、0 以外=保存ダイアログ |
+| `[<initialdir>]` | 文字列 | 初期ディレクトリパス |
 
-**result**: 1 = ファイル選択、0 = キャンセル
+**result**: 0 以外 = ファイル選択、0 = キャンセル
+**inputstr**: 選択されたファイルパス
+
+> **macOS 実装メモ**: 現行の macOS 版実装は `filenamebox <strvar> <title> [<save>]` で第 1 引数に格納先変数を指定する方式。オリジナル準拠の `inputstr` 格納方式に変更予定。
 
 ### `dirnamebox`
 
@@ -1658,25 +1700,25 @@ scprecv 'src/foo.txt'    ; ローカルはカレントディレクトリ＋フ�
 
 ### `recvfile`
 
-接続から受信したデータを直接ファイルに保存。Windows 版 TTL 互換: バイナリ/テキスト指定と自動停止機能付き。
+接続から受信したデータを直接ファイルに保存。指定時間データがなければ自動停止する。
 
 ```ttl
 recvfile <filename> <binary_flag> <autostop_seconds>
 
-recvfile '/tmp/received.txt' 0 10   ; テキストモード、10秒無通信で自動停止
-recvfile '/tmp/received.dat' 1 5    ; バイナリモード、5秒無通信で自動停止
-recvfile '/tmp/received.dat' 1 0    ; バイナリモード、自動停止なし（手動停止）
+recvfile '/tmp/received.dat' 0 10   ; 10秒無通信で自動停止
+recvfile '/tmp/received.dat' 1 5    ; 5秒無通信で自動停止
+recvfile '/tmp/received.dat' 0 0    ; 自動停止なし（手動停止）
 ```
 
 | 引数 | 型 | 説明 |
 |------|------|------|
-| `<filename>` | 文字列 | 保存先ファイルパス |
-| `<binary_flag>` | 整数 | 0=テキストモード（改行変換）, 1=バイナリモード（生データ） |
-| `<autostop_seconds>` | 整数 | 指定秒間データなしで自動停止（0=自動停止なし） |
+| `<filename>` | 文字列 | 保存先ファイルパス（相対パスはファイル転送フォルダ基準） |
+| `<binary_flag>` | 整数 | 無視される（常にバイナリモードで保存） |
+| `<autostop_seconds>` | 整数 | 指定秒間データなしで自動停止（0 以下=無制限待機） |
 
-> **macOS 実装メモ**: 現在の macOS 版実装では第 1 引数をローカルディレクトリとして解釈し、内部で ZMODEM プロトコル受信に委譲する。`<binary_flag>` と `<autostop_seconds>` は無視される。Windows 版の「接続データを直接ファイルに保存」する動作とは異なる。
+**result**: 0 = 正常完了、1 = タイムアウト（指定秒間データなし）
 
-**result**: 0 = 成功、1 = 失敗
+> **macOS 実装メモ**: 現行の macOS 版実装では第 1 引数をローカルディレクトリとして解釈し ZMODEM 受信に委譲する。オリジナル準拠の「接続データを直接ファイルに保存 + 自動停止」方式に変更予定。
 
 ---
 
@@ -1795,7 +1837,7 @@ logopen '/tmp/session.log' 1 0        ; バイナリ・新規作成
 | `[<include_screenbuf>]` | 整数 | 1=現在のスクリーンバッファをログに含める |
 | `[<timestamptype>]` | 整数 | タイムスタンプ形式（0=ローカル時刻, 1=UTC, 2=経過時間, 3=ログ開始からの経過時間） |
 
-> **macOS 実装メモ**: 現在の macOS 版実装では第 1 引数（`<filename>`）と第 2 引数（`<append>` として解釈）のみ対応。`<binary>`, `<plaintext>`, `<timestamp>` 等の追加オプションは無視される。Windows 版と同じ引数順でマクロを書いた場合、第 2 引数が `<binary>` ではなく `<append>` として解釈されるため注意が必要。
+> **macOS 実装メモ**: 現行の macOS 版実装では `(filename, append_flag)` の 2 引数のみ対応し、`<binary>` 以降のオプションは無視される。オリジナル準拠の全引数対応に変更予定。現時点では第 2 引数が `<binary>` ではなく `<append>` として解釈されるため注意。
 
 ### `logclose`
 
@@ -1825,7 +1867,7 @@ logwrite 'Manual log entry'
 
 切断時にログファイルを自動的に閉じるかどうかを設定。`logopen` の前に呼び出す。
 
-> **注意**: 現在の macOS 版実装ではコマンド名が `logautoclose`（`mode` なし）で登録されている。オリジナル Tera Term のコマンド名は `logautoclosemode`。
+> **macOS 実装メモ**: 現行の macOS 版実装ではコマンド名が `logautoclose`（`mode` なし）で登録されている。オリジナル準拠の `logautoclosemode` に統一予定。
 
 ```ttl
 logautoclosemode 1    ; 自動クローズ ON
@@ -1895,29 +1937,33 @@ setexitcode 0
 
 ### `rotateleft` / `rotateright`
 
-ビット回転（32ビット整数の循環シフト）。変数の値をインプレースで回転する。
+ビット回転（32ビット整数の循環シフト）。
 
 ```ttl
-rotateleft <intvar> <count>
-rotateright <intvar> <count>
+rotateleft <intvar> <intval> <count>
+rotateright <intvar> <intval> <count>
 ```
 
 | 引数 | 型 | 説明 |
 |------|------|------|
-| `<intvar>` | 整数変数 | 回転する値（結果もここに格納） |
+| `<intvar>` | 整数変数 | 結果の格納先 |
+| `<intval>` | 整数 | 回転する値 |
 | `<count>` | 整数 | 回転ビット数 |
 
 ```ttl
-val = $80000000
-rotateleft val 1
-; val = 1
+rotateleft res $80000000 1
+; res = 1
 
-val = 1
-rotateright val 1
-; val = $80000000
+rotateright res 1 1
+; res = $80000000
+
+; 同じ変数に格納も可能
+val = $80000000
+rotateleft val val 1
+; val = 1
 ```
 
-> **注意**: オリジナル Tera Term では 3 引数（`rotateleft <intvar> <intval> <count>`）で入力と出力が別変数だが、macOS 版では 2 引数でインプレース操作（§25 参照）。
+> **macOS 実装メモ**: 現行の macOS 版実装は 2 引数のインプレース操作（`rotateleft <intvar> <count>`）で動作が異なる。オリジナル準拠の 3 引数方式に変更予定。
 
 ---
 
@@ -2178,9 +2224,8 @@ s = "double quotes"
 | 分類 | 意味 |
 |------|------|
 | **OS** | macOS / Windows の OS レベルの違いに起因（API・権限・概念の非互換） |
-| **設計** | Swift の型システム・言語機能を活かした意図的な再設計（上位互換または改善） |
-| **簡略** | 未実装・部分実装による簡略化（将来の拡張余地あり） |
 | **安全** | セキュリティ向上を目的とした意図的な変更 |
+| **変更予定** | オリジナル Tera Term 準拠に実装変更予定（現行実装は暫定） |
 
 ### 差異一覧
 
@@ -2193,14 +2238,14 @@ s = "double quotes"
 | `getmodemstatus` | OS | モデム制御線（DSR, CTS 等）の状態取得 | スタブ実装（常に 0 を返す） | macOS の PTY にはモデム制御線の概念がない。シリアルポート直接接続は未対応。 |
 | `getspecialfolder` | OS | 文字列名で指定（CSIDL: `"Desktop"` 等） | 数値 ID で指定（0=Desktop, 1=Documents, 2=AppSupport, 3=Home） | Windows の CSIDL 定数体系が macOS に存在しない。`NSSearchPathForDirectoriesInDomains` による macOS ネイティブなフォルダ解決に置換した。 |
 | `getpassword` 等 | 安全 | パスワードファイルに暗号化保存・復号 | macOS Keychain に保存。XPC 経由で安全に送信。 | macOS の Keychain はOS レベルの暗号化ストレージを提供し、ファイルベースの自前暗号化よりセキュアかつ OS のパスワード管理と統合される。引数の互換性（`filename`, `keyname`）は維持し、内部で `filename:keyname` をアカウント名として Keychain に格納する。 |
-| `strsplit` | 設計 | `groupmatchstr1`〜`groupmatchstr9` に格納（最大 9 分割） | `strsplit <src> <delim> <destArrayVar>` で文字列配列変数に格納（制限なし） | オリジナルは 9 個の固定グローバル変数に依存するレガシー設計。Swift の `[String]` 配列型を活用し、分割数の上限を撤廃した。3 引数形式で出力先を明示するため、グローバル変数の副作用も排除される。 |
-| `strjoin` | 設計 | `groupmatchstr1`〜`groupmatchstr9` を可変長引数で結合 | `strjoin <destVar> <srcArrayVar> <delimiter>` で配列変数を結合 | `strsplit` と対称な 3 引数形式。配列変数を直接参照するため、可変長引数のパース不要で型安全。 |
-| `strreplace` | 設計 | `strreplace <strvar> <index> <regex> <newstr>`（4 引数、正規表現検索） | `strreplace <strvar> <target> <replacement>`（3 引数、全出現箇所を単純文字列置換） | オリジナルは開始位置指定 + 正規表現で最初の 1 箇所だけ置換。macOS 版は Swift の `replacingOccurrences(of:with:)` を使い、全出現箇所を一括置換する簡潔な API とした。正規表現が必要な場合は `strmatch` + `strcopy` で代替可能。 |
-| `strtrim` | 設計 | `strtrim <strvar> <trimchars>`（除去する文字セットを文字列で指定） | `strtrim <strvar> [<trimType>]`（整数: 0=両端, 1=前方, 2=後方） | オリジナルは任意文字セットを指定できるが方向制御がない（常に両端）。macOS 版は方向制御を優先し、Swift の `CharacterSet.whitespaces` を使用して空白除去に特化した。引数省略時はデフォルト 0（両端）。 |
-| `rotateleft` / `rotateright` | 設計 | `rotateleft <intvar> <intval> <count>`（3 引数、入出力別変数） | `rotateleft <intvar> <count>`（2 引数、インプレース操作） | Swift のインプレース変更パターン（`var.mutate()`）に合わせた設計。多くの TTL スクリプトでは入力と出力が同一変数であるため、2 引数形式の方が簡潔に書ける。 |
-| `filenamebox` | 設計 | `filenamebox <title> [<dialogtype> [<initialdir>]]`、結果を `inputstr` に格納 | `filenamebox <strvar> <title> [<save>]`、指定変数に格納 | オリジナルはグローバル変数 `inputstr` に格納するため、連続呼び出しで値が上書きされる。macOS 版は出力先変数を明示指定する方式に変更し、複数のファイル選択結果を同時に保持可能にした。 |
-| `listbox` | 簡略 | `strdim` 配列で項目指定、0 起算、-1=キャンセル | 改行区切り文字列で項目指定 | `strdim` 配列参照の実装を簡略化し、単一文字列引数に改行区切りで項目を渡す方式とした。`result` は選択インデックス（0 起算、-1=キャンセル）で互換。 |
-| `sendfile` | 簡略 | `sendfile <filename> <binary_flag>`（0=テキスト, 1=バイナリ） | `<binary_flag>` を無視し常にバイナリモードで送信 | テキストモード（改行コード変換: CR/LF ↔ LF）の実装を省略。macOS / Unix 環境ではLF が標準であり、バイナリ送信で実用上問題がないため。 |
-| `logopen` | 簡略 | `logopen <filename> <binary> <append> [plaintext [timestamp ...]]` | 第 2 引数を `<append>` として解釈（`<binary>` 以降のオプション未対応） | `binary`, `plaintext`, `timestamp` 等の詳細オプションを省略し、`(path, append_flag)` の 2 引数に簡略化。ログは常にテキストモードで記録する。 |
-| `recvfile` | 簡略 | `recvfile <filename> <binary_flag> <autostop_seconds>` | 第 1 引数をディレクトリとして ZMODEM 受信に委譲 | XMODEM/YMODEM 等のプロトコル選択や自動停止機能を省略し、ZMODEM プロトコルに一本化。第 1 引数はファイル名ではなく保存先ディレクトリとして解釈する。 |
-| `logautoclosemode` | 簡略 | コマンド名は `logautoclosemode` | 実装では `logautoclose`（`mode` なし）で登録 | パーサーは `logautoclosemode` も受け付けるが、内部関数名を短縮した。動作は同等（フラグを内部変数 `_logautoclose` に保存）。 |
+| `strsplit` | 変更予定 | `groupmatchstr1`〜`groupmatchstr9` に格納（最大 9 分割） | 現行: `strsplit <src> <delim> <destArrayVar>` で文字列配列変数に格納 | オリジナル準拠の `groupmatchstr` 方式に変更予定。 |
+| `strjoin` | 変更予定 | `groupmatchstr1`〜`groupmatchstr9` を結合 | 現行: `strjoin <destVar> <srcArrayVar> <delimiter>` で配列変数を結合 | オリジナル準拠の `groupmatchstr` 結合方式に変更予定。 |
+| `strreplace` | 変更予定 | `strreplace <strvar> <index> <regex> <newstr>`（4 引数、正規表現） | 現行: `strreplace <strvar> <target> <replacement>`（3 引数、単純文字列置換） | オリジナル準拠の 4 引数・正規表現方式に変更予定。 |
+| `strtrim` | 変更予定 | `strtrim <strvar> <trimchars>`（除去文字セット指定） | 現行: `strtrim <strvar> [<trimType>]`（整数で方向指定、空白のみ） | オリジナル準拠の文字セット指定方式に変更予定。 |
+| `rotateleft` / `rotateright` | 変更予定 | `rotateleft <intvar> <intval> <count>`（3 引数） | 現行: `rotateleft <intvar> <count>`（2 引数、インプレース） | オリジナル準拠の 3 引数方式に変更予定。 |
+| `filenamebox` | 変更予定 | `filenamebox <title> [<dialogtype> [<initialdir>]]`、`inputstr` に格納 | 現行: `filenamebox <strvar> <title> [<save>]`、指定変数に格納 | オリジナル準拠の `inputstr` 格納方式に変更予定。 |
+| `listbox` | 変更予定 | `strdim` 配列で項目指定 | 現行: 改行区切り文字列で項目指定 | オリジナル準拠の `strdim` 配列方式に変更予定。 |
+| `sendfile` | 変更予定 | `sendfile <filename> <binary_flag>`（0=テキスト, 1=バイナリ） | 現行: `<binary_flag>` を無視し常にバイナリ送信 | オリジナル準拠のテキストモード（改行変換・制御文字除去）に対応予定。 |
+| `logopen` | 変更予定 | `logopen <filename> <binary> <append> [plaintext [timestamp ...]]` | 現行: `(filename, append_flag)` の 2 引数、詳細オプション未対応 | オリジナル準拠の全引数対応に変更予定。 |
+| `recvfile` | 変更予定 | `recvfile <filename> <binary_flag> <autostop_seconds>` | 現行: 第 1 引数をディレクトリとして ZMODEM 受信に委譲 | オリジナル準拠の「接続データ直接保存 + 自動停止」方式に変更予定。 |
+| `logautoclosemode` | 変更予定 | コマンド名は `logautoclosemode` | 現行: `logautoclose`（`mode` なし）で登録 | オリジナル準拠のコマンド名 `logautoclosemode` に統一予定。 |
