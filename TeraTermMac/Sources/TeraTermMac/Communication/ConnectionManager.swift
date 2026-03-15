@@ -403,7 +403,7 @@ class TCPConnection: Connection {
         guard running, let output = output else { return }
         writeQueue.async { [weak self] in
             // 全バイト送信完了までループ（部分書き込み対応）
-            data.withUnsafeBytes { buffer in
+            data.withUnsafeBytes { (buffer: UnsafeRawBufferPointer) in
                 guard let basePtr = buffer.baseAddress?.assumingMemoryBound(to: UInt8.self) else { return }
                 var offset = 0
                 let total = data.count
@@ -695,7 +695,7 @@ class SerialConnection: Connection {
 
         guard running, fd >= 0 else { return }
         writeQueue.async { [weak self] in
-            data.withUnsafeBytes { buffer in
+            data.withUnsafeBytes { (buffer: UnsafeRawBufferPointer) in
                 guard let basePtr = buffer.baseAddress else { return }
                 var offset = 0
                 let total = data.count
@@ -960,7 +960,7 @@ class LocalShellConnection: Connection {
 
         guard running, fd >= 0 else { return }
         writeQueue.async { [weak self] in
-            data.withUnsafeBytes { buffer in
+            data.withUnsafeBytes { (buffer: UnsafeRawBufferPointer) in
                 guard let basePtr = buffer.baseAddress else { return }
                 var offset = 0
                 let total = data.count
