@@ -997,12 +997,12 @@ final class TTLParserExpressionTests: XCTestCase {
 
     func testTTLErrorMessages() {
         XCTAssertFalse(TTLError.syntax.message.isEmpty)
-        XCTAssertFalse(TTLError.variableNotFound.message.isEmpty)
+        XCTAssertFalse(TTLError.varNotInit.message.isEmpty)
         XCTAssertFalse(TTLError.typeMismatch.message.isEmpty)
-        XCTAssertFalse(TTLError.divideByZero.message.isEmpty)
-        XCTAssertFalse(TTLError.labelNotFound.message.isEmpty)
-        XCTAssertFalse(TTLError.stackOverflow.message.isEmpty)
-        XCTAssertFalse(TTLError.tooManyVariables.message.isEmpty)
+        XCTAssertFalse(TTLError.divByZero.message.isEmpty)
+        XCTAssertFalse(TTLError.labelReq.message.isEmpty)
+        XCTAssertFalse(TTLError.stackOver.message.isEmpty)
+        XCTAssertFalse(TTLError.tooManyVar.message.isEmpty)
     }
 
     // MARK: - MacroFileLoader
