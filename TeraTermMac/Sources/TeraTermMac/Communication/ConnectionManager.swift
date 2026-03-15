@@ -418,7 +418,7 @@ class TCPConnection: Connection {
                         retries += 1
                         if retries > TCPConnection.sendMaxRetries {
                             // リトライ上限到達 → 送信失敗として切断・通知
-                            TTLog.tcp.error("Write retry exceeded: retries=\(retries, privacy: .public) offset=\(offset, privacy: .public) total=\(total, privacy: .public)")
+                            TTLog.tcp.error("Write retry exceeded: retries=\(retries) offset=\(offset) total=\(total)")
                             DispatchQueue.main.async { [weak self] in
                                 self?.delegate?.connectionDidFail(error: ConnectionError.sendFailed)
                                 self?.disconnect()

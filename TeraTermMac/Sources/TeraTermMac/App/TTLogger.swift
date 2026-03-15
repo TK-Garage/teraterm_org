@@ -7,6 +7,7 @@
  * Replaces scattered NSLog calls with structured, subsystem-based logging.
  */
 
+import Foundation
 import os
 
 /// Centralized loggers for each subsystem.
