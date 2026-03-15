@@ -2350,14 +2350,21 @@ s = "double quotes"
 | `logrotate` | Doc | ドキュメントを正しい仕様 `logrotate <mode> [<value>]`（mode: "size"/"rotate"/"halt"）に更新。実装は両方とも仕様通り |
 | `loginfo` | MR/Doc | ドキュメントを正しい仕様 `loginfo <strvar>` に更新。MacroRunner に `<strvar>` 引数サポートを追加（オリジナル TT 仕様に準拠） |
 
-### 26.9 未ドキュメントコマンド
+### 26.9 teraterm_mac 独自拡張コマンド
 
-以下のコマンドは両インタプリタのディスパッチテーブルに存在するが、本ドキュメントに記載がない。
+以下のコマンドはオリジナル Tera Term の予約語テーブルに存在しない。MacroRunner（新インタプリタ）にのみ実装されている teraterm_mac 独自の拡張であり、オリジナル Tera Term で使用した場合は構文エラーとなる。TTLParser（旧インタプリタ）にも存在しない。
 
-| コマンド | 実装内容 | 備考 |
-|----------|---------|------|
-| `inc` | 整数変数をインクリメント（`inc <intvar>`） | |
-| `dec` | 整数変数をデクリメント（`dec <intvar>`） | |
-| `recv` | データを受信（タイムアウト付き）。result + inputstr に格納 | `recvln` の行区切りなし版 |
-| `waitmatch` | `waitregex` のエイリアス | |
-| `settimeout` / `timeout` | タイムアウト値を設定（`settimeout <seconds>`）。システム変数 `timeout` にも反映 | `timeout` 変数への代入と同等 |
+| コマンド | 実装内容 | オリジナル TT での動作 |
+|----------|---------|----------------------|
+| `inc` | 整数変数をインクリメント（`inc <intvar>`） | 未知のコマンドとして構文エラー |
+| `dec` | 整数変数をデクリメント（`dec <intvar>`） | 未知のコマンドとして構文エラー |
+| `recv` | データを受信（タイムアウト付き）。result + inputstr に格納。`recvln` の行区切りなし版 | 未知のコマンドとして構文エラー（`recvln` のみ存在） |
+| `waitmatch` | `waitregex` のエイリアス | 未知のコマンドとして構文エラー（`waitregex` のみ存在） |
+| `settimeout` / `timeout`（コマンド形式） | タイムアウト値を設定（`settimeout <seconds>`）。システム変数 `timeout` にも反映 | 未知のコマンドとして構文エラー（`timeout` はシステム変数としてのみ存在し、`timeout = <value>` 形式の代入で設定する） |
+| `logautoclose` | `logautoclosemode` のエイリアス | 未知のコマンドとして構文エラー（`logautoclosemode` のみ存在） |
+
+### 26.10 オリジナル TT に存在するが MacroRunner に未実装だったコマンド — 修正済み
+
+| コマンド | オリジナル TT での仕様 | 修正内容 |
+|----------|----------------------|---------|
+| `setspeed` | `setbaud` のエイリアス（v4.99 以降） | MacroRunner に `setbaud` のエイリアスとして追加。TTLParser（旧インタプリタ）には既に `.setBaud` として実装済み |

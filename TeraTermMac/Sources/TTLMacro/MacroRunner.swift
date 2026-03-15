@@ -743,6 +743,7 @@ class MacroRunner {
         case "setsync":     cmdSetSync(args) // [IMPLEMENTED]
         case "dispstr":     cmdDispStr(args) // [IMPLEMENTED]
         case "setbaud":     cmdSetBaud(args) // [IMPLEMENTED]
+        case "setspeed":    cmdSetBaud(args) // [IMPLEMENTED] alias for setbaud (original TT v4.99+)
         case "setflowctrl": cmdSetFlowCtrl(args) // [IMPLEMENTED]
         case "setdtr":      cmdSetDtr(args) // [IMPLEMENTED]
         case "setrts":      cmdSetRts(args) // [IMPLEMENTED]
