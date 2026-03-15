@@ -2243,6 +2243,8 @@ s = "double quotes"
 | `getfileattr` | MR | `getfileattr <filename>` — result に属性値 | `args[0]`=destVar, `args[1]`=filePath（2引数、result ではなく変数に格納） | TTLInterpreter も別形式 `(filename, intvar)` |
 | `getfileattr` | TI | `getfileattr <filename>` — result に属性値 | `(filename, intvar)` の 2 引数（result ではなく intvar に格納） | 仕様では result のみ |
 | `dirnamebox` | MR | `dirnamebox <strvar> <title>` | `args[0]`=message, `args[1]`=defaultDir（strvar なし、inputstr に格納） | TTLInterpreter は仕様通り |
+| `str2code` | TI | `str2code <intvar> <string>` — 先頭文字のコードを取得 | 引数順が `(string, intvar)` で逆。さらに先頭 4 バイトを 32bit 整数にパックする（単一文字コードではない） | MacroRunner は仕様通り（Unicode scalar） |
+| `code2str` | TI | `code2str <strvar> <code>` — コードを文字に変換 | 32bit 整数を 4 バイトにアンパックし最大 4 文字を生成（単一文字変換ではない） | MacroRunner は仕様通り（Unicode scalar → 1 文字） |
 
 ### 26.2 result / 戻り値の不一致
 
