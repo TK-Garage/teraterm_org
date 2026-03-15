@@ -260,11 +260,19 @@ sendkcode $1B   ; ESC
 
 ### `sendfile`
 
-ファイルの内容を送信。
+ファイルの内容を送信。Windows 版 TTL 互換: 第 2 引数でバイナリ/テキスト指定。
 
 ```ttl
-sendfile '/path/to/data.txt'
+sendfile '/path/to/data.txt' 0    ; テキストモード（改行変換あり）
+sendfile '/tmp/data.bin' 1        ; バイナリモード（生データ送信）
 ```
+
+| 引数 | 型 | 説明 |
+|------|------|------|
+| `<filename>` | 文字列 | 送信するファイルのパス |
+| `<binary_flag>` | 整数 | 0=テキストモード（改行変換）, 1=バイナリモード（生データ） |
+
+> **macOS 実装メモ**: 現在の macOS 版実装では `<binary_flag>` を無視し、常にバイナリモードで送信する。テキストモードの改行変換（CR/LF → LF 等）は未実装。
 
 ### `recvln`
 
@@ -1527,14 +1535,23 @@ scprecv 'src/foo.txt'    ; ローカルはカレントディレクトリ＋フ�
 
 ### `recvfile`
 
-接続から受信したデータを直接ファイルに保存。自動停止機能付き。
+接続から受信したデータを直接ファイルに保存。Windows 版 TTL 互換: バイナリ/テキスト指定と自動停止機能付き。
 
 ```ttl
-recvfile filename binary_flag autostop_seconds
-recvfile '/tmp/received.dat' 1 5
-; binary: 常に 1 (バイナリモード固定)
-; autostop_seconds: 指定秒間データなしで自動停止 (0=無限)
+recvfile <filename> <binary_flag> <autostop_seconds>
+
+recvfile '/tmp/received.txt' 0 10   ; テキストモード、10秒無通信で自動停止
+recvfile '/tmp/received.dat' 1 5    ; バイナリモード、5秒無通信で自動停止
+recvfile '/tmp/received.dat' 1 0    ; バイナリモード、自動停止なし（手動停止）
 ```
+
+| 引数 | 型 | 説明 |
+|------|------|------|
+| `<filename>` | 文字列 | 保存先ファイルパス |
+| `<binary_flag>` | 整数 | 0=テキストモード（改行変換）, 1=バイナリモード（生データ） |
+| `<autostop_seconds>` | 整数 | 指定秒間データなしで自動停止（0=自動停止なし） |
+
+> **macOS 実装メモ**: 現在の macOS 版実装では第 1 引数をローカルディレクトリとして解釈し、内部で ZMODEM プロトコル受信に委譲する。`<binary_flag>` と `<autostop_seconds>` は無視される。Windows 版の「接続データを直接ファイルに保存」する動作とは異なる。
 
 **result**: 0 = 成功、1 = 失敗
 
@@ -1603,10 +1620,29 @@ changedir '/tmp'
 
 ### `logopen`
 
+ログ記録を開始する。Windows 版 TTL 互換: 多段オプション形式で詳細制御。
+
 ```ttl
-logopen '/tmp/session.log' 0     ; 新規
-logopen '/tmp/session.log' 1     ; 追記
+logopen <filename> <binary> <append> [<plaintext> [<timestamp> [<hidestatus> [<include_screenbuf> [<timestamptype>]]]]]
+
+; 基本形
+logopen '/tmp/session.log' 0 0        ; テキスト・新規作成
+logopen '/tmp/session.log' 0 1        ; テキスト・追記
+logopen '/tmp/session.log' 1 0        ; バイナリ・新規作成
 ```
+
+| 引数 | 型 | 説明 |
+|------|------|------|
+| `<filename>` | 文字列 | ログファイルのパス |
+| `<binary>` | 整数 | 0=テキストモード, 1=バイナリモード |
+| `<append>` | 整数 | 0=新規作成（上書き）, 1=追記 |
+| `[<plaintext>]` | 整数 | 1=制御文字・エスケープシーケンスを除去 |
+| `[<timestamp>]` | 整数 | 1=各行にタイムスタンプを付与 |
+| `[<hidestatus>]` | 整数 | 1=ステータスバーにログ表示をしない |
+| `[<include_screenbuf>]` | 整数 | 1=現在のスクリーンバッファをログに含める |
+| `[<timestamptype>]` | 整数 | タイムスタンプ形式（0=ローカル時刻, 1=UTC, 2=経過時間, 3=ログ開始からの経過時間） |
+
+> **macOS 実装メモ**: 現在の macOS 版実装では第 1 引数（`<filename>`）と第 2 引数（`<append>` として解釈）のみ対応。`<binary>`, `<plaintext>`, `<timestamp>` 等の追加オプションは無視される。Windows 版と同じ引数順でマクロを書いた場合、第 2 引数が `<binary>` ではなく `<append>` として解釈されるため注意が必要。
 
 ### `logclose`
 
@@ -1961,4 +1997,7 @@ s = "double quotes"
 | `filenamebox` | `filenamebox <msg> <flag> [<dir>]`、`inputstr` に格納 | `filenamebox <strvar> <title> [<save>]`、指定変数に格納 |
 | `getfileattr` | 1 引数、`result` に属性値を格納 | 2 引数、指定変数に属性値を格納 |
 | `getpassword` 等 | パスワードファイルに暗号化保存 | macOS Keychain に保存 |
+| `sendfile` | `sendfile <filename> <binary_flag>`（0=テキスト, 1=バイナリ） | `<binary_flag>` を無視し常にバイナリモードで送信 |
+| `logopen` | `logopen <filename> <binary> <append> [plaintext [timestamp ...]]` | 第 2 引数を `<append>` として解釈（`<binary>` 以降のオプション未対応） |
+| `recvfile` | `recvfile <filename> <binary_flag> <autostop_seconds>` | 第 1 引数をディレクトリとして ZMODEM 受信に委譲（`<binary_flag>`, `<autostop>` 未対応） |
 | `logautoclosemode` | コマンド名は `logautoclosemode` | 実装では `logautoclose`（`mode` なし）で登録 |
