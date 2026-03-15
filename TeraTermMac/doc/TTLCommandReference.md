@@ -2171,24 +2171,36 @@ s = "double quotes"
 ## 25. macOS 固有の動作差異
 
 以下のコマンドは macOS 版でオリジナル Tera Term (Windows) と異なる動作をする。
+差異の理由を 4 種類に分類する。
 
-| コマンド | オリジナル (Windows) | macOS 版 |
-|----------|---------------------|----------|
-| `cygconnect` | Cygwin 環境への接続 | ローカルシェル（PTY）接続として動作（§12 参照） |
-| `setdate` | システム日付を変更 | 常に `result = -1` を返す（root 権限が必要なため変更不可） |
-| `settime` | システム時刻を変更 | 常に `result = -1` を返す（同上） |
-| `filelock` / `fileunlock` | ファイルの排他ロック | スタブ実装（macOS では advisory lock のみ） |
-| `getmodemstatus` | モデム制御線の状態取得 | スタブ実装（常に 0 を返す） |
-| `listbox` | `strdim` 配列で項目指定、0 起算、-1=キャンセル | 改行区切り文字列で項目指定 |
-| `getspecialfolder` | 文字列名で指定（CSIDL: `"Desktop"` 等） | 数値 ID で指定（0=Desktop, 1=Documents, 2=AppSupport, 3=Home） |
-| `strsplit` | `groupmatchstr1`〜`groupmatchstr9` に格納（最大 9） | 内部文字列配列変数に格納（制限なし） |
-| `strjoin` | `groupmatchstr1`〜`groupmatchstr9` を結合 | 文字列配列変数を結合 |
-| `filenamebox` | `filenamebox <msg> <flag> [<dir>]`、`inputstr` に格納 | `filenamebox <strvar> <title> [<save>]`、指定変数に格納 |
-| `getpassword` 等 | パスワードファイルに暗号化保存 | macOS Keychain に保存 |
-| `sendfile` | `sendfile <filename> <binary_flag>`（0=テキスト, 1=バイナリ） | `<binary_flag>` を無視し常にバイナリモードで送信 |
-| `logopen` | `logopen <filename> <binary> <append> [plaintext [timestamp ...]]` | 第 2 引数を `<append>` として解釈（`<binary>` 以降のオプション未対応） |
-| `recvfile` | `recvfile <filename> <binary_flag> <autostop_seconds>` | 第 1 引数をディレクトリとして ZMODEM 受信に委譲（`<binary_flag>`, `<autostop>` 未対応） |
-| `logautoclosemode` | コマンド名は `logautoclosemode` | 実装では `logautoclose`（`mode` なし）で登録 |
-| `strreplace` | `strreplace <strvar> <index> <regex> <newstr>`（4 引数、正規表現） | `strreplace <strvar> <target> <replacement>`（3 引数、単純文字列置換） |
-| `strtrim` | `strtrim <strvar> <trimchars>`（除去文字セットを文字列で指定） | `strtrim <strvar> [<trimType>]`（整数: 0=両端, 1=前方, 2=後方） |
-| `rotateleft` / `rotateright` | `rotateleft <intvar> <intval> <count>`（3 引数、入出力別変数） | `rotateleft <intvar> <count>`（2 引数、インプレース操作） |
+### 分類凡例
+
+| 分類 | 意味 |
+|------|------|
+| **OS** | macOS / Windows の OS レベルの違いに起因（API・権限・概念の非互換） |
+| **設計** | Swift の型システム・言語機能を活かした意図的な再設計（上位互換または改善） |
+| **簡略** | 未実装・部分実装による簡略化（将来の拡張余地あり） |
+| **安全** | セキュリティ向上を目的とした意図的な変更 |
+
+### 差異一覧
+
+| コマンド | 分類 | オリジナル (Windows) | macOS 版 | 差異の理由 |
+|----------|:----:|---------------------|----------|-----------|
+| `cygconnect` | OS | Cygwin 環境への接続 | ローカルシェル（PTY）接続として動作（§12 参照） | macOS に Cygwin は存在しない。同等のローカルシェル接続を PTY 経由で提供する。 |
+| `setdate` | OS | システム日付を変更 | 常に `result = -1` を返す | macOS では root 権限なしにシステム日付を変更できない。サンドボックス環境では原理的に不可。 |
+| `settime` | OS | システム時刻を変更 | 常に `result = -1` を返す | 同上。 |
+| `filelock` / `fileunlock` | OS | ファイルの排他ロック | スタブ実装（常に `result = 0`） | macOS のファイルロックは advisory lock（`flock`）のみで、Windows の mandatory lock と互換性がない。TTL スクリプトの互換性のためスタブで受け入れる。 |
+| `getmodemstatus` | OS | モデム制御線（DSR, CTS 等）の状態取得 | スタブ実装（常に 0 を返す） | macOS の PTY にはモデム制御線の概念がない。シリアルポート直接接続は未対応。 |
+| `getspecialfolder` | OS | 文字列名で指定（CSIDL: `"Desktop"` 等） | 数値 ID で指定（0=Desktop, 1=Documents, 2=AppSupport, 3=Home） | Windows の CSIDL 定数体系が macOS に存在しない。`NSSearchPathForDirectoriesInDomains` による macOS ネイティブなフォルダ解決に置換した。 |
+| `getpassword` 等 | 安全 | パスワードファイルに暗号化保存・復号 | macOS Keychain に保存。XPC 経由で安全に送信。 | macOS の Keychain はOS レベルの暗号化ストレージを提供し、ファイルベースの自前暗号化よりセキュアかつ OS のパスワード管理と統合される。引数の互換性（`filename`, `keyname`）は維持し、内部で `filename:keyname` をアカウント名として Keychain に格納する。 |
+| `strsplit` | 設計 | `groupmatchstr1`〜`groupmatchstr9` に格納（最大 9 分割） | `strsplit <src> <delim> <destArrayVar>` で文字列配列変数に格納（制限なし） | オリジナルは 9 個の固定グローバル変数に依存するレガシー設計。Swift の `[String]` 配列型を活用し、分割数の上限を撤廃した。3 引数形式で出力先を明示するため、グローバル変数の副作用も排除される。 |
+| `strjoin` | 設計 | `groupmatchstr1`〜`groupmatchstr9` を可変長引数で結合 | `strjoin <destVar> <srcArrayVar> <delimiter>` で配列変数を結合 | `strsplit` と対称な 3 引数形式。配列変数を直接参照するため、可変長引数のパース不要で型安全。 |
+| `strreplace` | 設計 | `strreplace <strvar> <index> <regex> <newstr>`（4 引数、正規表現検索） | `strreplace <strvar> <target> <replacement>`（3 引数、全出現箇所を単純文字列置換） | オリジナルは開始位置指定 + 正規表現で最初の 1 箇所だけ置換。macOS 版は Swift の `replacingOccurrences(of:with:)` を使い、全出現箇所を一括置換する簡潔な API とした。正規表現が必要な場合は `strmatch` + `strcopy` で代替可能。 |
+| `strtrim` | 設計 | `strtrim <strvar> <trimchars>`（除去する文字セットを文字列で指定） | `strtrim <strvar> [<trimType>]`（整数: 0=両端, 1=前方, 2=後方） | オリジナルは任意文字セットを指定できるが方向制御がない（常に両端）。macOS 版は方向制御を優先し、Swift の `CharacterSet.whitespaces` を使用して空白除去に特化した。引数省略時はデフォルト 0（両端）。 |
+| `rotateleft` / `rotateright` | 設計 | `rotateleft <intvar> <intval> <count>`（3 引数、入出力別変数） | `rotateleft <intvar> <count>`（2 引数、インプレース操作） | Swift のインプレース変更パターン（`var.mutate()`）に合わせた設計。多くの TTL スクリプトでは入力と出力が同一変数であるため、2 引数形式の方が簡潔に書ける。 |
+| `filenamebox` | 設計 | `filenamebox <title> [<dialogtype> [<initialdir>]]`、結果を `inputstr` に格納 | `filenamebox <strvar> <title> [<save>]`、指定変数に格納 | オリジナルはグローバル変数 `inputstr` に格納するため、連続呼び出しで値が上書きされる。macOS 版は出力先変数を明示指定する方式に変更し、複数のファイル選択結果を同時に保持可能にした。 |
+| `listbox` | 簡略 | `strdim` 配列で項目指定、0 起算、-1=キャンセル | 改行区切り文字列で項目指定 | `strdim` 配列参照の実装を簡略化し、単一文字列引数に改行区切りで項目を渡す方式とした。`result` は選択インデックス（0 起算、-1=キャンセル）で互換。 |
+| `sendfile` | 簡略 | `sendfile <filename> <binary_flag>`（0=テキスト, 1=バイナリ） | `<binary_flag>` を無視し常にバイナリモードで送信 | テキストモード（改行コード変換: CR/LF ↔ LF）の実装を省略。macOS / Unix 環境ではLF が標準であり、バイナリ送信で実用上問題がないため。 |
+| `logopen` | 簡略 | `logopen <filename> <binary> <append> [plaintext [timestamp ...]]` | 第 2 引数を `<append>` として解釈（`<binary>` 以降のオプション未対応） | `binary`, `plaintext`, `timestamp` 等の詳細オプションを省略し、`(path, append_flag)` の 2 引数に簡略化。ログは常にテキストモードで記録する。 |
+| `recvfile` | 簡略 | `recvfile <filename> <binary_flag> <autostop_seconds>` | 第 1 引数をディレクトリとして ZMODEM 受信に委譲 | XMODEM/YMODEM 等のプロトコル選択や自動停止機能を省略し、ZMODEM プロトコルに一本化。第 1 引数はファイル名ではなく保存先ディレクトリとして解釈する。 |
+| `logautoclosemode` | 簡略 | コマンド名は `logautoclosemode` | 実装では `logautoclose`（`mode` なし）で登録 | パーサーは `logautoclosemode` も受け付けるが、内部関数名を短縮した。動作は同等（フラグを内部変数 `_logautoclose` に保存）。 |
