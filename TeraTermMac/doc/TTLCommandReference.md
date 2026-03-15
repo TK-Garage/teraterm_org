@@ -2270,14 +2270,35 @@ s = "double quotes"
 |----------|:----:|----------------------|------|------|
 | `sendln` | MR | 文字列 + CR を送信 | `\r\n`（CR+LF）を付加 | TTLInterpreter は delegate 経由で CR のみ |
 
-### 26.5 ドキュメント記述の誤り
+### 26.5 sprintf/sprintf2 の入れ替わり
+
+| コマンド | 分類 | 仕様（本ドキュメント） | 実装 | 備考 |
+|----------|:----:|----------------------|------|------|
+| `sprintf` | MR | 結果を `inputstr` に格納 | `args[0]`（destVar）に格納 | TTLInterpreter は仕様通り |
+| `sprintf2` | MR | 結果を指定変数に格納 | `inputstr` に格納 | TTLInterpreter は仕様通り。MacroRunner では sprintf/sprintf2 の動作が逆 |
+
+### 26.6 findfirst / findnext の引数不一致
+
+| コマンド | 分類 | 仕様（本ドキュメント） | 実装 | 備考 |
+|----------|:----:|----------------------|------|------|
+| `findfirst` | 両方 | `findfirst <dirhandle> <pattern> <strvar>` — 3 引数。result: 1=見つかった, 0=該当なし | 2 引数 `(strvar, pattern)`。dirhandle を返さず result に検索 ID を格納 | オリジナル TT は 3 引数 |
+| `findnext` | 両方 | `findnext <dirhandle> <strvar>` — dirhandle で検索を継続 | 2 引数 `(strvar, searchId)`。searchId の取得方法がインタプリタ間で異なる | |
+
+### 26.7 setdate / settime の result 未設定
+
+| コマンド | 分類 | 仕様（本ドキュメント） | 実装 | 備考 |
+|----------|:----:|----------------------|------|------|
+| `setdate` | MR | `result = -1`（macOS では常に失敗） | result を設定しない（内部変数 `_setdate` に格納するのみ） | TTLInterpreter は仕様通り result = -1 |
+| `settime` | MR | `result = -1`（macOS では常に失敗） | result を設定しない（内部変数 `_settime` に格納するのみ） | TTLInterpreter は仕様通り result = -1 |
+
+### 26.8 ドキュメント記述の誤り
 
 | コマンド | 分類 | 現在の記述 | 正しい仕様 | 備考 |
 |----------|:----:|----------|----------|------|
 | `logrotate` | Doc | "引数なし" | 引数あり: `logrotate <mode> [<value>]`（mode: "size"/"rotate"/"halt"） | 両実装とも引数を取る |
 | `loginfo` | Doc | "引数なし" | MacroRunner は引数なし（result + inputstr）、TTLInterpreter は `<strvar>` を取る | TTLInterpreter 側も要修正の可能性 |
 
-### 26.6 未ドキュメントコマンド
+### 26.9 未ドキュメントコマンド
 
 以下のコマンドは両インタプリタのディスパッチテーブルに存在するが、本ドキュメントに記載がない。
 
