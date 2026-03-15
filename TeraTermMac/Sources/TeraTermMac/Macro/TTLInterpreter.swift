@@ -5,6 +5,12 @@
  *
  * Port of ttl.cpp to Swift/macOS
  * TTL (Tera Term Language) interpreter - main execution engine
+ *
+ * [REMAINING-TASK-AUDIT]
+ * TTLInterpreterDelegate メソッド数: 41
+ * MacroRunner スタブ数: 5 → 全コマンド実装済み (MacroRunner.swift + MacroRunnerCommands*.swift)
+ * ファイル転送プロトコル: 9 (xmodem/xmodem-crc/xmodem-1k/ymodem/zmodem/kermit/bplus/quickvan/raw)
+ * パスワード系コマンド: 8 (getpassword/setpassword/delpassword/ispassword + *2 variants)
  */
 
 #if canImport(AppKit)

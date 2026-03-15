@@ -589,3 +589,284 @@ TeraTermMac/
     ├── test_control.ttl
     └── ...
 ```
+
+---
+
+## TTLInterpreterDelegate → XPC Mapping Table
+
+All TTLInterpreterDelegate methods mapped to their XPC protocol counterparts.
+
+Processing locations:
+- **TTLMacro側**: Processing completes within MacroRunner / local execution in TTLMacro.app
+- **TeraTermMac側**: Delegated to TeraTermMac.app via XPC MacroClientProtocol
+- **共通**: Both sides involved
+
+| # | delegate メソッド名 | XPC プロトコル | 処理場所 | 備考 |
+|---|---|---|---|---|
+| 1 | `ttlSendData(_ data: Data)` | `sendToTerminal(data:reply:)` | TeraTermMac側 | バイナリデータ送信 |
+| 2 | `ttlSendString(_ text: String)` | `sendToTerminal(data:reply:)` | TeraTermMac側 | UTF-8エンコードしてData送信 |
+| 3 | `ttlSendLine(_ text: String)` | `sendToTerminal(data:reply:)` | TeraTermMac側 | text+CR をData送信 |
+| 4 | `ttlIsConnected() -> Bool` | `isConnected(reply:)` | TeraTermMac側 | 接続状態確認 |
+| 5 | `ttlGetReceivedData(clear:) -> String` | `recvFromTerminal(timeout:reply:)` | TeraTermMac側 | 受信バッファ取得 |
+| 6 | `ttlFlushReceiveBuffer()` | `flushReceiveBuffer(reply:)` | TeraTermMac側 | バッファクリア |
+| 7 | `ttlDisconnect()` | `disconnectFromHost(reply:)` | TeraTermMac側 | 切断 |
+| 8 | `ttlConnect(_ param: String)` | `connectToHost(param:reply:)` | TeraTermMac側 | 接続 |
+| 9 | `ttlConnectLocalShell()` | `connectLocalShell(reply:)` | TeraTermMac側 | ローカルシェル(PTY)接続 |
+| 10 | `ttlSetTitle(_ title: String)` | `setWindowTitle(title:reply:)` | TeraTermMac側 | ウィンドウタイトル設定 |
+| 11 | `ttlGetTitle() -> String` | `getWindowTitle(reply:)` | TeraTermMac側 | ウィンドウタイトル取得 |
+| 12 | `ttlShowWindow(_ show: Bool)` | `showWindow(visible:reply:)` | TeraTermMac側 | 表示/非表示 |
+| 13 | `ttlClearScreen()` | `clearScreen(reply:)` | TeraTermMac側 | 画面クリア |
+| 14 | `ttlSendBreak()` | `sendBreak(reply:)` | TeraTermMac側 | ブレーク信号送信 |
+| 15 | `ttlLogOpen(_ path:append:)` | `openLog(path:append:reply:)` | TeraTermMac側 | ログファイルオープン |
+| 16 | `ttlLogClose()` | `closeLog(reply:)` | TeraTermMac側 | ログファイルクローズ |
+| 17 | `ttlLogPause()` | `pauseLog(reply:)` | TeraTermMac側 | ログ一時停止 |
+| 18 | `ttlLogStart()` | `resumeLog(reply:)` | TeraTermMac側 | ログ再開 |
+| 19 | `ttlLogWrite(_ text: String)` | `writeToLog(text:reply:)` | TeraTermMac側 | ログ書き込み |
+| 20 | `ttlLogInfo() -> (state:filePath:)` | `getLogInfo(reply:)` | TeraTermMac側 | ログ情報取得 |
+| 21 | `ttlLogRotateSet(mode:value:)` | `setLogRotation(mode:value:reply:)` | TeraTermMac側 | ログローテーション設定 |
+| 22 | `ttlShowError(message:line:lineText:fileName:completion:)` | `showError(message:line:lineText:fileName:reply:)` | TeraTermMac側 | エラーダイアログ表示 |
+| 23 | `ttlShowStatusBox(message:title:)` | `showStatusBox(message:title:reply:)` | TeraTermMac側 | ステータスボックス表示 |
+| 24 | `ttlCloseStatusBox()` | `closeStatusBox(reply:)` | TeraTermMac側 | ステータスボックス閉じる |
+| 25 | `ttlGetClipboard() -> String` | `getClipboard(reply:)` | TeraTermMac側 | クリップボード取得 |
+| 26 | `ttlSetClipboard(_ text: String)` | `setClipboard(text:reply:)` | TeraTermMac側 | クリップボード設定 |
+| 27 | `ttlSetBaud(_ baud: Int)` | `setBaudRate(rate:reply:)` | TeraTermMac側 | ボーレート設定 |
+| 28 | `ttlSetFlowCtrl(_ mode: Int)` | `setFlowControl(mode:reply:)` | TeraTermMac側 | フロー制御設定 |
+| 29 | `ttlSetDtr(_ on: Int)` | `setDtr(on:reply:)` | TeraTermMac側 | DTR信号設定 |
+| 30 | `ttlSetRts(_ on: Int)` | `setRts(on:reply:)` | TeraTermMac側 | RTS信号設定 |
+| 31 | `ttlStartFileTransfer(protocol:direction:filePath:completion:)` | `startFileSend/startFileRecv` | TeraTermMac側 | ファイル転送開始 |
+| 32 | `ttlKermitGet(remoteFileName:localPath:completion:)` | `startFileRecv(protocolName:"kermit"...)` | TeraTermMac側 | Kermit GET |
+| 33 | `ttlKermitFinish(completion:)` | `cancelTransfer(reply:)` | TeraTermMac側 | Kermit FINISH |
+| 34 | `ttlScpSend(localPath:remotePath:completion:)` | `scpSend(localPath:remotePath:reply:)` | TeraTermMac側 | SCP送信 |
+| 35 | `ttlScpRecv(remotePath:localPath:completion:)` | `scpRecv(remotePath:localPath:reply:)` | TeraTermMac側 | SCP受信 |
+| 36 | `ttlRecvFile(filePath:binary:autoStopSec:completion:)` | `startFileRecv(protocolName:"raw"...)` | TeraTermMac側 | ファイル受信 |
+| 37 | `ttlRestoreSetup(from path: String)` | `restoreSetup(path:reply:)` | TeraTermMac側 | 設定復元 |
+| 38 | `ttlCallMenu(menuId: Int)` | `callMenu(menuId:reply:)` | TeraTermMac側 | メニュー呼び出し |
+| 39 | `ttlSetSerialDelayChar(_ ms: Int)` | `setSerialDelayChar(ms:reply:)` | TeraTermMac側 | 文字送信遅延設定 |
+| 40 | `ttlSetSerialDelayLine(_ ms: Int)` | `setSerialDelayLine(ms:reply:)` | TeraTermMac側 | 行送信遅延設定 |
+| 41 | `ttlLoadKeyMap(from path: String)` | `loadKeyMap(path:reply:)` | TeraTermMac側 | キーマップ読み込み |
+
+### Additional XPC methods (not in original delegate)
+
+| # | XPC メソッド名 | 処理場所 | 備考 |
+|---|---|---|---|
+| 42 | `macroDidFinish(exitCode:reply:)` | TeraTermMac側 | マクロ正常完了通知 |
+| 43 | `macroDidFail(error:line:reply:)` | TeraTermMac側 | マクロエラー通知 |
+| 44 | `logMessage(level:text:reply:)` | TeraTermMac側 | ログメッセージ送信 |
+| 45 | `terminateApp(reply:)` | TeraTermMac側 | アプリ終了要求 |
+| 46 | `getAppVersion(reply:)` | TeraTermMac側 | バージョン取得 |
+| 47 | `didExecuteLine(lineNumber:lineText:reply:)` | TeraTermMac側 | 行実行通知 |
+| 48 | `moveWindow(x:y:reply:)` | TeraTermMac側 | ウィンドウ移動 |
+| 49 | `resizeWindow(width:height:reply:)` | TeraTermMac側 | ウィンドウリサイズ |
+| 50 | `bringWindowToFront(reply:)` | TeraTermMac側 | ウィンドウ前面移動 |
+| 51 | `getWindowPosition(reply:)` | TeraTermMac側 | ウィンドウ位置取得 |
+| 52 | `getModemStatus(reply:)` | TeraTermMac側 | モデム状態取得 |
+| 53 | `getClipboard(reply:)` | TeraTermMac側 | クリップボード取得 |
+| 54 | `setClipboard(text:reply:)` | TeraTermMac側 | クリップボード設定 |
+| 55 | `getHostname(reply:)` | TeraTermMac側 | ホスト名取得 |
+| 56 | `getAppDirectory(reply:)` | TeraTermMac側 | アプリディレクトリ取得 |
+| 57 | `showDialog(type:message:defaultValue:reply:)` | TeraTermMac側 | ダイアログ表示 |
+| 58 | `getTransferStatus(reply:)` | TeraTermMac側 | 転送状態取得 |
+| 59 | `cancelTransfer(reply:)` | TeraTermMac側 | 転送キャンセル |
+| 60 | `enableKeyboard(flag:reply:)` | TeraTermMac側 | キーボード有効/無効 |
+| 61 | `setEcho(flag:reply:)` | TeraTermMac側 | ローカルエコー設定 |
+| 62 | `displayString(text:reply:)` | TeraTermMac側 | 端末表示(非送信) |
+| 63 | `sendPasswordData(data:reply:)` | TeraTermMac側 | パスワード安全送信 |
+
+### TTLMacro側で完結するコマンド (XPC不要)
+
+| コマンドカテゴリ | コマンド | 備考 |
+|---|---|---|
+| 制御フロー | if/else/elseif/endif/for/next/while/endwhile/do/loop/until/enduntil/break/continue/goto/call/return/include/end/exit/ifdefined | パーサー内で完結 |
+| 文字列操作 | strlen/strconcat/strcopy/strcompare/strscan/strmatch/str2int/int2str/str2code/code2str/strinsert/strremove/strreplace/strspecial/strtrim/strsplit/strjoin/tolower/toupper/sprintf/sprintf2 | 変数操作のみ |
+| ファイルI/O | fileopen/fileclose/fileread/filereadln/filewrite/filewriteln/filecreate/filedelete/filecopy/filerename/fileconcat/filesearch/fileseek/fileseekback/filemarkptr/filestat/filetruncate/filestrseek/filestrseek2/filelock/fileunlock | FileHandle直接操作 |
+| ディレクトリ | findfirst/findnext/findclose/foldercreate/folderdelete/foldersearch/changedir/makepath/basename/dirname/getdir/setdir | FileManager直接操作 |
+| 配列 | intdim/strdim | 変数管理のみ |
+| 日時/環境 | getdate/gettime/getenv/setenv/expandenv/random/uptime | Foundation API |
+| チェックサム | crc16/crc32/checksum8/checksum16/checksum32 (+file variants) | 計算のみ |
+| ビット操作 | rotateleft/rotateright | 計算のみ |
+| その他 | beep/setdebug/regexoption/setdlgpos/setexitcode/exec/execcmnd/pause/mpause | ローカル処理 |
+| Keychain | getpassword/setpassword/delpassword/ispassword (+2 variants) | Security.framework |
+
+---
+
+## XPC 接続方式の変更仕様
+
+### Anonymous Listener による接続フロー
+
+従来の `NSXPCConnection(serviceName:)` を廃止し、anonymous listener + endpoint 共有方式に変更。
+
+```
+1. TeraTermMac.app が TTLMacro.app を起動
+   NSWorkspace.shared.openApplication(at: macroAppURL, configuration: config)
+   argument: "--xpc-mode"
+
+2. TTLMacro.app が anonymous listener を作成
+   let listener = NSXPCListener.anonymous()
+   listener.delegate = self
+   listener.resume()
+
+3. TTLMacro.app が endpoint をシリアライズして一時ファイルに書き出し
+   let endpoint = listener.endpoint  // NSXPCListenerEndpoint
+   let data = try NSKeyedArchiver.archivedData(withRootObject: endpoint,
+                                                requiringSecureCoding: true)
+   try data.write(to: URL(fileURLWithPath: endpointFilePath))
+   // endpointFilePath: /tmp/ttlmacro_endpoint_{PID}.dat
+
+4. TeraTermMac.app が一時ファイルをポーリングで検出 (0.2秒間隔, 最大10秒)
+   let data = FileManager.default.contents(atPath: endpointFilePath)
+   let endpoint = try NSKeyedUnarchiver.unarchivedObject(
+       ofClass: NSXPCListenerEndpoint.self, from: data)
+
+5. TeraTermMac.app が endpoint から NSXPCConnection を生成
+   let connection = NSXPCConnection(listenerEndpoint: endpoint)
+   connection.remoteObjectInterface = MacroXPCInterface.serviceInterface()
+   connection.exportedInterface = MacroXPCInterface.clientInterface()
+   connection.exportedObject = self
+   connection.resume()
+
+6. 一時ファイルを削除 (接続確立後に両側で試みる)
+```
+
+### タイムアウト処理
+
+- 接続確立タイムアウト: **10秒**
+- タイムアウト時: `macroDidFail(error: "XPC connection timeout", line: 0)` を呼び出し
+- ポーリング間隔: 0.2秒
+
+### セキュリティ考慮事項
+
+- 一時ファイルのパーミッション: ユーザーのみ読み書き可 (デフォルトの NSTemporaryDirectory)
+- 一時ファイルは接続確立後に即削除
+- anonymous listener は同一ユーザーのみ接続可能
+
+---
+
+## Keychain 連携仕様
+
+### 保存するキー情報
+
+| 項目 | 値 |
+|---|---|
+| kSecClass | kSecClassGenericPassword |
+| kSecAttrService | `com.yourapp.TeraTermMac.TTLMacro` |
+| kSecAttrAccount | `<host>:<username>` (例: `192.168.1.1:admin`) |
+| kSecAttrAccessible | kSecAttrAccessibleWhenUnlockedThisDeviceOnly |
+
+### service 名・account 名の命名規則
+
+```
+service: "com.yourapp.TeraTermMac.TTLMacro" (固定)
+account: "<接続先ホスト>:<ユーザー名>"
+  例: "192.168.1.1:admin"
+  例: "server.example.com:root"
+  例: "serial:COM3" (シリアル接続の場合)
+```
+
+### パスワード系コマンドと Keychain API のマッピング
+
+| TTLコマンド | Keychain API | 動作 |
+|---|---|---|
+| `getpassword <strvar> <account>` | `SecItemCopyMatching` → ヒットしない場合はパスワード入力ダイアログ → `SecItemAdd` | 取得(+保存) |
+| `setpassword <account> <password>` | `SecItemDelete` + `SecItemAdd` | 保存(上書き) |
+| `delpassword <account>` | `SecItemDelete` | 削除 |
+| `ispassword <account>` | `SecItemCopyMatching` (kSecReturnData=false) | 存在確認 |
+| `getpassword2` | `getpassword` と同一実装 | 互換性エイリアス |
+| `setpassword2` | `setpassword` と同一実装 | 互換性エイリアス |
+| `delpassword2` | `delpassword` と同一実装 | 互換性エイリアス |
+| `ispassword2` | `ispassword` と同一実装 | 互換性エイリアス |
+
+### セキュリティ要件
+
+1. パスワードを UserDefaults / ファイル / ログに書き込まないこと
+2. XPC 通信では `sendPasswordData(data:reply:)` を使用し、`sendToTerminal` は使わない
+3. 受信後即座にメモリから消去: `TTLKeychainManager.zeroData(&data)`
+4. kSecAttrAccessibleWhenUnlockedThisDeviceOnly で iCloud Keychain 同期を防止
+
+---
+
+## ファイル転送 XPC フロー制御仕様
+
+### XPC 追加メソッド一覧
+
+| メソッド | 引数 | 返値 | 説明 |
+|---|---|---|---|
+| `startFileSend` | `protocolName: String, localPath: String, option: String` | `(Bool, String)` | 送信開始。成功/失敗+エラーメッセージ |
+| `startFileRecv` | `protocolName: String, localDir: String` | `(Bool, String, String)` | 受信開始。成功/失敗+エラー+保存パス |
+| `getTransferStatus` | -- | `(String, Int, Int)` | 状態+転送バイト+全体バイト |
+| `cancelTransfer` | -- | `()` | 転送キャンセル |
+| `scpSend` | `localPath: String, remotePath: String` | `(Bool)` | SCP送信 |
+| `scpRecv` | `remotePath: String, localPath: String` | `(Bool)` | SCP受信 |
+
+### protocolName 値
+
+| 値 | プロトコル |
+|---|---|
+| `"xmodem"` | XMODEM (Checksum) |
+| `"xmodem-crc"` | XMODEM-CRC |
+| `"xmodem-1k"` | XMODEM-1K |
+| `"ymodem"` | YMODEM |
+| `"zmodem"` | ZMODEM |
+| `"kermit"` | Kermit |
+| `"bplus"` | B-Plus |
+| `"quickvan"` | Quick-VAN |
+| `"raw"` | Raw file receive |
+
+### 送信シーケンス図 (XMODEM/ZMODEM/Kermit共通)
+
+```
+TTLMacro.app                          TeraTermMac.app
+    |                                       |
+    | --- startFileSend(proto,path,opt) --> |
+    |                                       | ファイル転送エンジン起動
+    | <-- reply(true, "") --------------- |
+    |                                       |
+    | --- getTransferStatus() -----------> | (0.5秒ポーリング)
+    | <-- reply("sending", 1024, 10240) -- |
+    |                                       |
+    | --- getTransferStatus() -----------> |
+    | <-- reply("sending", 5120, 10240) -- |
+    |                                       |
+    | --- getTransferStatus() -----------> |
+    | <-- reply("done", 10240, 10240) ---- |
+    |                                       |
+    | マクロ次行へ進む                       |
+```
+
+### 受信シーケンス図
+
+```
+TTLMacro.app                          TeraTermMac.app
+    |                                       |
+    | --- startFileRecv(proto,dir) -------> |
+    |                                       | ファイル転送エンジン起動
+    | <-- reply(true, "", "") ------------ |
+    |                                       |
+    | --- getTransferStatus() -----------> | (0.5秒ポーリング)
+    | <-- reply("receiving", 2048, 0) ---- | (totalBytes=0: 不明)
+    |                                       |
+    | --- getTransferStatus() -----------> |
+    | <-- reply("done", 8192, 8192) ------ |
+    |                                       |
+    | マクロ次行へ進む                       |
+```
+
+### エラーシーケンス図
+
+```
+TTLMacro.app                          TeraTermMac.app
+    |                                       |
+    | --- startFileSend(proto,path,opt) --> |
+    |                                       |
+    | --- getTransferStatus() -----------> |
+    | <-- reply("error", 0, 0) ---------- |
+    |                                       |
+    | macroDidFail("Transfer failed",N)    |
+```
+
+### タイムアウトと排他制御
+
+- ポーリング間隔: 0.5秒
+- デフォルトタイムアウト: 600秒 (`settimeout` の値を参照)
+- 待機中も `pause` / `stop` を受付 (DispatchQueue非同期ポーリング + キャンセルフラグ)
+- 転送中に別の転送コマンド実行時: `macroDidFail(error: "Transfer already in progress", line: N)`
+- TeraTermMac.app側で `isTransferInProgress` フラグを管理

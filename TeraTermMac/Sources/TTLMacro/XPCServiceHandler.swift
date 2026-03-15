@@ -4,6 +4,7 @@
  * All rights reserved.
  *
  * XPC service handler for TTLMacro.app (listener side).
+ * Uses anonymous listener + endpoint sharing for XPC connection.
  * Receives commands from TeraTermMac.app and delegates to MacroRunner.
  */
 
@@ -17,6 +18,7 @@ class XPCServiceHandler: NSObject {
     private var listener: NSXPCListener?
     private weak var macroRunner: MacroRunner?
     private var activeConnection: NSXPCConnection?
+    private var endpointFilePath: String?
 
     init(macroRunner: MacroRunner) {
         self.macroRunner = macroRunner
@@ -28,6 +30,9 @@ class XPCServiceHandler: NSObject {
         listener = NSXPCListener.anonymous()
         listener?.delegate = self
         listener?.resume()
+
+        // Write endpoint to temporary file for TeraTermMac.app to discover
+        writeEndpointToFile()
     }
 
     func stopListener() {
@@ -35,11 +40,41 @@ class XPCServiceHandler: NSObject {
         listener = nil
         activeConnection?.invalidate()
         activeConnection = nil
+        cleanupEndpointFile()
     }
 
     /// The endpoint for the listener, used by TeraTermMac to connect
     var endpoint: NSXPCListenerEndpoint? {
         return listener?.endpoint
+    }
+
+    // MARK: - Endpoint File Management
+
+    /// Serialize the endpoint to a temporary file for TeraTermMac.app to read.
+    /// Uses NSKeyedArchiver for serialization.
+    private func writeEndpointToFile() {
+        guard let endpoint = listener?.endpoint else { return }
+
+        let filePath = MacroXPCEndpoint.endpointFilePath(pid: ProcessInfo.processInfo.processIdentifier)
+        self.endpointFilePath = filePath
+
+        do {
+            let data = try NSKeyedArchiver.archivedData(
+                withRootObject: endpoint,
+                requiringSecureCoding: true)
+            try data.write(to: URL(fileURLWithPath: filePath))
+        } catch {
+            // Log error but continue - connection may still work via other means
+            NSLog("Failed to write XPC endpoint file: \(error)")
+        }
+    }
+
+    /// Remove the endpoint file on cleanup
+    private func cleanupEndpointFile() {
+        if let path = endpointFilePath {
+            try? FileManager.default.removeItem(atPath: path)
+            endpointFilePath = nil
+        }
     }
 }
 
@@ -72,6 +107,9 @@ extension XPCServiceHandler: NSXPCListenerDelegate {
         if let proxy = newConnection.remoteObjectProxy as? MacroClientProtocol {
             macroRunner?.clientProxy = proxy
         }
+
+        // Clean up endpoint file after connection is established
+        cleanupEndpointFile()
 
         return true
     }
@@ -119,7 +157,7 @@ extension XPCServiceHandler: MacroServiceProtocol {
     }
 
     func sendVariable(name: String, value: String, reply: @escaping () -> Void) {
-        // TODO: Pass variable to MacroRunner's parser environment
+        macroRunner?.setVariable(name: name, value: value)
         reply()
     }
 }

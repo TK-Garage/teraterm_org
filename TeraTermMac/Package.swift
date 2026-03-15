@@ -86,6 +86,7 @@ let package = Package(
             ],
             linkerSettings: [
                 .linkedFramework("AppKit"),
+                .linkedFramework("Security"),
             ]
         ),
         .testTarget(
