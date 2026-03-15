@@ -370,6 +370,10 @@ class MacroRunner {
     private func executeNextLine() {
         guard isRunning, !isPaused, !isCancelled else { return }
 
+        // Clear the fired timer reference so sync commands can advance
+        // via the fallthrough check in executeCommand
+        execTimer = nil
+
         if currentLineNumber >= scriptLines.count {
             // Check if we have include files on the file stack
             if let frame = fileStack.popLast() {
@@ -885,7 +889,7 @@ class MacroRunner {
         case "random":      cmdRandom(args) // [IMPLEMENTED]
         case "uptime":      cmdUptime(args) // [IMPLEMENTED]
         case "gethostname": cmdGetHostname(args) // [IMPLEMENTED]
-        case "getver":      cmdGetVer(args) // [IMPLEMENTED]
+        case "getver", "getttver": cmdGetVer(args) // [IMPLEMENTED]
         case "getttdir":    cmdGetTTDir(args) // [IMPLEMENTED]
         case "getttpos":    cmdGetTTPos(args) // [IMPLEMENTED]
         case "getspecialfolder": cmdGetSpecialFolder(args) // [IMPLEMENTED]
@@ -913,7 +917,7 @@ class MacroRunner {
 
         // Clipboard - [IMPLEMENTED]
         case "clipb2var":   cmdClipb2Var(args) // [IMPLEMENTED]
-        case "var2clipb":   cmdVar2Clipb(args) // [IMPLEMENTED]
+        case "var2clipb", "setclipboard": cmdVar2Clipb(args) // [IMPLEMENTED]
 
         // Log - [IMPLEMENTED]
         case "logopen":     cmdLogOpen(args) // [IMPLEMENTED]
@@ -964,7 +968,7 @@ class MacroRunner {
         case "ispassword2":  cmdIsPassword(args) // [IMPLEMENTED]
 
         // Broadcast / Multicast - [IMPLEMENTED]
-        case "sendbroadcast":   cmdSendBroadcast(args, addCR: false) // [IMPLEMENTED]
+        case "broadcast", "sendbroadcast": cmdSendBroadcast(args, addCR: false) // [IMPLEMENTED]
         case "sendlnbroadcast": cmdSendBroadcast(args, addCR: true) // [IMPLEMENTED]
         case "sendmulticast":   cmdSendMulticast(args, addCR: false) // [IMPLEMENTED]
         case "sendlnmulticast": cmdSendMulticast(args, addCR: true) // [IMPLEMENTED]
@@ -3171,12 +3175,18 @@ extension MacroRunner {
     // MARK: getver - [IMPLEMENTED]
 
     func cmdGetVer(_ args: [String]) { // [IMPLEMENTED]
-        guard !args.isEmpty else { return }
-        let destVar = args[0].lowercased()
+        let destVar = args.isEmpty ? nil : args[0].lowercased()
         cancelExecTimer()
         clientProxy?.getAppVersion(reply: { [weak self] version in
             guard let self = self else { return }
-            self.variables[destVar] = .string(version)
+            if let destVar = destVar {
+                self.variables[destVar] = .string(version)
+            }
+            // Store version components in result
+            let parts = version.split(separator: ".")
+            let major = Int(parts.first ?? "0") ?? 0
+            self.resultValue = major
+            self.variables["result"] = .integer(major)
             self.scheduleNextLine()
         })
     }
@@ -4039,6 +4049,7 @@ extension MacroRunner {
                     lineNumber: self.currentLineNumber
                 )
                 self.onTransferError?(detail)
+                self.reportError("\(self.currentTransferProtocol)\(self.currentTransferDirection): transfer error")
                 self.scheduleNextLine()
 
             case .idle:
@@ -4082,13 +4093,18 @@ extension MacroRunner {
     // MARK: kmtfinish - [IMPLEMENTED]
 
     func cmdKermitFinish() { // [IMPLEMENTED]
-        let finishCmd = "finish\r"
-        if let data = finishCmd.data(using: .utf8) {
-            clientProxy?.sendToTerminal(data: data, reply: { [weak self] in
-                self?.scheduleNextLine()
-            })
-        }
         cancelExecTimer()
+        clientProxy?.cancelTransfer(reply: { [weak self] in
+            guard let self = self else { return }
+            let finishCmd = "finish\r"
+            if let data = finishCmd.data(using: .utf8) {
+                self.clientProxy?.sendToTerminal(data: data, reply: { [weak self] in
+                    self?.scheduleNextLine()
+                })
+            } else {
+                self.scheduleNextLine()
+            }
+        })
     }
 
     // MARK: scpsend - [IMPLEMENTED]

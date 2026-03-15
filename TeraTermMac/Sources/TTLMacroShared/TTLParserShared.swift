@@ -677,7 +677,7 @@ public class TTLParser {
                 break
             }
         }
-        return name.isEmpty ? nil : name
+        return name.isEmpty ? nil : name.lowercased()
     }
 
     /// Read a quoted string "..." or '...' or #NNN character codes
@@ -760,12 +760,32 @@ public class TTLParser {
         return UInt8(n)
     }
 
-    /// Read a number: decimal or $hex
+    /// Read a number: decimal, $hex, or 0xHex
     public func getNumber() -> Int? {
         let saved = linePtr
         guard let first = getFirstChar() else { return nil }
 
         if first.isNumber {
+            // Check for 0x hex prefix
+            if first == "0" && linePtr < lineBuffer.count {
+                let nextCh = charAtPtr()
+                if nextCh == "x" || nextCh == "X" {
+                    linePtr += 1 // skip 'x'
+                    var num = 0
+                    var hasDigits = false
+                    while linePtr < lineBuffer.count {
+                        let ch = charAtPtr()
+                        if ch.isHexDigit, let digit = ch.hexDigitValue {
+                            num = num * 16 + digit
+                            linePtr += 1
+                            hasDigits = true
+                        } else {
+                            break
+                        }
+                    }
+                    return hasDigits ? num : 0
+                }
+            }
             var num = Int(first.asciiValue! - Character("0").asciiValue!)
             while linePtr < lineBuffer.count {
                 let ch = charAtPtr()

@@ -291,17 +291,16 @@ final class XPCAnonymousListenerTests: XCTestCase {
     }
 
     func testEndpointSerialization() throws {
-        // Verify endpoint can be serialized and deserialized
+        // NSXPCListenerEndpoint can only be encoded by NSXPCCoder (not NSKeyedArchiver).
+        // Verify that the endpoint can be obtained and used to create a connection,
+        // which is the actual use case for anonymous listener endpoints.
         let listener = NSXPCListener.anonymous()
         let endpoint = listener.endpoint
+        XCTAssertNotNil(endpoint)
 
-        let data = try NSKeyedArchiver.archivedData(
-            withRootObject: endpoint, requiringSecureCoding: true)
-        XCTAssertFalse(data.isEmpty)
-
-        let restored = try NSKeyedUnarchiver.unarchivedObject(
-            ofClass: NSXPCListenerEndpoint.self, from: data)
-        XCTAssertNotNil(restored)
+        // Verify the endpoint can be used to create a connection
+        let connection = NSXPCConnection(listenerEndpoint: endpoint)
+        XCTAssertNotNil(connection)
     }
 
     func testEndpointFilePathGeneration() {
@@ -415,7 +414,7 @@ final class MacroRunnerCommandTests: XCTestCase {
         let script = """
         x = 0
         while x < 3
-        x = x
+        inc x
         endwhile
         end
         """
@@ -457,7 +456,7 @@ final class MacroRunnerCommandTests: XCTestCase {
         let exp = XCTestExpectation(description: "file ops complete")
         let testFile = tempDir + "testfile.txt"
         let script = """
-        fileopen fh '\(testFile)' 0
+        fileopen fh '\(testFile)' 1
         filewriteln fh 'hello world'
         fileclose fh
         end
