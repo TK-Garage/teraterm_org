@@ -5,11 +5,8 @@
  *
  * XPC Protocol definitions for TeraTermMac ↔ TTLMacro communication.
  *
- * [REMAINING-TASK-AUDIT]
- * TTLInterpreterDelegate メソッド数: 41
- * MacroRunner スタブ数: 5 (end/exit/pause/closett/getttver)
- * ファイル転送プロトコル: 6 (XMODEM/XMODEM-CRC/XMODEM-1K/YMODEM/ZMODEM/Kermit/B+/QuickVAN)
- * パスワード系コマンド: 8 (getpassword/setpassword/delpassword/ispassword + *2 variants)
+ * MacroClientProtocol: 56 methods (terminal ops, file transfer, broadcast)
+ * MacroServiceProtocol: 6 methods (macro control)
  */
 
 import Foundation

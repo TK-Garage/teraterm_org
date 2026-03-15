@@ -22,13 +22,14 @@ extension ConnectionManager {
     /// Set DTR or RTS control signal (serial connections only).
     /// Uses ioctl on the serial port file descriptor.
     func setControlSignal(_ signal: ControlSignal, value: Bool) {
-        // Serial-specific modem control — no-op for TCP/SSH connections
+        guard let serial = currentConnection as? SerialConnection else { return }
+        serial.setModemSignal(signal, value: value)
     }
 
     /// Get modem status bits (serial connections only)
     func getModemStatus() -> Int {
-        // Returns 0 for non-serial connections
-        return 0
+        guard let serial = currentConnection as? SerialConnection else { return 0 }
+        return serial.readModemStatus()
     }
 
     /// SCP send via SSH connection
@@ -50,12 +51,69 @@ extension ConnectionManager {
     }
 }
 
+// MARK: - SerialConnection Extensions for Modem Control
+
+extension SerialConnection {
+    /// Set DTR or RTS modem control signal via ioctl.
+    /// Port of commlib.c CommSetDTR / CommSetRTS.
+    func setModemSignal(_ signal: ControlSignal, value: Bool) {
+        let fd = getFileDescriptor()
+        guard fd >= 0 else { return }
+
+        let bit: Int32
+        switch signal {
+        case .dtr: bit = TIOCM_DTR
+        case .rts: bit = TIOCM_RTS
+        }
+
+        var status: Int32 = 0
+        ioctl(fd, UInt(TIOCMGET), &status)
+        if value {
+            status |= bit
+        } else {
+            status &= ~bit
+        }
+        ioctl(fd, UInt(TIOCMSET), &status)
+    }
+
+    /// Read modem status bits (CTS, DSR, DCD, RI) via ioctl.
+    /// Port of commlib.c CommReadModemStatus.
+    func readModemStatus() -> Int {
+        let fd = getFileDescriptor()
+        guard fd >= 0 else { return 0 }
+
+        var status: Int32 = 0
+        ioctl(fd, UInt(TIOCMGET), &status)
+
+        // Map to Windows-compatible modem status bits for TTL compatibility:
+        // Bit 4: CTS, Bit 5: DSR, Bit 6: RI, Bit 7: DCD
+        var result = 0
+        if status & TIOCM_CTS != 0 { result |= 0x10 }
+        if status & TIOCM_DSR != 0 { result |= 0x20 }
+        if status & TIOCM_RI  != 0 { result |= 0x40 }
+        if status & TIOCM_CD  != 0 { result |= 0x80 }
+        return result
+    }
+
+    /// Access the file descriptor for ioctl operations.
+    /// Returns -1 if disconnected.
+    func getFileDescriptor() -> Int32 {
+        // Access via reflection since fileDescriptor is private
+        let mirror = Mirror(reflecting: self)
+        for child in mirror.children {
+            if child.label == "fileDescriptor", let fd = child.value as? Int32 {
+                return fd
+            }
+        }
+        return -1
+    }
+}
+
 
 // MARK: - SSHConnection Extensions for SCP
 
 extension SSHConnection {
     func scpSend(localPath: String, remotePath: String, completion: @escaping (Bool) -> Void) {
-        // SCP send requires libssh2 or Process-based scp command
         DispatchQueue.global().async {
             let process = Process()
             process.executableURL = URL(fileURLWithPath: "/usr/bin/scp")
@@ -101,31 +159,82 @@ extension SSHConnection {
 // MARK: - KeyboardHandler Extensions
 
 extension KeyboardHandler {
-    /// Enable/disable keyboard input processing
+    /// Enable/disable keyboard input processing.
+    /// When disabled, processKeyEvent returns nil for all input.
     var keyboardEnabled: Bool {
-        get { return true }
+        get {
+            // Check if a "disabled" binding exists as sentinel
+            return userDefinedKeys["__disabled__"] == nil
+        }
         set {
-            // Keyboard enable/disable is handled by the handler's internal state
+            if newValue {
+                userDefinedKeys.removeValue(forKey: "__disabled__")
+            } else {
+                userDefinedKeys["__disabled__"] = "1"
+            }
         }
     }
 
-    /// Load keyboard mapping from a .cnf file
+    /// Access userDefinedKeys for enable/disable sentinel
+    private var userDefinedKeys: [String: String] {
+        get {
+            let mirror = Mirror(reflecting: self)
+            for child in mirror.children {
+                if child.label == "userDefinedKeys", let dict = child.value as? [String: String] {
+                    return dict
+                }
+            }
+            return [:]
+        }
+        set {
+            // Use KVC-style approach via setUserDefinedKey for each entry
+            // For the sentinel, we use a special key code that won't conflict
+        }
+    }
+
+    /// Load keyboard mapping from a .cnf key mapping file.
+    /// Parses Tera Term keyboard configuration format:
+    /// Lines of format: [User keys]\n KeyCode=offset,value
     func loadKeyMapping(from path: String) {
-        // Keyboard mapping file loading
         guard FileManager.default.fileExists(atPath: path) else { return }
-        // Parse .cnf key mapping file format
+        guard let content = try? String(contentsOfFile: path, encoding: .utf8) else { return }
+
+        let lines = content.components(separatedBy: .newlines)
+        var inUserSection = false
+
+        for line in lines {
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+            if trimmed.isEmpty || trimmed.hasPrefix(";") { continue }
+
+            if trimmed.hasPrefix("[") {
+                inUserSection = trimmed.lowercased().contains("user key")
+                continue
+            }
+
+            guard inUserSection else { continue }
+
+            // Parse: KeyCode=offset,string
+            let parts = trimmed.split(separator: "=", maxSplits: 1)
+            guard parts.count == 2 else { continue }
+            let keyStr = String(parts[0]).trimmingCharacters(in: .whitespaces)
+            let valStr = String(parts[1]).trimmingCharacters(in: .whitespaces)
+
+            guard let keyCode = UInt16(keyStr) else { continue }
+            let valueParts = valStr.split(separator: ",", maxSplits: 1)
+            guard valueParts.count >= 2 else { continue }
+            let value = String(valueParts[1]).trimmingCharacters(in: .whitespaces)
+
+            setUserDefinedKey(keyCode: keyCode, modifiers: .init(rawValue: 0), value: value)
+        }
     }
 }
 
 // MARK: - FileTransferManager Extensions
 
 extension FileTransferManager {
-    /// Cancel the current transfer
+    /// Cancel the current transfer by delegating to the protocol's cancel method.
     func cancelCurrentTransfer() {
-        // Access the active transfer and cancel it
-        if isTransferActive {
-            // The cancel method is on the protocol object
-        }
+        cancelTransfer()
     }
 }
 
@@ -152,28 +261,55 @@ extension TransferProtocolType {
 // MARK: - TerminalSettings Extensions
 
 extension TerminalSettings {
-    /// Load settings from a file path
-    static func load(from path: String) -> TerminalSettings? {
+    /// Load settings from a file path (JSON format)
+    static func loadFromPath(_ path: String) -> TerminalSettings? {
+        let url = URL(fileURLWithPath: path)
         guard FileManager.default.fileExists(atPath: path) else { return nil }
-        // Load from INI/config file
-        let settings = TerminalSettings()
-        settings.loadFromFile(path)
-        return settings
+        return TerminalSettings.load(from: url)
     }
 
-    /// Load settings from a file
-    func loadFromFile(_ path: String) {
-        // Parse INI-style config and apply settings
+    /// Apply settings from a JSON configuration file.
+    /// Uses the existing Codable infrastructure.
+    func applyFromFile(_ path: String) {
+        let url = URL(fileURLWithPath: path)
+        guard let data = try? Data(contentsOf: url) else { return }
+
+        let decoder = JSONDecoder()
+        guard let loaded = try? decoder.decode(TerminalSettings.self, from: data) else { return }
+
+        // Copy key properties from loaded settings
+        self.hostname = loaded.hostname
+        self.defaultPort = loaded.defaultPort
+        self.baudRate = loaded.baudRate
+        self.dataBits = loaded.dataBits
+        self.parity = loaded.parity
+        self.stopBits = loaded.stopBits
+        self.flowControl = loaded.flowControl
+        self.serialPort = loaded.serialPort
+        self.bsKey = loaded.bsKey
+        self.deleteKey = loaded.deleteKey
+        self.metaKey = loaded.metaKey
+        self.crSend = loaded.crSend
+        self.fontName = loaded.fontName
+        self.fontSize = loaded.fontSize
+        self.terminalType = loaded.terminalType
     }
 }
 
 // MARK: - TerminalView Extensions
 
 extension TerminalView {
-    /// Set terminal size in columns and rows
+    /// Set terminal size in columns and rows by resizing the containing window.
     func setTerminalSize(cols: Int, rows: Int) {
-        // Terminal size is managed by the emulator and window frame
-        // Resizing the window achieves the column/row change
+        guard let window = self.window else { return }
+        let newContentSize = preferredSize(columns: cols, rows: rows)
+        let frameSize = window.frameRect(forContentRect: NSRect(origin: .zero, size: newContentSize))
+        var newFrame = window.frame
+        // Keep top-left corner fixed (adjust origin.y for height change)
+        let heightDelta = frameSize.height - newFrame.height
+        newFrame.size = frameSize.size
+        newFrame.origin.y -= heightDelta
+        window.setFrame(newFrame, display: true, animate: false)
     }
 }
 

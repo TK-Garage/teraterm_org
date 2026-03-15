@@ -5,12 +5,7 @@
  *
  * Macro execution engine for TTLMacro.app.
  * Full TTL command interpreter with XPC-based terminal operations.
- *
- * [REMAINING-TASK-AUDIT]
- * TTLInterpreterDelegate メソッド数: 41 (all mapped to XPC)
- * MacroRunner 実装コマンド数: 120+
- * ファイル転送プロトコル: 6 types via XPC
- * パスワード系コマンド: 8 (Keychain integrated)
+ * 176 command handlers, 56 XPC methods, Keychain-integrated password management.
  */
 
 import Foundation
@@ -86,6 +81,9 @@ class MacroRunner {
 
     /// The XPC client proxy for communicating with TeraTermMac.app
     var clientProxy: MacroClientProtocol?
+
+    /// Multicast group name for the current session (set by setmulticastname)
+    var multicastGroupName: String = ""
 
     // MARK: - Script Data
 
@@ -839,12 +837,12 @@ class MacroRunner {
         case "delpassword2": cmdDelPassword(args) // [IMPLEMENTED]
         case "ispassword2":  cmdIsPassword(args) // [IMPLEMENTED]
 
-        // Broadcast (stub) - [IMPLEMENTED]
-        case "sendbroadcast":   cmdSend(args, addCR: false) // [IMPLEMENTED]
-        case "sendlnbroadcast": cmdSend(args, addCR: true) // [IMPLEMENTED]
-        case "sendmulticast":   cmdSend(args, addCR: false) // [IMPLEMENTED]
-        case "sendlnmulticast": cmdSend(args, addCR: true) // [IMPLEMENTED]
-        case "setmulticastname": break // [IMPLEMENTED] no-op
+        // Broadcast / Multicast - [IMPLEMENTED]
+        case "sendbroadcast":   cmdSendBroadcast(args, addCR: false) // [IMPLEMENTED]
+        case "sendlnbroadcast": cmdSendBroadcast(args, addCR: true) // [IMPLEMENTED]
+        case "sendmulticast":   cmdSendMulticast(args, addCR: false) // [IMPLEMENTED]
+        case "sendlnmulticast": cmdSendMulticast(args, addCR: true) // [IMPLEMENTED]
+        case "setmulticastname": cmdSetMulticastName(args) // [IMPLEMENTED]
 
         // File transfer - [IMPLEMENTED]
         case "xmodemrecv":  cmdFileTransferRecv(args, proto: "xmodem") // [IMPLEMENTED]
@@ -1339,6 +1337,42 @@ extension MacroRunner {
             return
         }
         clientProxy?.sendToTerminal(data: data, reply: { [weak self] in
+            self?.scheduleNextLine()
+        })
+        cancelExecTimer()
+    }
+
+    // MARK: sendbroadcast / sendlnbroadcast - [IMPLEMENTED]
+
+    func cmdSendBroadcast(_ args: [String], addCR: Bool) { // [IMPLEMENTED]
+        var text = args.map { resolveString($0) }.joined()
+        if addCR { text += "\r\n" }
+        guard let data = text.data(using: .utf8) else { return }
+        clientProxy?.broadcastData(data: data, reply: { [weak self] _ in
+            self?.scheduleNextLine()
+        })
+        cancelExecTimer()
+    }
+
+    // MARK: sendmulticast / sendlnmulticast - [IMPLEMENTED]
+
+    func cmdSendMulticast(_ args: [String], addCR: Bool) { // [IMPLEMENTED]
+        var text = args.map { resolveString($0) }.joined()
+        if addCR { text += "\r\n" }
+        guard let data = text.data(using: .utf8) else { return }
+        let groupName = multicastGroupName
+        clientProxy?.multicastData(groupName: groupName, data: data, reply: { [weak self] _ in
+            self?.scheduleNextLine()
+        })
+        cancelExecTimer()
+    }
+
+    // MARK: setmulticastname - [IMPLEMENTED]
+
+    func cmdSetMulticastName(_ args: [String]) { // [IMPLEMENTED]
+        let name = args.isEmpty ? "" : resolveString(args[0])
+        multicastGroupName = name
+        clientProxy?.setMulticastName(name: name, reply: { [weak self] in
             self?.scheduleNextLine()
         })
         cancelExecTimer()
