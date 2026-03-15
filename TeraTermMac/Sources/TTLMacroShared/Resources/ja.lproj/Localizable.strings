@@ -23,6 +23,7 @@
 "macro.menu.stop" = "中断";
 "macro.menu.open" = "マクロを開く...";
 "macro.menu.quit" = "TTLMacro を終了";
+"macro.menu.watchVariables" = "変数ウォッチ...";
 
 /* Stop Confirmation */
 "macro.stop.confirm.title" = "マクロを中断しますか？";

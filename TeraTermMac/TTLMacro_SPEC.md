@@ -572,6 +572,7 @@ TeraTermMac/
 │   │   ├── MacroClientProtocol.swift
 │   │   ├── MacroLocalizable.swift
 │   │   ├── MacroDialogHelper.swift
+│   │   ├── TransferErrorDetail.swift    ← 転送エラー詳細モデル＋ダイアログ
 │   │   └── Resources/
 │   │       ├── en.lproj/Localizable.strings
 │   │       └── ja.lproj/Localizable.strings
@@ -579,7 +580,9 @@ TeraTermMac/
 │       ├── main.swift
 │       ├── TTLMacroApp.swift
 │       ├── XPCServiceHandler.swift
-│       ├── StatusBarController.swift
+│       ├── StatusBarManager.swift
+│       ├── VariableWatchPanel.swift      ← デバッガ変数ウォッチパネル
+│       ├── BreakpointStore.swift          ← ブレークポイント永続化
 │       ├── Info.plist
 │       ├── TTLMacro.entitlements
 │       └── Resources/
@@ -984,6 +987,36 @@ func getVariables(reply:)
 **ステータスバー UI:**
 Paused メニューに `Step Line (F10)` / `Step Over (F11)` / `Step Out (Shift+F11)` を追加。
 
+### デバッガ変数ウォッチパネル (#8)
+
+`VariableWatchPanel` — ステップ実行中に変数値をリアルタイム表示する NSPanel。
+
+- **UI 構成:** NSPanel (floating, utility window) + NSSearchField (フィルタ) + NSTableView (Variable/Value 列)
+- **フォント:** `NSFont.monospacedSystemFont(ofSize: 12)`、交互行背景色
+- **フィルタ:** 変数名・値両方を対象にインクリメンタルサーチ
+- **起動:** ステータスバーの Paused メニューから「変数ウォッチ...」で表示
+- **更新:** `onDebugPause` コールバック時に `macroRunner.getVariables()` で取得して更新
+- **スレッド安全:** `updateVariables()` は任意スレッドから呼び出し可能 (main dispatch)
+
+### ブレークポイント永続化 (#9)
+
+`BreakpointStore` — `.ttl` ファイルに対応するブレークポイントを JSON ファイルに保存。
+
+- **保存先:** `myscript.ttl` → `myscript.ttl.breakpoints.json` (同一ディレクトリ)
+- **形式:** JSON (`{ "version": 1, "scriptPath": "...", "breakpoints": [1, 5, 12] }`)
+- **保存タイミング:** `addBreakpoint` / `removeBreakpoint` / `clearBreakpoints` 呼び出し時
+- **読み込み:** `MacroRunner.run()` 実行時に自動読み込み
+- **行番号:** ファイル内は 1-based、内部表現は 0-based
+
+### ファイル転送エラー詳細表示 (#10)
+
+`TransferErrorDetail` + `TransferErrorDialog` — 転送エラー時にプロトコル別の詳細ダイアログを表示。
+
+- **TransferErrorDetail:** プロトコル名、方向 (send/recv)、ファイルパス、転送バイト数、行番号を保持
+- **プロトコル別ヒント:** XMODEM/YMODEM/ZMODEM/Kermit/B-Plus/Quick-VAN それぞれに固有のトラブルシューティングヒントを表示
+- **表示内容:** ファイルパス、転送進捗、マクロ行番号、トラブルシューティングヒント
+- **発火:** `MacroRunner.pollTransferStatus()` の `.error` ケースで `onTransferError` コールバック経由
+
 ---
 
 ## 残課題一覧
@@ -997,6 +1030,6 @@ Paused メニューに `Step Line (F10)` / `Step Over (F11)` / `Step Out (Shift+
 | 5 | ~~XPC 接続の再接続ハンドリング~~ | ~~Medium~~ | **解決済み** — 指数バックオフ再接続 + マクロ自動再実行 |
 | 6 | ~~ファイル転送の進捗 UI~~ | ~~Low~~ | **解決済み** — ステータスバーにバイト数/パーセント表示 |
 | 7 | ~~マクロデバッガ UI~~ | ~~Low~~ | **解決済み** — ブレークポイント・Step Line/Over/Out + 変数閲覧 |
-| 8 | デバッガ変数ウォッチパネル | Low | ステップ実行時に変数値をリアルタイム表示する専用ウィンドウ |
-| 9 | ブレークポイント永続化 | Low | `.ttl` ファイルに対応するブレークポイントを設定ファイルに保存 |
-| 10 | ファイル転送エラー詳細表示 | Low | 転送エラー時にプロトコル別のエラー詳細をダイアログ表示 |
+| 8 | ~~デバッガ変数ウォッチパネル~~ | ~~Low~~ | **解決済み** — VariableWatchPanel (NSPanel + NSTableView + フィルタ検索) を実装。ステータスバーの「変数ウォッチ...」メニューから起動。ステップ実行時に変数値をリアルタイム表示 |
+| 9 | ~~ブレークポイント永続化~~ | ~~Low~~ | **解決済み** — BreakpointStore が `.ttl.breakpoints.json` ファイルに保存・読み込み。MacroRunner が起動時に自動読み込み、変更時に自動保存 |
+| 10 | ~~ファイル転送エラー詳細表示~~ | ~~Low~~ | **解決済み** — TransferErrorDetail モデル + TransferErrorDialog でプロトコル別エラー詳細（トラブルシューティングヒント付き）を表示 |

@@ -71,6 +71,7 @@ class MacroRunner {
     var onComplete: ((Int) -> Void)?
     var onError: ((String, Int) -> Void)?
     var onTransferProgress: ((String, Int, Int) -> Void)?
+    var onTransferError: ((TransferErrorDetail) -> Void)?
 
     // MARK: - State
 
@@ -158,6 +159,9 @@ class MacroRunner {
     // MARK: - Transfer State
 
     private var isTransferWaiting: Bool = false
+    private var currentTransferProtocol: String = ""
+    private var currentTransferDirection: String = ""
+    private var currentTransferPath: String = ""
 
     // MARK: - Keychain
 
@@ -187,6 +191,13 @@ class MacroRunner {
         isPaused = false
         isCancelled = false
         resetState()
+
+        // Load persisted breakpoints for this script
+        let saved = BreakpointStore.load(for: scriptPath)
+        if !saved.isEmpty {
+            breakpoints = saved
+        }
+
         prescanLabels()
         scheduleNextLine()
     }
@@ -229,16 +240,25 @@ class MacroRunner {
     /// Add a breakpoint at the given line number (1-based, converted to 0-based internally).
     func addBreakpoint(at line: Int) {
         breakpoints.insert(max(0, line - 1))
+        persistBreakpoints()
     }
 
     /// Remove a breakpoint at the given line number (1-based).
     func removeBreakpoint(at line: Int) {
         breakpoints.remove(max(0, line - 1))
+        persistBreakpoints()
     }
 
     /// Remove all breakpoints.
     func clearBreakpoints() {
         breakpoints.removeAll()
+        persistBreakpoints()
+    }
+
+    /// Save current breakpoints to the config file.
+    private func persistBreakpoints() {
+        guard let path = currentScriptPath else { return }
+        BreakpointStore.save(breakpoints: breakpoints, for: path)
     }
 
     /// Execute one line then pause (step line / step into).
@@ -3885,6 +3905,9 @@ extension MacroRunner {
         let option = args.count > 1 ? resolveString(args[1]) : ""
         cancelExecTimer()
         isTransferWaiting = true
+        currentTransferProtocol = proto
+        currentTransferDirection = "send"
+        currentTransferPath = localPath
 
         clientProxy?.startFileSend(protocolName: proto, localPath: localPath, option: option,
                                     reply: { [weak self] success, errorMsg in
@@ -3914,6 +3937,9 @@ extension MacroRunner {
         let localDir = args.isEmpty ? "" : resolveString(args[0])
         cancelExecTimer()
         isTransferWaiting = true
+        currentTransferProtocol = proto
+        currentTransferDirection = "recv"
+        currentTransferPath = localDir
 
         clientProxy?.startFileRecv(protocolName: proto, localDir: localDir,
                                     reply: { [weak self] success, errorMsg, savedPath in
@@ -3957,6 +3983,15 @@ extension MacroRunner {
                 self.resultValue = -1
                 self.variables["result"] = .integer(-1)
                 self.onTransferProgress?("idle", 0, 0)
+                let detail = TransferErrorDetail(
+                    protocolName: self.currentTransferProtocol,
+                    direction: self.currentTransferDirection,
+                    filePath: self.currentTransferPath,
+                    bytesTransferred: bytesSent,
+                    totalBytes: totalBytes,
+                    lineNumber: self.currentLineNumber
+                )
+                self.onTransferError?(detail)
                 self.scheduleNextLine()
 
             case .idle:

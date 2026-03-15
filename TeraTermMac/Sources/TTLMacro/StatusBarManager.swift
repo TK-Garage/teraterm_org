@@ -22,6 +22,7 @@ protocol StatusBarManagerDelegate: AnyObject {
     func statusBarDidRequestStepLine()
     func statusBarDidRequestStepOver()
     func statusBarDidRequestStepOut()
+    func statusBarDidRequestShowVariables()
 }
 
 // MARK: - Execution State
@@ -278,6 +279,14 @@ class StatusBarManager: NSObject, NSMenuDelegate {
 
         menu.addItem(.separator())
 
+        let watchItem = NSMenuItem(title: L("macro.menu.watchVariables"),
+                                   action: #selector(showVariablesAction),
+                                   keyEquivalent: "")
+        watchItem.target = self
+        menu.addItem(watchItem)
+
+        menu.addItem(.separator())
+
         let quitItem = NSMenuItem(title: L("macro.menu.quit"),
                                   action: #selector(quitAction),
                                   keyEquivalent: "")
@@ -391,6 +400,10 @@ class StatusBarManager: NSObject, NSMenuDelegate {
 
     @objc private func stepOutAction() {
         delegate?.statusBarDidRequestStepOut()
+    }
+
+    @objc private func showVariablesAction() {
+        delegate?.statusBarDidRequestShowVariables()
     }
 
     @objc private func quitAction() {
