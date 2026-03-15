@@ -1195,8 +1195,12 @@ extension MacroRunner {
             return
         }
 
+        let exists = variables[varName] != nil
+        resultValue = exists ? 1 : 0
+        variables["result"] = .integer(resultValue)
+
         ifNest += 1
-        if variables[varName] == nil {
+        if !exists {
             elseFlag = 1
         }
     }
@@ -1224,7 +1228,7 @@ extension MacroRunner {
 
     func cmdSend(_ args: [String], addCR: Bool) { // [IMPLEMENTED]
         var text = args.map { resolveString($0) }.joined()
-        if addCR { text += "\r\n" }
+        if addCR { text += "\r" }
 
         guard let data = text.data(using: .utf8) else { return }
         clientProxy?.sendToTerminal(data: data, reply: { [weak self] in
@@ -2106,10 +2110,24 @@ extension MacroRunner {
     // MARK: sprintf/sprintf2 - [IMPLEMENTED]
 
     func cmdSprintf(_ args: [String], mode: Int) { // [IMPLEMENTED]
-        guard args.count >= 2 else { return }
-        let destVar = args[0].lowercased()
-        let format = resolveString(args[1])
-        let fmtArgs = args.dropFirst(2).map { resolveString($0) }
+        // sprintf <format> [<args>...] — 結果を inputstr に格納
+        // sprintf2 <strvar> <format> [<args>...] — 結果を指定変数に格納
+        let destVar: String
+        let format: String
+        let fmtArgs: [String]
+        if mode == 0 {
+            // sprintf: args[0] = format
+            guard !args.isEmpty else { return }
+            destVar = ""
+            format = resolveString(args[0])
+            fmtArgs = args.dropFirst(1).map { resolveString($0) }
+        } else {
+            // sprintf2: args[0] = destVar, args[1] = format
+            guard args.count >= 2 else { return }
+            destVar = args[0].lowercased()
+            format = resolveString(args[1])
+            fmtArgs = args.dropFirst(2).map { resolveString($0) }
+        }
 
         // Simple format string processing
         var result = format
@@ -2189,11 +2207,12 @@ extension MacroRunner {
         }
 
         if mode == 0 {
-            variables[destVar] = .string(result)
-        } else {
-            // sprintf2 stores to inputstr
+            // sprintf: 結果を inputstr に格納
             inputStr = result
             variables["inputstr"] = .string(result)
+        } else {
+            // sprintf2: 結果を指定変数に格納
+            variables[destVar] = .string(result)
         }
     }
 }
@@ -2333,16 +2352,20 @@ extension MacroRunner {
     // MARK: dirnamebox - [IMPLEMENTED]
 
     func cmdDirnameBox(_ args: [String]) { // [IMPLEMENTED]
-        let message = args.isEmpty ? "" : resolveString(args[0])
-        let defaultDir = args.count > 1 ? resolveString(args[1]) : ""
+        // dirnamebox <strvar> <title>
+        let destVar = args.isEmpty ? "" : args[0].lowercased()
+        let title = args.count > 1 ? resolveString(args[1]) : ""
         cancelExecTimer()
         clientProxy?.showDialog(type: MacroDialogType.dirnamebox.rawValue,
-                                message: message, defaultValue: defaultDir,
+                                message: title, defaultValue: "",
                                 reply: { [weak self] resultCode, dirPath in
             guard let self = self else { return }
             self.resultValue = resultCode
             self.variables["result"] = .integer(resultCode)
             if resultCode == 1 {
+                if !destVar.isEmpty {
+                    self.variables[destVar] = .string(dirPath)
+                }
                 self.inputStr = dirPath
                 self.variables["inputstr"] = .string(dirPath)
             }
@@ -2371,41 +2394,36 @@ extension MacroRunner {
     // MARK: fileopen - [IMPLEMENTED]
 
     func cmdFileOpen(_ args: [String]) { // [IMPLEMENTED]
-        // fileopen <handlevar> <filepath> <mode>
-        // mode: 0=read, 1=write(create), 2=read+write, 3=append
+        // fileopen <handlevar> <filepath> <append> [<readonly>]
+        // append: 0=seek to beginning, 1=seek to end (append)
+        // readonly: 1=read-only (optional)
         guard args.count >= 3 else {
-            reportError("fileopen: requires handlevar, filepath, mode")
+            reportError("fileopen: requires handlevar, filepath, append")
             return
         }
         let handleVar = args[0].lowercased()
         let filePath = resolveString(args[1])
-        let mode = resolveInt(args[2])
+        let appendFlag = resolveInt(args[2])
+        let readOnly = args.count >= 4 ? resolveInt(args[3]) : 0
 
         let fm = FileManager.default
         var handle: FileHandle?
 
-        switch mode {
-        case 0: // read
+        if readOnly == 1 {
+            // Read-only mode
             handle = FileHandle(forReadingAtPath: filePath)
-        case 1: // write (create/truncate)
-            if !fm.fileExists(atPath: filePath) {
-                fm.createFile(atPath: filePath, contents: nil)
+            if handle != nil && appendFlag == 1 {
+                handle?.seekToEndOfFile()
             }
-            handle = FileHandle(forWritingAtPath: filePath)
-            handle?.truncateFile(atOffset: 0)
-        case 2: // read+write
+        } else {
+            // Read+write mode
             if !fm.fileExists(atPath: filePath) {
                 fm.createFile(atPath: filePath, contents: nil)
             }
             handle = FileHandle(forUpdatingAtPath: filePath)
-        case 3: // append
-            if !fm.fileExists(atPath: filePath) {
-                fm.createFile(atPath: filePath, contents: nil)
+            if handle != nil && appendFlag == 1 {
+                handle?.seekToEndOfFile()
             }
-            handle = FileHandle(forWritingAtPath: filePath)
-            handle?.seekToEndOfFile()
-        default:
-            handle = FileHandle(forReadingAtPath: filePath)
         }
 
         if let handle = handle {
@@ -2681,17 +2699,34 @@ extension MacroRunner {
     // MARK: filestat - [IMPLEMENTED]
 
     func cmdFileStat(_ args: [String]) { // [IMPLEMENTED]
+        // filestat <filename> <size> [<mtime> [<drive>]]
         guard args.count >= 2 else { return }
-        let destVar = args[0].lowercased()
-        let filePath = resolveString(args[1])
+        let filePath = resolveString(args[0])
+        let sizeVar = args[1].lowercased()
 
         do {
             let attrs = try FileManager.default.attributesOfItem(atPath: filePath)
             let size = (attrs[.size] as? Int) ?? 0
-            variables[destVar] = .integer(size)
+            variables[sizeVar] = .integer(size)
+            // Optional mtime parameter
+            if args.count >= 3 {
+                let mtimeVar = args[2].lowercased()
+                if let mdate = attrs[.modificationDate] as? Date {
+                    let formatter = DateFormatter()
+                    formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
+                    variables[mtimeVar] = .string(formatter.string(from: mdate))
+                } else {
+                    variables[mtimeVar] = .string("")
+                }
+            }
+            // Optional drive parameter (always empty on macOS)
+            if args.count >= 4 {
+                let driveVar = args[3].lowercased()
+                variables[driveVar] = .string("")
+            }
             resultValue = 0
         } catch {
-            variables[destVar] = .integer(0)
+            variables[sizeVar] = .integer(0)
             resultValue = -1
         }
         variables["result"] = .integer(resultValue)
@@ -3017,9 +3052,10 @@ extension MacroRunner {
     // MARK: getenv - [IMPLEMENTED]
 
     func cmdGetEnv(_ args: [String]) { // [IMPLEMENTED]
+        // getenv <envname> <strvar>
         guard args.count >= 2 else { return }
-        let destVar = args[0].lowercased()
-        let envName = resolveString(args[1])
+        let envName = resolveString(args[0])
+        let destVar = args[1].lowercased()
         let value = ProcessInfo.processInfo.environment[envName] ?? ""
         variables[destVar] = .string(value)
     }
@@ -3036,9 +3072,17 @@ extension MacroRunner {
     // MARK: expandenv - [IMPLEMENTED]
 
     func cmdExpandEnv(_ args: [String]) { // [IMPLEMENTED]
+        // expandenv <strvar> [<strval>]
         guard !args.isEmpty else { return }
         let destVar = args[0].lowercased()
-        var str = variables[destVar]?.strValue ?? ""
+        var str: String
+        if args.count >= 2 {
+            // 2引数形式: strval を展開して strvar に格納
+            str = resolveString(args[1])
+        } else {
+            // 1引数形式: 変数の内容をその場で展開
+            str = variables[destVar]?.strValue ?? ""
+        }
         // Replace %VARNAME% with environment variable values
         let env = ProcessInfo.processInfo.environment
         for (key, value) in env {
@@ -3258,17 +3302,21 @@ extension MacroRunner {
     // MARK: getfileattr - [IMPLEMENTED]
 
     func cmdGetFileAttr(_ args: [String]) { // [IMPLEMENTED]
-        guard args.count >= 2 else { return }
-        let destVar = args[0].lowercased()
-        let filePath = resolveString(args[1])
+        // getfileattr <filename> — result に属性値（-1=エラー）
+        guard !args.isEmpty else { return }
+        let filePath = resolveString(args[0])
 
         do {
             let attrs = try FileManager.default.attributesOfItem(atPath: filePath)
-            let posixPerms = (attrs[.posixPermissions] as? Int) ?? 0
-            variables[destVar] = .integer(posixPerms)
-            resultValue = 0
+            var attrBits = 0
+            if let type = attrs[.type] as? FileAttributeType {
+                if type == .typeDirectory { attrBits |= 0x10 }
+            }
+            if let perms = attrs[.posixPermissions] as? Int {
+                if perms & 0o200 == 0 { attrBits |= 0x01 } // Read-only
+            }
+            resultValue = attrBits
         } catch {
-            variables[destVar] = .integer(0)
             resultValue = -1
         }
         variables["result"] = .integer(resultValue)
@@ -3307,18 +3355,23 @@ extension MacroRunner {
     // MARK: setdate - [IMPLEMENTED]
 
     func cmdSetDate(_ args: [String]) { // [IMPLEMENTED]
-        // Setting system date requires root - just store for reference
+        // Setting system date requires root - always fails on macOS
         if !args.isEmpty {
             variables["_setdate"] = .string(resolveString(args[0]))
         }
+        resultValue = -1
+        variables["result"] = .integer(resultValue)
     }
 
     // MARK: settime - [IMPLEMENTED]
 
     func cmdSetTime(_ args: [String]) { // [IMPLEMENTED]
+        // Setting system time requires root - always fails on macOS
         if !args.isEmpty {
             variables["_settime"] = .string(resolveString(args[0]))
         }
+        resultValue = -1
+        variables["result"] = .integer(resultValue)
     }
 }
 
@@ -3465,12 +3518,34 @@ extension MacroRunner {
     // MARK: clipb2var - [IMPLEMENTED]
 
     func cmdClipb2Var(_ args: [String]) { // [IMPLEMENTED]
+        // clipb2var <strvar> [<offset>]
         guard !args.isEmpty else { return }
         let destVar = args[0].lowercased()
+        let offset = args.count >= 2 ? resolveInt(args[1]) : 0
+        let chunkSize = 511
         cancelExecTimer()
         clientProxy?.getClipboard(reply: { [weak self] text in
             guard let self = self else { return }
-            self.variables[destVar] = .string(text)
+            if text.isEmpty {
+                self.variables[destVar] = .string("")
+                self.resultValue = 0  // 0 = データなし
+            } else {
+                let startIndex = offset * chunkSize
+                if startIndex >= text.count {
+                    self.variables[destVar] = .string("")
+                    self.resultValue = 0  // 0 = データなし
+                } else {
+                    let start = text.index(text.startIndex, offsetBy: startIndex)
+                    let end = text.index(start, offsetBy: min(chunkSize, text.count - startIndex))
+                    self.variables[destVar] = .string(String(text[start..<end]))
+                    if text.count > startIndex + chunkSize {
+                        self.resultValue = 2  // 2 = 切り詰め（残りあり）
+                    } else {
+                        self.resultValue = 1  // 1 = 成功
+                    }
+                }
+            }
+            self.variables["result"] = .integer(self.resultValue)
             self.scheduleNextLine()
         })
     }
@@ -3482,7 +3557,10 @@ extension MacroRunner {
         let text = resolveString(args[0])
         cancelExecTimer()
         clientProxy?.setClipboard(text: text, reply: { [weak self] in
-            self?.scheduleNextLine()
+            guard let self = self else { return }
+            self.resultValue = 1  // 1 = 成功
+            self.variables["result"] = .integer(self.resultValue)
+            self.scheduleNextLine()
         })
     }
 }
