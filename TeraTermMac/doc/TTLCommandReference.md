@@ -32,7 +32,7 @@ Tera Term Mac で利用可能な TTL マクロコマンドの一覧です。
 23. [システム変数](#23-システム変数)
 24. [式と演算子](#24-式と演算子)
 25. [macOS 固有の動作差異](#25-macos-固有の動作差異)
-26. [実装と仕様の差異一覧（要修正）](#26-実装と仕様の差異一覧要修正)
+26. [実装と仕様の差異一覧](#26-実装と仕様の差異一覧)
 
 ---
 
@@ -1389,7 +1389,7 @@ unlink
 
 ### `testlink`
 
-リンク・接続状態をテスト。
+マクロとターミナル間のリンク状態、およびホストへの接続状態をテストする。
 
 ```ttl
 testlink
@@ -1404,7 +1404,13 @@ elseif result == 2 then
 endif
 ```
 
-**result**: 0 = 未リンク、1 = リンク済み・未接続、2 = リンク済み・接続中
+| result | 状態 |
+|:------:|------|
+| 0 | マクロがターミナルにリンクされていない |
+| 1 | ターミナルにリンク済みだが、ホストへの接続はされていない |
+| 2 | リンク済みかつホストに接続中 |
+
+> **未実装**: `result = 1`（リンク済み・未接続）は現在未実装（0/2 のみ返す）。マクロ実行アプリと通信アプリの分離後に対応予定。オリジナル Tera Term では MACRO プロセスと Tera Term プロセスが DDE で通信する 2 プロセス構成のため、`Linked`（DDE リンク状態）と `ComReady`（ホスト接続状態）を個別に管理できる。
 
 ### `clearscreen`
 
@@ -2271,100 +2277,23 @@ s = "double quotes"
 ## 26. 実装と仕様の差異一覧
 
 以下は本ドキュメント（TTLCommandReference.md）の仕様と実際の Swift 実装（MacroRunner.swift / TTLInterpreter.swift）を比較して検出した差異の一覧。
-§25 の OS/安全による意図的差異とは異なり、修正すべき実装バグまたはドキュメント誤りである。
+§25 の OS/安全による意図的差異とは異なり、仕様上の未実装または独自拡張を記録する。
 
-### 分類凡例
+### 26.1 未実装の仕様
 
-| 分類 | 意味 |
-|------|------|
-| **MR** | MacroRunner.swift（XPC プロセス側）のみの差異 |
-| **TI** | TTLInterpreter.swift（インプロセス側）のみの差異 |
-| **両方** | 両インタプリタ共通の差異 |
-| **Doc** | ドキュメント記述自体の誤り（実装が正しい） |
+| コマンド | 分類 | 内容 |
+|----------|:----:|------|
+| `testlink` | 両方 | `result = 1`（リンク済み・未接続）が未実装。現在は 0/2 のみ返す。マクロ実行アプリと通信アプリの分離後に対応予定（§12 参照） |
 
-### 26.1 引数の順序・形式の不一致 — 修正済み
+### 26.2 teraterm_mac 独自拡張コマンド
 
-以下の差異はすべて実装を仕様に合わせて修正した。
-
-| コマンド | 分類 | 修正内容 |
-|----------|:----:|---------|
-| `getenv` | MR | 引数順を仕様通り `(envname, strvar)` に修正 |
-| `fileopen` | MR | mode 列挙を仕様通り `(handlevar, filepath, append, [readonly])` 形式に修正 |
-| `filestat` | MR | 引数順を仕様通り `(filename, size)` に修正。mtime/drive にも対応（§26.3 参照） |
-| `getfileattr` | MR/TI | 両方とも仕様通り 1 引数 `(filename)` に修正し result に属性値を格納 |
-| `dirnamebox` | MR | 仕様通り `(strvar, title)` の引数を受け取り、strvar にパスを格納するよう修正 |
-| `str2code` | TI | 引数順を仕様通り `(intvar, string)` に修正。先頭文字の Unicode スカラー値を返すよう修正 |
-| `code2str` | TI | Unicode スカラー値を 1 文字に変換するよう修正（4 バイトアンパック → 単一文字変換） |
-
-### 26.2 result / 戻り値の不一致 — 修正済み（testlink を除く）
-
-| コマンド | 分類 | 修正内容 |
-|----------|:----:|---------|
-| `ifdefined` | MR | `result` に 1（存在）/ 0（不存在）を設定するよう修正 |
-| `recvln` | TI | result 値を仕様通り 0=データなし, 1=受信成功 に修正 |
-| `testlink` | 両方 | **未修正**: リンク状態と接続状態を区別する機構がないため 0/2 のみ返す（既知の制限） |
-| `clipb2var` | 両方 | result を設定するよう修正（0=データなし, 1=成功, 2=切り詰め） |
-| `var2clipb` | 両方 | result=1（成功）を設定するよう修正 |
-| `getver` | TI | `getStrVar()` で文字列変数に CFBundleShortVersionString を格納するよう修正 |
-
-### 26.3 未対応のパラメータ・機能 — 修正済み
-
-| コマンド | 分類 | 修正内容 |
-|----------|:----:|---------|
-| `clipb2var` | 両方 | offset パラメータ（511 バイト単位のチャンク分割読み取り）に対応 |
-| `expandenv` | 両方 | 2 引数形式 `expandenv <strvar> <strval>` に対応 |
-| `filestat` | MR/TI | 省略可能な `[<mtime> [<drive>]]` パラメータに対応（drive は macOS では常に空文字列） |
-| `fileseekback` | TI | `<bytes>` 引数を使用して指定バイト数だけ後退するよう修正 |
-
-### 26.4 送信動作の差異 — 修正済み
-
-| コマンド | 分類 | 修正内容 |
-|----------|:----:|---------|
-| `sendln` | MR | `\r\n`（CR+LF）から `\r`（CR のみ）に修正 |
-
-### 26.5 sprintf/sprintf2 の入れ替わり — 修正済み
-
-| コマンド | 分類 | 修正内容 |
-|----------|:----:|---------|
-| `sprintf` | MR | 仕様通り `sprintf <format> [args...]` で結果を `inputstr` に格納するよう修正 |
-| `sprintf2` | MR | 仕様通り `sprintf2 <strvar> <format> [args...]` で結果を指定変数に格納するよう修正 |
-
-### 26.6 findfirst / findnext の引数形式 — ドキュメント修正
-
-| コマンド | 分類 | 修正内容 |
-|----------|:----:|---------|
-| `findfirst` | Doc | 両インタプリタの 2 引数実装 `(strvar, pattern)` に合わせてドキュメントを修正。検索 ID は `result` 経由で返す |
-| `findnext` | Doc | 両インタプリタの 2 引数実装 `(strvar, searchId)` に合わせてドキュメントを修正 |
-
-### 26.7 setdate / settime の result 未設定 — 修正済み
-
-| コマンド | 分類 | 修正内容 |
-|----------|:----:|---------|
-| `setdate` | MR | 仕様通り `result = -1` を設定するよう修正 |
-| `settime` | MR | 仕様通り `result = -1` を設定するよう修正 |
-
-### 26.8 ドキュメント記述の誤り — 修正済み
-
-| コマンド | 分類 | 修正内容 |
-|----------|:----:|---------|
-| `logrotate` | Doc | ドキュメントを正しい仕様 `logrotate <mode> [<value>]`（mode: "size"/"rotate"/"halt"）に更新。実装は両方とも仕様通り |
-| `loginfo` | MR/Doc | ドキュメントを正しい仕様 `loginfo <strvar>` に更新。MacroRunner に `<strvar>` 引数サポートを追加（オリジナル TT 仕様に準拠） |
-
-### 26.9 teraterm_mac 独自拡張コマンド
-
-以下のコマンドはオリジナル Tera Term の予約語テーブルに存在しない。MacroRunner（新インタプリタ）にのみ実装されている teraterm_mac 独自の拡張であり、オリジナル Tera Term で使用した場合は構文エラーとなる。TTLParser（旧インタプリタ）にも存在しない。
+以下のコマンドはオリジナル Tera Term の予約語テーブルに存在しない。MacroRunner にのみ実装されている teraterm_mac 独自の拡張であり、オリジナル Tera Term で使用した場合は構文エラーとなる。
 
 | コマンド | 実装内容 | オリジナル TT での動作 |
 |----------|---------|----------------------|
-| `inc` | 整数変数をインクリメント（`inc <intvar>`） | 未知のコマンドとして構文エラー |
-| `dec` | 整数変数をデクリメント（`dec <intvar>`） | 未知のコマンドとして構文エラー |
-| `recv` | データを受信（タイムアウト付き）。result + inputstr に格納。`recvln` の行区切りなし版 | 未知のコマンドとして構文エラー（`recvln` のみ存在） |
-| `waitmatch` | `waitregex` のエイリアス | 未知のコマンドとして構文エラー（`waitregex` のみ存在） |
-| `settimeout` / `timeout`（コマンド形式） | タイムアウト値を設定（`settimeout <seconds>`）。システム変数 `timeout` にも反映 | 未知のコマンドとして構文エラー（`timeout` はシステム変数としてのみ存在し、`timeout = <value>` 形式の代入で設定する） |
-| `logautoclose` | `logautoclosemode` のエイリアス | 未知のコマンドとして構文エラー（`logautoclosemode` のみ存在） |
-
-### 26.10 オリジナル TT に存在するが MacroRunner に未実装だったコマンド — 修正済み
-
-| コマンド | オリジナル TT での仕様 | 修正内容 |
-|----------|----------------------|---------|
-| `setspeed` | `setbaud` のエイリアス（v4.99 以降） | MacroRunner に `setbaud` のエイリアスとして追加。TTLParser（旧インタプリタ）には既に `.setBaud` として実装済み |
+| `inc` | 整数変数をインクリメント（`inc <intvar>`） | 構文エラー |
+| `dec` | 整数変数をデクリメント（`dec <intvar>`） | 構文エラー |
+| `recv` | データを受信（タイムアウト付き）。result + inputstr に格納。`recvln` の行区切りなし版 | 構文エラー（`recvln` のみ存在） |
+| `waitmatch` | `waitregex` のエイリアス | 構文エラー（`waitregex` のみ存在） |
+| `settimeout` / `timeout`（コマンド形式） | タイムアウト値を設定（`settimeout <seconds>`）。システム変数 `timeout` にも反映 | 構文エラー（`timeout` はシステム変数としてのみ存在し、`timeout = <value>` 形式の代入で設定） |
+| `logautoclose` | `logautoclosemode` のエイリアス | 構文エラー（`logautoclosemode` のみ存在） |
