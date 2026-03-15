@@ -32,6 +32,7 @@ Tera Term Mac で利用可能な TTL マクロコマンドの一覧です。
 23. [システム変数](#23-システム変数)
 24. [式と演算子](#24-式と演算子)
 25. [macOS 固有の動作差異](#25-macos-固有の動作差異)
+26. [実装と仕様の差異一覧（要修正）](#26-実装と仕様の差異一覧要修正)
 
 ---
 
@@ -2215,3 +2216,75 @@ s = "double quotes"
 | `getmodemstatus` | OS | モデム制御線（DSR, CTS 等）の状態取得 | スタブ実装（常に 0 を返す） | macOS の PTY にはモデム制御線の概念がない。シリアルポート直接接続は未対応。 |
 | `getspecialfolder` | OS | 文字列名で指定（CSIDL: `"Desktop"` 等） | 数値 ID で指定（0=Desktop, 1=Documents, 2=AppSupport, 3=Home） | Windows の CSIDL 定数体系が macOS に存在しない。`NSSearchPathForDirectoriesInDomains` による macOS ネイティブなフォルダ解決に置換した。 |
 | `getpassword` 等 | 安全 | パスワードファイルに暗号化保存・復号 | macOS Keychain に保存。XPC 経由で安全に送信。 | macOS の Keychain はOS レベルの暗号化ストレージを提供し、ファイルベースの自前暗号化よりセキュアかつ OS のパスワード管理と統合される。引数の互換性（`filename`, `keyname`）は維持し、内部で `filename:keyname` をアカウント名として Keychain に格納する。 |
+
+---
+
+## 26. 実装と仕様の差異一覧（要修正）
+
+以下は本ドキュメント（TTLCommandReference.md）の仕様と実際の Swift 実装（MacroRunner.swift / TTLInterpreter.swift）を比較して検出した差異の一覧。
+§25 の OS/安全による意図的差異とは異なり、修正すべき実装バグまたはドキュメント誤りである。
+
+### 分類凡例
+
+| 分類 | 意味 |
+|------|------|
+| **MR** | MacroRunner.swift（XPC プロセス側）のみの差異 |
+| **TI** | TTLInterpreter.swift（インプロセス側）のみの差異 |
+| **両方** | 両インタプリタ共通の差異 |
+| **Doc** | ドキュメント記述自体の誤り（実装が正しい） |
+
+### 26.1 引数の順序・形式の不一致
+
+| コマンド | 分類 | 仕様（本ドキュメント） | 実装 | 備考 |
+|----------|:----:|----------------------|------|------|
+| `getenv` | MR | `getenv <envname> <strvar>` | `args[0]`=destVar, `args[1]`=envName（逆順） | TTLInterpreter は仕様通り |
+| `fileopen` | MR | `fileopen <handle> <filename> <append> [<readonly>]` — append: 0=先頭, 1=末尾 | mode 列挙（0=read, 1=write, 2=rw, 3=append）で動作 | TTLInterpreter は仕様通り |
+| `filestat` | MR | `filestat <filename> <size> [<mtime> [<drive>]]` | `args[0]`=destVar, `args[1]`=filePath（逆順） | TTLInterpreter は仕様通り |
+| `getfileattr` | MR | `getfileattr <filename>` — result に属性値 | `args[0]`=destVar, `args[1]`=filePath（2引数、result ではなく変数に格納） | TTLInterpreter も別形式 `(filename, intvar)` |
+| `getfileattr` | TI | `getfileattr <filename>` — result に属性値 | `(filename, intvar)` の 2 引数（result ではなく intvar に格納） | 仕様では result のみ |
+| `dirnamebox` | MR | `dirnamebox <strvar> <title>` | `args[0]`=message, `args[1]`=defaultDir（strvar なし、inputstr に格納） | TTLInterpreter は仕様通り |
+
+### 26.2 result / 戻り値の不一致
+
+| コマンド | 分類 | 仕様（本ドキュメント） | 実装 | 備考 |
+|----------|:----:|----------------------|------|------|
+| `ifdefined` | MR | `result` に 1（存在）/ 0（不存在）を設定 | 条件ブロック制御（`ifNest += 1, elseFlag`）を操作。`result` を設定しない | TTLInterpreter は仕様通り |
+| `recvln` | TI | result: 0=データなし, 1=受信成功 | result: 0=受信成功, 1=データなし（反転） | MacroRunner は仕様通り |
+| `testlink` | 両方 | result: 0=未リンク, 1=リンク済み・未接続, 2=リンク済み・接続中 | 0 または 2 のみ返す（1 を返せない） | リンク状態と接続状態を区別する機構がない |
+| `clipb2var` | 両方 | result: 0=データなし, 1=成功, 2=切り詰め | result を設定しない | offset パラメータも未対応（後述） |
+| `var2clipb` | 両方 | result: 0=失敗, 1=成功 | result を設定しない | |
+| `getver` | TI | 文字列変数に `'1.0.0'` 等のバージョン文字列を格納 | `getIntVar()` で整数変数に `50000` を格納 | MacroRunner は XPC 経由で文字列を返し仕様通り |
+
+### 26.3 未対応のパラメータ・機能
+
+| コマンド | 分類 | 仕様（本ドキュメント） | 実装 | 備考 |
+|----------|:----:|----------------------|------|------|
+| `clipb2var` | 両方 | 第 2 引数 `[<offset>]`（チャンク分割読み取り） | offset パラメータ未対応 | |
+| `expandenv` | 両方 | 2 引数形式 `expandenv <strvar> <strval>` | 1 引数形式のみ対応 | |
+| `filestat` | 両方 | 省略可能な `[<mtime> [<drive>]]` パラメータ | size のみ取得。mtime / drive 未対応 | |
+| `fileseekback` | TI | `fileseekback <handle> <bytes>` — 指定バイト数後退 | `filemarkptr` で記録した位置へ戻る（bytes 引数を無視） | MacroRunner は仕様通り |
+
+### 26.4 送信動作の差異
+
+| コマンド | 分類 | 仕様（本ドキュメント） | 実装 | 備考 |
+|----------|:----:|----------------------|------|------|
+| `sendln` | MR | 文字列 + CR を送信 | `\r\n`（CR+LF）を付加 | TTLInterpreter は delegate 経由で CR のみ |
+
+### 26.5 ドキュメント記述の誤り
+
+| コマンド | 分類 | 現在の記述 | 正しい仕様 | 備考 |
+|----------|:----:|----------|----------|------|
+| `logrotate` | Doc | "引数なし" | 引数あり: `logrotate <mode> [<value>]`（mode: "size"/"rotate"/"halt"） | 両実装とも引数を取る |
+| `loginfo` | Doc | "引数なし" | MacroRunner は引数なし（result + inputstr）、TTLInterpreter は `<strvar>` を取る | TTLInterpreter 側も要修正の可能性 |
+
+### 26.6 未ドキュメントコマンド
+
+以下のコマンドは両インタプリタのディスパッチテーブルに存在するが、本ドキュメントに記載がない。
+
+| コマンド | 実装内容 | 備考 |
+|----------|---------|------|
+| `inc` | 整数変数をインクリメント（`inc <intvar>`） | |
+| `dec` | 整数変数をデクリメント（`dec <intvar>`） | |
+| `recv` | データを受信（タイムアウト付き）。result + inputstr に格納 | `recvln` の行区切りなし版 |
+| `waitmatch` | `waitregex` のエイリアス | |
+| `settimeout` / `timeout` | タイムアウト値を設定（`settimeout <seconds>`）。システム変数 `timeout` にも反映 | `timeout` 変数への代入と同等 |
