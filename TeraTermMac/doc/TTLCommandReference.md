@@ -802,11 +802,31 @@ filemarkptr fh
 
 ### `filestat`
 
-ファイルサイズを取得。
+ファイルの統計情報を取得する。
 
 ```ttl
-filestat '/tmp/data.txt' size
-; size にバイト数が入る
+filestat <filename> <size> <mtime> <drive>
+```
+
+| 引数 | 型 | 説明 |
+|------|------|------|
+| `<filename>` | 文字列 | ファイルまたはフォルダのパス |
+| `<size>` | 整数変数 | ファイルサイズ（バイト）の格納先 |
+| `<mtime>` | 文字列変数 | 最終更新日時の格納先 |
+| `<drive>` | 文字列変数 | ドライブ情報の格納先（macOS では空文字列） |
+
+**result**: 0 = 成功、-1 = エラー
+
+**使用例**:
+
+```ttl
+filestat '/tmp/data.txt' size mtime drv
+if result == -1 then
+  messagebox 'File not found' 'Error'
+else
+  sprintf2 msg 'Size=%d Modified=%s' size mtime
+  messagebox msg 'filestat'
+endif
 ```
 
 ### `filetruncate`
@@ -843,19 +863,31 @@ fileunlock fh
 
 ### `findfirst` / `findnext` / `findclose`
 
-ファイル検索。
+ファイル検索（ディレクトリハンドルベース）。
 
 ```ttl
-findfirst filename '*.txt'
-while result == 0
-  sprintf '%s\n' filename
-  dispstr inputstr
-  findnext filename
-endwhile
-findclose
+findfirst <dirhandle> <pattern> <strvar>
+findnext <dirhandle> <strvar>
+findclose <dirhandle>
 ```
 
-**result**: 0 = 見つかった、-1 = 該当なし
+| 引数 | 型 | 説明 |
+|------|------|------|
+| `<dirhandle>` | 整数変数 | ディレクトリハンドル（`findfirst` が返す） |
+| `<pattern>` | 文字列 | 検索パターン（`'*.txt'` 等） |
+| `<strvar>` | 文字列変数 | 見つかったファイル名の格納先 |
+
+**result**: 1 = 見つかった、0 = 該当なし（`findfirst` 失敗時 `dirhandle` は -1）
+
+```ttl
+findfirst dh '*.txt' filename
+while result
+  sprintf '%s\n' filename
+  dispstr inputstr
+  findnext dh filename
+endwhile
+findclose dh
+```
 
 ### `foldercreate`
 
@@ -871,8 +903,25 @@ folderdelete '/tmp/olddir'
 
 ### `foldersearch`
 
+フォルダの存在を確認する。
+
 ```ttl
-foldersearch dirname '/tmp/test*'
+foldersearch <foldername>
+```
+
+| 引数 | 型 | 説明 |
+|------|------|------|
+| `<foldername>` | 文字列 | 確認するフォルダのパス |
+
+**result**: 1 = フォルダが存在する、0 = 存在しない
+
+> **注意**: ファイルが同名で存在する場合は 0 を返す（フォルダのみ判定）。
+
+```ttl
+foldersearch '/tmp/mydir'
+if result == 1 then
+  messagebox 'Folder exists' 'Info'
+endif
 ```
 
 ---
@@ -1069,12 +1118,21 @@ setenv 'MY_VAR' 'value'
 
 ### `expandenv`
 
-文字列中の `%VARNAME%` を展開。
+文字列中の `%VARNAME%` を環境変数の値で展開する。
 
 ```ttl
+; 1引数形式: 変数の内容をその場で展開
 path = '%HOME%/Documents'
 expandenv path
+
+; 2引数形式: strval を展開して strvar に格納
+expandenv result '%HOME%/Documents'
 ```
+
+| 引数 | 型 | 説明 |
+|------|------|------|
+| `<strvar>` | 文字列変数 | 展開結果の格納先（1引数時は対象兼格納先） |
+| `[<strval>]` | 文字列 | 展開する文字列（省略時は `<strvar>` の現在値を展開） |
 
 ### `gettitle`
 
@@ -1208,10 +1266,24 @@ getttpos xpos ypos
 
 ### `uptime`
 
-システム稼働時間を秒単位で取得。
+システム稼働時間をミリ秒単位で取得。
 
 ```ttl
-uptime seconds
+uptime <intvar>
+```
+
+| 引数 | 型 | 説明 |
+|------|------|------|
+| `<intvar>` | 整数変数 | システム稼働時間（ミリ秒）の格納先 |
+
+```ttl
+; マクロ実行時間の計測
+uptime t_start
+; ... 処理 ...
+uptime t_end
+elapsed = t_end - t_start
+sprintf2 msg 'Elapsed: %d ms' elapsed
+messagebox msg 'Timer'
 ```
 
 ### `random`
@@ -1269,16 +1341,22 @@ unlink
 
 ### `testlink`
 
-接続状態をテスト。
+リンク・接続状態をテスト。
 
 ```ttl
 testlink
-if result == 2 then
-  ; 接続中
+if result == 0 then
+  ; マクロがターミナルにリンクされていない
+  connect 'myhost'
+elseif result == 1 then
+  ; リンク済みだが未接続
+  connect 'myhost'
+elseif result == 2 then
+  ; リンク済みかつ接続中
 endif
 ```
 
-**result**: 2 = 接続中、0 = 未接続
+**result**: 0 = 未リンク、1 = リンク済み・未接続、2 = リンク済み・接続中
 
 ### `clearscreen`
 
@@ -1598,12 +1676,40 @@ recvfile '/tmp/received.dat' 1 0    ; バイナリモード、自動停止なし
 クリップボードの内容を変数に取得。
 
 ```ttl
+clipb2var <strvar> [<offset>]
+```
+
+| 引数 | 型 | 説明 |
+|------|------|------|
+| `<strvar>` | 文字列変数 | クリップボード内容の格納先 |
+| `[<offset>]` | 整数 | 読み取り開始チャンク番号（511バイト単位、省略時 0） |
+
+**result**: 0 = データなし、1 = 成功、2 = 切り詰め（残りあり）
+
+```ttl
+; 基本使用
 clipb2var text
+
+; 大きなクリップボード内容を分割読み取り
+offset = 0
+do
+  clipb2var buf offset
+  if result > 0 filewrite fh buf
+  offset = offset + 1
+loop while result == 2
 ```
 
 ### `var2clipb`
 
 変数の内容をクリップボードに設定。
+
+```ttl
+var2clipb <string>
+```
+
+| 引数 | 型 | 説明 |
+|------|------|------|
+| `<string>` | 文字列 | クリップボードに設定する文字列 |
 
 ```ttl
 var2clipb 'copied text'
@@ -1719,23 +1825,47 @@ logautoclosemode 0    ; OFF
 
 ### `exec`
 
-シェルコマンドを実行。
+外部アプリケーションを起動する。
+
+```ttl
+exec <command line> [<show> [<wait> [<current directory>]]]
+```
+
+| 引数 | 型 | 説明 |
+|------|------|------|
+| `<command line>` | 文字列 | 実行するコマンドライン |
+| `[<show>]` | 文字列/整数 | ウィンドウ表示モード（`'show'`, `'hide'`, `'minimize'`, `'maximize'`） |
+| `[<wait>]` | 整数 | 1=終了を待つ、0=即座に戻る（デフォルト 0） |
+| `[<current directory>]` | 文字列 | 作業ディレクトリ |
+
+**result**: `<wait>` が 1 の場合、アプリケーションの終了コード
+
+> **macOS 実装メモ**: macOS 版では `/bin/sh -c` 経由でコマンドを実行し、`inputstr` に標準出力、`result` に終了コードを格納する。`<show>`, `<wait>`, `<current directory>` オプションは未対応。
 
 ```ttl
 exec 'ls -la /tmp'
 ; inputstr に出力、result に終了コード
 ```
 
-**result**: コマンドの終了コード
-**inputstr**: 標準出力
-
 ### `execcmnd`
 
-TTL コマンド文字列を動的実行。
+TTL コマンド文字列を動的に実行する。
+
+```ttl
+execcmnd <statement>
+```
+
+| 引数 | 型 | 説明 |
+|------|------|------|
+| `<statement>` | 文字列 | 実行する TTL コマンド文字列 |
 
 ```ttl
 cmd = 'messagebox "Dynamic!" "Title"'
 execcmnd cmd
+
+; 動的にコマンドを構築して実行
+sprintf2 cmdstr 'send "%s"' username
+execcmnd cmdstr
 ```
 
 ### `setexitcode`
