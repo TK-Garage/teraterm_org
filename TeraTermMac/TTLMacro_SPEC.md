@@ -276,7 +276,7 @@ All commands are case-insensitive (`Send` = `send` = `SEND`).
 | `getver` | `<intvar>` | -- | Get version number (major*10000 + minor*100 + patch). | Yes |
 | `getttdir` | `<strvar>` | -- | Get application directory. | Yes |
 | `getttpos` | `<xvar> <yvar>` | -- | Get terminal window position. | Yes |
-| `enablekeyb` | `<flag>` (int) | -- | Enable (1) or disable (0) keyboard. | Yes |
+| `enablekeyb` | `<flag>` (int) | -- | Enable (1) or disable (0) keyboard. Uses `KeyboardHandler.inputEnabled` property. | Yes |
 | `settitle` | `<title>` (string) | -- | Set terminal window title. | Yes |
 | `gettitle` | `<strvar>` | -- | Get terminal window title. | Yes |
 | `clearscreen` | -- | -- | Clear terminal screen. | Yes |
@@ -557,9 +557,15 @@ TeraTermMac/
 ├── Sources/
 │   ├── TeraTermMac/ (existing, add XPC client)
 │   │   ├── App/
-│   │   │   └── MacroXPCManager.swift (new)
+│   │   │   ├── MacroXPCManager.swift
+│   │   │   ├── MacroXPCExtensions.swift
+│   │   │   └── TTLogger.swift              ← os.Logger 統一定義
+│   │   ├── Keyboard/
+│   │   │   └── KeyboardHandler.swift       ← inputEnabled プロパティ追加
+│   │   ├── Communication/
+│   │   │   └── ConnectionManager.swift     ← fileDescriptor を private(set) に変更
 │   │   └── Macro/ (existing)
-│   ├── TTLMacroShared/ (new - shared module)
+│   ├── TTLMacroShared/ (shared module)
 │   │   ├── MacroServiceProtocol.swift
 │   │   ├── MacroClientProtocol.swift
 │   │   ├── MacroLocalizable.swift
@@ -567,10 +573,10 @@ TeraTermMac/
 │   │   └── Resources/
 │   │       ├── en.lproj/Localizable.strings
 │   │       └── ja.lproj/Localizable.strings
-│   └── TTLMacro/ (new - macro app)
+│   └── TTLMacro/ (macro app)
 │       ├── main.swift
 │       ├── TTLMacroApp.swift
-│       ├── XPCServiceDelegate.swift
+│       ├── XPCServiceHandler.swift
 │       ├── StatusBarController.swift
 │       ├── Info.plist
 │       ├── TTLMacro.entitlements
@@ -870,3 +876,55 @@ TTLMacro.app                          TeraTermMac.app
 - 待機中も `pause` / `stop` を受付 (DispatchQueue非同期ポーリング + キャンセルフラグ)
 - 転送中に別の転送コマンド実行時: `macroDidFail(error: "Transfer already in progress", line: N)`
 - TeraTermMac.app側で `isTransferInProgress` フラグを管理
+
+---
+
+## 実装ノート (2026-03-15 更新)
+
+### ログ基盤: os.Logger への統一
+
+全ての `NSLog` 呼び出しを Apple の統一ログシステム (`os.Logger`) に移行済み。
+
+| Logger インスタンス | サブシステム | カテゴリ | 用途 |
+|---|---|---|---|
+| `TTLog.config` | `com.teraterm.mac` | `ConfigPersistence` | TERATERM.INI の読み書き |
+| `TTLog.snapshot` | `com.teraterm.mac` | `DebugSnapshot` | デバッグ用 PNG スナップショット生成 |
+| `TTLog.settings` | `com.teraterm.mac` | `TerminalSettings` | 端末設定の保存/読み込み |
+| `TTLog.keymap` | `com.teraterm.mac` | `KeyMap` | キーマップファイルの読み込み |
+| `TTLog.tcp` | `com.teraterm.mac` | `TCPConnection` | TCP 接続のエラー/リトライ |
+| `TTLog.localization` | `com.teraterm.mac` | `TTL` | ローカライズリソース解決 |
+| `TTLog.snapshotGen` | `com.teraterm.mac` | `SnapshotGenerator` | ダイアログ検証用スナップショット |
+| `TTLog.snapshotTest` | `com.teraterm.mac` | `MultilingualSnapshot` | 多言語スナップショットテスト |
+| `TTLog.xpc` | `com.teraterm.mac` | `XPC` | XPC サービス通信 |
+
+TTLMacro.app 側は独自の `Logger(subsystem: "com.teraterm.ttlmacro", category: "XPC")` を使用。
+
+定義ファイル: `Sources/TeraTermMac/App/TTLogger.swift`
+
+### SerialConnection.fileDescriptor アクセス
+
+`SerialConnection.fileDescriptor` を `private` → `private(set)` に変更。
+`MacroXPCExtensions.swift` の `getFileDescriptor()` から Mirror リフレクションを除去し、
+直接プロパティアクセスに置き換え済み。
+
+### KeyboardHandler.inputEnabled
+
+`KeyboardHandler` に `inputEnabled: Bool` プロパティ (`private(set)`) を追加。
+`processKeyEvent()` の先頭で `guard inputEnabled` チェックを実行。
+`MacroXPCExtensions.swift` の `keyboardEnabled` 計算プロパティは
+`inputEnabled` プロパティに委譲する形に変更。
+従来の `userDefinedKeys["__disabled__"]` センチネル方式と Mirror リフレクションを完全除去。
+
+---
+
+## 残課題一覧
+
+| # | 課題 | 優先度 | 備考 |
+|---|---|---|---|
+| 1 | 実機ビルド検証 | High | Xcode 上での実機ビルド・動作確認が必要。CI 環境ではシミュレータ不可のため手動検証 |
+| 2 | ~~SerialConnection.fileDescriptor アクセス~~ | ~~Low~~ | **解決済み** — `private(set)` に変更、Mirror 除去 |
+| 3 | ~~KeyboardHandler.keyboardEnabled のセンチネル方式~~ | ~~Low~~ | **解決済み** — `inputEnabled` プロパティに変更 |
+| 4 | ~~NSLog 統一~~ | ~~Low~~ | **解決済み** — 全箇所 `os.Logger` (TTLog) に移行 |
+| 5 | XPC 接続の再接続ハンドリング | Medium | TTLMacro.app がクラッシュした場合の自動再接続・エラー復旧 |
+| 6 | ファイル転送の進捗 UI | Low | ステータスバーに転送進捗の表示 (現状はログ出力のみ) |
+| 7 | マクロデバッガ UI | Low | ブレークポイント設定・ステップ実行等のデバッグ支援 |

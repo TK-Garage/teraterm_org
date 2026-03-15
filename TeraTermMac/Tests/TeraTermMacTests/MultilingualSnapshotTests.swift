@@ -28,7 +28,10 @@ import XCTest
 
 #if canImport(AppKit)
 import AppKit
+import os
 @testable import TeraTermMac
+
+private let logger = Logger(subsystem: "com.teraterm.mac.tests", category: "MultilingualSnapshot")
 
 // MARK: - Multilingual Snapshot Generator
 
@@ -77,7 +80,7 @@ final class MultilingualSnapshotGenerator {
             )
         }
 
-        NSLog("[MultilingualSnapshot] Generated \(specs.count) snapshots in '\(currentLang)' → \(langDir.path)")
+        logger.info("Generated \(specs.count, privacy: .public) snapshots in '\(currentLang, privacy: .public)' → \(langDir.path, privacy: .public)")
         return baseDir
     }
 
@@ -173,9 +176,7 @@ final class MultilingualSnapshotGenerator {
         // Check fitting size
         let fitting = view.fittingSize
         if fitting.width > width || fitting.height > height {
-            NSLog("[MultilingualSnapshot] WARNING: '\(name)' fittingSize "
-                + "(\(fitting.width)×\(fitting.height)) exceeds spec "
-                + "(\(width)×\(height))")
+            logger.warning("'\(name, privacy: .public)' fittingSize (\(fitting.width, privacy: .public)×\(fitting.height, privacy: .public)) exceeds spec (\(width, privacy: .public)×\(height, privacy: .public))")
         }
 
         // Render to PNG
@@ -278,7 +279,7 @@ final class TruncationDetectionTests: XCTestCase {
 
         let truncations = detectTruncations(in: vc.view)
         for truncation in truncations {
-            NSLog("[TruncationDetection] \(truncation)")
+            logger.info("Truncation detected: \(truncation, privacy: .public)")
         }
 
         XCTAssertEqual(truncations.count, 0,
@@ -302,7 +303,7 @@ final class TruncationDetectionTests: XCTestCase {
         let truncations = detectTruncations(in: vc.view)
         // Original may have some fixed-width truncation; just log them
         for truncation in truncations {
-            NSLog("[TruncationDetection] Original: \(truncation)")
+            logger.info("Original truncation: \(truncation, privacy: .public)")
         }
     }
 

@@ -38,6 +38,13 @@ class KeyboardHandler {
     // User-defined keys
     private var userDefinedKeys: [String: String] = [:]
 
+    // Keyboard input enabled flag (used by macro enablekeyb command)
+    private(set) var inputEnabled: Bool = true
+
+    func setInputEnabled(_ enabled: Bool) {
+        inputEnabled = enabled
+    }
+
     // Macro key bindings
     private var macroBindings: [String: String] = [:]
 
@@ -49,6 +56,7 @@ class KeyboardHandler {
 
     func processKeyEvent(_ event: TerminalKeyEvent) -> Data? {
         guard event.isKeyDown else { return nil }
+        guard inputEnabled else { return nil }
 
         // Check for user-defined key first
         if let udk = processUserDefinedKey(event) {

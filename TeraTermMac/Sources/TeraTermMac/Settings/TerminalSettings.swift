@@ -11,6 +11,7 @@
  */
 
 import Foundation
+import os
 
 // MARK: - Terminal ID (port of tttypes_termid.h)
 
@@ -753,7 +754,7 @@ class TerminalSettings: Codable {
             try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
             try data.write(to: fileURL)
         } catch {
-            NSLog("[TerminalSettings] %@", TTL("debug.settings.saveFailed", "\(error)"))
+            TTLog.settings.error("Failed to save settings: \(error.localizedDescription, privacy: .public)")
         }
     }
 

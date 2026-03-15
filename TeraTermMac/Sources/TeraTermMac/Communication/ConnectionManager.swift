@@ -8,6 +8,7 @@
  */
 
 import Foundation
+import os
 
 // MARK: - Connection State
 
@@ -417,8 +418,7 @@ class TCPConnection: Connection {
                         retries += 1
                         if retries > TCPConnection.sendMaxRetries {
                             // リトライ上限到達 → 送信失敗として切断・通知
-                            NSLog("[TCPConnection] %@",
-                                  TTL("debug.tcp.writeRetryExceeded", retries, offset, total))
+                            TTLog.tcp.error("Write retry exceeded: retries=\(retries, privacy: .public) offset=\(offset, privacy: .public) total=\(total, privacy: .public)")
                             DispatchQueue.main.async { [weak self] in
                                 self?.delegate?.connectionDidFail(error: ConnectionError.sendFailed)
                                 self?.disconnect()
@@ -529,7 +529,7 @@ class SerialConnection: Connection {
     let flowControl: FlowControl
 
     private(set) var state: ConnectionState = .disconnected
-    private var fileDescriptor: Int32 = -1
+    private(set) var fileDescriptor: Int32 = -1
     private let readQueue = DispatchQueue(label: "com.teraterm.serial.read")
     private let writeQueue = DispatchQueue(label: "com.teraterm.serial.write")
 

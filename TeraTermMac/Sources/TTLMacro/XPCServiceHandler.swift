@@ -9,7 +9,10 @@
  */
 
 import Foundation
+import os
 import TTLMacroShared
+
+private let logger = Logger(subsystem: "com.teraterm.ttlmacro", category: "XPC")
 
 // MARK: - XPC Service Handler
 
@@ -65,7 +68,7 @@ class XPCServiceHandler: NSObject {
             try data.write(to: URL(fileURLWithPath: filePath))
         } catch {
             // Log error but continue - connection may still work via other means
-            NSLog("Failed to write XPC endpoint file: \(error)")
+            logger.error("Failed to write XPC endpoint file: \(error.localizedDescription, privacy: .public)")
         }
     }
 

@@ -9,6 +9,7 @@
 
 #if canImport(AppKit)
 import AppKit
+import os
 
 // [KEY-INPUT-AUDIT]
 // keyDown 実装: TerminalView.swift:832 (override keyDown)
@@ -1375,10 +1376,10 @@ extension TerminalWindowController: TTLInterpreterDelegate {
             let keyMap = try KeymapLoader.load(from: url)
             applyKeyMap(keyMap)
             if !keyMap.warnings.isEmpty {
-                NSLog("[KeyMap] %@", TTL("debug.keymap.warnings", keyMap.warnings.joined(separator: ", ")))
+                TTLog.keymap.warning("Key map warnings: \(keyMap.warnings.joined(separator: ", "), privacy: .public)")
             }
         } catch {
-            NSLog("[KeyMap] %@", TTL("debug.keymap.loadFailed", error.localizedDescription))
+            TTLog.keymap.error("Failed to load key map: \(error.localizedDescription, privacy: .public)")
         }
     }
 

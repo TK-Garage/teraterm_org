@@ -98,14 +98,7 @@ extension SerialConnection {
     /// Access the file descriptor for ioctl operations.
     /// Returns -1 if disconnected.
     func getFileDescriptor() -> Int32 {
-        // Access via reflection since fileDescriptor is private
-        let mirror = Mirror(reflecting: self)
-        for child in mirror.children {
-            if child.label == "fileDescriptor", let fd = child.value as? Int32 {
-                return fd
-            }
-        }
-        return -1
+        return fileDescriptor
     }
 }
 
@@ -162,34 +155,8 @@ extension KeyboardHandler {
     /// Enable/disable keyboard input processing.
     /// When disabled, processKeyEvent returns nil for all input.
     var keyboardEnabled: Bool {
-        get {
-            // Check if a "disabled" binding exists as sentinel
-            return userDefinedKeys["__disabled__"] == nil
-        }
-        set {
-            if newValue {
-                userDefinedKeys.removeValue(forKey: "__disabled__")
-            } else {
-                userDefinedKeys["__disabled__"] = "1"
-            }
-        }
-    }
-
-    /// Access userDefinedKeys for enable/disable sentinel
-    private var userDefinedKeys: [String: String] {
-        get {
-            let mirror = Mirror(reflecting: self)
-            for child in mirror.children {
-                if child.label == "userDefinedKeys", let dict = child.value as? [String: String] {
-                    return dict
-                }
-            }
-            return [:]
-        }
-        set {
-            // Use KVC-style approach via setUserDefinedKey for each entry
-            // For the sentinel, we use a special key code that won't conflict
-        }
+        get { return inputEnabled }
+        set { setInputEnabled(newValue) }
     }
 
     /// Load keyboard mapping from a .cnf key mapping file.

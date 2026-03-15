@@ -9,6 +9,7 @@
  */
 
 import Foundation
+import os
 
 // MARK: - TeraTermConfig
 
@@ -564,7 +565,7 @@ class ConfigPersistenceManager {
         do {
             try ensureDirectory()
         } catch {
-            NSLog("[ConfigPersistence] %@", TTL("debug.config.dirCreateFailed", "\(error)"))
+            TTLog.config.error("Failed to create directory: \(error.localizedDescription, privacy: .public)")
             return TeraTermConfig()
         }
 
@@ -584,7 +585,7 @@ class ConfigPersistenceManager {
         guard let data = fm.contents(atPath: path.path),
               let text = Self.decodeText(data) else {
             // Unreadable – rename with date prefix and recreate
-            NSLog("[ConfigPersistence] %@", TTL("debug.config.oldFormat"))
+            TTLog.config.warning("Outdated or missing INI format version")
             renameWithDatePrefix(path)
             let config = TeraTermConfig()
             saveDefaultConfigWithComments(config)
@@ -598,8 +599,7 @@ class ConfigPersistenceManager {
         // with the next line.
         let (sections, skipped) = filterUnknownKeys(rawSections)
         for entry in skipped {
-            NSLog("[ConfigPersistence] %@",
-                  TTL("debug.config.unknownKey", entry.section, entry.key, entry.value))
+            TTLog.config.debug("Unknown key [\(entry.section, privacy: .public)] \(entry.key, privacy: .public)=\(entry.value, privacy: .public)")
         }
 
         // Version check
@@ -608,7 +608,7 @@ class ConfigPersistenceManager {
         )
 
         if !isVersionCurrent(fileVersion) {
-            NSLog("[ConfigPersistence] %@", TTL("debug.config.oldFormat"))
+            TTLog.config.warning("Outdated or missing INI format version")
             renameWithDatePrefix(path)
             let config = TeraTermConfig()
             saveDefaultConfigWithComments(config)
@@ -641,9 +641,9 @@ class ConfigPersistenceManager {
 
         do {
             try fm.moveItem(at: fileURL, to: renamedURL)
-            NSLog("[ConfigPersistence] Renamed corrupt INI to %@", renamedURL.lastPathComponent)
+            TTLog.config.info("Renamed corrupt INI to \(renamedURL.lastPathComponent, privacy: .public)")
         } catch {
-            NSLog("[ConfigPersistence] Failed to rename corrupt INI: %@", "\(error)")
+            TTLog.config.error("Failed to rename corrupt INI: \(error.localizedDescription, privacy: .public)")
             // Fallback: try to remove the corrupt file so a new one can be created
             try? fm.removeItem(at: fileURL)
         }
@@ -691,7 +691,7 @@ class ConfigPersistenceManager {
         do {
             try ensureDirectory()
         } catch {
-            NSLog("[ConfigPersistence] %@", TTL("debug.config.dirCreateFailed", "\(error)"))
+            TTLog.config.error("Failed to create directory: \(error.localizedDescription, privacy: .public)")
             return
         }
 
@@ -716,7 +716,7 @@ class ConfigPersistenceManager {
                 try fm.moveItem(at: tmpURL, to: dest)
             }
         } catch {
-            NSLog("[ConfigPersistence] %@", TTL("debug.config.saveFailed", "\(error)"))
+            TTLog.config.error("Failed to save config: \(error.localizedDescription, privacy: .public)")
             // Clean up temp
             try? FileManager.default.removeItem(at: tmpURL)
         }
@@ -732,7 +732,7 @@ class ConfigPersistenceManager {
         do {
             try ensureDirectory()
         } catch {
-            NSLog("[ConfigPersistence] %@", TTL("debug.config.dirCreateFailed", "\(error)"))
+            TTLog.config.error("Failed to create directory: \(error.localizedDescription, privacy: .public)")
             return
         }
 
@@ -754,7 +754,7 @@ class ConfigPersistenceManager {
                 try fm.moveItem(at: tmpURL, to: dest)
             }
         } catch {
-            NSLog("[ConfigPersistence] %@", TTL("debug.config.saveFailed", "\(error)"))
+            TTLog.config.error("Failed to save config: \(error.localizedDescription, privacy: .public)")
             try? FileManager.default.removeItem(at: tmpURL)
         }
     }
