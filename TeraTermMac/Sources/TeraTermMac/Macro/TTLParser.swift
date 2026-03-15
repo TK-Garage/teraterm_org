@@ -1012,6 +1012,15 @@ class TTLParser {
         return ((varId + 1) << 16) | index
     }
 
+    /// Get a string array variable's contents by name
+    func getStrArrayItems() throws -> [String] {
+        guard let name = getIdentifier() else { throw TTLError.syntax }
+        guard let (type, id) = checkVar(name), type == .strArray else {
+            throw TTLError.typeMismatch
+        }
+        return variables[id].strArray
+    }
+
     func getStrVarFromArray(varId: Int, index: Int) -> Int {
         guard varId < variables.count else { return 0 }
         guard index >= 0 && index < variables[varId].strArray.count else { return 0 }

@@ -1292,10 +1292,25 @@ class TTLInterpreter {
     private func ttlSendFile() throws {
         guard delegate?.ttlIsConnected() == true else { throw TTLError.linkFirst }
         let filename = try parser.getStrExpression()
+        let binaryFlag = parser.checkParameterGiven() ? try parser.getIntExpression() : 1
         guard let data = FileManager.default.contents(atPath: filename) else {
             throw TTLError.cantOpen
         }
-        delegate?.ttlSendData(data)
+        if binaryFlag == 0 {
+            // Text mode: convert CR to CR/LF, strip control chars except TAB/LF/CR
+            var converted = Data()
+            for byte in data {
+                if byte == 0x0D { // CR
+                    converted.append(0x0D)
+                    converted.append(0x0A)
+                } else if byte == 0x09 || byte == 0x0A || byte == 0x0D || byte >= 0x20 {
+                    converted.append(byte)
+                }
+            }
+            delegate?.ttlSendData(converted)
+        } else {
+            delegate?.ttlSendData(data)
+        }
     }
 
     private func ttlRecvLn() throws {
@@ -1968,24 +1983,60 @@ class TTLInterpreter {
 
     private func ttlStrReplace() throws {
         let varId = try parser.getStrVar()
+        let index = try parser.getIntExpression()  // 1-based start position
         let pattern = try parser.getStrExpression()
         let replacement = try parser.getStrExpression()
 
         let s = parser.getStrVal(id: varId)
         let options: NSRegularExpression.Options = regexOptionCaseInsensitive ? [.caseInsensitive] : []
+
+        // Clear groupmatchstr1..9
+        for i in 1...9 {
+            let varName = "groupmatchstr\(i)"
+            if let (_, gid) = parser.checkVar(varName) {
+                parser.setStrVal(id: gid, value: "")
+            }
+        }
+
         guard let regex = try? NSRegularExpression(pattern: pattern, options: options) else {
             parser.setResult(-1)
             return
         }
 
-        let range = NSRange(s.startIndex..., in: s)
-        if regex.firstMatch(in: s, range: range) != nil {
-            let result = regex.stringByReplacingMatches(in: s, range: range, withTemplate: replacement)
-            parser.setStrVal(id: varId, value: result)
-            parser.setResult(1)
-        } else {
+        let startIdx = max(0, index - 1)
+        let nsStr = s as NSString
+        guard startIdx < nsStr.length else {
             parser.setResult(0)
+            return
         }
+
+        let searchRange = NSRange(location: startIdx, length: nsStr.length - startIdx)
+        guard let match = regex.firstMatch(in: s, range: searchRange) else {
+            parser.setResult(0)
+            return
+        }
+
+        // Store matchstr
+        let matchedStr = nsStr.substring(with: match.range)
+        parser.setMatchStr(matchedStr)
+
+        // Store group captures in groupmatchstr1..9
+        for g in 1..<match.numberOfRanges {
+            if g <= 9, match.range(at: g).location != NSNotFound {
+                let groupStr = nsStr.substring(with: match.range(at: g))
+                let varName = "groupmatchstr\(g)"
+                if let (_, gid) = parser.checkVar(varName) {
+                    parser.setStrVal(id: gid, value: groupStr)
+                } else {
+                    parser.newStrVar(varName, value: groupStr)
+                }
+            }
+        }
+
+        // Replace first match only
+        let result = nsStr.replacingCharacters(in: match.range, with: replacement)
+        parser.setStrVal(id: varId, value: result)
+        parser.setResult(1)
     }
 
     private func ttlStrSpecial() throws {
@@ -2008,32 +2059,15 @@ class TTLInterpreter {
 
     private func ttlStrTrim() throws {
         let varId = try parser.getStrVar()
-        var trimType = 0 // 0=both, 1=left, 2=right
-        var trimChars = " \t"
-        if parser.checkParameterGiven() {
-            trimChars = try parser.getStrExpression()
-        }
-        if parser.checkParameterGiven() {
-            trimType = try parser.getIntExpression()
-        }
+        let trimChars = try parser.getStrExpression()
         var s = parser.getStrVal(id: varId)
         let charSet = CharacterSet(charactersIn: trimChars)
-        switch trimType {
-        case 1: // left
-            while let first = s.unicodeScalars.first, charSet.contains(first) {
-                s.removeFirst()
-            }
-        case 2: // right
-            while let last = s.unicodeScalars.last, charSet.contains(last) {
-                s.removeLast()
-            }
-        default: // both
-            while let first = s.unicodeScalars.first, charSet.contains(first) {
-                s.removeFirst()
-            }
-            while let last = s.unicodeScalars.last, charSet.contains(last) {
-                s.removeLast()
-            }
+        // Trim both ends (original TeraTerm spec)
+        while let first = s.unicodeScalars.first, charSet.contains(first) {
+            s.removeFirst()
+        }
+        while let last = s.unicodeScalars.last, charSet.contains(last) {
+            s.removeLast()
         }
         parser.setStrVal(id: varId, value: s)
     }
@@ -2041,28 +2075,76 @@ class TTLInterpreter {
     private func ttlStrSplit() throws {
         let src = try parser.getStrExpression()
         let delimiter = try parser.getStrExpression()
+        var maxCount = 9
+        if parser.checkParameterGiven() {
+            maxCount = try parser.getIntExpression()
+        }
+        let limit = min(max(maxCount, 1), 9)
 
         let parts = src.components(separatedBy: delimiter)
-        parser.setResult(parts.count)
 
-        for (i, part) in parts.prefix(9).enumerated() {
-            let varName = "groupmatchstr\(i + 1)"
+        // Clear groupmatchstr1..9
+        for i in 1...9 {
+            let varName = "groupmatchstr\(i)"
             if let (_, gid) = parser.checkVar(varName) {
-                parser.setStrVal(id: gid, value: part)
+                parser.setStrVal(id: gid, value: "")
             } else {
-                parser.newStrVar(varName, value: part)
+                parser.newStrVar(varName, value: "")
             }
+        }
+
+        if parts.count <= limit {
+            for (i, part) in parts.enumerated() {
+                let varName = "groupmatchstr\(i + 1)"
+                if let (_, gid) = parser.checkVar(varName) {
+                    parser.setStrVal(id: gid, value: part)
+                } else {
+                    parser.newStrVar(varName, value: part)
+                }
+            }
+            parser.setResult(parts.count)
+        } else {
+            // First (limit-1) parts go to groupmatchstr1..(limit-1)
+            for i in 0..<(limit - 1) {
+                let varName = "groupmatchstr\(i + 1)"
+                if let (_, gid) = parser.checkVar(varName) {
+                    parser.setStrVal(id: gid, value: parts[i])
+                } else {
+                    parser.newStrVar(varName, value: parts[i])
+                }
+            }
+            // Remaining parts joined into the last groupmatchstr
+            let remaining = parts[(limit - 1)...].joined(separator: delimiter)
+            let varName = "groupmatchstr\(limit)"
+            if let (_, gid) = parser.checkVar(varName) {
+                parser.setStrVal(id: gid, value: remaining)
+            } else {
+                parser.newStrVar(varName, value: remaining)
+            }
+            parser.setResult(parts.count > 9 ? 10 : parts.count)
         }
     }
 
     private func ttlStrJoin() throws {
         let varId = try parser.getStrVar()
         let delimiter = try parser.getStrExpression()
-        var parts: [String] = []
-        while parser.checkParameterGiven() {
-            let s = try parser.getStrExpression()
-            parts.append(s)
+        var count = 9
+        if parser.checkParameterGiven() {
+            count = try parser.getIntExpression()
         }
+        let limit = min(max(count, 1), 9)
+
+        var parts: [String] = []
+        for i in 1...limit {
+            let varName = "groupmatchstr\(i)"
+            if let (_, gid) = parser.checkVar(varName) {
+                parts.append(parser.getStrVal(id: gid))
+            } else {
+                parts.append("")
+            }
+        }
+        // Remove trailing empty strings
+        while let last = parts.last, last.isEmpty { parts.removeLast() }
         parser.setStrVal(id: varId, value: parts.joined(separator: delimiter))
     }
 
@@ -2726,13 +2808,23 @@ class TTLInterpreter {
     }
 
     private func ttlListBox() throws {
+        // listbox <message> <title> <string array> [<selected>]
         let msg = try parser.getStrExpression()
         var title = "Tera Term"
         if parser.checkParameterGiven() {
             title = try parser.getStrExpression()
         }
-
-        let items = msg.components(separatedBy: "\n")
+        var items: [String] = []
+        if parser.checkParameterGiven() {
+            items = try parser.getStrArrayItems()
+        } else {
+            // Fallback: split message by newline for compatibility
+            items = msg.components(separatedBy: "\n")
+        }
+        // Optional: initial selected index (ignored for now)
+        if parser.checkParameterGiven() {
+            _ = try parser.getIntExpression()
+        }
 
         parser.status = .pause
         dialogProvider.showListBox(items: items, title: title) { [weak self] (result: Int, inputStr: String) in
@@ -2745,21 +2837,22 @@ class TTLInterpreter {
     }
 
     private func ttlFilenameBox() throws {
-        let varId = try parser.getStrVar()
-        var title = TTL("dialog.macro.selectFile")
-        if parser.checkParameterGiven() {
-            title = try parser.getStrExpression()
-        }
+        // filenamebox <title> [<dialogtype> [<initialdir>]]
+        let title = try parser.getStrExpression()
         var save = false
         if parser.checkParameterGiven() {
             save = try parser.getIntExpression() != 0
+        }
+        // initialdir (optional, ignored for now - uses system default)
+        if parser.checkParameterGiven() {
+            _ = try parser.getStrExpression()
         }
 
         parser.status = .pause
         dialogProvider.showFilenameBox(title: title, isSave: save) { [weak self] (result: Int, path: String) in
             guard let self = self else { return }
-            if result == 1 {
-                self.parser.setStrVal(id: varId, value: path)
+            if result != 0 {
+                self.parser.setInputStr(path)
             }
             self.parser.setResult(result)
             self.parser.status = .run
@@ -3132,11 +3225,23 @@ class TTLInterpreter {
     // MARK: - Log Commands
 
     private func ttlLogOpen() throws {
+        // logopen <filename> <binary> <append> [plaintext [timestamp [hide [screenbuf [tstype]]]]]
         let filename = try parser.getStrExpression()
+        var binary = false
+        if parser.checkParameterGiven() {
+            binary = try parser.getIntExpression() != 0
+        }
         var append = false
         if parser.checkParameterGiven() {
             append = try parser.getIntExpression() != 0
         }
+        // Parse optional args (reserved for future use)
+        if parser.checkParameterGiven() { _ = try parser.getIntExpression() } // plaintext
+        if parser.checkParameterGiven() { _ = try parser.getIntExpression() } // timestamp
+        if parser.checkParameterGiven() { _ = try parser.getIntExpression() } // hide dialog
+        if parser.checkParameterGiven() { _ = try parser.getIntExpression() } // include screen buf
+        if parser.checkParameterGiven() { _ = try parser.getIntExpression() } // timestamp type
+        let _ = binary  // Reserved for future use
         delegate?.ttlLogOpen(resolvePath(filename), append: append)
     }
 
@@ -3257,18 +3362,20 @@ class TTLInterpreter {
 
     private func ttlRotateLeft() throws {
         let varId = try parser.getIntVar()
+        let val = try parser.getIntExpression()
         let bits = try parser.getIntExpression()
-        let val = parser.getIntVal(id: varId)
-        let rotated = (val << bits) | (val >> (Int.bitWidth - bits))
-        parser.setIntVal(id: varId, value: rotated)
+        let uval = UInt32(truncatingIfNeeded: val)
+        let rotated = (uval << bits) | (uval >> (32 - bits))
+        parser.setIntVal(id: varId, value: Int(Int32(bitPattern: rotated)))
     }
 
     private func ttlRotateRight() throws {
         let varId = try parser.getIntVar()
+        let val = try parser.getIntExpression()
         let bits = try parser.getIntExpression()
-        let val = parser.getIntVal(id: varId)
-        let rotated = (val >> bits) | (val << (Int.bitWidth - bits))
-        parser.setIntVal(id: varId, value: rotated)
+        let uval = UInt32(truncatingIfNeeded: val)
+        let rotated = (uval >> bits) | (uval << (32 - bits))
+        parser.setIntVal(id: varId, value: Int(Int32(bitPattern: rotated)))
     }
 
     // MARK: - Checksum/CRC Commands

@@ -759,7 +759,7 @@ class MacroRunner {
         case "logwrite":    cmdLogWrite(args) // [IMPLEMENTED]
         case "loginfo":     cmdLogInfo() // [IMPLEMENTED]
         case "logrotate":   cmdLogRotate(args) // [IMPLEMENTED]
-        case "logautoclose": cmdLogAutoClose(args) // [IMPLEMENTED]
+        case "logautoclose", "logautoclosemode": cmdLogAutoClose(args) // [IMPLEMENTED]
 
         // Checksum - [IMPLEMENTED]
         case "crc16":       cmdChecksum(args, type: "crc16") // [IMPLEMENTED]
@@ -1294,11 +1294,29 @@ extension MacroRunner {
             return
         }
         let filePath = resolveString(args[0])
+        let binaryFlag = args.count > 1 ? resolveInt(args[1]) : 1
         guard let data = FileManager.default.contents(atPath: filePath) else {
             reportError("sendfile: cannot read file: \(filePath)")
             return
         }
-        clientProxy?.sendToTerminal(data: data, reply: { [weak self] in
+        let sendData: Data
+        if binaryFlag == 0 {
+            // Text mode: convert CR to CR/LF, strip control chars except TAB/LF/CR
+            var converted = Data()
+            for byte in data {
+                if byte == 0x0D { // CR
+                    converted.append(0x0D) // CR
+                    converted.append(0x0A) // LF
+                } else if byte == 0x09 || byte == 0x0A || byte == 0x0D || byte >= 0x20 {
+                    converted.append(byte)
+                }
+                // Strip other control characters
+            }
+            sendData = converted
+        } else {
+            sendData = data
+        }
+        clientProxy?.sendToTerminal(data: sendData, reply: { [weak self] in
             self?.scheduleNextLine()
         })
         cancelExecTimer()
@@ -1897,12 +1915,58 @@ extension MacroRunner {
     // MARK: strreplace - [IMPLEMENTED]
 
     func cmdStrReplace(_ args: [String]) { // [IMPLEMENTED]
-        guard args.count >= 3 else { return }
+        guard args.count >= 4 else { return }
         let destVar = args[0].lowercased()
-        let target = resolveString(args[1])
-        let replacement = resolveString(args[2])
+        let index = resolveInt(args[1])
+        let pattern = resolveString(args[2])
+        let replacement = resolveString(args[3])
         var base = variables[destVar]?.strValue ?? ""
-        base = base.replacingOccurrences(of: target, with: replacement)
+
+        // Clear groupmatchstr1..9
+        for i in 1...9 {
+            groupMatchStrs[i] = ""
+            variables["groupmatchstr\(i)"] = .string("")
+        }
+
+        guard let regex = try? NSRegularExpression(pattern: pattern) else {
+            resultValue = -1
+            variables["result"] = .integer(-1)
+            return
+        }
+
+        // index is 1-based
+        let startIdx = max(0, index - 1)
+        let str = base
+        guard startIdx < str.count else {
+            resultValue = 0
+            variables["result"] = .integer(0)
+            return
+        }
+
+        let nsStr = str as NSString
+        let searchRange = NSRange(location: startIdx, length: nsStr.length - startIdx)
+        guard let match = regex.firstMatch(in: str, range: searchRange) else {
+            resultValue = 0
+            variables["result"] = .integer(0)
+            return
+        }
+
+        // Store matchstr
+        let matchedStr = nsStr.substring(with: match.range)
+        variables["matchstr"] = .string(matchedStr)
+
+        // Store group matches
+        for g in 1..<match.numberOfRanges {
+            if g <= 9, match.range(at: g).location != NSNotFound {
+                let groupStr = nsStr.substring(with: match.range(at: g))
+                groupMatchStrs[g] = groupStr
+                variables["groupmatchstr\(g)"] = .string(groupStr)
+            }
+        }
+
+        // Replace first match only
+        let replacedRange = Range(match.range, in: base)!
+        base.replaceSubrange(replacedRange, with: replacement)
         variables[destVar] = .string(base)
         resultValue = 1
         variables["result"] = .integer(1)
@@ -1947,18 +2011,18 @@ extension MacroRunner {
     // MARK: strtrim - [IMPLEMENTED]
 
     func cmdStrTrim(_ args: [String]) { // [IMPLEMENTED]
-        guard args.count >= 1 else { return }
+        guard args.count >= 2 else { return }
         let destVar = args[0].lowercased()
-        let trimType = args.count > 1 ? resolveInt(args[1]) : 0
+        let trimChars = resolveString(args[1])
         var str = variables[destVar]?.strValue ?? ""
+        let charSet = CharacterSet(charactersIn: trimChars)
 
-        switch trimType {
-        case 1: // Trim leading
-            str = String(str.drop(while: { $0.isWhitespace }))
-        case 2: // Trim trailing
-            while str.last?.isWhitespace == true { str.removeLast() }
-        default: // Trim both
-            str = str.trimmingCharacters(in: .whitespaces)
+        // Trim both ends
+        while let first = str.unicodeScalars.first, charSet.contains(first) {
+            str.removeFirst()
+        }
+        while let last = str.unicodeScalars.last, charSet.contains(last) {
+            str.removeLast()
         }
         variables[destVar] = .string(str)
     }
@@ -1966,29 +2030,59 @@ extension MacroRunner {
     // MARK: strsplit - [IMPLEMENTED]
 
     func cmdStrSplit(_ args: [String]) { // [IMPLEMENTED]
-        guard args.count >= 3 else { return }
+        guard args.count >= 2 else { return }
         let srcStr = resolveString(args[0])
         let delimiter = resolveString(args[1])
-        let destVar = args[2].lowercased()
+        let maxCount = args.count > 2 ? resolveInt(args[2]) : 9
+
         let parts = srcStr.components(separatedBy: delimiter)
-        variables[destVar] = .strArray(parts)
-        resultValue = parts.count
+        let limit = min(max(maxCount, 1), 9)
+
+        // Clear groupmatchstr1..9
+        for i in 1...9 {
+            groupMatchStrs[i] = ""
+            variables["groupmatchstr\(i)"] = .string("")
+        }
+
+        // Distribute parts into groupmatchstr1..limit
+        if parts.count <= limit {
+            for (i, part) in parts.enumerated() {
+                groupMatchStrs[i + 1] = part
+                variables["groupmatchstr\(i + 1)"] = .string(part)
+            }
+            resultValue = parts.count
+        } else {
+            // First (limit-1) parts go to groupmatchstr1..(limit-1)
+            for i in 0..<(limit - 1) {
+                groupMatchStrs[i + 1] = parts[i]
+                variables["groupmatchstr\(i + 1)"] = .string(parts[i])
+            }
+            // Remaining parts joined back into the last groupmatchstr
+            let remaining = parts[(limit - 1)...].joined(separator: delimiter)
+            groupMatchStrs[limit] = remaining
+            variables["groupmatchstr\(limit)"] = .string(remaining)
+            resultValue = parts.count > 9 ? 10 : parts.count
+        }
         variables["result"] = .integer(resultValue)
     }
 
     // MARK: strjoin - [IMPLEMENTED]
 
     func cmdStrJoin(_ args: [String]) { // [IMPLEMENTED]
-        guard args.count >= 3 else { return }
+        guard args.count >= 2 else { return }
         let destVar = args[0].lowercased()
-        let srcVar = args[1].lowercased()
-        let delimiter = resolveString(args[2])
+        let delimiter = resolveString(args[1])
+        let count = args.count > 2 ? resolveInt(args[2]) : 9
+        let limit = min(max(count, 1), 9)
 
-        if case .strArray(let arr) = variables[srcVar] {
-            variables[destVar] = .string(arr.joined(separator: delimiter))
-        } else {
-            variables[destVar] = .string(variables[srcVar]?.strValue ?? "")
+        var parts: [String] = []
+        for i in 1...limit {
+            let val = variables["groupmatchstr\(i)"]?.strValue ?? ""
+            parts.append(val)
         }
+        // Remove trailing empty strings
+        while let last = parts.last, last.isEmpty { parts.removeLast() }
+        variables[destVar] = .string(parts.joined(separator: delimiter))
     }
 
     // MARK: tolower - [IMPLEMENTED]
@@ -2186,11 +2280,21 @@ extension MacroRunner {
     // MARK: listbox - [IMPLEMENTED]
 
     func cmdListBox(_ args: [String]) { // [IMPLEMENTED]
+        // listbox <message> <title> <string array> [<selected>]
         let message = args.isEmpty ? "" : resolveString(args[0])
         let title = args.count > 1 ? resolveString(args[1]) : ""
+        var items: [String] = []
+        if args.count > 2 {
+            let arrayVar = args[2].lowercased()
+            if case .strArray(let arr) = variables[arrayVar] {
+                items = arr
+            }
+        }
+        // Send items as newline-delimited in message field for XPC
+        let itemsStr = items.isEmpty ? message : items.joined(separator: "\n")
         cancelExecTimer()
         clientProxy?.showDialog(type: MacroDialogType.listbox.rawValue,
-                                message: message, defaultValue: title,
+                                message: itemsStr, defaultValue: title,
                                 reply: { [weak self] resultCode, selectedText in
             guard let self = self else { return }
             self.resultValue = resultCode
@@ -2206,16 +2310,19 @@ extension MacroRunner {
     // MARK: filenamebox - [IMPLEMENTED]
 
     func cmdFilenameBox(_ args: [String]) { // [IMPLEMENTED]
-        let message = args.isEmpty ? "" : resolveString(args[0])
-        let defaultDir = args.count > 1 ? resolveString(args[1]) : ""
+        // filenamebox <title> [<dialogtype> [<initialdir>]]
+        let title = args.isEmpty ? "" : resolveString(args[0])
+        let dialogType = args.count > 1 ? resolveInt(args[1]) : 0  // 0=open, nonzero=save
+        let initialDir = args.count > 2 ? resolveString(args[2]) : ""
+        let saveMode = dialogType != 0 ? "1" : "0"
         cancelExecTimer()
         clientProxy?.showDialog(type: MacroDialogType.filenamebox.rawValue,
-                                message: message, defaultValue: defaultDir,
+                                message: title, defaultValue: "\(saveMode)|\(initialDir)",
                                 reply: { [weak self] resultCode, filePath in
             guard let self = self else { return }
             self.resultValue = resultCode
             self.variables["result"] = .integer(resultCode)
-            if resultCode == 1 {
+            if resultCode != 0 {
                 self.inputStr = filePath
                 self.variables["inputstr"] = .string(filePath)
             }
@@ -3389,7 +3496,12 @@ extension MacroRunner {
     func cmdLogOpen(_ args: [String]) { // [IMPLEMENTED]
         guard !args.isEmpty else { return }
         let path = resolveString(args[0])
-        let append = args.count > 1 ? resolveInt(args[1]) != 0 : false
+        let binary = args.count > 1 ? resolveInt(args[1]) != 0 : false
+        let append = args.count > 2 ? resolveInt(args[2]) != 0 : false
+        // Additional optional args parsed but stored for future use
+        let plaintext = args.count > 3 ? resolveInt(args[3]) != 0 : false
+        let timestamp = args.count > 4 ? resolveInt(args[4]) != 0 : false
+        let _ = (binary, plaintext, timestamp)  // Reserved for future XPC extension
         cancelExecTimer()
         clientProxy?.openLog(path: path, append: append, reply: { [weak self] in
             self?.scheduleNextLine()
@@ -3558,23 +3670,25 @@ extension MacroRunner {
     // MARK: rotateleft - [IMPLEMENTED]
 
     func cmdRotateLeft(_ args: [String]) { // [IMPLEMENTED]
-        guard args.count >= 2 else { return }
+        guard args.count >= 3 else { return }
         let destVar = args[0].lowercased()
-        let bits = resolveInt(args[1])
-        let val = variables[destVar]?.intValue ?? 0
-        let shifted = (val << bits) | (val >> (32 - bits))
-        variables[destVar] = .integer(shifted & 0xFFFFFFFF)
+        let val = resolveInt(args[1])
+        let bits = resolveInt(args[2])
+        let uval = UInt32(truncatingIfNeeded: val)
+        let shifted = (uval << bits) | (uval >> (32 - bits))
+        variables[destVar] = .integer(Int(Int32(bitPattern: shifted)))
     }
 
     // MARK: rotateright - [IMPLEMENTED]
 
     func cmdRotateRight(_ args: [String]) { // [IMPLEMENTED]
-        guard args.count >= 2 else { return }
+        guard args.count >= 3 else { return }
         let destVar = args[0].lowercased()
-        let bits = resolveInt(args[1])
-        let val = variables[destVar]?.intValue ?? 0
-        let shifted = (val >> bits) | (val << (32 - bits))
-        variables[destVar] = .integer(shifted & 0xFFFFFFFF)
+        let val = resolveInt(args[1])
+        let bits = resolveInt(args[2])
+        let uval = UInt32(truncatingIfNeeded: val)
+        let shifted = (uval >> bits) | (uval << (32 - bits))
+        variables[destVar] = .integer(Int(Int32(bitPattern: shifted)))
     }
 }
 
@@ -3953,8 +4067,18 @@ extension MacroRunner {
     // MARK: recvfile - [IMPLEMENTED]
 
     func cmdRecvFile(_ args: [String]) { // [IMPLEMENTED]
-        // Generic receive file - use default protocol
-        let localDir = args.isEmpty ? "" : resolveString(args[0])
+        // recvfile <filename> <binary_flag> <autostop_seconds>
+        guard args.count >= 3 else {
+            reportError("recvfile: requires 3 arguments (filename, binary_flag, autostop)")
+            return
+        }
+        let filename = resolveString(args[0])
+        let _ = resolveInt(args[1])  // binary_flag (ignored per original spec - always binary)
+        let _ = resolveInt(args[2])  // autostop_seconds (reserved for future raw data capture)
+        // Current implementation delegates to ZMODEM protocol via the directory path
+        // The filename is used as the save path
+        let dir = (filename as NSString).deletingLastPathComponent
+        let localDir = dir.isEmpty ? filename : dir
         cmdFileTransferRecv([localDir], proto: "zmodem")
     }
 }

@@ -260,7 +260,7 @@ sendkcode $1B   ; ESC
 
 ### `sendfile`
 
-ファイルの内容を送信。Windows 版 TTL 互換: 第 2 引数でバイナリ/テキスト指定。
+ファイルの内容を送信。第 2 引数でバイナリ/テキストモードを指定。
 
 ```ttl
 sendfile '/path/to/data.txt' 0    ; テキストモード（改行変換あり）
@@ -271,8 +271,6 @@ sendfile '/tmp/data.bin' 1        ; バイナリモード（生データ送信�
 |------|------|------|
 | `<filename>` | 文字列 | 送信するファイルのパス |
 | `<binary_flag>` | 整数 | 0=テキストモード（改行変換）, 1=バイナリモード（生データ） |
-
-> **macOS 実装メモ**: 現行の macOS 版実装では `<binary_flag>` を無視し常にバイナリモードで送信する。オリジナル準拠のテキストモード（改行変換: CR → CR/CRLF、制御文字除去）に対応予定。
 
 ### `recvln`
 
@@ -572,8 +570,6 @@ strreplace s 1 '[0-9]+' ''
 **result**: 1 = 置換成功、0 = パターンが見つからない、-1 = 無効な正規表現
 **matchstr**: マッチした文字列が格納される
 
-> **macOS 実装メモ**: 現行の macOS 版実装は 3 引数の単純文字列置換（`strreplace <strvar> <target> <replacement>`）で動作が異なる。オリジナル準拠の 4 引数・正規表現方式に変更予定。
-
 ### `strspecial`
 
 エスケープシーケンスを展開（`\n`, `\r`, `\t`, `\\`, `\"`, `\'`）。
@@ -609,8 +605,6 @@ strtrim s '#*'
 | `<strvar>` | 文字列変数 | トリム対象の文字列 |
 | `<trimchars>` | 文字列 | 除去する文字のセット（各文字が個別に除去対象） |
 
-> **macOS 実装メモ**: 現行の macOS 版実装は `strtrim <strvar> [<trimType>]`（整数: 0=両端, 1=前方, 2=後方）で空白のみ除去する方式。オリジナル準拠の文字セット指定方式に変更予定。
-
 ### `strsplit`
 
 区切り文字で文字列を分割し、`groupmatchstr1`〜`groupmatchstr9` に格納する。
@@ -637,8 +631,6 @@ strsplit 'a,b,c,d' ',' 2
 **result**: 分割された要素数（9 を超える場合は 10）
 **groupmatchstr1〜9**: 分割結果。未使用の変数は空文字列にクリアされる。`count` を超える残りは最後の変数にまとめられる。
 
-> **macOS 実装メモ**: 現行の macOS 版実装は `strsplit <src> <delim> <destArrayVar>` で独自の文字列配列に格納する方式（分割数制限なし）。オリジナル準拠の `groupmatchstr` 方式に変更予定。
-
 ### `strjoin`
 
 `groupmatchstr1`〜`groupmatchstr9` を区切り文字で結合する（`strsplit` の逆操作）。
@@ -661,8 +653,6 @@ strjoin buf ',' 2
 | `<strvar>` | 文字列変数 | 結合結果の格納先 |
 | `<separator>` | 文字列 | 区切り文字 |
 | `[<count>]` | 整数 | 結合する `groupmatchstr` の数（デフォルト 9） |
-
-> **macOS 実装メモ**: 現行の macOS 版実装は `strjoin <destVar> <srcArrayVar> <delimiter>` で独自の配列変数を指定する方式。オリジナル準拠の `groupmatchstr` 結合方式に変更予定。
 
 ### `tolower`
 
@@ -1062,8 +1052,6 @@ listbox 'Select' 'Title' items 1   ; Banana を初期選択
 
 **result**: 選択インデックス（0 起算）、-1 = キャンセル
 
-> **macOS 実装メモ**: 現行の macOS 版実装は改行区切り文字列で項目を渡す簡略化方式（`listbox 'A\nB\nC' 'Title'`）。オリジナル準拠の `strdim` 配列方式に変更予定。
-
 ### `statusbox`
 
 ステータス表示ボックス（非モーダル）。
@@ -1105,8 +1093,6 @@ filenamebox 'Open file' 0 '/tmp'
 
 **result**: 0 以外 = ファイル選択、0 = キャンセル
 **inputstr**: 選択されたファイルパス
-
-> **macOS 実装メモ**: 現行の macOS 版実装は `filenamebox <strvar> <title> [<save>]` で第 1 引数に格納先変数を指定する方式。オリジナル準拠の `inputstr` 格納方式に変更予定。
 
 ### `dirnamebox`
 
@@ -1718,8 +1704,6 @@ recvfile '/tmp/received.dat' 0 0    ; 自動停止なし（手動停止）
 
 **result**: 0 = 正常完了、1 = タイムアウト（指定秒間データなし）
 
-> **macOS 実装メモ**: 現行の macOS 版実装では第 1 引数をローカルディレクトリとして解釈し ZMODEM 受信に委譲する。オリジナル準拠の「接続データを直接ファイルに保存 + 自動停止」方式に変更予定。
-
 ---
 
 ## 14. クリップボード
@@ -1815,7 +1799,7 @@ changedir '/tmp'
 
 ### `logopen`
 
-ログ記録を開始する。Windows 版 TTL 互換: 多段オプション形式で詳細制御。
+ログ記録を開始する。多段オプション形式で詳細制御。
 
 ```ttl
 logopen <filename> <binary> <append> [<plaintext> [<timestamp> [<hidestatus> [<include_screenbuf> [<timestamptype>]]]]]
@@ -1836,8 +1820,6 @@ logopen '/tmp/session.log' 1 0        ; バイナリ・新規作成
 | `[<hidestatus>]` | 整数 | 1=ステータスバーにログ表示をしない |
 | `[<include_screenbuf>]` | 整数 | 1=現在のスクリーンバッファをログに含める |
 | `[<timestamptype>]` | 整数 | タイムスタンプ形式（0=ローカル時刻, 1=UTC, 2=経過時間, 3=ログ開始からの経過時間） |
-
-> **macOS 実装メモ**: 現行の macOS 版実装では `(filename, append_flag)` の 2 引数のみ対応し、`<binary>` 以降のオプションは無視される。オリジナル準拠の全引数対応に変更予定。現時点では第 2 引数が `<binary>` ではなく `<append>` として解釈されるため注意。
 
 ### `logclose`
 
@@ -1866,8 +1848,6 @@ logwrite 'Manual log entry'
 ### `logautoclosemode`
 
 切断時にログファイルを自動的に閉じるかどうかを設定。`logopen` の前に呼び出す。
-
-> **macOS 実装メモ**: 現行の macOS 版実装ではコマンド名が `logautoclose`（`mode` なし）で登録されている。オリジナル準拠の `logautoclosemode` に統一予定。
 
 ```ttl
 logautoclosemode 1    ; 自動クローズ ON
@@ -1962,8 +1942,6 @@ val = $80000000
 rotateleft val val 1
 ; val = 1
 ```
-
-> **macOS 実装メモ**: 現行の macOS 版実装は 2 引数のインプレース操作（`rotateleft <intvar> <count>`）で動作が異なる。オリジナル準拠の 3 引数方式に変更予定。
 
 ---
 
@@ -2217,7 +2195,7 @@ s = "double quotes"
 ## 25. macOS 固有の動作差異
 
 以下のコマンドは macOS 版でオリジナル Tera Term (Windows) と異なる動作をする。
-差異の理由を 4 種類に分類する。
+差異の理由を分類する。
 
 ### 分類凡例
 
@@ -2225,7 +2203,6 @@ s = "double quotes"
 |------|------|
 | **OS** | macOS / Windows の OS レベルの違いに起因（API・権限・概念の非互換） |
 | **安全** | セキュリティ向上を目的とした意図的な変更 |
-| **変更予定** | オリジナル Tera Term 準拠に実装変更予定（現行実装は暫定） |
 
 ### 差異一覧
 
@@ -2238,14 +2215,3 @@ s = "double quotes"
 | `getmodemstatus` | OS | モデム制御線（DSR, CTS 等）の状態取得 | スタブ実装（常に 0 を返す） | macOS の PTY にはモデム制御線の概念がない。シリアルポート直接接続は未対応。 |
 | `getspecialfolder` | OS | 文字列名で指定（CSIDL: `"Desktop"` 等） | 数値 ID で指定（0=Desktop, 1=Documents, 2=AppSupport, 3=Home） | Windows の CSIDL 定数体系が macOS に存在しない。`NSSearchPathForDirectoriesInDomains` による macOS ネイティブなフォルダ解決に置換した。 |
 | `getpassword` 等 | 安全 | パスワードファイルに暗号化保存・復号 | macOS Keychain に保存。XPC 経由で安全に送信。 | macOS の Keychain はOS レベルの暗号化ストレージを提供し、ファイルベースの自前暗号化よりセキュアかつ OS のパスワード管理と統合される。引数の互換性（`filename`, `keyname`）は維持し、内部で `filename:keyname` をアカウント名として Keychain に格納する。 |
-| `strsplit` | 変更予定 | `groupmatchstr1`〜`groupmatchstr9` に格納（最大 9 分割） | 現行: `strsplit <src> <delim> <destArrayVar>` で文字列配列変数に格納 | オリジナル準拠の `groupmatchstr` 方式に変更予定。 |
-| `strjoin` | 変更予定 | `groupmatchstr1`〜`groupmatchstr9` を結合 | 現行: `strjoin <destVar> <srcArrayVar> <delimiter>` で配列変数を結合 | オリジナル準拠の `groupmatchstr` 結合方式に変更予定。 |
-| `strreplace` | 変更予定 | `strreplace <strvar> <index> <regex> <newstr>`（4 引数、正規表現） | 現行: `strreplace <strvar> <target> <replacement>`（3 引数、単純文字列置換） | オリジナル準拠の 4 引数・正規表現方式に変更予定。 |
-| `strtrim` | 変更予定 | `strtrim <strvar> <trimchars>`（除去文字セット指定） | 現行: `strtrim <strvar> [<trimType>]`（整数で方向指定、空白のみ） | オリジナル準拠の文字セット指定方式に変更予定。 |
-| `rotateleft` / `rotateright` | 変更予定 | `rotateleft <intvar> <intval> <count>`（3 引数） | 現行: `rotateleft <intvar> <count>`（2 引数、インプレース） | オリジナル準拠の 3 引数方式に変更予定。 |
-| `filenamebox` | 変更予定 | `filenamebox <title> [<dialogtype> [<initialdir>]]`、`inputstr` に格納 | 現行: `filenamebox <strvar> <title> [<save>]`、指定変数に格納 | オリジナル準拠の `inputstr` 格納方式に変更予定。 |
-| `listbox` | 変更予定 | `strdim` 配列で項目指定 | 現行: 改行区切り文字列で項目指定 | オリジナル準拠の `strdim` 配列方式に変更予定。 |
-| `sendfile` | 変更予定 | `sendfile <filename> <binary_flag>`（0=テキスト, 1=バイナリ） | 現行: `<binary_flag>` を無視し常にバイナリ送信 | オリジナル準拠のテキストモード（改行変換・制御文字除去）に対応予定。 |
-| `logopen` | 変更予定 | `logopen <filename> <binary> <append> [plaintext [timestamp ...]]` | 現行: `(filename, append_flag)` の 2 引数、詳細オプション未対応 | オリジナル準拠の全引数対応に変更予定。 |
-| `recvfile` | 変更予定 | `recvfile <filename> <binary_flag> <autostop_seconds>` | 現行: 第 1 引数をディレクトリとして ZMODEM 受信に委譲 | オリジナル準拠の「接続データ直接保存 + 自動停止」方式に変更予定。 |
-| `logautoclosemode` | 変更予定 | コマンド名は `logautoclosemode` | 現行: `logautoclose`（`mode` なし）で登録 | オリジナル準拠のコマンド名 `logautoclosemode` に統一予定。 |
