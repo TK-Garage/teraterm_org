@@ -3105,7 +3105,8 @@ extension MacroRunner {
     // MARK: execcmnd - [IMPLEMENTED]
 
     func cmdExecCmnd(_ args: [String], fullLine: String) { // [IMPLEMENTED]
-        // Extract command from full line after "execcmnd"
+        // execcmnd dynamically interprets and executes a TTL command string.
+        // Per TeraTerm spec, this is NOT a shell command executor (that's "exec").
         let cmdStr: String
         if let range = fullLine.range(of: "execcmnd", options: .caseInsensitive) {
             cmdStr = String(fullLine[range.upperBound...]).trimmingCharacters(in: .whitespaces)
@@ -3113,24 +3114,23 @@ extension MacroRunner {
             cmdStr = args.map { resolveString($0) }.joined(separator: " ")
         }
 
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/bin/sh")
-        process.arguments = ["-c", cmdStr]
-        let outPipe = Pipe()
-        process.standardOutput = outPipe
+        // Resolve string variables in the command string
+        let resolved = resolveString(cmdStr)
 
-        do {
-            try process.run()
-            process.waitUntilExit()
-            let data = outPipe.fileHandleForReading.readDataToEndOfFile()
-            let output = String(data: data, encoding: .utf8)?.trimmingCharacters(in: .newlines) ?? ""
-            inputStr = output
-            variables["inputstr"] = .string(output)
-            resultValue = Int(process.terminationStatus)
-        } catch {
-            resultValue = -1
+        guard !resolved.isEmpty else { return }
+
+        // Parse the resolved TTL command and execute it internally
+        let parts = parseLine(resolved)
+        guard let innerCmd = parts.first?.lowercased() else { return }
+
+        let innerArgs = Array(parts.dropFirst())
+
+        // Check for assignment: var = expr
+        if parts.count >= 3 && parts[1] == "=" {
+            handleAssignment(parts)
+        } else {
+            executeCommand(innerCmd, args: innerArgs, fullLine: resolved)
         }
-        variables["result"] = .integer(resultValue)
     }
 
     // MARK: setexitcode - [IMPLEMENTED]
