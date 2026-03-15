@@ -1017,22 +1017,22 @@ else
 endif
 filewriteln fh msg
 
-; --- strreplace match/no-match/delete ---
+; --- strreplace 4-arg: <strvar> <index> <regex> <newstr> ---
 test_num = test_num + 1
 s = 'foo bar foo'
-strreplace s 'foo' 'baz'
+strreplace s 1 'foo' 'baz'
 r1 = 0
-if s == 'baz bar baz' then
+if s == 'baz bar foo' then
   r1 = 1
 endif
 s = 'no match here'
-strreplace s 'xyz' 'abc'
+strreplace s 1 'xyz' 'abc'
 r2 = 0
 if s == 'no match here' then
   r2 = 1
 endif
 s = 'remove--me'
-strreplace s '--' ''
+strreplace s 1 '--' ''
 r3 = 0
 if s == 'removeme' then
   r3 = 1
@@ -1060,38 +1060,38 @@ else
 endif
 filewriteln fh msg
 
-; --- strtrim default/leading/trailing ---
+; --- strtrim <strvar> <trimchars> ---
 test_num = test_num + 1
 s1 = '   both   '
-strtrim s1
-s2 = '   leading'
-strtrim s2 1
-s3 = 'trailing   '
-strtrim s3 2
+strtrim s1 ' '
+s2 = '---title---'
+strtrim s2 '-'
+s3 = '##*info*##'
+strtrim s3 '#*'
 ok = 1
 if s1 <> 'both' then
   ok = 0
 endif
-if s2 <> 'leading' then
+if s2 <> 'title' then
   ok = 0
 endif
-if s3 <> 'trailing' then
+if s3 <> 'info' then
   ok = 0
 endif
 if ok == 1 then
   pass_count = pass_count + 1
-  sprintf2 msg 'PASS [%d] strtrim 0/1/2' test_num
+  sprintf2 msg 'PASS [%d] strtrim trimchars' test_num
 else
   fail_count = fail_count + 1
   sprintf2 msg 'FAIL [%d] strtrim' test_num
 endif
 filewriteln fh msg
 
-; --- strsplit/strjoin round-trip ---
+; --- strsplit/strjoin round-trip (groupmatchstr1..9) ---
 test_num = test_num + 1
-strsplit 'a,b,c,d,e' ',' parts
+strsplit 'a,b,c,d,e' ','
 r1 = result
-strjoin joined parts ','
+strjoin joined ','
 ok = (r1 == 5) && (joined == 'a,b,c,d,e')
 if ok == 1 then
   pass_count = pass_count + 1
@@ -1104,8 +1104,8 @@ filewriteln fh msg
 
 ; --- strsplit no delimiter found ---
 test_num = test_num + 1
-strsplit 'nodot' '.' nd
-ok = (result == 1) && (nd[0] == 'nodot')
+strsplit 'nodot' '.'
+ok = (result == 1) && (groupmatchstr1 == 'nodot')
 if ok == 1 then
   pass_count = pass_count + 1
   sprintf2 msg 'PASS [%d] strsplit no delim=1 part' test_num
@@ -1115,13 +1115,13 @@ else
 endif
 filewriteln fh msg
 
-; --- strsplit 10 segments ---
+; --- strsplit 10 segments (max 9, 10th overflows) ---
 test_num = test_num + 1
-strsplit 'a,b,c,d,e,f,g,h,i,j' ',' many
-ok = (result == 10) && (many[0] == 'a') && (many[9] == 'j')
+strsplit 'a,b,c,d,e,f,g,h,i,j' ','
+ok = (result == 10) && (groupmatchstr1 == 'a') && (groupmatchstr9 == 'i,j')
 if ok == 1 then
   pass_count = pass_count + 1
-  sprintf2 msg 'PASS [%d] strsplit 10 segments' test_num
+  sprintf2 msg 'PASS [%d] strsplit 10 segments (overflow in 9th)' test_num
 else
   fail_count = fail_count + 1
   sprintf2 msg 'FAIL [%d] strsplit 10' test_num
@@ -1130,8 +1130,8 @@ filewriteln fh msg
 
 ; --- strjoin different delimiter ---
 test_num = test_num + 1
-strsplit '1:2:3' ':' nums
-strjoin out nums '-'
+strsplit '1:2:3' ':'
+strjoin out '-' 3
 if out == '1-2-3' then
   pass_count = pass_count + 1
   sprintf2 msg 'PASS [%d] strjoin delim change' test_num
@@ -2192,11 +2192,11 @@ filewriteln fh ''
 ; ############################################################
 filewriteln fh '=== Section 11: Bit Rotation ==='
 
-; --- rotateleft/rotateright round-trip ---
+; --- rotateleft/rotateright round-trip (3-arg) ---
 test_num = test_num + 1
 val = 1
-rotateleft val 4
-rotateright val 4
+rotateleft val val 4
+rotateright val val 4
 if val == 1 then
   pass_count = pass_count + 1
   sprintf2 msg 'PASS [%d] rotateL/R round-trip' test_num
@@ -2208,8 +2208,8 @@ filewriteln fh msg
 
 ; --- rotateleft overflow ---
 test_num = test_num + 1
-val = $80000000
-rotateleft val 1
+src = $80000000
+rotateleft val src 1
 if val == 1 then
   pass_count = pass_count + 1
   sprintf2 msg 'PASS [%d] rotateL overflow' test_num
@@ -2547,14 +2547,20 @@ else
 endif
 filewriteln fh msg
 
-; --- strsplit -> str2int -> sum ---
+; --- strsplit -> str2int -> sum (groupmatchstr) ---
 test_num = test_num + 1
-strsplit '10,20,30,40,50' ',' numstrs
+strsplit '10,20,30,40,50' ','
 numsum = 0
-for i 0 4
-  str2int val numstrs[i]
-  numsum = numsum + val
-next
+str2int val groupmatchstr1
+numsum = numsum + val
+str2int val groupmatchstr2
+numsum = numsum + val
+str2int val groupmatchstr3
+numsum = numsum + val
+str2int val groupmatchstr4
+numsum = numsum + val
+str2int val groupmatchstr5
+numsum = numsum + val
 if numsum == 150 then
   pass_count = pass_count + 1
   sprintf2 msg 'PASS [%d] split-int-sum=150' test_num
@@ -2564,12 +2570,12 @@ else
 endif
 filewriteln fh msg
 
-; --- getenv -> strsplit -> strjoin ---
+; --- getenv -> strsplit -> strjoin (groupmatchstr) ---
 test_num = test_num + 1
 setenv 'TTL_PATH_EXH' '/usr/bin:/usr/local/bin:/opt/bin'
 getenv pval 'TTL_PATH_EXH'
-strsplit pval ':' pp
-strjoin newpath pp ','
+strsplit pval ':'
+strjoin newpath ','
 if newpath == '/usr/bin,/usr/local/bin,/opt/bin' then
   pass_count = pass_count + 1
   sprintf2 msg 'PASS [%d] env-split-join' test_num

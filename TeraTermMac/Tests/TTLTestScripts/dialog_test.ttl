@@ -51,14 +51,18 @@ else
 endif
 
 ; --- Test 5: ListBox ---
-; macOS listbox returns 0-based index, -1 = cancel
-listbox "Swift\nAppKit\nTTL" 'Language'
+; listbox <message> <title> <string array> [<selected>]
+; result = 0-based index, -1 = cancel
+strdim items 3
+items[0] = 'Swift'
+items[1] = 'AppKit'
+items[2] = 'TTL'
+listbox '言語を選んでください' 'Language' items
 if result = -1 then
     messagebox 'キャンセルされました。' 'Result'
     failed = failed + 1
 else
-    sprintf2 msg 'Index %d が選択されました: ' result
-    strconcat msg inputstr
+    sprintf2 msg 'Index %d が選択されました。' result
     messagebox msg 'Result'
     passed = passed + 1
 endif
@@ -81,8 +85,10 @@ closesbox
 passed = passed + 1
 
 ; --- Test 8: FilenameBox ---
-filenamebox inputstr 'ファイルを選択' 0
-if result = 1 then
+; filenamebox <title> [<dialogtype> [<initialdir>]]
+; result in inputstr
+filenamebox 'ファイルを選択' 0
+if result > 0 then
     sprintf2 msg 'ファイル: %s' inputstr
     messagebox msg 'FilenameBox Result'
     passed = passed + 1
