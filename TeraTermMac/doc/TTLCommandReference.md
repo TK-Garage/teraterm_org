@@ -1848,11 +1848,52 @@ logwrite 'Manual log entry'
 
 ### `loginfo`
 
-ログ情報を取得。引数なし。
+現在のログ状態とログファイルパスを取得する。
+
+```ttl
+loginfo <strvar>
+```
+
+| 引数 | 型 | 説明 |
+|------|------|------|
+| `<strvar>` | 文字列変数 | ログファイルパスの格納先 |
+
+**result**: -1 = ログ未記録、0 以上 = ログ状態フラグのビット OR
+
+```ttl
+loginfo logfile
+if result == -1 then
+  logopen '/tmp/session.log' 0 0
+else
+  sprintf2 msg 'Logging to: %s' logfile
+  messagebox msg 'Log Info'
+endif
+```
 
 ### `logrotate`
 
-ログファイルをローテーション。引数なし。
+ログファイルのサイズベースローテーションを設定する。設定のみ行い、即座にローテーションは実行されない。
+
+```ttl
+logrotate 'size' '<size>'      ; ローテーションサイズ閾値を設定
+logrotate 'rotate' <count>     ; 保持するローテーションファイル数を設定
+logrotate 'halt'               ; ログローテーションを停止
+```
+
+| 引数 | 型 | 説明 |
+|------|------|------|
+| `'size'` | 文字列 | サイズモード: `<size>` に閾値を指定（128 以上、`'K'`/`'M'` サフィクス対応） |
+| `'rotate'` | 文字列 | ローテーション数モード: `<count>` に保持ファイル数を指定 |
+| `'halt'` | 文字列 | ローテーションを停止 |
+
+```ttl
+; ログローテーション開始
+logrotate 'size' '32K'
+logrotate 'rotate' 3
+
+; ログローテーション停止
+logrotate 'halt'
+```
 
 ### `logautoclosemode`
 
@@ -2302,12 +2343,12 @@ s = "double quotes"
 | `setdate` | MR | 仕様通り `result = -1` を設定するよう修正 |
 | `settime` | MR | 仕様通り `result = -1` を設定するよう修正 |
 
-### 26.8 ドキュメント記述の誤り
+### 26.8 ドキュメント記述の誤り — 修正済み
 
-| コマンド | 分類 | 現在の記述 | 正しい仕様 | 備考 |
-|----------|:----:|----------|----------|------|
-| `logrotate` | Doc | "引数なし" | 引数あり: `logrotate <mode> [<value>]`（mode: "size"/"rotate"/"halt"） | 両実装とも引数を取る |
-| `loginfo` | Doc | "引数なし" | MacroRunner は引数なし（result + inputstr）、TTLInterpreter は `<strvar>` を取る | TTLInterpreter 側も要修正の可能性 |
+| コマンド | 分類 | 修正内容 |
+|----------|:----:|---------|
+| `logrotate` | Doc | ドキュメントを正しい仕様 `logrotate <mode> [<value>]`（mode: "size"/"rotate"/"halt"）に更新。実装は両方とも仕様通り |
+| `loginfo` | MR/Doc | ドキュメントを正しい仕様 `loginfo <strvar>` に更新。MacroRunner に `<strvar>` 引数サポートを追加（オリジナル TT 仕様に準拠） |
 
 ### 26.9 未ドキュメントコマンド
 

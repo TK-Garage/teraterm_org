@@ -757,7 +757,7 @@ class MacroRunner {
         case "logpause":    cmdLogPause() // [IMPLEMENTED]
         case "logstart":    cmdLogStart() // [IMPLEMENTED]
         case "logwrite":    cmdLogWrite(args) // [IMPLEMENTED]
-        case "loginfo":     cmdLogInfo() // [IMPLEMENTED]
+        case "loginfo":     cmdLogInfo(args) // [IMPLEMENTED]
         case "logrotate":   cmdLogRotate(args) // [IMPLEMENTED]
         case "logautoclose", "logautoclosemode": cmdLogAutoClose(args) // [IMPLEMENTED]
 
@@ -3625,12 +3625,17 @@ extension MacroRunner {
 
     // MARK: loginfo - [IMPLEMENTED]
 
-    func cmdLogInfo() { // [IMPLEMENTED]
+    func cmdLogInfo(_ args: [String]) { // [IMPLEMENTED]
+        // loginfo <strvar> — ログファイルパスを strvar に、状態を result に格納
+        let destVar = args.isEmpty ? "" : args[0].lowercased()
         cancelExecTimer()
         clientProxy?.getLogInfo(reply: { [weak self] state, path in
             guard let self = self else { return }
             self.resultValue = state
             self.variables["result"] = .integer(state)
+            if !destVar.isEmpty {
+                self.variables[destVar] = .string(path)
+            }
             self.inputStr = path
             self.variables["inputstr"] = .string(path)
             self.scheduleNextLine()
