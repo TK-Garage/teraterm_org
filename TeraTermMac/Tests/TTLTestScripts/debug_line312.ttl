@@ -4,17 +4,14 @@
 ; This script isolates the strsplit/strjoin issue found in
 ; comprehensive_offline_stress.ttl (lines 312-313).
 ;
-; macOS strsplit syntax (differs from TeraTerm original):
-;   strsplit <source_string> <delimiter> <dest_array_var>
+; Original TeraTerm strsplit syntax:
+;   strsplit <source_string> <delimiter> [<count>]
 ;   -> result = element count
-;   -> dest_array_var = strArray of split parts
+;   -> groupmatchstr1..groupmatchstr9 = split parts
 ;
-; macOS strjoin syntax (differs from TeraTerm original):
-;   strjoin <dest_var> <src_array_var> <delimiter>
-;   -> dest_var = joined string
-;
-; NOTE: TeraTerm original uses groupmatchstr1..9 and variadic
-; strjoin, but macOS implementation uses strArray variables.
+; Original TeraTerm strjoin syntax:
+;   strjoin <dest_var> <delimiter> [<count>]
+;   -> dest_var = joined string from groupmatchstr1..9
 ; ============================================================
 
 logfile = '/tmp/ttl_debug_line312.log'
@@ -22,28 +19,23 @@ fileopen fh logfile 0
 filewriteln fh '=== Debug: strsplit/strjoin issue ==='
 filewriteln fh ''
 
-; --- Test 1: Reproduce the WRONG usage (commented out) ---
-; These are the TeraTerm-original syntax, NOT supported on macOS:
-;
-; strsplit 'a,b,c,d' ','                ; WRONG: needs 3 args (missing destArrayVar)
-; strjoin rejoined ',' groupmatchstr1 groupmatchstr2 ...  ; WRONG: variadic not supported
-;
-filewriteln fh 'Test 1: WRONG usage (skipped to avoid error)'
+; --- Test 1: Explanation of original syntax ---
+filewriteln fh 'Test 1: Original TeraTerm syntax uses groupmatchstr1..9'
 
-; --- Test 2: Correct strsplit usage (macOS strArray) ---
+; --- Test 2: Correct strsplit usage (groupmatchstr) ---
 filewriteln fh ''
 filewriteln fh 'Test 2: Correct strsplit usage'
 
-strsplit 'a,b,c,d' ',' parts
+strsplit 'a,b,c,d' ','
 sprintf2 msg '  result (count) = %d' result
 filewriteln fh msg
-sprintf2 msg '  parts[0] = "%s"' parts[0]
+sprintf2 msg '  groupmatchstr1 = "%s"' groupmatchstr1
 filewriteln fh msg
-sprintf2 msg '  parts[1] = "%s"' parts[1]
+sprintf2 msg '  groupmatchstr2 = "%s"' groupmatchstr2
 filewriteln fh msg
-sprintf2 msg '  parts[2] = "%s"' parts[2]
+sprintf2 msg '  groupmatchstr3 = "%s"' groupmatchstr3
 filewriteln fh msg
-sprintf2 msg '  parts[3] = "%s"' parts[3]
+sprintf2 msg '  groupmatchstr4 = "%s"' groupmatchstr4
 filewriteln fh msg
 
 if result = 4 then
@@ -53,18 +45,18 @@ else
   filewriteln fh msg
 endif
 
-if parts[0] = 'a' then
-  filewriteln fh '  -> PASS: parts[0] = "a"'
+if groupmatchstr1 = 'a' then
+  filewriteln fh '  -> PASS: groupmatchstr1 = "a"'
 else
-  sprintf2 msg '  -> FAIL: parts[0] = "%s"' parts[0]
+  sprintf2 msg '  -> FAIL: groupmatchstr1 = "%s"' groupmatchstr1
   filewriteln fh msg
 endif
 
-; --- Test 3: Correct strjoin usage (macOS strArray) ---
+; --- Test 3: Correct strjoin usage (groupmatchstr) ---
 filewriteln fh ''
 filewriteln fh 'Test 3: Correct strjoin usage'
 
-strjoin rejoined parts ','
+strjoin rejoined ',' 4
 sprintf2 msg '  rejoined = "%s"' rejoined
 filewriteln fh msg
 
@@ -78,12 +70,12 @@ endif
 filewriteln fh ''
 filewriteln fh 'Test 4: Split then join with colon delimiter'
 
-strsplit 'x:y:z' ':' items
+strsplit 'x:y:z' ':'
 sprintf2 msg '  split count = %d' result
 filewriteln fh msg
 
 if result = 3 then
-  strjoin rebuilt items ':'
+  strjoin rebuilt ':' 3
   sprintf2 msg '  rebuilt = "%s"' rebuilt
   filewriteln fh msg
   if rebuilt = 'x:y:z' then

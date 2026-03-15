@@ -476,15 +476,15 @@ filewriteln fh ''
 ; ############################################################
 filewriteln fh '=== Section 6: String Operations Boundary ==='
 
-; 6-1 strsplit many segments (results go to strArray variable)
+; 6-1 strsplit many segments (groupmatchstr1..9, max 9 vars)
 test_num = test_num + 1
 s = 'a,b,c,d,e,f,g,h,i,j'
-strsplit s ',' parts
+strsplit s ','
 if result = 10 then
-  if parts[0] = 'a' then
-    if parts[8] = 'i' then
+  if groupmatchstr1 = 'a' then
+    if groupmatchstr9 = 'i,j' then
       pass_count = pass_count + 1
-      sprintf2 msg 'PASS [%d] strsplit 10 segments' test_num
+      sprintf2 msg 'PASS [%d] strsplit 10 segments (9th has overflow)' test_num
     else
       fail_count = fail_count + 1
       sprintf2 msg 'FAIL [%d] strsplit 9th element' test_num

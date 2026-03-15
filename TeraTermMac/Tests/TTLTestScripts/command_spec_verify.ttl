@@ -6,12 +6,12 @@
 ;
 ; 検証対象:
 ;   - str2code / code2str (引数順: destVar first)
-;   - strsplit / strjoin (macOS strArray方式, 3引数)
+;   - strsplit / strjoin (groupmatchstr1..9方式)
 ;   - getenv / setenv (引数順: destVar first)
 ;   - getver (文字列戻り値)
 ;   - getspecialfolder (数値ID方式)
-;   - strreplace (3引数: destVar, target, replacement)
-;   - strtrim (1引数 + optional trimType整数)
+;   - strreplace (4引数: strvar, index, regex, newstr)
+;   - strtrim (trimchars文字セット指定)
 ;   - filesearch (1引数: ファイル存在確認)
 ;   - getfileattr (2引数: filepath, destVar)
 ;   - fileopen (0=先頭, 1=末尾)
@@ -122,25 +122,25 @@ filewriteln fh msg
 filewriteln fh ''
 
 ; ############################################################
-;  SECTION 2 — strsplit / strjoin (macOS strArray方式)
+;  SECTION 2 — strsplit / strjoin (groupmatchstr1..9方式)
 ; ############################################################
 filewriteln fh '=== Section 2: strsplit / strjoin ==='
 
-; 2-1 strsplit: 3引数 (source, delimiter, destArrayVar)
+; 2-1 strsplit: 2引数 (source, delimiter) -> groupmatchstr1..9
 test_num = test_num + 1
-strsplit 'apple,banana,cherry' ',' fruits
+strsplit 'apple,banana,cherry' ','
 if result = 3 then
-  if fruits[0] = 'apple' then
-    if fruits[2] = 'cherry' then
+  if groupmatchstr1 = 'apple' then
+    if groupmatchstr3 = 'cherry' then
       pass_count = pass_count + 1
-      sprintf2 msg 'PASS [%d] strsplit 3-arg: count=%d' test_num result
+      sprintf2 msg 'PASS [%d] strsplit groupmatchstr: count=%d' test_num result
     else
       fail_count = fail_count + 1
-      sprintf2 msg 'FAIL [%d] strsplit fruits[2]=%s' test_num fruits[2]
+      sprintf2 msg 'FAIL [%d] strsplit groupmatchstr3=%s' test_num groupmatchstr3
     endif
   else
     fail_count = fail_count + 1
-    sprintf2 msg 'FAIL [%d] strsplit fruits[0]=%s' test_num fruits[0]
+    sprintf2 msg 'FAIL [%d] strsplit groupmatchstr1=%s' test_num groupmatchstr1
   endif
 else
   fail_count = fail_count + 1
@@ -148,9 +148,9 @@ else
 endif
 filewriteln fh msg
 
-; 2-2 strjoin: 3引数 (destVar, srcArrayVar, delimiter)
+; 2-2 strjoin: <strvar> <separator> [<count>] -> groupmatchstr結合
 test_num = test_num + 1
-strjoin joined fruits ','
+strjoin joined ',' 3
 if joined = 'apple,banana,cherry' then
   pass_count = pass_count + 1
   sprintf2 msg 'PASS [%d] strjoin round-trip: "%s"' test_num joined
@@ -162,19 +162,19 @@ filewriteln fh msg
 
 ; 2-3 strsplit with different delimiter
 test_num = test_num + 1
-strsplit 'key=value=extra' '=' kvparts
+strsplit 'key=value=extra' '='
 if result = 3 then
-  if kvparts[0] = 'key' then
-    if kvparts[1] = 'value' then
+  if groupmatchstr1 = 'key' then
+    if groupmatchstr2 = 'value' then
       pass_count = pass_count + 1
       sprintf2 msg 'PASS [%d] strsplit with "=" delimiter' test_num
     else
       fail_count = fail_count + 1
-      sprintf2 msg 'FAIL [%d] strsplit kvparts[1]=%s' test_num kvparts[1]
+      sprintf2 msg 'FAIL [%d] strsplit groupmatchstr2=%s' test_num groupmatchstr2
     endif
   else
     fail_count = fail_count + 1
-    sprintf2 msg 'FAIL [%d] strsplit kvparts[0]=%s' test_num kvparts[0]
+    sprintf2 msg 'FAIL [%d] strsplit groupmatchstr1=%s' test_num groupmatchstr1
   endif
 else
   fail_count = fail_count + 1
@@ -184,14 +184,14 @@ filewriteln fh msg
 
 ; 2-4 strsplit single element (no delimiter found)
 test_num = test_num + 1
-strsplit 'nodot' '.' nodots
+strsplit 'nodot' '.'
 if result = 1 then
-  if nodots[0] = 'nodot' then
+  if groupmatchstr1 = 'nodot' then
     pass_count = pass_count + 1
     sprintf2 msg 'PASS [%d] strsplit no delimiter found: count=1' test_num
   else
     fail_count = fail_count + 1
-    sprintf2 msg 'FAIL [%d] strsplit nodots[0]=%s' test_num nodots[0]
+    sprintf2 msg 'FAIL [%d] strsplit groupmatchstr1=%s' test_num groupmatchstr1
   endif
 else
   fail_count = fail_count + 1
@@ -201,8 +201,8 @@ filewriteln fh msg
 
 ; 2-5 strjoin with different delimiter
 test_num = test_num + 1
-strsplit '1:2:3:4:5' ':' nums
-strjoin joined2 nums '-'
+strsplit '1:2:3:4:5' ':'
+strjoin joined2 '-' 5
 if joined2 = '1-2-3-4-5' then
   pass_count = pass_count + 1
   sprintf2 msg 'PASS [%d] strjoin with different delimiter: "%s"' test_num joined2
@@ -379,15 +379,15 @@ filewriteln fh msg
 filewriteln fh ''
 
 ; ############################################################
-;  SECTION 6 — strreplace (3引数: destVar, target, replacement)
+;  SECTION 6 — strreplace (4引数: strvar, index, regex, newstr)
 ; ############################################################
 filewriteln fh '=== Section 6: strreplace ==='
 
-; 6-1 basic replace
+; 6-1 basic replace (first match from index 1)
 test_num = test_num + 1
 s = 'hello world hello'
-strreplace s 'hello' 'hi'
-if s = 'hi world hi' then
+strreplace s 1 'hello' 'hi'
+if s = 'hi world hello' then
   pass_count = pass_count + 1
   sprintf2 msg 'PASS [%d] strreplace basic: "%s"' test_num s
 else
@@ -399,7 +399,7 @@ filewriteln fh msg
 ; 6-2 replace with empty string (deletion)
 test_num = test_num + 1
 s = 'remove--dashes'
-strreplace s '--' ''
+strreplace s 1 '--' ''
 if s = 'removedashes' then
   pass_count = pass_count + 1
   sprintf2 msg 'PASS [%d] strreplace delete: "%s"' test_num s
@@ -412,7 +412,7 @@ filewriteln fh msg
 ; 6-3 replace no match
 test_num = test_num + 1
 s = 'no match here'
-strreplace s 'xyz' 'abc'
+strreplace s 1 'xyz' 'abc'
 if s = 'no match here' then
   pass_count = pass_count + 1
   sprintf2 msg 'PASS [%d] strreplace no match unchanged' test_num
@@ -425,53 +425,53 @@ filewriteln fh msg
 filewriteln fh ''
 
 ; ############################################################
-;  SECTION 7 — strtrim (1引数 + optional trimType整数)
+;  SECTION 7 — strtrim (trimchars文字セット指定)
 ; ############################################################
 filewriteln fh '=== Section 7: strtrim ==='
 
-; 7-1 default trim (both sides, whitespace)
+; 7-1 trim whitespace from both sides
 test_num = test_num + 1
 s = '   trimmed   '
-strtrim s
+strtrim s ' '
 if s = 'trimmed' then
   pass_count = pass_count + 1
-  sprintf2 msg 'PASS [%d] strtrim default both sides' test_num
+  sprintf2 msg 'PASS [%d] strtrim space chars' test_num
 else
   fail_count = fail_count + 1
   sprintf2 msg 'FAIL [%d] strtrim got "%s"' test_num s
 endif
 filewriteln fh msg
 
-; 7-2 trim leading only (trimType=1)
+; 7-2 trim specific characters (hyphens)
 test_num = test_num + 1
-s = '   leading'
-strtrim s 1
+s = '---leading---'
+strtrim s '-'
 if s = 'leading' then
   pass_count = pass_count + 1
-  sprintf2 msg 'PASS [%d] strtrim leading only' test_num
+  sprintf2 msg 'PASS [%d] strtrim hyphens' test_num
 else
   fail_count = fail_count + 1
-  sprintf2 msg 'FAIL [%d] strtrim leading got "%s"' test_num s
+  sprintf2 msg 'FAIL [%d] strtrim hyphens got "%s"' test_num s
 endif
 filewriteln fh msg
 
-; 7-3 trim trailing only (trimType=2)
+; 7-3 trim multiple character set
 test_num = test_num + 1
-s = 'trailing   '
-strtrim s 2
-if s = 'trailing' then
+s = '##*data*##'
+strtrim s '#*'
+if s = 'data' then
   pass_count = pass_count + 1
-  sprintf2 msg 'PASS [%d] strtrim trailing only' test_num
+  sprintf2 msg 'PASS [%d] strtrim multi-char set' test_num
 else
   fail_count = fail_count + 1
-  sprintf2 msg 'FAIL [%d] strtrim trailing got "%s"' test_num s
+  sprintf2 msg 'FAIL [%d] strtrim multi-char got "%s"' test_num s
 endif
 filewriteln fh msg
 
-; 7-4 trim already clean string
+; 7-4 trim already clean string (no matching chars)
 test_num = test_num + 1
 s = 'clean'
-strtrim s
+strtrim s ' '
 if s = 'clean' then
   pass_count = pass_count + 1
   sprintf2 msg 'PASS [%d] strtrim no-op on clean string' test_num
@@ -789,14 +789,20 @@ filewriteln fh ''
 ; ############################################################
 filewriteln fh '=== Section 15: Combined Verification ==='
 
-; 15-1 strsplit -> array access -> str2int -> arithmetic
+; 15-1 strsplit -> groupmatchstr -> str2int -> arithmetic
 test_num = test_num + 1
-strsplit '10,20,30,40,50' ',' numstrs
+strsplit '10,20,30,40,50' ','
 sum = 0
-for i 0 4
-  str2int val numstrs[i]
-  sum = sum + val
-next
+str2int val groupmatchstr1
+sum = sum + val
+str2int val groupmatchstr2
+sum = sum + val
+str2int val groupmatchstr3
+sum = sum + val
+str2int val groupmatchstr4
+sum = sum + val
+str2int val groupmatchstr5
+sum = sum + val
 if sum = 150 then
   pass_count = pass_count + 1
   sprintf2 msg 'PASS [%d] strsplit -> str2int -> sum = %d' test_num sum
@@ -810,8 +816,8 @@ filewriteln fh msg
 test_num = test_num + 1
 setenv 'TTL_PATH_TEST' '/usr/bin:/usr/local/bin:/opt/bin'
 getenv pathval 'TTL_PATH_TEST'
-strsplit pathval ':' pathparts
-strjoin newpath pathparts ','
+strsplit pathval ':'
+strjoin newpath ','
 if newpath = '/usr/bin,/usr/local/bin,/opt/bin' then
   pass_count = pass_count + 1
   sprintf2 msg 'PASS [%d] getenv -> strsplit -> strjoin: "%s"' test_num newpath

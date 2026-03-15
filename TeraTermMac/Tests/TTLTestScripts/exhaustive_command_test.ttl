@@ -184,7 +184,7 @@ if depth10 == 10 then
   sprintf2 msg 'PASS [%d] 10-level call depth' test_num
 else
   fail_count = fail_count + 1
-  sprintf2 msg 'FAIL [%d] 10-level call depth=%d' test_num depth10' test_num
+  sprintf2 msg 'FAIL [%d] 10-level call depth=%d' test_num depth10
 endif
 filewriteln fh msg
 goto after_depth10
@@ -272,7 +272,7 @@ if sum == 5050 then
   sprintf2 msg 'PASS [%d] for sum(1..100)=5050' test_num
 else
   fail_count = fail_count + 1
-  sprintf2 msg 'FAIL [%d] for sum=%d' test_num sum' test_num
+  sprintf2 msg 'FAIL [%d] for sum=%d' test_num sum
 endif
 filewriteln fh msg
 
@@ -287,7 +287,7 @@ if cnt == 1 then
   sprintf2 msg 'PASS [%d] for single iter' test_num
 else
   fail_count = fail_count + 1
-  sprintf2 msg 'FAIL [%d] for single cnt=%d' test_num cnt' test_num
+  sprintf2 msg 'FAIL [%d] for single cnt=%d' test_num cnt
 endif
 filewriteln fh msg
 
@@ -302,7 +302,7 @@ if n == 50 then
   sprintf2 msg 'PASS [%d] while 50 iter' test_num
 else
   fail_count = fail_count + 1
-  sprintf2 msg 'FAIL [%d] while n=%d' test_num n' test_num
+  sprintf2 msg 'FAIL [%d] while n=%d' test_num n
 endif
 filewriteln fh msg
 
@@ -318,7 +318,7 @@ if ran == 0 then
   sprintf2 msg 'PASS [%d] while false 0 iter' test_num
 else
   fail_count = fail_count + 1
-  sprintf2 msg 'FAIL [%d] while false ran=%d' test_num ran' test_num
+  sprintf2 msg 'FAIL [%d] while false ran=%d' test_num ran
 endif
 filewriteln fh msg
 
@@ -333,7 +333,7 @@ if cnt2 == 10 then
   sprintf2 msg 'PASS [%d] until count=10' test_num
 else
   fail_count = fail_count + 1
-  sprintf2 msg 'FAIL [%d] until cnt=%d' test_num cnt2' test_num
+  sprintf2 msg 'FAIL [%d] until cnt=%d' test_num cnt2
 endif
 filewriteln fh msg
 
@@ -348,7 +348,7 @@ if dl == 25 then
   sprintf2 msg 'PASS [%d] do-until 25' test_num
 else
   fail_count = fail_count + 1
-  sprintf2 msg 'FAIL [%d] do-until dl=%d' test_num dl' test_num
+  sprintf2 msg 'FAIL [%d] do-until dl=%d' test_num dl
 endif
 filewriteln fh msg
 
@@ -363,7 +363,7 @@ if dw == 15 then
   sprintf2 msg 'PASS [%d] do-while 15' test_num
 else
   fail_count = fail_count + 1
-  sprintf2 msg 'FAIL [%d] do-while dw=%d' test_num dw' test_num
+  sprintf2 msg 'FAIL [%d] do-while dw=%d' test_num dw
 endif
 filewriteln fh msg
 
@@ -381,7 +381,7 @@ if bk == 42 then
   sprintf2 msg 'PASS [%d] break at 42' test_num
 else
   fail_count = fail_count + 1
-  sprintf2 msg 'FAIL [%d] break bk=%d' test_num bk' test_num
+  sprintf2 msg 'FAIL [%d] break bk=%d' test_num bk
 endif
 filewriteln fh msg
 
@@ -399,7 +399,7 @@ if bw == 77 then
   sprintf2 msg 'PASS [%d] break while at 77' test_num
 else
   fail_count = fail_count + 1
-  sprintf2 msg 'FAIL [%d] break while bw=%d' test_num bw' test_num
+  sprintf2 msg 'FAIL [%d] break while bw=%d' test_num bw
 endif
 filewriteln fh msg
 
@@ -418,7 +418,7 @@ if oddsum == 100 then
   sprintf2 msg 'PASS [%d] continue odd sum=100' test_num
 else
   fail_count = fail_count + 1
-  sprintf2 msg 'FAIL [%d] continue sum=%d' test_num oddsum' test_num
+  sprintf2 msg 'FAIL [%d] continue sum=%d' test_num oddsum
 endif
 filewriteln fh msg
 
@@ -437,7 +437,7 @@ if cnt3 == 1000 then
   sprintf2 msg 'PASS [%d] triple nested 1000' test_num
 else
   fail_count = fail_count + 1
-  sprintf2 msg 'FAIL [%d] triple cnt=%d' test_num cnt3' test_num
+  sprintf2 msg 'FAIL [%d] triple cnt=%d' test_num cnt3
 endif
 filewriteln fh msg
 
@@ -458,7 +458,7 @@ if total == 55 then
   sprintf2 msg 'PASS [%d] mixed nesting total=55' test_num
 else
   fail_count = fail_count + 1
-  sprintf2 msg 'FAIL [%d] mixed total=%d' test_num total' test_num
+  sprintf2 msg 'FAIL [%d] mixed total=%d' test_num total
 endif
 filewriteln fh msg
 
@@ -473,7 +473,7 @@ if acc == 50005000 then
   sprintf2 msg 'PASS [%d] 10000 iter sum=50005000' test_num
 else
   fail_count = fail_count + 1
-  sprintf2 msg 'FAIL [%d] 10000 sum=%d' test_num acc' test_num
+  sprintf2 msg 'FAIL [%d] 10000 sum=%d' test_num acc
 endif
 filewriteln fh msg
 
@@ -524,7 +524,7 @@ if x == 14 then
   sprintf2 msg 'PASS [%d] precedence 2+3*4=14' test_num
 else
   fail_count = fail_count + 1
-  sprintf2 msg 'FAIL [%d] precedence x=%d' test_num x' test_num
+  sprintf2 msg 'FAIL [%d] precedence x=%d' test_num x
 endif
 filewriteln fh msg
 
@@ -536,7 +536,7 @@ if x == 20 then
   sprintf2 msg 'PASS [%d] parens (2+3)*4=20' test_num
 else
   fail_count = fail_count + 1
-  sprintf2 msg 'FAIL [%d] parens x=%d' test_num x' test_num
+  sprintf2 msg 'FAIL [%d] parens x=%d' test_num x
 endif
 filewriteln fh msg
 
@@ -548,7 +548,7 @@ if x == 71 then
   sprintf2 msg 'PASS [%d] deep parens=71' test_num
 else
   fail_count = fail_count + 1
-  sprintf2 msg 'FAIL [%d] deep parens=%d' test_num x' test_num
+  sprintf2 msg 'FAIL [%d] deep parens=%d' test_num x
 endif
 filewriteln fh msg
 
@@ -815,7 +815,7 @@ if result == 2000 then
   sprintf2 msg 'PASS [%d] strconcat 2000 chars' test_num
 else
   fail_count = fail_count + 1
-  sprintf2 msg 'FAIL [%d] strconcat len=%d' test_num result' test_num
+  sprintf2 msg 'FAIL [%d] strconcat len=%d' test_num result
 endif
 filewriteln fh msg
 
@@ -1017,22 +1017,22 @@ else
 endif
 filewriteln fh msg
 
-; --- strreplace match/no-match/delete ---
+; --- strreplace 4-arg: <strvar> <index> <regex> <newstr> ---
 test_num = test_num + 1
 s = 'foo bar foo'
-strreplace s 'foo' 'baz'
+strreplace s 1 'foo' 'baz'
 r1 = 0
-if s == 'baz bar baz' then
+if s == 'baz bar foo' then
   r1 = 1
 endif
 s = 'no match here'
-strreplace s 'xyz' 'abc'
+strreplace s 1 'xyz' 'abc'
 r2 = 0
 if s == 'no match here' then
   r2 = 1
 endif
 s = 'remove--me'
-strreplace s '--' ''
+strreplace s 1 '--' ''
 r3 = 0
 if s == 'removeme' then
   r3 = 1
@@ -1056,42 +1056,42 @@ if result == 11 then
   sprintf2 msg 'PASS [%d] strspecial newline expand' test_num
 else
   fail_count = fail_count + 1
-  sprintf2 msg 'FAIL [%d] strspecial len=%d' test_num result' test_num
+  sprintf2 msg 'FAIL [%d] strspecial len=%d' test_num result
 endif
 filewriteln fh msg
 
-; --- strtrim default/leading/trailing ---
+; --- strtrim <strvar> <trimchars> ---
 test_num = test_num + 1
 s1 = '   both   '
-strtrim s1
-s2 = '   leading'
-strtrim s2 1
-s3 = 'trailing   '
-strtrim s3 2
+strtrim s1 ' '
+s2 = '---title---'
+strtrim s2 '-'
+s3 = '##*info*##'
+strtrim s3 '#*'
 ok = 1
 if s1 <> 'both' then
   ok = 0
 endif
-if s2 <> 'leading' then
+if s2 <> 'title' then
   ok = 0
 endif
-if s3 <> 'trailing' then
+if s3 <> 'info' then
   ok = 0
 endif
 if ok == 1 then
   pass_count = pass_count + 1
-  sprintf2 msg 'PASS [%d] strtrim 0/1/2' test_num
+  sprintf2 msg 'PASS [%d] strtrim trimchars' test_num
 else
   fail_count = fail_count + 1
   sprintf2 msg 'FAIL [%d] strtrim' test_num
 endif
 filewriteln fh msg
 
-; --- strsplit/strjoin round-trip ---
+; --- strsplit/strjoin round-trip (groupmatchstr1..9) ---
 test_num = test_num + 1
-strsplit 'a,b,c,d,e' ',' parts
+strsplit 'a,b,c,d,e' ','
 r1 = result
-strjoin joined parts ','
+strjoin joined ','
 ok = (r1 == 5) && (joined == 'a,b,c,d,e')
 if ok == 1 then
   pass_count = pass_count + 1
@@ -1104,8 +1104,8 @@ filewriteln fh msg
 
 ; --- strsplit no delimiter found ---
 test_num = test_num + 1
-strsplit 'nodot' '.' nd
-ok = (result == 1) && (nd[0] == 'nodot')
+strsplit 'nodot' '.'
+ok = (result == 1) && (groupmatchstr1 == 'nodot')
 if ok == 1 then
   pass_count = pass_count + 1
   sprintf2 msg 'PASS [%d] strsplit no delim=1 part' test_num
@@ -1115,13 +1115,13 @@ else
 endif
 filewriteln fh msg
 
-; --- strsplit 10 segments ---
+; --- strsplit 10 segments (max 9, 10th overflows) ---
 test_num = test_num + 1
-strsplit 'a,b,c,d,e,f,g,h,i,j' ',' many
-ok = (result == 10) && (many[0] == 'a') && (many[9] == 'j')
+strsplit 'a,b,c,d,e,f,g,h,i,j' ','
+ok = (result == 10) && (groupmatchstr1 == 'a') && (groupmatchstr9 == 'i,j')
 if ok == 1 then
   pass_count = pass_count + 1
-  sprintf2 msg 'PASS [%d] strsplit 10 segments' test_num
+  sprintf2 msg 'PASS [%d] strsplit 10 segments (overflow in 9th)' test_num
 else
   fail_count = fail_count + 1
   sprintf2 msg 'FAIL [%d] strsplit 10' test_num
@@ -1130,8 +1130,8 @@ filewriteln fh msg
 
 ; --- strjoin different delimiter ---
 test_num = test_num + 1
-strsplit '1:2:3' ':' nums
-strjoin out nums '-'
+strsplit '1:2:3' ':'
+strjoin out '-' 3
 if out == '1-2-3' then
   pass_count = pass_count + 1
   sprintf2 msg 'PASS [%d] strjoin delim change' test_num
@@ -1334,7 +1334,7 @@ if eof_r == 1 then
   sprintf2 msg 'PASS [%d] filereadln EOF=1' test_num
 else
   fail_count = fail_count + 1
-  sprintf2 msg 'FAIL [%d] filereadln EOF=%d' test_num eof_r' test_num
+  sprintf2 msg 'FAIL [%d] filereadln EOF=%d' test_num eof_r
 endif
 filewriteln fh msg
 
@@ -1582,7 +1582,7 @@ if result == 0 then
   sprintf2 msg 'PASS [%d] filestat result=0 (success)' test_num
 else
   fail_count = fail_count + 1
-  sprintf2 msg 'FAIL [%d] filestat result=%d' test_num result' test_num
+  sprintf2 msg 'FAIL [%d] filestat result=%d' test_num result
 endif
 filewriteln fh msg
 
@@ -1601,7 +1601,7 @@ if sz == 10 then
   sprintf2 msg 'PASS [%d] filetruncate at 10' test_num
 else
   fail_count = fail_count + 1
-  sprintf2 msg 'FAIL [%d] filetruncate sz=%d' test_num sz' test_num
+  sprintf2 msg 'FAIL [%d] filetruncate sz=%d' test_num sz
 endif
 filewriteln fh msg
 
@@ -1621,7 +1621,7 @@ if found == 1 then
   sprintf2 msg 'PASS [%d] filestrseek found' test_num
 else
   fail_count = fail_count + 1
-  sprintf2 msg 'FAIL [%d] filestrseek found=%d' test_num found' test_num
+  sprintf2 msg 'FAIL [%d] filestrseek found=%d' test_num found
 endif
 filewriteln fh msg
 
@@ -1642,7 +1642,7 @@ if found2 == 1 then
   sprintf2 msg 'PASS [%d] filestrseek2 backward' test_num
 else
   fail_count = fail_count + 1
-  sprintf2 msg 'FAIL [%d] filestrseek2 found=%d' test_num found2' test_num
+  sprintf2 msg 'FAIL [%d] filestrseek2 found=%d' test_num found2
 endif
 filewriteln fh msg
 
@@ -1691,7 +1691,7 @@ if lcount == 500 then
   sprintf2 msg 'PASS [%d] STRESS 500 lines' test_num
 else
   fail_count = fail_count + 1
-  sprintf2 msg 'FAIL [%d] STRESS 500 lines=%d' test_num lcount' test_num
+  sprintf2 msg 'FAIL [%d] STRESS 500 lines=%d' test_num lcount
 endif
 filewriteln fh msg
 
@@ -1746,7 +1746,7 @@ for i 1 3
 next
 if fcount >= 3 then
   pass_count = pass_count + 1
-  sprintf2 msg 'PASS [%d] findfirst/next found %d' fcount' test_num
+  sprintf2 msg 'PASS [%d] findfirst/next found %d' test_num fcount
 else
   fail_count = fail_count + 1
   sprintf2 msg 'FAIL [%d] findfirst/next' test_num
@@ -2006,7 +2006,7 @@ if result == 0 then
   sprintf2 msg 'PASS [%d] getfileattr success' test_num
 else
   fail_count = fail_count + 1
-  sprintf2 msg 'FAIL [%d] getfileattr result=%d' test_num result' test_num
+  sprintf2 msg 'FAIL [%d] getfileattr result=%d' test_num result
 endif
 filewriteln fh msg
 
@@ -2024,7 +2024,7 @@ if r1 == 0 then
   sprintf2 msg 'PASS [%d] setfileattr 0777' test_num
 else
   fail_count = fail_count + 1
-  sprintf2 msg 'FAIL [%d] setfileattr result=%d' test_num r1' test_num
+  sprintf2 msg 'FAIL [%d] setfileattr result=%d' test_num r1
 endif
 filewriteln fh msg
 
@@ -2048,7 +2048,7 @@ if ut > 0 then
   sprintf2 msg 'PASS [%d] uptime > 0' test_num
 else
   fail_count = fail_count + 1
-  sprintf2 msg 'FAIL [%d] uptime=%d' test_num ut' test_num
+  sprintf2 msg 'FAIL [%d] uptime=%d' test_num ut
 endif
 filewriteln fh msg
 
@@ -2095,7 +2095,7 @@ if result == -1 then
   sprintf2 msg 'PASS [%d] setdate returns -1' test_num
 else
   fail_count = fail_count + 1
-  sprintf2 msg 'FAIL [%d] setdate result=%d' test_num result' test_num
+  sprintf2 msg 'FAIL [%d] setdate result=%d' test_num result
 endif
 filewriteln fh msg
 
@@ -2107,7 +2107,7 @@ if result == -1 then
   sprintf2 msg 'PASS [%d] settime returns -1' test_num
 else
   fail_count = fail_count + 1
-  sprintf2 msg 'FAIL [%d] settime result=%d' test_num result' test_num
+  sprintf2 msg 'FAIL [%d] settime result=%d' test_num result
 endif
 filewriteln fh msg
 
@@ -2153,7 +2153,7 @@ if bn == 'file.txt' then
   sprintf2 msg 'PASS [%d] basename' test_num
 else
   fail_count = fail_count + 1
-  sprintf2 msg 'FAIL [%d] basename=%s' bn' test_num
+  sprintf2 msg 'FAIL [%d] basename=%s' test_num bn
 endif
 filewriteln fh msg
 
@@ -2165,7 +2165,7 @@ if dn == '/home/user' then
   sprintf2 msg 'PASS [%d] dirname' test_num
 else
   fail_count = fail_count + 1
-  sprintf2 msg 'FAIL [%d] dirname=%s' dn' test_num
+  sprintf2 msg 'FAIL [%d] dirname=%s' test_num dn
 endif
 filewriteln fh msg
 
@@ -2192,30 +2192,30 @@ filewriteln fh ''
 ; ############################################################
 filewriteln fh '=== Section 11: Bit Rotation ==='
 
-; --- rotateleft/rotateright round-trip ---
+; --- rotateleft/rotateright round-trip (3-arg) ---
 test_num = test_num + 1
 val = 1
-rotateleft val 4
-rotateright val 4
+rotateleft val val 4
+rotateright val val 4
 if val == 1 then
   pass_count = pass_count + 1
   sprintf2 msg 'PASS [%d] rotateL/R round-trip' test_num
 else
   fail_count = fail_count + 1
-  sprintf2 msg 'FAIL [%d] rotateL/R val=%d' test_num val' test_num
+  sprintf2 msg 'FAIL [%d] rotateL/R val=%d' test_num val
 endif
 filewriteln fh msg
 
 ; --- rotateleft overflow ---
 test_num = test_num + 1
-val = $80000000
-rotateleft val 1
+src = $80000000
+rotateleft val src 1
 if val == 1 then
   pass_count = pass_count + 1
   sprintf2 msg 'PASS [%d] rotateL overflow' test_num
 else
   fail_count = fail_count + 1
-  sprintf2 msg 'FAIL [%d] rotateL val=%d' test_num val' test_num
+  sprintf2 msg 'FAIL [%d] rotateL val=%d' test_num val
 endif
 filewriteln fh msg
 
@@ -2414,7 +2414,7 @@ if result == 0 then
   sprintf2 msg 'PASS [%d] testlink=0 offline' test_num
 else
   fail_count = fail_count + 1
-  sprintf2 msg 'FAIL [%d] testlink=%d' test_num result' test_num
+  sprintf2 msg 'FAIL [%d] testlink=%d' test_num result
 endif
 filewriteln fh msg
 
@@ -2477,7 +2477,7 @@ if b == 144 then
   sprintf2 msg 'PASS [%d] Fibonacci(12)=144' test_num
 else
   fail_count = fail_count + 1
-  sprintf2 msg 'FAIL [%d] Fibonacci=%d' test_num b' test_num
+  sprintf2 msg 'FAIL [%d] Fibonacci=%d' test_num b
 endif
 filewriteln fh msg
 
@@ -2511,7 +2511,7 @@ if matC[0] == 80 then
   sprintf2 msg 'PASS [%d] matrix C[0,0]=80' test_num
 else
   fail_count = fail_count + 1
-  sprintf2 msg 'FAIL [%d] matrix C[0,0]=%d' test_num matC[0]' test_num
+  sprintf2 msg 'FAIL [%d] matrix C[0,0]=%d' test_num matC[0]
 endif
 filewriteln fh msg
 
@@ -2547,29 +2547,35 @@ else
 endif
 filewriteln fh msg
 
-; --- strsplit -> str2int -> sum ---
+; --- strsplit -> str2int -> sum (groupmatchstr) ---
 test_num = test_num + 1
-strsplit '10,20,30,40,50' ',' numstrs
+strsplit '10,20,30,40,50' ','
 numsum = 0
-for i 0 4
-  str2int val numstrs[i]
-  numsum = numsum + val
-next
+str2int val groupmatchstr1
+numsum = numsum + val
+str2int val groupmatchstr2
+numsum = numsum + val
+str2int val groupmatchstr3
+numsum = numsum + val
+str2int val groupmatchstr4
+numsum = numsum + val
+str2int val groupmatchstr5
+numsum = numsum + val
 if numsum == 150 then
   pass_count = pass_count + 1
   sprintf2 msg 'PASS [%d] split-int-sum=150' test_num
 else
   fail_count = fail_count + 1
-  sprintf2 msg 'FAIL [%d] split-int-sum=%d' test_num numsum' test_num
+  sprintf2 msg 'FAIL [%d] split-int-sum=%d' test_num numsum
 endif
 filewriteln fh msg
 
-; --- getenv -> strsplit -> strjoin ---
+; --- getenv -> strsplit -> strjoin (groupmatchstr) ---
 test_num = test_num + 1
 setenv 'TTL_PATH_EXH' '/usr/bin:/usr/local/bin:/opt/bin'
 getenv pval 'TTL_PATH_EXH'
-strsplit pval ':' pp
-strjoin newpath pp ','
+strsplit pval ':'
+strjoin newpath ','
 if newpath == '/usr/bin,/usr/local/bin,/opt/bin' then
   pass_count = pass_count + 1
   sprintf2 msg 'PASS [%d] env-split-join' test_num
@@ -2608,7 +2614,7 @@ if stress_acc == 14997 then
   sprintf2 msg 'PASS [%d] 5000 mod sum=14997' test_num
 else
   fail_count = fail_count + 1
-  sprintf2 msg 'FAIL [%d] 5000 mod sum=%d' test_num stress_acc' test_num
+  sprintf2 msg 'FAIL [%d] 5000 mod sum=%d' test_num stress_acc
 endif
 filewriteln fh msg
 

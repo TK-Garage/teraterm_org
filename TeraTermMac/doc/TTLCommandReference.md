@@ -32,6 +32,7 @@ Tera Term Mac で利用可能な TTL マクロコマンドの一覧です。
 23. [システム変数](#23-システム変数)
 24. [式と演算子](#24-式と演算子)
 25. [macOS 固有の動作差異](#25-macos-固有の動作差異)
+26. [実装と仕様の差異一覧（要修正）](#26-実装と仕様の差異一覧要修正)
 
 ---
 
@@ -260,7 +261,7 @@ sendkcode $1B   ; ESC
 
 ### `sendfile`
 
-ファイルの内容を送信。Windows 版 TTL 互換: 第 2 引数でバイナリ/テキスト指定。
+ファイルの内容を送信。第 2 引数でバイナリ/テキストモードを指定。
 
 ```ttl
 sendfile '/path/to/data.txt' 0    ; テキストモード（改行変換あり）
@@ -271,8 +272,6 @@ sendfile '/tmp/data.bin' 1        ; バイナリモード（生データ送信�
 |------|------|------|
 | `<filename>` | 文字列 | 送信するファイルのパス |
 | `<binary_flag>` | 整数 | 0=テキストモード（改行変換）, 1=バイナリモード（生データ） |
-
-> **macOS 実装メモ**: 現在の macOS 版実装では `<binary_flag>` を無視し、常にバイナリモードで送信する。テキストモードの改行変換（CR/LF → LF 等）は未実装。
 
 ### `recvln`
 
@@ -548,22 +547,29 @@ strremove s 6 6
 
 ### `strreplace`
 
-正規表現で置換。
+正規表現による文字列置換。指定位置から検索し、最初にマッチした箇所を置換する。
 
 ```ttl
+strreplace <strvar> <index> <regex> <newstr>
+
 s = 'foo bar foo'
 strreplace s 1 'foo' 'baz'
-; s = 'baz bar baz', result = 1
+; s = 'baz bar foo', result = 1, matchstr = 'foo'
+
+s = 'abc123def'
+strreplace s 1 '[0-9]+' ''
+; s = 'abcdef', result = 1, matchstr = '123'
 ```
 
 | 引数 | 型 | 説明 |
 |------|------|------|
-| `<strvar>` | 文字列変数 | 対象 |
+| `<strvar>` | 文字列変数 | 検索・置換対象の文字列 |
 | `<index>` | 整数 | 検索開始位置（1 起算） |
-| `<regex>` | 文字列 | 正規表現パターン |
-| `<newstr>` | 文字列 | 置換文字列 |
+| `<regex>` | 文字列 | 検索する正規表現パターン |
+| `<newstr>` | 文字列 | 置換文字列（空文字列でマッチ部分を削除） |
 
-**result**: 1 = 置換あり、0 = マッチなし、-1 = 無効な正規表現
+**result**: 1 = 置換成功、0 = パターンが見つからない、-1 = 無効な正規表現
+**matchstr**: マッチした文字列が格納される
 
 ### `strspecial`
 
@@ -577,60 +583,77 @@ strspecial s
 
 ### `strtrim`
 
-前後の指定文字を除去。両端からトリムする。
+文字列の前後から指定文字を除去する。
 
 ```ttl
+strtrim <strvar> <trimchars>
+
 s = '  hello  '
 strtrim s ' '
-; s = 'hello'
+; s = 'hello'（前後のスペースを除去）
 
-s = '##test##'
-strtrim s '#'
-; s = 'test'
+s = '---title---'
+strtrim s '-'
+; s = 'title'（前後のハイフンを除去）
+
+s = '##*info*##'
+strtrim s '#*'
+; s = 'info'（前後の # と * を除去）
 ```
 
 | 引数 | 型 | 説明 |
 |------|------|------|
-| `<strvar>` | 文字列変数 | 対象 |
-| `<trimchars>` | 文字列 | 除去する文字セット |
+| `<strvar>` | 文字列変数 | トリム対象の文字列 |
+| `<trimchars>` | 文字列 | 除去する文字のセット（各文字が個別に除去対象） |
 
 ### `strsplit`
 
-区切り文字で分割。
-
-> **macOS 固有動作**: オリジナル Tera Term では `groupmatchstr1`〜`groupmatchstr9` に格納される（最大 9 分割）。macOS 版では内部の文字列配列に格納される（§25 参照）。
+区切り文字で文字列を分割し、`groupmatchstr1`〜`groupmatchstr9` に格納する。
 
 ```ttl
-strsplit 'a,b,c,d' ',' destarray
+strsplit <strval> <separator> [<count>]
+
+strsplit 'a,b,c,d' ','
 ; result = 4
-; オリジナル TT: groupmatchstr1='a', groupmatchstr2='b', ...
-; macOS 版: destarray に配列として格納
+; groupmatchstr1 = 'a', groupmatchstr2 = 'b'
+; groupmatchstr3 = 'c', groupmatchstr4 = 'd'
+
+strsplit 'a,b,c,d' ',' 2
+; result = 2
+; groupmatchstr1 = 'a', groupmatchstr2 = 'b,c,d'
 ```
 
 | 引数 | 型 | 説明 |
 |------|------|------|
-| `<string>` | 文字列 | 分割する文字列 |
-| `<separator>` | 文字列 | 区切り文字 |
-| `<destvar>` | 変数 | 格納先（macOS 版） |
+| `<strval>` | 文字列 | 分割する文字列 |
+| `<separator>` | 文字列 | 区切り文字（1 文字） |
+| `[<count>]` | 整数 | 最大分割数（1〜9、デフォルト 9） |
 
-**result**: 分割された要素数
+**result**: 分割された要素数（9 を超える場合は 10）
+**groupmatchstr1〜9**: 分割結果。未使用の変数は空文字列にクリアされる。`count` を超える残りは最後の変数にまとめられる。
 
 ### `strjoin`
 
-区切り文字で結合。
-
-> **macOS 固有動作**: オリジナル Tera Term では `groupmatchstr1`〜`groupmatchstr9` を結合する（`strsplit` の逆操作）。macOS 版では文字列配列変数を指定して結合する（§25 参照）。
+`groupmatchstr1`〜`groupmatchstr9` を区切り文字で結合する（`strsplit` の逆操作）。
 
 ```ttl
-strjoin buf srcarray ','
-; buf = srcarray の各要素をカンマで結合した文字列
+strjoin <strvar> <separator> [<count>]
+
+; strsplit で分割した結果を再結合
+strsplit 'a,b,c' ','
+strjoin buf ','
+; buf = 'a,b,c'
+
+; 最初の 2 要素のみ結合
+strjoin buf ',' 2
+; buf = 'a,b'
 ```
 
 | 引数 | 型 | 説明 |
 |------|------|------|
-| `<destvar>` | 文字列変数 | 結合結果の格納先 |
-| `<srcvar>` | 変数 | 元の配列変数（macOS 版） |
+| `<strvar>` | 文字列変数 | 結合結果の格納先 |
 | `<separator>` | 文字列 | 区切り文字 |
+| `[<count>]` | 整数 | 結合する `groupmatchstr` の数（デフォルト 9） |
 
 ### `tolower`
 
@@ -1003,19 +1026,32 @@ endif
 
 ### `listbox`
 
-リスト選択ダイアログ。
-
-> **macOS 固有動作**: オリジナル Tera Term では `strdim` で作成した文字列配列を渡し、戻り値は 0 起算（-1 = キャンセル）。macOS 版では改行区切りの文字列を `<message>` に渡す簡略化方式を使用する（§25 参照）。
+リスト選択ダイアログ。`strdim` で作成した文字列配列から項目を選択する。
 
 ```ttl
-listbox 'Apple\nBanana\nCherry' 'Select Fruit'
+listbox <message> <title> <string array> [<selected>]
+
+strdim items 3
+items[0] = 'Apple'
+items[1] = 'Banana'
+items[2] = 'Cherry'
+listbox '果物を選んでください' 'Select Fruit' items
 if result >= 0 then
-  ; inputstr に選択項目
+  ; result = 選択インデックス（0 起算）
 endif
+
+; 初期選択指定
+listbox 'Select' 'Title' items 1   ; Banana を初期選択
 ```
 
+| 引数 | 型 | 説明 |
+|------|------|------|
+| `<message>` | 文字列 | ダイアログに表示するメッセージ |
+| `<title>` | 文字列 | ダイアログのタイトル |
+| `<string array>` | 文字列配列 | `strdim` で作成した選択肢の配列 |
+| `[<selected>]` | 整数 | 初期選択インデックス（0 起算） |
+
 **result**: 選択インデックス（0 起算）、-1 = キャンセル
-**inputstr**: 選択された項目
 
 ### `statusbox`
 
@@ -1033,27 +1069,31 @@ closesbox
 
 ### `filenamebox`
 
-ファイル選択ダイアログ。
-
-> **macOS 固有動作**: オリジナル Tera Term では `filenamebox <message> <flag> [<initdir>]` で結果を `inputstr` に格納するが、macOS 版では第1引数に格納先変数を指定する（§25 参照）。
+ファイル選択ダイアログ。選択結果は `inputstr` に格納される。
 
 ```ttl
-filenamebox filepath 'Select a file'
-if result == 1 then
-  ; filepath にパスが入る
+filenamebox <title> [<dialogtype> [<initialdir>]]
+
+filenamebox 'Select a file'
+if result > 0 then
+  ; inputstr に選択されたファイルパスが入る
 endif
 
-; 保存モード
-filenamebox filepath 'Save as' 1
+; 保存ダイアログ
+filenamebox 'Save as' 1
+
+; 初期ディレクトリ指定
+filenamebox 'Open file' 0 '/tmp'
 ```
 
 | 引数 | 型 | 説明 |
 |------|------|------|
-| `<strvar>` | 文字列変数 | 選択パス格納先 |
-| `[<title>]` | 文字列 | タイトル |
-| `[<savemode>]` | 整数 | 0=開く, 1=保存 |
+| `<title>` | 文字列 | ダイアログのタイトル |
+| `[<dialogtype>]` | 整数 | 0=開くダイアログ（デフォルト）、0 以外=保存ダイアログ |
+| `[<initialdir>]` | 文字列 | 初期ディレクトリパス |
 
-**result**: 1 = ファイル選択、0 = キャンセル
+**result**: 0 以外 = ファイル選択、0 = キャンセル
+**inputstr**: 選択されたファイルパス
 
 ### `dirnamebox`
 
@@ -1647,25 +1687,23 @@ scprecv 'src/foo.txt'    ; ローカルはカレントディレクトリ＋フ�
 
 ### `recvfile`
 
-接続から受信したデータを直接ファイルに保存。Windows 版 TTL 互換: バイナリ/テキスト指定と自動停止機能付き。
+接続から受信したデータを直接ファイルに保存。指定時間データがなければ自動停止する。
 
 ```ttl
 recvfile <filename> <binary_flag> <autostop_seconds>
 
-recvfile '/tmp/received.txt' 0 10   ; テキストモード、10秒無通信で自動停止
-recvfile '/tmp/received.dat' 1 5    ; バイナリモード、5秒無通信で自動停止
-recvfile '/tmp/received.dat' 1 0    ; バイナリモード、自動停止なし（手動停止）
+recvfile '/tmp/received.dat' 0 10   ; 10秒無通信で自動停止
+recvfile '/tmp/received.dat' 1 5    ; 5秒無通信で自動停止
+recvfile '/tmp/received.dat' 0 0    ; 自動停止なし（手動停止）
 ```
 
 | 引数 | 型 | 説明 |
 |------|------|------|
-| `<filename>` | 文字列 | 保存先ファイルパス |
-| `<binary_flag>` | 整数 | 0=テキストモード（改行変換）, 1=バイナリモード（生データ） |
-| `<autostop_seconds>` | 整数 | 指定秒間データなしで自動停止（0=自動停止なし） |
+| `<filename>` | 文字列 | 保存先ファイルパス（相対パスはファイル転送フォルダ基準） |
+| `<binary_flag>` | 整数 | 無視される（常にバイナリモードで保存） |
+| `<autostop_seconds>` | 整数 | 指定秒間データなしで自動停止（0 以下=無制限待機） |
 
-> **macOS 実装メモ**: 現在の macOS 版実装では第 1 引数をローカルディレクトリとして解釈し、内部で ZMODEM プロトコル受信に委譲する。`<binary_flag>` と `<autostop_seconds>` は無視される。Windows 版の「接続データを直接ファイルに保存」する動作とは異なる。
-
-**result**: 0 = 成功、1 = 失敗
+**result**: 0 = 正常完了、1 = タイムアウト（指定秒間データなし）
 
 ---
 
@@ -1762,7 +1800,7 @@ changedir '/tmp'
 
 ### `logopen`
 
-ログ記録を開始する。Windows 版 TTL 互換: 多段オプション形式で詳細制御。
+ログ記録を開始する。多段オプション形式で詳細制御。
 
 ```ttl
 logopen <filename> <binary> <append> [<plaintext> [<timestamp> [<hidestatus> [<include_screenbuf> [<timestamptype>]]]]]
@@ -1783,8 +1821,6 @@ logopen '/tmp/session.log' 1 0        ; バイナリ・新規作成
 | `[<hidestatus>]` | 整数 | 1=ステータスバーにログ表示をしない |
 | `[<include_screenbuf>]` | 整数 | 1=現在のスクリーンバッファをログに含める |
 | `[<timestamptype>]` | 整数 | タイムスタンプ形式（0=ローカル時刻, 1=UTC, 2=経過時間, 3=ログ開始からの経過時間） |
-
-> **macOS 実装メモ**: 現在の macOS 版実装では第 1 引数（`<filename>`）と第 2 引数（`<append>` として解釈）のみ対応。`<binary>`, `<plaintext>`, `<timestamp>` 等の追加オプションは無視される。Windows 版と同じ引数順でマクロを書いた場合、第 2 引数が `<binary>` ではなく `<append>` として解釈されるため注意が必要。
 
 ### `logclose`
 
@@ -1813,8 +1849,6 @@ logwrite 'Manual log entry'
 ### `logautoclosemode`
 
 切断時にログファイルを自動的に閉じるかどうかを設定。`logopen` の前に呼び出す。
-
-> **注意**: 現在の macOS 版実装ではコマンド名が `logautoclose`（`mode` なし）で登録されている。オリジナル Tera Term のコマンド名は `logautoclosemode`。
 
 ```ttl
 logautoclosemode 1    ; 自動クローズ ON
@@ -1898,11 +1932,16 @@ rotateright <intvar> <intval> <count>
 | `<count>` | 整数 | 回転ビット数 |
 
 ```ttl
-rotateleft b $80000000 4
-; b = $00000008
+rotateleft res $80000000 1
+; res = 1
 
-rotateright b $00000008 4
-; b = $80000000
+rotateright res 1 1
+; res = $80000000
+
+; 同じ変数に格納も可能
+val = $80000000
+rotateleft val val 1
+; val = 1
 ```
 
 ---
@@ -2157,21 +2196,95 @@ s = "double quotes"
 ## 25. macOS 固有の動作差異
 
 以下のコマンドは macOS 版でオリジナル Tera Term (Windows) と異なる動作をする。
+差異の理由を分類する。
 
-| コマンド | オリジナル (Windows) | macOS 版 |
-|----------|---------------------|----------|
-| `cygconnect` | Cygwin 環境への接続 | ローカルシェル（PTY）接続として動作（§12 参照） |
-| `setdate` | システム日付を変更 | 常に `result = -1` を返す（root 権限が必要なため変更不可） |
-| `settime` | システム時刻を変更 | 常に `result = -1` を返す（同上） |
-| `filelock` / `fileunlock` | ファイルの排他ロック | スタブ実装（macOS では advisory lock のみ） |
-| `getmodemstatus` | モデム制御線の状態取得 | スタブ実装（常に 0 を返す） |
-| `listbox` | `strdim` 配列で項目指定、0 起算、-1=キャンセル | 改行区切り文字列で項目指定 |
-| `getspecialfolder` | 文字列名で指定（CSIDL: `"Desktop"` 等） | 数値 ID で指定（0=Desktop, 1=Documents, 2=AppSupport, 3=Home） |
-| `strsplit` | `groupmatchstr1`〜`groupmatchstr9` に格納（最大 9） | 内部文字列配列変数に格納（制限なし） |
-| `strjoin` | `groupmatchstr1`〜`groupmatchstr9` を結合 | 文字列配列変数を結合 |
-| `filenamebox` | `filenamebox <msg> <flag> [<dir>]`、`inputstr` に格納 | `filenamebox <strvar> <title> [<save>]`、指定変数に格納 |
-| `getpassword` 等 | パスワードファイルに暗号化保存 | macOS Keychain に保存 |
-| `sendfile` | `sendfile <filename> <binary_flag>`（0=テキスト, 1=バイナリ） | `<binary_flag>` を無視し常にバイナリモードで送信 |
-| `logopen` | `logopen <filename> <binary> <append> [plaintext [timestamp ...]]` | 第 2 引数を `<append>` として解釈（`<binary>` 以降のオプション未対応） |
-| `recvfile` | `recvfile <filename> <binary_flag> <autostop_seconds>` | 第 1 引数をディレクトリとして ZMODEM 受信に委譲（`<binary_flag>`, `<autostop>` 未対応） |
-| `logautoclosemode` | コマンド名は `logautoclosemode` | 実装では `logautoclose`（`mode` なし）で登録 |
+### 分類凡例
+
+| 分類 | 意味 |
+|------|------|
+| **OS** | macOS / Windows の OS レベルの違いに起因（API・権限・概念の非互換） |
+| **安全** | セキュリティ向上を目的とした意図的な変更 |
+
+### 差異一覧
+
+| コマンド | 分類 | オリジナル (Windows) | macOS 版 | 差異の理由 |
+|----------|:----:|---------------------|----------|-----------|
+| `cygconnect` | OS | Cygwin 環境への接続 | ローカルシェル（PTY）接続として動作（§12 参照） | macOS に Cygwin は存在しない。同等のローカルシェル接続を PTY 経由で提供する。 |
+| `setdate` | OS | システム日付を変更 | 常に `result = -1` を返す | macOS では root 権限なしにシステム日付を変更できない。サンドボックス環境では原理的に不可。 |
+| `settime` | OS | システム時刻を変更 | 常に `result = -1` を返す | 同上。 |
+| `filelock` / `fileunlock` | OS | ファイルの排他ロック | スタブ実装（常に `result = 0`） | macOS のファイルロックは advisory lock（`flock`）のみで、Windows の mandatory lock と互換性がない。TTL スクリプトの互換性のためスタブで受け入れる。 |
+| `getmodemstatus` | OS | モデム制御線（DSR, CTS 等）の状態取得 | スタブ実装（常に 0 を返す） | macOS の PTY にはモデム制御線の概念がない。シリアルポート直接接続は未対応。 |
+| `getspecialfolder` | OS | 文字列名で指定（CSIDL: `"Desktop"` 等） | 数値 ID で指定（0=Desktop, 1=Documents, 2=AppSupport, 3=Home） | Windows の CSIDL 定数体系が macOS に存在しない。`NSSearchPathForDirectoriesInDomains` による macOS ネイティブなフォルダ解決に置換した。 |
+| `getpassword` 等 | 安全 | パスワードファイルに暗号化保存・復号 | macOS Keychain に保存。XPC 経由で安全に送信。 | macOS の Keychain はOS レベルの暗号化ストレージを提供し、ファイルベースの自前暗号化よりセキュアかつ OS のパスワード管理と統合される。引数の互換性（`filename`, `keyname`）は維持し、内部で `filename:keyname` をアカウント名として Keychain に格納する。 |
+
+---
+
+## 26. 実装と仕様の差異一覧（要修正）
+
+以下は本ドキュメント（TTLCommandReference.md）の仕様と実際の Swift 実装（MacroRunner.swift / TTLInterpreter.swift）を比較して検出した差異の一覧。
+§25 の OS/安全による意図的差異とは異なり、修正すべき実装バグまたはドキュメント誤りである。
+
+### 分類凡例
+
+| 分類 | 意味 |
+|------|------|
+| **MR** | MacroRunner.swift（XPC プロセス側）のみの差異 |
+| **TI** | TTLInterpreter.swift（インプロセス側）のみの差異 |
+| **両方** | 両インタプリタ共通の差異 |
+| **Doc** | ドキュメント記述自体の誤り（実装が正しい） |
+
+### 26.1 引数の順序・形式の不一致
+
+| コマンド | 分類 | 仕様（本ドキュメント） | 実装 | 備考 |
+|----------|:----:|----------------------|------|------|
+| `getenv` | MR | `getenv <envname> <strvar>` | `args[0]`=destVar, `args[1]`=envName（逆順） | TTLInterpreter は仕様通り |
+| `fileopen` | MR | `fileopen <handle> <filename> <append> [<readonly>]` — append: 0=先頭, 1=末尾 | mode 列挙（0=read, 1=write, 2=rw, 3=append）で動作 | TTLInterpreter は仕様通り |
+| `filestat` | MR | `filestat <filename> <size> [<mtime> [<drive>]]` | `args[0]`=destVar, `args[1]`=filePath（逆順） | TTLInterpreter は仕様通り |
+| `getfileattr` | MR | `getfileattr <filename>` — result に属性値 | `args[0]`=destVar, `args[1]`=filePath（2引数、result ではなく変数に格納） | TTLInterpreter も別形式 `(filename, intvar)` |
+| `getfileattr` | TI | `getfileattr <filename>` — result に属性値 | `(filename, intvar)` の 2 引数（result ではなく intvar に格納） | 仕様では result のみ |
+| `dirnamebox` | MR | `dirnamebox <strvar> <title>` | `args[0]`=message, `args[1]`=defaultDir（strvar なし、inputstr に格納） | TTLInterpreter は仕様通り |
+
+### 26.2 result / 戻り値の不一致
+
+| コマンド | 分類 | 仕様（本ドキュメント） | 実装 | 備考 |
+|----------|:----:|----------------------|------|------|
+| `ifdefined` | MR | `result` に 1（存在）/ 0（不存在）を設定 | 条件ブロック制御（`ifNest += 1, elseFlag`）を操作。`result` を設定しない | TTLInterpreter は仕様通り |
+| `recvln` | TI | result: 0=データなし, 1=受信成功 | result: 0=受信成功, 1=データなし（反転） | MacroRunner は仕様通り |
+| `testlink` | 両方 | result: 0=未リンク, 1=リンク済み・未接続, 2=リンク済み・接続中 | 0 または 2 のみ返す（1 を返せない） | リンク状態と接続状態を区別する機構がない |
+| `clipb2var` | 両方 | result: 0=データなし, 1=成功, 2=切り詰め | result を設定しない | offset パラメータも未対応（後述） |
+| `var2clipb` | 両方 | result: 0=失敗, 1=成功 | result を設定しない | |
+| `getver` | TI | 文字列変数に `'1.0.0'` 等のバージョン文字列を格納 | `getIntVar()` で整数変数に `50000` を格納 | MacroRunner は XPC 経由で文字列を返し仕様通り |
+
+### 26.3 未対応のパラメータ・機能
+
+| コマンド | 分類 | 仕様（本ドキュメント） | 実装 | 備考 |
+|----------|:----:|----------------------|------|------|
+| `clipb2var` | 両方 | 第 2 引数 `[<offset>]`（チャンク分割読み取り） | offset パラメータ未対応 | |
+| `expandenv` | 両方 | 2 引数形式 `expandenv <strvar> <strval>` | 1 引数形式のみ対応 | |
+| `filestat` | 両方 | 省略可能な `[<mtime> [<drive>]]` パラメータ | size のみ取得。mtime / drive 未対応 | |
+| `fileseekback` | TI | `fileseekback <handle> <bytes>` — 指定バイト数後退 | `filemarkptr` で記録した位置へ戻る（bytes 引数を無視） | MacroRunner は仕様通り |
+
+### 26.4 送信動作の差異
+
+| コマンド | 分類 | 仕様（本ドキュメント） | 実装 | 備考 |
+|----------|:----:|----------------------|------|------|
+| `sendln` | MR | 文字列 + CR を送信 | `\r\n`（CR+LF）を付加 | TTLInterpreter は delegate 経由で CR のみ |
+
+### 26.5 ドキュメント記述の誤り
+
+| コマンド | 分類 | 現在の記述 | 正しい仕様 | 備考 |
+|----------|:----:|----------|----------|------|
+| `logrotate` | Doc | "引数なし" | 引数あり: `logrotate <mode> [<value>]`（mode: "size"/"rotate"/"halt"） | 両実装とも引数を取る |
+| `loginfo` | Doc | "引数なし" | MacroRunner は引数なし（result + inputstr）、TTLInterpreter は `<strvar>` を取る | TTLInterpreter 側も要修正の可能性 |
+
+### 26.6 未ドキュメントコマンド
+
+以下のコマンドは両インタプリタのディスパッチテーブルに存在するが、本ドキュメントに記載がない。
+
+| コマンド | 実装内容 | 備考 |
+|----------|---------|------|
+| `inc` | 整数変数をインクリメント（`inc <intvar>`） | |
+| `dec` | 整数変数をデクリメント（`dec <intvar>`） | |
+| `recv` | データを受信（タイムアウト付き）。result + inputstr に格納 | `recvln` の行区切りなし版 |
+| `waitmatch` | `waitregex` のエイリアス | |
+| `settimeout` / `timeout` | タイムアウト値を設定（`settimeout <seconds>`）。システム変数 `timeout` にも反映 | `timeout` 変数への代入と同等 |

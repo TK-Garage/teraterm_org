@@ -281,11 +281,11 @@ else
 endif
 filewriteln fh msg
 
-; 1-20 strreplace
+; 1-20 strreplace (4-arg: strvar, index, regex, newstr)
 test_num = test_num + 1
 s = 'foo bar foo baz foo'
-strreplace s 'foo' 'qux'
-if s = 'qux bar qux baz qux' then
+strreplace s 1 'foo' 'qux'
+if s = 'qux bar foo baz foo' then
   pass_count = pass_count + 1
   sprintf2 msg 'PASS [%d] strreplace' test_num
 else
@@ -294,10 +294,10 @@ else
 endif
 filewriteln fh msg
 
-; 1-21 strtrim
+; 1-21 strtrim (trimchars)
 test_num = test_num + 1
 s = '   spaces   '
-strtrim s
+strtrim s ' '
 if s = 'spaces' then
   pass_count = pass_count + 1
   sprintf2 msg 'PASS [%d] strtrim' test_num
@@ -307,10 +307,10 @@ else
 endif
 filewriteln fh msg
 
-; 1-22 strsplit / strjoin (macOS: strArray方式)
+; 1-22 strsplit / strjoin (groupmatchstr方式)
 test_num = test_num + 1
-strsplit 'a,b,c,d' ',' parts
-strjoin rejoined parts ','
+strsplit 'a,b,c,d' ','
+strjoin rejoined ',' 4
 if rejoined = 'a,b,c,d' then
   pass_count = pass_count + 1
   sprintf2 msg 'PASS [%d] strsplit/strjoin round-trip' test_num
@@ -497,11 +497,11 @@ else
 endif
 filewriteln fh msg
 
-; 2-14 rotateleft / rotateright
+; 2-14 rotateleft / rotateright (3-arg)
 test_num = test_num + 1
 val = 1
-rotateleft val 4
-rotateright val 4
+rotateleft val val 4
+rotateright val val 4
 if val = 1 then
   pass_count = pass_count + 1
   sprintf2 msg 'PASS [%d] rotateL/R round-trip' test_num
