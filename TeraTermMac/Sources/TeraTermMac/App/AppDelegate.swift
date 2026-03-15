@@ -11,6 +11,11 @@
 import AppKit
 import UniformTypeIdentifiers
 
+/// Wrapper to allow capturing a notification observer token without mutating a captured variable.
+private final class ObserverTokenHolder: @unchecked Sendable {
+    var token: NSObjectProtocol?
+}
+
 // MARK: - Connection Dialog Helper (radio button group controller)
 
 private class ConnectionDialogHelper: NSObject {
@@ -152,20 +157,20 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         wc.showWindow(self)
 
         // Clean up when window closes — store token for explicit removal
-        var token: NSObjectProtocol?
-        token = NotificationCenter.default.addObserver(
+        let tokenHolder = ObserverTokenHolder()
+        tokenHolder.token = NotificationCenter.default.addObserver(
             forName: NSWindow.willCloseNotification,
             object: wc.window,
             queue: .main
         ) { [weak self] notification in
             self?.windowControllers.removeAll { $0.window == notification.object as? NSWindow }
             // Remove this observer itself to prevent accumulation
-            if let token = token {
+            if let token = tokenHolder.token {
                 NotificationCenter.default.removeObserver(token)
                 self?.windowCloseObservers.removeAll { $0 === token }
             }
         }
-        if let token = token {
+        if let token = tokenHolder.token {
             windowCloseObservers.append(token)
         }
 
