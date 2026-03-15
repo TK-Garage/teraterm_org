@@ -476,10 +476,10 @@ strmatch 'Error 404: Not Found' '([0-9]+)'
 文字列を整数に変換。
 
 ```ttl
-str2int '42' val
+str2int val '42'
 ; val = 42, result = 1
 
-str2int '$FF' hex_val
+str2int hex_val '$FF'
 ; hex_val = 255, result = 1
 ```
 
@@ -499,7 +499,7 @@ int2str buf 1234
 文字列の先頭文字をコードに変換。
 
 ```ttl
-str2code 'A' code
+str2code code 'A'
 ; code = 65
 ```
 
@@ -508,7 +508,7 @@ str2code 'A' code
 文字コードを文字列に変換。
 
 ```ttl
-code2str 65 ch
+code2str ch 65
 ; ch = 'A'
 ```
 
@@ -544,11 +544,18 @@ strremove s 6 6
 
 ```ttl
 s = 'foo bar foo'
-strreplace s 'foo' 'baz'
+strreplace s 1 'foo' 'baz'
 ; s = 'baz bar baz', result = 1
 ```
 
-**result**: 1 = 置換あり、0 = マッチなし
+| 引数 | 型 | 説明 |
+|------|------|------|
+| `<strvar>` | 文字列変数 | 対象 |
+| `<index>` | 整数 | 検索開始位置（1 起算） |
+| `<regex>` | 文字列 | 正規表現パターン |
+| `<newstr>` | 文字列 | 置換文字列 |
+
+**result**: 1 = 置換あり、0 = マッチなし、-1 = 無効な正規表現
 
 ### `strspecial`
 
@@ -562,30 +569,41 @@ strspecial s
 
 ### `strtrim`
 
-前後の空白（または指定文字）を除去。
+前後の指定文字を除去。両端からトリムする。
 
 ```ttl
 s = '  hello  '
-strtrim s             ; 両端トリム → 'hello'
-strtrim s ' ' 1       ; 左のみ
-strtrim s ' ' 2       ; 右のみ
+strtrim s ' '
+; s = 'hello'
+
+s = '##test##'
+strtrim s '#'
+; s = 'test'
 ```
 
 | 引数 | 型 | 説明 |
 |------|------|------|
 | `<strvar>` | 文字列変数 | 対象 |
-| `[<chars>]` | 文字列 | 除去する文字（省略時: 空白） |
-| `[<trimtype>]` | 整数 | 0=両端, 1=左, 2=右 |
+| `<trimchars>` | 文字列 | 除去する文字セット |
 
 ### `strsplit`
 
 区切り文字で分割。
 
+> **macOS 固有動作**: オリジナル Tera Term では `groupmatchstr1`〜`groupmatchstr9` に格納される（最大 9 分割）。macOS 版では内部の文字列配列に格納される（§25 参照）。
+
 ```ttl
-strsplit 'a,b,c,d' ','
+strsplit 'a,b,c,d' ',' destarray
 ; result = 4
-; groupmatchstr1='a', groupmatchstr2='b', ...
+; オリジナル TT: groupmatchstr1='a', groupmatchstr2='b', ...
+; macOS 版: destarray に配列として格納
 ```
+
+| 引数 | 型 | 説明 |
+|------|------|------|
+| `<string>` | 文字列 | 分割する文字列 |
+| `<separator>` | 文字列 | 区切り文字 |
+| `<destvar>` | 変数 | 格納先（macOS 版） |
 
 **result**: 分割された要素数
 
@@ -593,10 +611,18 @@ strsplit 'a,b,c,d' ','
 
 区切り文字で結合。
 
+> **macOS 固有動作**: オリジナル Tera Term では `groupmatchstr1`〜`groupmatchstr9` を結合する（`strsplit` の逆操作）。macOS 版では文字列配列変数を指定して結合する（§25 参照）。
+
 ```ttl
-strjoin buf ',' 'apple' 'banana' 'cherry'
-; buf = 'apple,banana,cherry'
+strjoin buf srcarray ','
+; buf = srcarray の各要素をカンマで結合した文字列
 ```
+
+| 引数 | 型 | 説明 |
+|------|------|------|
+| `<destvar>` | 文字列変数 | 結合結果の格納先 |
+| `<srcvar>` | 変数 | 元の配列変数（macOS 版） |
+| `<separator>` | 文字列 | 区切り文字 |
 
 ### `tolower`
 
@@ -648,7 +674,7 @@ sprintf2 buf 'Error %d: %s' 404 'Not Found'
 
 ```ttl
 fileopen fh '/tmp/data.txt' 0
-; fh にファイルハンドル、result = 0 (成功)
+; fh にファイルハンドル（失敗時 -1）
 
 fileopen fh '/tmp/log.txt' 1     ; 追記モード
 fileopen fh '/tmp/data.txt' 0 1  ; 読み取り専用
@@ -658,10 +684,10 @@ fileopen fh '/tmp/data.txt' 0 1  ; 読み取り専用
 |------|------|------|
 | `<handlevar>` | 整数変数 | ファイルハンドル格納先 |
 | `<filename>` | 文字列 | ファイルパス |
-| `<append>` | 整数 | 0=新規/上書き, 1=追記 |
+| `<append>` | 整数 | 0=ファイルポインタを先頭に設定, 1=ファイルポインタを末尾に設定（追記） |
 | `[<readonly>]` | 整数 | 1=読み取り専用 |
 
-**result**: 0 = 成功、-1 = エラー
+ファイルが存在しない場合は新規作成される。失敗時は `<handlevar>` に -1 が設定される。
 
 ### `fileclose`
 
@@ -678,8 +704,12 @@ filereadln fh line
 ; line に読んだ行、result = 0 (成功) or 1 (EOF)
 ```
 
+| 引数 | 型 | 説明 |
+|------|------|------|
+| `<handle>` | 整数 | ファイルハンドル |
+| `<strvar>` | 文字列変数 | 読み取った行の格納先 |
+
 **result**: 0 = 成功、1 = EOF
-**inputstr**: 読み取った行
 
 ### `fileread`
 
@@ -734,11 +764,18 @@ fileconcat '/tmp/dest.txt' '/tmp/source.txt'
 
 ### `filesearch`
 
-ファイル内を検索。
+ファイルの存在を確認する。
 
 ```ttl
-filesearch '/tmp/data.txt' 'pattern'
+filesearch '/tmp/data.txt'
+; result = 1 (存在する) or 0 (存在しない)
 ```
+
+| 引数 | 型 | 説明 |
+|------|------|------|
+| `<filename>` | 文字列 | 確認するファイルパス |
+
+**result**: 1 = ファイルが存在する、0 = 存在しない
 
 ### `fileseek` / `fileseekback`
 
@@ -909,16 +946,18 @@ endif
 
 ### `listbox`
 
-リスト選択ダイアログ。項目は改行区切り。
+リスト選択ダイアログ。
+
+> **macOS 固有動作**: オリジナル Tera Term では `strdim` で作成した文字列配列を渡し、戻り値は 0 起算（-1 = キャンセル）。macOS 版では改行区切りの文字列を `<message>` に渡す簡略化方式を使用する（§25 参照）。
 
 ```ttl
 listbox 'Apple\nBanana\nCherry' 'Select Fruit'
-if result > 0 then
+if result >= 0 then
   ; inputstr に選択項目
 endif
 ```
 
-**result**: 選択インデックス（1 起算）、0 = キャンセル
+**result**: 選択インデックス（0 起算）、-1 = キャンセル
 **inputstr**: 選択された項目
 
 ### `statusbox`
@@ -939,6 +978,8 @@ closesbox
 
 ファイル選択ダイアログ。
 
+> **macOS 固有動作**: オリジナル Tera Term では `filenamebox <message> <flag> [<initdir>]` で結果を `inputstr` に格納するが、macOS 版では第1引数に格納先変数を指定する（§25 参照）。
+
 ```ttl
 filenamebox filepath 'Select a file'
 if result == 1 then
@@ -954,6 +995,8 @@ filenamebox filepath 'Save as' 1
 | `<strvar>` | 文字列変数 | 選択パス格納先 |
 | `[<title>]` | 文字列 | タイトル |
 | `[<savemode>]` | 整数 | 0=開く, 1=保存 |
+
+**result**: 1 = ファイル選択、0 = キャンセル
 
 ### `dirnamebox`
 
@@ -1035,11 +1078,13 @@ gettitle title
 
 ### `getver`
 
-バージョン番号を取得（`major*10000 + minor*100 + patch`）。
+バージョン文字列を取得する。
+
+> **macOS 固有動作**: オリジナル Tera Term ではバージョンを文字列（例: `'4.56'`）で返すが、macOS 版ではアプリの CFBundleShortVersionString を返す。
 
 ```ttl
 getver ver
-; ver = 50000  (5.0.0 の場合)
+; ver = '1.0.0'
 ```
 
 ### `gethostname`
@@ -1060,20 +1105,24 @@ getttdir appdir
 
 ### `getspecialfolder`
 
-システム特殊フォルダのパスを取得。
+システム特殊フォルダのパスを取得する。
+
+> **macOS 固有動作**: オリジナル Tera Term では `<foldertype>` に文字列名（`"Desktop"`, `"MyDocuments"` 等の CSIDL 名）を指定するが、macOS 版では数値 ID を使用する（§25 参照）。
 
 ```ttl
 getspecialfolder desktop 0    ; デスクトップ
-getspecialfolder docs 2       ; Documents
+getspecialfolder docs 1       ; Documents
 getspecialfolder downloads 3  ; Downloads
 ```
 
 | フォルダ番号 | パス |
 |------------|------|
 | 0 | デスクトップ |
-| 1 | Application Support |
-| 2 | Documents |
-| 3 | Downloads |
+| 1 | Documents |
+| 2 | Application Support |
+| 3 | Home ディレクトリ |
+
+**result**: 1 = 成功、0 = 失敗
 
 ### `getipv4addr` / `getipv6addr`
 
@@ -1084,10 +1133,20 @@ getipv6addr ip6
 
 ### `getfileattr` / `setfileattr`
 
+ファイル属性を取得する。
+
+> **macOS 固有動作**: オリジナル Tera Term では 1 引数で `result` に属性値を格納するが、macOS 版では 2 引数で変数に格納する（§25 参照）。
+
 ```ttl
 getfileattr '/tmp/file.txt' attr
 ; attr: bit 0 = 読み取り専用、bit 4 = ディレクトリ
+; result: 0 = 成功、-1 = エラー
 ```
+
+| 引数 | 型 | 説明 |
+|------|------|------|
+| `<filename>` | 文字列 | ファイルパス |
+| `<intvar>` | 整数変数 | 属性値の格納先 |
 
 ### `getmodemstatus`
 
@@ -1575,8 +1634,13 @@ logwrite 'Manual log entry'
 
 ### `logautoclosemode`
 
+切断時にログファイルを自動的に閉じるかどうかを設定。`logopen` の前に呼び出す。
+
+> **注意**: 現在の macOS 版実装ではコマンド名が `logautoclose`（`mode` なし）で登録されている。オリジナル Tera Term のコマンド名は `logautoclosemode`。
+
 ```ttl
-logautoclosemode 1
+logautoclosemode 1    ; 自動クローズ ON
+logautoclosemode 0    ; OFF
 ```
 
 ---
@@ -1663,32 +1727,67 @@ crc32file result '/tmp/data.bin'
 
 ## 20. パスワード (Keychain)
 
-> macOS 版ではスタブ実装です。
+> **macOS 固有動作**: オリジナル Tera Term ではパスワードファイルに暗号化して保存するが、macOS 版では **macOS Keychain** を使用してセキュアに保存する。引数の `<filename>` と `<keyname>` を組み合わせた `filename:keyname` を Keychain のアカウント名として使用する。
 
 ### `getpassword` / `getpassword2`
 
+Keychain からパスワードを取得する。該当エントリがない場合はパスワード入力ダイアログを表示し、入力されたパスワードを Keychain に保存する。
+
 ```ttl
-getpassword pass 'Enter password for server'
+getpassword 'password.dat' 'myserver' passvar
+; passvar にパスワードが格納される
 ```
+
+| 引数 | 型 | 説明 |
+|------|------|------|
+| `<filename>` | 文字列 | パスワードファイル名（Keychain アカウントのプレフィクス） |
+| `<keyname>` | 文字列 | パスワード識別名 |
+| `<varname>` | 文字列変数 | パスワード格納先 |
+
+**result**: 1 = 成功、0 = 失敗
 
 ### `setpassword` / `setpassword2`
 
+Keychain にパスワードを保存する。
+
 ```ttl
-setpassword 'myserver' 'secret123'
+setpassword 'password.dat' 'myserver' 'secret123'
 ```
+
+| 引数 | 型 | 説明 |
+|------|------|------|
+| `<filename>` | 文字列 | パスワードファイル名 |
+| `<keyname>` | 文字列 | パスワード識別名 |
+| `<password>` | 文字列 | 保存するパスワード |
 
 ### `delpassword` / `delpassword2`
 
+Keychain からパスワードを削除する。
+
 ```ttl
-delpassword 'myserver'
+delpassword 'password.dat' 'myserver'
 ```
+
+| 引数 | 型 | 説明 |
+|------|------|------|
+| `<filename>` | 文字列 | パスワードファイル名 |
+| `<keyname>` | 文字列 | パスワード識別名 |
 
 ### `ispassword` / `ispassword2`
 
+Keychain にパスワードが存在するか確認する。
+
 ```ttl
-ispassword 'myserver'
+ispassword 'password.dat' 'myserver'
 ; result = 1 (存在) or 0
 ```
+
+| 引数 | 型 | 説明 |
+|------|------|------|
+| `<filename>` | 文字列 | パスワードファイル名 |
+| `<keyname>` | 文字列 | パスワード識別名 |
+
+**result**: 1 = 存在する、0 = 存在しない
 
 ---
 
@@ -1777,6 +1876,7 @@ settime '14:30:00'
 | `mtimeout` | 整数 | タイムアウトの追加ミリ秒部分 |
 | `paramcnt` | 整数 | マクロに渡された引数の数 |
 | `param1`〜`param9` | 文字列 | マクロに渡された引数 |
+| `groupmatchstr1`〜`groupmatchstr9` | 文字列 | `waitregex`/`strmatch` のキャプチャグループ、`strsplit` の分割結果（オリジナル TT） |
 
 ---
 
@@ -1854,3 +1954,11 @@ s = "double quotes"
 | `settime` | システム時刻を変更 | 常に `result = -1` を返す（同上） |
 | `filelock` / `fileunlock` | ファイルの排他ロック | スタブ実装（macOS では advisory lock のみ） |
 | `getmodemstatus` | モデム制御線の状態取得 | スタブ実装（常に 0 を返す） |
+| `listbox` | `strdim` 配列で項目指定、0 起算、-1=キャンセル | 改行区切り文字列で項目指定 |
+| `getspecialfolder` | 文字列名で指定（CSIDL: `"Desktop"` 等） | 数値 ID で指定（0=Desktop, 1=Documents, 2=AppSupport, 3=Home） |
+| `strsplit` | `groupmatchstr1`〜`groupmatchstr9` に格納（最大 9） | 内部文字列配列変数に格納（制限なし） |
+| `strjoin` | `groupmatchstr1`〜`groupmatchstr9` を結合 | 文字列配列変数を結合 |
+| `filenamebox` | `filenamebox <msg> <flag> [<dir>]`、`inputstr` に格納 | `filenamebox <strvar> <title> [<save>]`、指定変数に格納 |
+| `getfileattr` | 1 引数、`result` に属性値を格納 | 2 引数、指定変数に属性値を格納 |
+| `getpassword` 等 | パスワードファイルに暗号化保存 | macOS Keychain に保存 |
+| `logautoclosemode` | コマンド名は `logautoclosemode` | 実装では `logautoclose`（`mode` なし）で登録 |
