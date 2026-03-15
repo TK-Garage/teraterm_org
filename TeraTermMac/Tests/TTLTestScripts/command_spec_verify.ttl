@@ -532,11 +532,13 @@ filewriteln fh msg
 filewriteln fh ''
 
 ; ############################################################
-;  SECTION 9 — getfileattr (2引数: filepath, destVar)
+;  SECTION 9 — getfileattr (2引数: filepath, destVar — ドキュメント準拠)
 ; ############################################################
 filewriteln fh '=== Section 9: getfileattr ==='
 
 ; 9-1 regular file
+; NOTE: ドキュメント準拠: getfileattr <filepath> <destVar>
+; (現在の実装は逆順 destVar,filepath だが後で修正予定)
 test_num = test_num + 1
 tmpf = '/tmp/ttl_spec_attr.txt'
 fileopen afh tmpf 0

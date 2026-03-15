@@ -1236,7 +1236,7 @@ else
 endif
 filewriteln fh msg
 
-; 8-7 filestat
+; 8-7 filestat (doc: filepath first, destVar second)
 test_num = test_num + 1
 statf = '/tmp/ttl_stat_test.txt'
 fileopen stfh statf 0
