@@ -548,20 +548,25 @@ strremove s 6 6
 
 ### `strreplace`
 
-正規表現で置換。
+文字列を置換。全出現箇所を置換する。
 
 ```ttl
 s = 'foo bar foo'
-strreplace s 1 'foo' 'baz'
+strreplace s 'foo' 'baz'
 ; s = 'baz bar baz', result = 1
+
+s = 'remove--dashes'
+strreplace s '--' ''
+; s = 'removedashes'（空文字列で削除）
 ```
 
 | 引数 | 型 | 説明 |
 |------|------|------|
-| `<strvar>` | 文字列変数 | 対象 |
-| `<index>` | 整数 | 検索開始位置（1 起算） |
-| `<regex>` | 文字列 | 正規表現パターン |
-| `<newstr>` | 文字列 | 置換文字列 |
+| `<strvar>` | 文字列変数 | 対象（インプレース変更） |
+| `<target>` | 文字列 | 検索する文字列 |
+| `<replacement>` | 文字列 | 置換文字列（空で削除） |
+
+> **注意**: オリジナル Tera Term では `strreplace <strvar> <index> <regex> <newstr>` の 4 引数で正規表現を使用するが、macOS 版では 3 引数の単純文字列置換（§25 参照）。
 
 **result**: 1 = 置換あり、0 = マッチなし、-1 = 無効な正規表現
 
@@ -577,22 +582,28 @@ strspecial s
 
 ### `strtrim`
 
-前後の指定文字を除去。両端からトリムする。
+前後の空白を除去。トリム方向を指定可能。
 
 ```ttl
 s = '  hello  '
-strtrim s ' '
-; s = 'hello'
+strtrim s
+; s = 'hello'（両端）
 
-s = '##test##'
-strtrim s '#'
-; s = 'test'
+s = '   leading'
+strtrim s 1
+; s = 'leading'（前方のみ）
+
+s = 'trailing   '
+strtrim s 2
+; s = 'trailing'（後方のみ）
 ```
 
 | 引数 | 型 | 説明 |
 |------|------|------|
 | `<strvar>` | 文字列変数 | 対象 |
-| `<trimchars>` | 文字列 | 除去する文字セット |
+| `[<trimType>]` | 整数 | 0=両端（デフォルト）、1=前方のみ、2=後方のみ |
+
+> **注意**: オリジナル Tera Term では `strtrim <strvar> <trimchars>` で除去文字セット（文字列）を指定するが、macOS 版では整数のトリム方向を指定する（§25 参照）。
 
 ### `strsplit`
 
@@ -1884,26 +1895,29 @@ setexitcode 0
 
 ### `rotateleft` / `rotateright`
 
-ビット回転（32ビット整数の循環シフト）。
+ビット回転（32ビット整数の循環シフト）。変数の値をインプレースで回転する。
 
 ```ttl
-rotateleft <intvar> <intval> <count>
-rotateright <intvar> <intval> <count>
+rotateleft <intvar> <count>
+rotateright <intvar> <count>
 ```
 
 | 引数 | 型 | 説明 |
 |------|------|------|
-| `<intvar>` | 整数変数 | 結果の格納先 |
-| `<intval>` | 整数 | 回転する値 |
+| `<intvar>` | 整数変数 | 回転する値（結果もここに格納） |
 | `<count>` | 整数 | 回転ビット数 |
 
 ```ttl
-rotateleft b $80000000 4
-; b = $00000008
+val = $80000000
+rotateleft val 1
+; val = 1
 
-rotateright b $00000008 4
-; b = $80000000
+val = 1
+rotateright val 1
+; val = $80000000
 ```
+
+> **注意**: オリジナル Tera Term では 3 引数（`rotateleft <intvar> <intval> <count>`）で入力と出力が別変数だが、macOS 版では 2 引数でインプレース操作（§25 参照）。
 
 ---
 
@@ -2175,3 +2189,6 @@ s = "double quotes"
 | `logopen` | `logopen <filename> <binary> <append> [plaintext [timestamp ...]]` | 第 2 引数を `<append>` として解釈（`<binary>` 以降のオプション未対応） |
 | `recvfile` | `recvfile <filename> <binary_flag> <autostop_seconds>` | 第 1 引数をディレクトリとして ZMODEM 受信に委譲（`<binary_flag>`, `<autostop>` 未対応） |
 | `logautoclosemode` | コマンド名は `logautoclosemode` | 実装では `logautoclose`（`mode` なし）で登録 |
+| `strreplace` | `strreplace <strvar> <index> <regex> <newstr>`（4 引数、正規表現） | `strreplace <strvar> <target> <replacement>`（3 引数、単純文字列置換） |
+| `strtrim` | `strtrim <strvar> <trimchars>`（除去文字セットを文字列で指定） | `strtrim <strvar> [<trimType>]`（整数: 0=両端, 1=前方, 2=後方） |
+| `rotateleft` / `rotateright` | `rotateleft <intvar> <intval> <count>`（3 引数、入出力別変数） | `rotateleft <intvar> <count>`（2 引数、インプレース操作） |
