@@ -165,6 +165,7 @@ class MacroRunner {
     private var currentTransferProtocol: String = ""
     private var currentTransferDirection: String = ""
     private var currentTransferPath: String = ""
+    private var transferStartTime: Date?
 
     // MARK: - Keychain
 
@@ -858,7 +859,7 @@ class MacroRunner {
         case "findfirst":   cmdFindFirst(args) // [IMPLEMENTED]
         case "findnext":    cmdFindNext(args) // [IMPLEMENTED]
         case "findclose":   cmdFindClose() // [IMPLEMENTED]
-        case "foldercreate": cmdFolderCreate(args) // [IMPLEMENTED]
+        case "foldercreate", "makedir": cmdFolderCreate(args) // [IMPLEMENTED]
         case "folderdelete": cmdFolderDelete(args) // [IMPLEMENTED]
         case "foldersearch": cmdFolderSearch(args) // [IMPLEMENTED]
         case "changedir":   cmdChangeDir(args) // [IMPLEMENTED]
@@ -1593,6 +1594,10 @@ extension MacroRunner {
             guard let self = self, self.isRunning, !self.isCancelled else { return }
             if let str = String(data: data, encoding: .utf8) {
                 accumulated += str
+                // Trim buffer if exceeding max size, keeping the tail
+                if accumulated.count > MacroConstants.waitBufferMaxSize {
+                    accumulated = String(accumulated.suffix(MacroConstants.waitBufferMaxSize))
+                }
             }
 
             for (idx, pattern) in patterns.enumerated() {
@@ -1687,6 +1692,10 @@ extension MacroRunner {
             guard let self = self, self.isRunning, !self.isCancelled else { return }
             if let str = String(data: data, encoding: .utf8) {
                 accumulated += str
+                // Trim buffer if exceeding max size, keeping the tail
+                if accumulated.count > MacroConstants.waitBufferMaxSize {
+                    accumulated = String(accumulated.suffix(MacroConstants.waitBufferMaxSize))
+                }
             }
 
             for (idx, pattern) in patterns.enumerated() {
@@ -1788,6 +1797,10 @@ extension MacroRunner {
             guard let self = self, self.isRunning, !self.isCancelled else { return }
             if let str = String(data: data, encoding: .utf8) {
                 accumulated += str
+                // Trim buffer if exceeding max size, keeping the tail
+                if accumulated.count > MacroConstants.waitBufferMaxSize {
+                    accumulated = String(accumulated.suffix(MacroConstants.waitBufferMaxSize))
+                }
             }
 
             for (idx, pattern) in patterns.enumerated() {
@@ -3910,6 +3923,7 @@ extension MacroRunner {
         let option = args.count > 1 ? resolveString(args[1]) : ""
         cancelExecTimer()
         isTransferWaiting = true
+        transferStartTime = Date()
         currentTransferProtocol = proto
         currentTransferDirection = "send"
         currentTransferPath = localPath
@@ -3942,6 +3956,7 @@ extension MacroRunner {
         let localDir = args.isEmpty ? "" : resolveString(args[0])
         cancelExecTimer()
         isTransferWaiting = true
+        transferStartTime = Date()
         currentTransferProtocol = proto
         currentTransferDirection = "recv"
         currentTransferPath = localDir
@@ -3968,6 +3983,31 @@ extension MacroRunner {
     private func pollTransferStatus() {
         guard isRunning, !isCancelled, isTransferWaiting else { return }
 
+        // Check transfer timeout (default 600 seconds)
+        if let startTime = transferStartTime {
+            let elapsed = Date().timeIntervalSince(startTime)
+            if elapsed > MacroXPCEndpoint.defaultTransferTimeout {
+                isTransferWaiting = false
+                transferStartTime = nil
+                resultValue = -1
+                variables["result"] = .integer(-1)
+                onTransferProgress?("idle", 0, 0)
+                clientProxy?.cancelTransfer(reply: {})
+                let detail = TransferErrorDetail(
+                    protocolName: currentTransferProtocol,
+                    direction: currentTransferDirection,
+                    filePath: currentTransferPath,
+                    bytesTransferred: 0,
+                    totalBytes: 0,
+                    lineNumber: currentLineNumber
+                )
+                onTransferError?(detail)
+                reportError("\(currentTransferProtocol)\(currentTransferDirection): transfer timeout (\(Int(MacroXPCEndpoint.defaultTransferTimeout))s)")
+                scheduleNextLine()
+                return
+            }
+        }
+
         clientProxy?.getTransferStatus(reply: { [weak self] statusStr, bytesSent, totalBytes in
             guard let self = self else { return }
 
@@ -3978,6 +4018,7 @@ extension MacroRunner {
             switch status {
             case .done:
                 self.isTransferWaiting = false
+                self.transferStartTime = nil
                 self.resultValue = 0
                 self.variables["result"] = .integer(0)
                 self.onTransferProgress?("done", bytesSent, totalBytes)
@@ -3985,6 +4026,7 @@ extension MacroRunner {
 
             case .error:
                 self.isTransferWaiting = false
+                self.transferStartTime = nil
                 self.resultValue = -1
                 self.variables["result"] = .integer(-1)
                 self.onTransferProgress?("idle", 0, 0)
@@ -4002,6 +4044,7 @@ extension MacroRunner {
             case .idle:
                 // Transfer finished already
                 self.isTransferWaiting = false
+                self.transferStartTime = nil
                 self.resultValue = 0
                 self.variables["result"] = .integer(0)
                 self.onTransferProgress?("idle", 0, 0)

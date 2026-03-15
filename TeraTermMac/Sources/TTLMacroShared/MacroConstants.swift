@@ -38,4 +38,7 @@ public enum MacroConstants {
 
     /// Menu update interval when menu is hidden
     public static let menuHiddenUpdateInterval: TimeInterval = 1.0
+
+    /// Maximum buffer size for wait commands (1 MB)
+    public static let waitBufferMaxSize = 1_048_576
 }

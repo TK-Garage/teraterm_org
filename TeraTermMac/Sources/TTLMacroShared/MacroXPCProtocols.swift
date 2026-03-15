@@ -5,7 +5,7 @@
  *
  * XPC Protocol definitions for TeraTermMac ↔ TTLMacro communication.
  *
- * MacroClientProtocol: 56 methods (terminal ops, file transfer, broadcast)
+ * MacroClientProtocol: 64 methods (terminal ops, file transfer, broadcast)
  * MacroServiceProtocol: 13 methods (macro control + debugger)
  */
 
