@@ -631,7 +631,7 @@ endif
 filewriteln fh msg
 
 test_num = test_num + 1
-getenv 'HOME' home
+getenv home 'HOME'
 strlen home
 if result > 0 then
   sprintf2 msg 'PASS [%d] getenv HOME: "%s"' test_num home

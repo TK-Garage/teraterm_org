@@ -4,20 +4,17 @@
 ; This script isolates the strsplit/strjoin issue found in
 ; comprehensive_offline_stress.ttl (lines 312-313).
 ;
-; Root cause: strsplit and strjoin are called with incorrect
-; arguments.
-;
-; strsplit syntax:
-;   strsplit <source_string> <delimiter>
+; macOS strsplit syntax (differs from TeraTerm original):
+;   strsplit <source_string> <delimiter> <dest_array_var>
 ;   -> result = element count
-;   -> groupmatchstr1..groupmatchstr9 = split parts
+;   -> dest_array_var = strArray of split parts
 ;
-; strjoin syntax:
-;   strjoin <target_var> <delimiter> <str1> <str2> ...
-;   -> target_var = joined string
+; macOS strjoin syntax (differs from TeraTerm original):
+;   strjoin <dest_var> <src_array_var> <delimiter>
+;   -> dest_var = joined string
 ;
-; The bug: the script passes an extra arg 'parts' to strsplit,
-; and then tries to use uninitialized 'parts' in strjoin.
+; NOTE: TeraTerm original uses groupmatchstr1..9 and variadic
+; strjoin, but macOS implementation uses strArray variables.
 ; ============================================================
 
 logfile = '/tmp/ttl_debug_line312.log'
@@ -26,28 +23,27 @@ filewriteln fh '=== Debug: strsplit/strjoin issue ==='
 filewriteln fh ''
 
 ; --- Test 1: Reproduce the WRONG usage (commented out) ---
-; These lines mirror comprehensive_offline_stress.ttl lines 312-313.
-; Uncommenting will reproduce the error:
+; These are the TeraTerm-original syntax, NOT supported on macOS:
 ;
-; strsplit 'a,b,c,d' ',' parts        ; ERROR: 'parts' is extra arg
-; strjoin parts ',' rejoined           ; ERROR: 'parts' not initialized
+; strsplit 'a,b,c,d' ','                ; WRONG: needs 3 args (missing destArrayVar)
+; strjoin rejoined ',' groupmatchstr1 groupmatchstr2 ...  ; WRONG: variadic not supported
 ;
 filewriteln fh 'Test 1: WRONG usage (skipped to avoid error)'
 
-; --- Test 2: Correct strsplit usage ---
+; --- Test 2: Correct strsplit usage (macOS strArray) ---
 filewriteln fh ''
 filewriteln fh 'Test 2: Correct strsplit usage'
 
-strsplit 'a,b,c,d' ','
+strsplit 'a,b,c,d' ',' parts
 sprintf2 msg '  result (count) = %d' result
 filewriteln fh msg
-sprintf2 msg '  groupmatchstr1 = "%s"' groupmatchstr1
+sprintf2 msg '  parts[0] = "%s"' parts[0]
 filewriteln fh msg
-sprintf2 msg '  groupmatchstr2 = "%s"' groupmatchstr2
+sprintf2 msg '  parts[1] = "%s"' parts[1]
 filewriteln fh msg
-sprintf2 msg '  groupmatchstr3 = "%s"' groupmatchstr3
+sprintf2 msg '  parts[2] = "%s"' parts[2]
 filewriteln fh msg
-sprintf2 msg '  groupmatchstr4 = "%s"' groupmatchstr4
+sprintf2 msg '  parts[3] = "%s"' parts[3]
 filewriteln fh msg
 
 if result = 4 then
@@ -57,18 +53,18 @@ else
   filewriteln fh msg
 endif
 
-if groupmatchstr1 = 'a' then
-  filewriteln fh '  -> PASS: groupmatchstr1 = "a"'
+if parts[0] = 'a' then
+  filewriteln fh '  -> PASS: parts[0] = "a"'
 else
-  sprintf2 msg '  -> FAIL: groupmatchstr1 = "%s"' groupmatchstr1
+  sprintf2 msg '  -> FAIL: parts[0] = "%s"' parts[0]
   filewriteln fh msg
 endif
 
-; --- Test 3: Correct strjoin usage ---
+; --- Test 3: Correct strjoin usage (macOS strArray) ---
 filewriteln fh ''
 filewriteln fh 'Test 3: Correct strjoin usage'
 
-strjoin rejoined ',' groupmatchstr1 groupmatchstr2 groupmatchstr3 groupmatchstr4
+strjoin rejoined parts ','
 sprintf2 msg '  rejoined = "%s"' rejoined
 filewriteln fh msg
 
@@ -78,17 +74,16 @@ else
   filewriteln fh '  -> FAIL: round-trip mismatch'
 endif
 
-; --- Test 4: Verify dynamic count-based join ---
+; --- Test 4: Verify with different delimiter ---
 filewriteln fh ''
-filewriteln fh 'Test 4: Split then join with result count'
+filewriteln fh 'Test 4: Split then join with colon delimiter'
 
-strsplit 'x:y:z' ':'
+strsplit 'x:y:z' ':' items
 sprintf2 msg '  split count = %d' result
 filewriteln fh msg
 
-; Join only the number of parts that were split
 if result = 3 then
-  strjoin rebuilt ':' groupmatchstr1 groupmatchstr2 groupmatchstr3
+  strjoin rebuilt items ':'
   sprintf2 msg '  rebuilt = "%s"' rebuilt
   filewriteln fh msg
   if rebuilt = 'x:y:z' then

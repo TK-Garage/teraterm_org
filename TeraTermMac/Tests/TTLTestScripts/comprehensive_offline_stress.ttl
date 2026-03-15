@@ -237,10 +237,10 @@ endif
 filewriteln fh msg
 
 ; 1-17 str2code / code2str
-; str2code packs up to 4 bytes big-endian: 'A' -> $41000000
+; str2code returns Unicode scalar value: 'A' -> 65
 test_num = test_num + 1
-str2code 'A' code
-if code = $41000000 then
+str2code code 'A'
+if code = 65 then
   code2str cs code
   if cs = 'A' then
     pass_count = pass_count + 1
@@ -251,7 +251,7 @@ if code = $41000000 then
   endif
 else
   fail_count = fail_count + 1
-  sprintf2 msg 'FAIL [%d] str2code expected $41000000 got %d' test_num code
+  sprintf2 msg 'FAIL [%d] str2code expected 65 got %d' test_num code
 endif
 filewriteln fh msg
 
@@ -307,10 +307,10 @@ else
 endif
 filewriteln fh msg
 
-; 1-22 strsplit / strjoin
+; 1-22 strsplit / strjoin (macOS: strArray方式)
 test_num = test_num + 1
-strsplit 'a,b,c,d' ','
-strjoin rejoined ',' groupmatchstr1 groupmatchstr2 groupmatchstr3 groupmatchstr4
+strsplit 'a,b,c,d' ',' parts
+strjoin rejoined parts ','
 if rejoined = 'a,b,c,d' then
   pass_count = pass_count + 1
   sprintf2 msg 'PASS [%d] strsplit/strjoin round-trip' test_num
@@ -1434,7 +1434,7 @@ filewriteln fh msg
 
 ; 10-3 getenv HOME
 test_num = test_num + 1
-getenv 'HOME' hdir
+getenv hdir 'HOME'
 strlen hdir
 if result > 0 then
   pass_count = pass_count + 1
@@ -1447,7 +1447,7 @@ filewriteln fh msg
 
 ; 10-4 getenv PATH
 test_num = test_num + 1
-getenv 'PATH' pathenv
+getenv pathenv 'PATH'
 strlen pathenv
 if result > 0 then
   pass_count = pass_count + 1
@@ -1461,7 +1461,7 @@ filewriteln fh msg
 ; 10-5 setenv / getenv round-trip
 test_num = test_num + 1
 setenv 'TTL_TEST_VAR' 'hello_from_ttl'
-getenv 'TTL_TEST_VAR' envval
+getenv envval 'TTL_TEST_VAR'
 if envval = 'hello_from_ttl' then
   pass_count = pass_count + 1
   sprintf2 msg 'PASS [%d] setenv/getenv round-trip' test_num
@@ -1486,15 +1486,16 @@ else
 endif
 filewriteln fh msg
 
-; 10-7 getver
+; 10-7 getver (macOS: returns version string, not integer)
 test_num = test_num + 1
-getver verint
-if verint > 0 then
+getver verstr
+strlen verstr
+if result > 0 then
   pass_count = pass_count + 1
-  sprintf2 msg 'PASS [%d] getver=%d' test_num verint
+  sprintf2 msg 'PASS [%d] getver="%s"' test_num verstr
 else
   fail_count = fail_count + 1
-  sprintf2 msg 'FAIL [%d] getver=0' test_num
+  sprintf2 msg 'FAIL [%d] getver empty' test_num
 endif
 filewriteln fh msg
 
