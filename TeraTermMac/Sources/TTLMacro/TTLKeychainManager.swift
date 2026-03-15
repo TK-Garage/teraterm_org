@@ -52,7 +52,7 @@ class TTLKeychainManager {
     static let shared = TTLKeychainManager()
     let serviceName: String
 
-    init(serviceName: String = "com.yourapp.TeraTermMac.TTLMacro") {
+    init(serviceName: String = "com.teraterm.mac.ttl") {
         self.serviceName = serviceName
     }
 

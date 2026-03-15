@@ -22,10 +22,10 @@ public enum MacroConstants {
     public static let ttlFileExtension = "ttl"
 
     /// Bundle identifier for TTLMacro.app
-    public static let ttlMacroBundleId = "com.yourapp.TeraTermMac.TTLMacro"
+    public static let ttlMacroBundleId = "com.teraterm.mac.TTLMacro"
 
     /// Bundle identifier for TeraTermMac.app
-    public static let teraTermMacBundleId = "com.yourapp.TeraTermMac"
+    public static let teraTermMacBundleId = "com.teraterm.mac"
 
     /// Launch argument for XPC mode
     public static let xpcModeArgument = "--xpc-mode"

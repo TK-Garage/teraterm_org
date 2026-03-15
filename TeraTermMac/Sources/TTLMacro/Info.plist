@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
     <key>CFBundleIdentifier</key>
-    <string>com.yourapp.TeraTermMac.TTLMacro</string>
+    <string>com.teraterm.mac.TTLMacro</string>
     <key>CFBundleName</key>
     <string>TTLMacro</string>
     <key>CFBundleDisplayName</key>

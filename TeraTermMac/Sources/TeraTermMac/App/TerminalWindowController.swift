@@ -62,7 +62,13 @@ class TerminalWindowController: NSWindowController {
 
     // State
     private var useTelnet: Bool = false
-    private var isConnected: Bool = false
+    private(set) var isConnected: Bool = false
+
+    /// Unique session ID for macro broadcast operations
+    let sessionId: String = UUID().uuidString
+
+    /// Multicast group name (set by macro `setmulticastname` command)
+    var multicastGroupName: String = ""
 
     // Key input send queue — offloads network I/O from the main thread
     // to prevent blocking UI during key input handling.

@@ -30,6 +30,19 @@ class MacroXPCManager: NSObject {
     /// Whether transfer is in progress (exclusion flag)
     private(set) var isTransferInProgress: Bool = false
 
+    /// Receive buffer for macro wait commands
+    private var receiveBuffer: String = ""
+    private let receiveBufferLock = NSLock()
+
+    /// Terminal data subscribers (for event-driven wait)
+    private var terminalDataHandler: ((Data) -> Void)?
+
+    /// Active window controller accessor
+    private var activeWindowController: TerminalWindowController? {
+        guard let delegate = NSApp.delegate as? AppDelegate else { return nil }
+        return delegate.activeTerminalWindowController
+    }
+
     /// The remote macro service proxy
     var macroService: MacroServiceProtocol? {
         return connection?.remoteObjectProxyWithErrorHandler { [weak self] error in
@@ -231,18 +244,56 @@ class MacroXPCManager: NSObject {
 
 extension MacroXPCManager: MacroClientProtocol {
 
+    // MARK: - Data Transfer
+
     func sendToTerminal(data: Data, reply: @escaping () -> Void) {
-        DispatchQueue.main.async {
-            // Integration point: forward data to active terminal
+        DispatchQueue.main.async { [weak self] in
+            self?.activeWindowController?.connectionManager.send(data)
             reply()
         }
     }
 
     func recvFromTerminal(timeout: Int, reply: @escaping (Data?) -> Void) {
-        DispatchQueue.main.async {
-            reply(nil)
+        receiveBufferLock.lock()
+        if !receiveBuffer.isEmpty {
+            let data = receiveBuffer.data(using: .utf8)
+            receiveBuffer = ""
+            receiveBufferLock.unlock()
+            reply(data)
+        } else {
+            receiveBufferLock.unlock()
+            if timeout <= 0 {
+                reply(nil)
+            } else {
+                // Set up handler for next data arrival
+                terminalDataHandler = { data in
+                    reply(data)
+                }
+                // Timeout fallback
+                DispatchQueue.main.asyncAfter(deadline: .now() + TimeInterval(timeout)) { [weak self] in
+                    if let handler = self?.terminalDataHandler {
+                        self?.terminalDataHandler = nil
+                        handler(nil as Data?)
+                    }
+                }
+            }
         }
     }
+
+    /// Called by TerminalWindowController when data is received from terminal
+    func terminalDidReceiveData(_ data: Data) {
+        if let handler = terminalDataHandler {
+            terminalDataHandler = nil
+            handler(data)
+        }
+        if let str = String(data: data, encoding: .utf8) {
+            receiveBufferLock.lock()
+            receiveBuffer += str
+            receiveBufferLock.unlock()
+        }
+    }
+
+    // MARK: - Dialog
 
     func showDialog(type: String, message: String, defaultValue: String,
                     reply: @escaping (Int, String) -> Void) {
@@ -250,12 +301,16 @@ extension MacroXPCManager: MacroClientProtocol {
                                      defaultValue: defaultValue, completion: reply)
     }
 
+    // MARK: - Window Title
+
     func setWindowTitle(title: String, reply: @escaping () -> Void) {
-        DispatchQueue.main.async {
-            // Integration point: set window title
+        DispatchQueue.main.async { [weak self] in
+            self?.activeWindowController?.window?.title = title
             reply()
         }
     }
+
+    // MARK: - Lifecycle Notifications
 
     func macroDidFinish(exitCode: Int, reply: @escaping () -> Void) {
         os_log("Macro finished with exit code %d", log: logger, type: .info, exitCode)
@@ -289,167 +344,247 @@ extension MacroXPCManager: MacroClientProtocol {
         reply()
     }
 
-    // --- New terminal operation methods ---
+    // MARK: - Terminal Operations
 
     func isConnected(reply: @escaping (Bool) -> Void) {
-        DispatchQueue.main.async {
-            // Integration point: check terminal connection status
-            reply(false)
+        DispatchQueue.main.async { [weak self] in
+            let connected = self?.activeWindowController?.isConnected ?? false
+            reply(connected)
         }
     }
 
     func getWindowTitle(reply: @escaping (String) -> Void) {
-        DispatchQueue.main.async {
-            reply("")
+        DispatchQueue.main.async { [weak self] in
+            let title = self?.activeWindowController?.window?.title ?? ""
+            reply(title)
         }
     }
 
     func showWindow(visible: Bool, reply: @escaping () -> Void) {
-        DispatchQueue.main.async {
+        DispatchQueue.main.async { [weak self] in
+            if visible {
+                self?.activeWindowController?.window?.orderFront(nil)
+            } else {
+                self?.activeWindowController?.window?.orderOut(nil)
+            }
             reply()
         }
     }
 
     func clearScreen(reply: @escaping () -> Void) {
-        DispatchQueue.main.async {
+        DispatchQueue.main.async { [weak self] in
+            self?.activeWindowController?.clearScreen()
             reply()
         }
     }
 
     func sendBreak(reply: @escaping () -> Void) {
-        DispatchQueue.main.async {
+        DispatchQueue.main.async { [weak self] in
+            self?.activeWindowController?.connectionManager.sendBreak()
             reply()
         }
     }
 
+    // MARK: - Connection
+
     func disconnectFromHost(reply: @escaping () -> Void) {
-        DispatchQueue.main.async {
+        DispatchQueue.main.async { [weak self] in
+            self?.activeWindowController?.disconnect()
             reply()
         }
     }
 
     func connectToHost(param: String, reply: @escaping (Bool) -> Void) {
-        DispatchQueue.main.async {
-            // Integration point: establish connection
-            reply(false)
+        DispatchQueue.main.async { [weak self] in
+            guard let wc = self?.activeWindowController else {
+                reply(false)
+                return
+            }
+            // Parse connection param: "host:port" or "/C=N" for serial
+            let parts = param.components(separatedBy: ":")
+            if parts.count >= 2, let port = Int(parts[1]) {
+                wc.connectTCP(host: parts[0], port: port)
+                reply(true)
+            } else if param.hasPrefix("/C=") {
+                let device = String(param.dropFirst(3))
+                wc.connectSerial(device: device)
+                reply(true)
+            } else if !param.isEmpty {
+                wc.connectTCP(host: param, port: 23)
+                reply(true)
+            } else {
+                reply(false)
+            }
         }
     }
 
     func connectLocalShell(reply: @escaping (Bool) -> Void) {
-        DispatchQueue.main.async {
-            reply(false)
+        DispatchQueue.main.async { [weak self] in
+            self?.activeWindowController?.connectLocalShell()
+            reply(true)
         }
     }
 
     func flushReceiveBuffer(reply: @escaping () -> Void) {
-        DispatchQueue.main.async {
-            reply()
-        }
+        receiveBufferLock.lock()
+        receiveBuffer = ""
+        receiveBufferLock.unlock()
+        reply()
     }
 
+    // MARK: - Window Operations
+
     func moveWindow(x: Int, y: Int, reply: @escaping () -> Void) {
-        DispatchQueue.main.async {
+        DispatchQueue.main.async { [weak self] in
+            self?.activeWindowController?.window?.setFrameOrigin(NSPoint(x: x, y: y))
             reply()
         }
     }
 
     func resizeWindow(width: Int, height: Int, reply: @escaping () -> Void) {
-        DispatchQueue.main.async {
+        DispatchQueue.main.async { [weak self] in
+            guard let window = self?.activeWindowController?.window else {
+                reply()
+                return
+            }
+            var frame = window.frame
+            frame.size = NSSize(width: width, height: height)
+            window.setFrame(frame, display: true)
             reply()
         }
     }
 
     func bringWindowToFront(reply: @escaping () -> Void) {
-        DispatchQueue.main.async {
+        DispatchQueue.main.async { [weak self] in
+            self?.activeWindowController?.window?.makeKeyAndOrderFront(nil)
+            NSApp.activate(ignoringOtherApps: true)
             reply()
         }
     }
 
     func getWindowPosition(reply: @escaping (Int, Int) -> Void) {
-        DispatchQueue.main.async {
-            reply(0, 0)
+        DispatchQueue.main.async { [weak self] in
+            let origin = self?.activeWindowController?.window?.frame.origin ?? .zero
+            reply(Int(origin.x), Int(origin.y))
         }
     }
 
+    // MARK: - Serial Settings
+
     func setBaudRate(rate: Int, reply: @escaping () -> Void) {
-        DispatchQueue.main.async {
+        DispatchQueue.main.async { [weak self] in
+            self?.activeWindowController?.settings.baudRate = rate
             reply()
         }
     }
 
     func setFlowControl(mode: Int, reply: @escaping () -> Void) {
-        DispatchQueue.main.async {
+        DispatchQueue.main.async { [weak self] in
+            if let fc = FlowControl(rawValue: mode) {
+                self?.activeWindowController?.settings.flowControl = fc
+            }
             reply()
         }
     }
 
     func setDtr(on: Int, reply: @escaping () -> Void) {
-        DispatchQueue.main.async {
+        DispatchQueue.main.async { [weak self] in
+            self?.activeWindowController?.connectionManager.setControlSignal(.dtr, value: on != 0)
             reply()
         }
     }
 
     func setRts(on: Int, reply: @escaping () -> Void) {
-        DispatchQueue.main.async {
+        DispatchQueue.main.async { [weak self] in
+            self?.activeWindowController?.connectionManager.setControlSignal(.rts, value: on != 0)
             reply()
         }
     }
 
     func getModemStatus(reply: @escaping (Int) -> Void) {
-        DispatchQueue.main.async {
-            reply(0)
+        DispatchQueue.main.async { [weak self] in
+            let status = self?.activeWindowController?.connectionManager.getModemStatus() ?? 0
+            reply(status)
         }
     }
 
     func setSerialDelayChar(ms: Int, reply: @escaping () -> Void) {
-        reply()
+        DispatchQueue.main.async { [weak self] in
+            self?.activeWindowController?.settings.serialDelayPerChar = ms
+            reply()
+        }
     }
 
     func setSerialDelayLine(ms: Int, reply: @escaping () -> Void) {
-        reply()
+        DispatchQueue.main.async { [weak self] in
+            self?.activeWindowController?.settings.serialDelayPerLine = ms
+            reply()
+        }
     }
 
+    // MARK: - Log Operations
+
     func openLog(path: String, append: Bool, reply: @escaping () -> Void) {
-        DispatchQueue.main.async {
+        DispatchQueue.main.async { [weak self] in
+            _ = self?.activeWindowController?.logger.startLogging(to: path)
             reply()
         }
     }
 
     func closeLog(reply: @escaping () -> Void) {
-        DispatchQueue.main.async {
+        DispatchQueue.main.async { [weak self] in
+            self?.activeWindowController?.logger.stopLogging()
             reply()
         }
     }
 
     func pauseLog(reply: @escaping () -> Void) {
-        DispatchQueue.main.async {
+        DispatchQueue.main.async { [weak self] in
+            self?.activeWindowController?.logger.pauseLogging()
             reply()
         }
     }
 
     func resumeLog(reply: @escaping () -> Void) {
-        DispatchQueue.main.async {
+        DispatchQueue.main.async { [weak self] in
+            self?.activeWindowController?.logger.resumeLogging()
             reply()
         }
     }
 
     func writeToLog(text: String, reply: @escaping () -> Void) {
-        DispatchQueue.main.async {
+        DispatchQueue.main.async { [weak self] in
+            if let data = text.data(using: .utf8) {
+                self?.activeWindowController?.logger.logData(data)
+            }
             reply()
         }
     }
 
     func getLogInfo(reply: @escaping (Int, String) -> Void) {
-        DispatchQueue.main.async {
-            reply(0, "")
+        DispatchQueue.main.async { [weak self] in
+            let loggerObj = self?.activeWindowController?.logger
+            let stateVal: Int
+            switch loggerObj?.state {
+            case .active: stateVal = 1
+            case .paused: stateVal = 2
+            default: stateVal = 0
+            }
+            let path = loggerObj?.logFilePath ?? ""
+            reply(stateVal, path)
         }
     }
 
     func setLogRotation(mode: String, value: Int, reply: @escaping () -> Void) {
-        DispatchQueue.main.async {
+        DispatchQueue.main.async { [weak self] in
+            if mode == "size" {
+                self?.activeWindowController?.logger.setRotation(size: value)
+            }
             reply()
         }
     }
+
+    // MARK: - Clipboard
 
     func getClipboard(reply: @escaping (String) -> Void) {
         DispatchQueue.main.async {
@@ -466,6 +601,8 @@ extension MacroXPCManager: MacroClientProtocol {
         }
     }
 
+    // MARK: - System Info
+
     func getHostname(reply: @escaping (String) -> Void) {
         reply(ProcessInfo.processInfo.hostName)
     }
@@ -475,16 +612,32 @@ extension MacroXPCManager: MacroClientProtocol {
         reply((dir as NSString).deletingLastPathComponent)
     }
 
+    // MARK: - Error Display
+
     func showError(message: String, line: Int, lineText: String, fileName: String,
                    reply: @escaping (Bool) -> Void) {
         DispatchQueue.main.async {
-            // Default: stop on error
-            reply(true)
+            let alert = NSAlert()
+            alert.messageText = "Macro Error (line \(line))"
+            alert.informativeText = "\(message)\n\n\(lineText)\n\nFile: \(fileName)"
+            alert.alertStyle = .critical
+            alert.addButton(withTitle: "Stop")
+            alert.addButton(withTitle: "Continue")
+            let response = alert.runModal()
+            reply(response == .alertFirstButtonReturn)
         }
     }
 
     func showStatusBox(message: String, title: String, reply: @escaping () -> Void) {
         DispatchQueue.main.async {
+            // Show a non-modal status window
+            let alert = NSAlert()
+            alert.messageText = title.isEmpty ? "Status" : title
+            alert.informativeText = message
+            alert.alertStyle = .informational
+            // Don't run modal - just show the window
+            let window = alert.window
+            window.orderFront(nil)
             reply()
         }
     }
@@ -494,6 +647,8 @@ extension MacroXPCManager: MacroClientProtocol {
             reply()
         }
     }
+
+    // MARK: - File Transfer
 
     func startFileSend(protocolName: String, localPath: String, option: String,
                        reply: @escaping (Bool, String) -> Void) {
@@ -506,9 +661,18 @@ extension MacroXPCManager: MacroClientProtocol {
                 reply(false, "Transfer already in progress")
                 return
             }
+            guard let wc = self.activeWindowController else {
+                reply(false, "No active terminal window")
+                return
+            }
             self.isTransferInProgress = true
-            // Integration point: start file transfer
-            reply(true, "")
+            if let protocolType = TransferProtocolType.from(name: protocolName) {
+                wc.fileTransferManager.startTransfer(protocol: protocolType, direction: .send, filePath: localPath)
+                reply(true, "")
+            } else {
+                self.isTransferInProgress = false
+                reply(false, "Unknown protocol: \(protocolName)")
+            }
         }
     }
 
@@ -523,16 +687,32 @@ extension MacroXPCManager: MacroClientProtocol {
                 reply(false, "Transfer already in progress", "")
                 return
             }
+            guard let wc = self.activeWindowController else {
+                reply(false, "No active terminal window", "")
+                return
+            }
             self.isTransferInProgress = true
-            // Integration point: start file receive
-            reply(true, "", "")
+            if let protocolType = TransferProtocolType.from(name: protocolName) {
+                wc.fileTransferManager.startTransfer(protocol: protocolType, direction: .receive, filePath: localDir)
+                reply(true, "", "")
+            } else {
+                self.isTransferInProgress = false
+                reply(false, "Unknown protocol: \(protocolName)", "")
+            }
         }
     }
 
     func getTransferStatus(reply: @escaping (String, Int, Int) -> Void) {
         DispatchQueue.main.async { [weak self] in
             if self?.isTransferInProgress == true {
-                reply(TransferStatusString.idle.rawValue, 0, 0)
+                let ftm = self?.activeWindowController?.fileTransferManager
+                let isActive = ftm?.isTransferActive ?? false
+                if isActive {
+                    reply(TransferStatusString.sending.rawValue, 0, 0)
+                } else {
+                    self?.isTransferInProgress = false
+                    reply(TransferStatusString.done.rawValue, 0, 0)
+                }
             } else {
                 reply(TransferStatusString.idle.rawValue, 0, 0)
             }
@@ -541,64 +721,163 @@ extension MacroXPCManager: MacroClientProtocol {
 
     func cancelTransfer(reply: @escaping () -> Void) {
         DispatchQueue.main.async { [weak self] in
+            self?.activeWindowController?.fileTransferManager.cancelCurrentTransfer()
             self?.isTransferInProgress = false
             reply()
         }
     }
 
+    // MARK: - SCP
+
     func scpSend(localPath: String, remotePath: String, reply: @escaping (Bool) -> Void) {
-        DispatchQueue.main.async {
-            // Integration point: SCP send
-            reply(false)
+        DispatchQueue.main.async { [weak self] in
+            guard let wc = self?.activeWindowController else {
+                reply(false)
+                return
+            }
+            // SCP requires SSH connection
+            wc.connectionManager.scpSend(localPath: localPath, remotePath: remotePath) { success in
+                reply(success)
+            }
         }
     }
 
     func scpRecv(remotePath: String, localPath: String, reply: @escaping (Bool) -> Void) {
-        DispatchQueue.main.async {
-            // Integration point: SCP receive
-            reply(false)
+        DispatchQueue.main.async { [weak self] in
+            guard let wc = self?.activeWindowController else {
+                reply(false)
+                return
+            }
+            wc.connectionManager.scpRecv(remotePath: remotePath, localPath: localPath) { success in
+                reply(success)
+            }
         }
     }
 
+    // MARK: - Settings
+
     func restoreSetup(path: String, reply: @escaping () -> Void) {
-        DispatchQueue.main.async {
+        DispatchQueue.main.async { [weak self] in
+            if let settings = TerminalSettings.load(from: path) {
+                self?.activeWindowController?.settings = settings
+            }
             reply()
         }
     }
 
     func callMenu(menuId: Int, reply: @escaping () -> Void) {
         DispatchQueue.main.async {
+            // Search menu items recursively by tag
+            func findItem(in menu: NSMenu, tag: Int) -> NSMenuItem? {
+                for item in menu.items {
+                    if item.tag == tag { return item }
+                    if let sub = item.submenu, let found = findItem(in: sub, tag: tag) {
+                        return found
+                    }
+                }
+                return nil
+            }
+            if let mainMenu = NSApp.mainMenu,
+               let item = findItem(in: mainMenu, tag: menuId),
+               let action = item.action {
+                NSApp.sendAction(action, to: item.target, from: item)
+            }
             reply()
         }
     }
 
     func loadKeyMap(path: String, reply: @escaping () -> Void) {
-        DispatchQueue.main.async {
+        DispatchQueue.main.async { [weak self] in
+            self?.activeWindowController?.keyboardHandler.loadKeyMapping(from: path)
             reply()
         }
     }
 
     func enableKeyboard(flag: Int, reply: @escaping () -> Void) {
-        DispatchQueue.main.async {
+        DispatchQueue.main.async { [weak self] in
+            self?.activeWindowController?.keyboardHandler.keyboardEnabled = (flag != 0)
             reply()
         }
     }
 
     func setEcho(flag: Int, reply: @escaping () -> Void) {
-        DispatchQueue.main.async {
+        DispatchQueue.main.async { [weak self] in
+            self?.activeWindowController?.settings.localEcho = (flag != 0)
             reply()
         }
     }
 
     func displayString(text: String, reply: @escaping () -> Void) {
-        DispatchQueue.main.async {
+        DispatchQueue.main.async { [weak self] in
+            if let data = text.data(using: .utf8) {
+                self?.activeWindowController?.terminalEmulator.processData(data)
+                self?.activeWindowController?.terminalView.refresh()
+            }
             reply()
         }
     }
 
     func sendPasswordData(data: Data, reply: @escaping () -> Void) {
-        DispatchQueue.main.async {
-            // Integration point: send password data to terminal (no logging)
+        DispatchQueue.main.async { [weak self] in
+            // Send password data directly without logging
+            self?.activeWindowController?.connectionManager.send(data)
+            reply()
+        }
+    }
+
+    // MARK: - Broadcast / Multicast
+
+    func broadcastData(data: Data, reply: @escaping (Int) -> Void) {
+        DispatchQueue.main.async { [weak self] in
+            let count = self?.broadcastData(data) ?? 0
+            reply(count)
+        }
+    }
+
+    func setMulticastName(name: String, reply: @escaping () -> Void) {
+        DispatchQueue.main.async { [weak self] in
+            self?.activeWindowController?.multicastGroupName = name
+            reply()
+        }
+    }
+
+    func multicastData(groupName: String, data: Data, reply: @escaping (Int) -> Void) {
+        DispatchQueue.main.async { [weak self] in
+            let count = self?.multicastData(data, groupName: groupName) ?? 0
+            reply(count)
+        }
+    }
+
+    func getSessionList(reply: @escaping ([String]) -> Void) {
+        DispatchQueue.main.async { [weak self] in
+            let sessions = self?.getSessionList() ?? []
+            reply(sessions)
+        }
+    }
+
+    func sendToSession(sessionId: String, data: Data, reply: @escaping (Bool) -> Void) {
+        DispatchQueue.main.async { [weak self] in
+            guard let delegate = NSApp.delegate as? AppDelegate else {
+                reply(false)
+                return
+            }
+            if let wc = delegate.allTerminalWindowControllers.first(where: { $0.sessionId == sessionId }) {
+                wc.connectionManager.send(data)
+                reply(true)
+            } else {
+                reply(false)
+            }
+        }
+    }
+
+    func subscribeToTerminalData(reply: @escaping (Data) -> Void) {
+        // Set the handler for event-driven terminal data reception
+        terminalDataHandler = reply
+    }
+
+    func setTerminalSize(cols: Int, rows: Int, reply: @escaping () -> Void) {
+        DispatchQueue.main.async { [weak self] in
+            self?.activeWindowController?.terminalView.setTerminalSize(cols: cols, rows: rows)
             reply()
         }
     }

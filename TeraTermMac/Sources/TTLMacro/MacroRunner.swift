@@ -146,6 +146,12 @@ class MacroRunner {
 
     private let keychainManager = TTLKeychainManager.shared
 
+    // MARK: - Full TTLParser (shared module)
+
+    /// Full expression parser from TTLMacroShared for complete TTL expression evaluation.
+    /// Supports all operators: arithmetic, comparison, logical, bitwise, shifts.
+    private let parser = TTLParser()
+
     // MARK: - Execution
 
     func run(scriptPath: String) {
@@ -405,97 +411,140 @@ class MacroRunner {
         return resolveInt(args[index])
     }
 
-    /// Evaluate an integer expression with basic arithmetic
+    /// Evaluate an expression using the full TTLParser with all operator precedence.
+    /// Supports: +, -, *, /, mod, ==, !=, <, >, <=, >=, &&, ||, &, |, ^, ~, !, <<, >>, >>>
+    /// Also supports string comparison and parenthesized expressions.
     private func evalIntExpr(_ expr: String) -> Int {
-        let tokens = tokenizeExpr(expr)
-        var pos = 0
-        return parseAddSub(tokens, &pos)
+        // Sync MacroRunner variables into TTLParser for expression evaluation
+        syncVariablesToParser()
+        parser.lineBuffer = expr
+        parser.linePtr = 0
+        parser.lineParsePtr = 0
+        do {
+            let result = try parser.getExpression()
+            syncVariablesFromParser()
+            switch result {
+            case .integer(let v): return v
+            case .string(let id): return Int(parser.getStrVal(id: id)) ?? 0
+            case .stringLiteral(let s): return Int(s) ?? 0
+            default: return 0
+            }
+        } catch {
+            // Fallback to simple integer parsing
+            return resolveInt(expr)
+        }
     }
 
-    private func tokenizeExpr(_ expr: String) -> [String] {
-        var tokens: [String] = []
-        var current = ""
-        for ch in expr {
-            if "+-*/%()".contains(ch) {
-                if !current.isEmpty {
-                    tokens.append(current)
-                    current = ""
+    /// Evaluate an expression that may return a string value
+    private func evalStrExpr(_ expr: String) -> String {
+        syncVariablesToParser()
+        parser.lineBuffer = expr
+        parser.linePtr = 0
+        parser.lineParsePtr = 0
+        do {
+            let result = try parser.getStrExpression(autoConvert: true)
+            syncVariablesFromParser()
+            return result
+        } catch {
+            return resolveString(expr)
+        }
+    }
+
+    /// Sync MacroRunner variables to the shared TTLParser
+    private func syncVariablesToParser() {
+        // Clear parser variables and rebuild from MacroRunner state
+        parser.variables.removeAll()
+        parser.initSystemVariables()
+        parser.setResult(resultValue)
+        parser.setInputStr(inputStr)
+        parser.setMatchStr(matchStr)
+        if parser.timeoutVarId >= 0 {
+            parser.setIntVal(id: parser.timeoutVarId, value: timeoutValue)
+        }
+
+        for (name, value) in variables {
+            switch value {
+            case .integer(let v):
+                if parser.checkVar(name) == nil {
+                    parser.newIntVar(name, value: v)
                 }
-                tokens.append(String(ch))
-            } else if ch.isWhitespace {
-                if !current.isEmpty {
-                    tokens.append(current)
-                    current = ""
+            case .string(let v):
+                if parser.checkVar(name) == nil {
+                    parser.newStrVar(name, value: v)
                 }
-            } else {
-                current.append(ch)
+            case .intArray(let arr):
+                if parser.checkVar(name) == nil {
+                    let id = parser.newIntArrayVar(name, size: arr.count)
+                    for (i, v) in arr.enumerated() {
+                        parser.variables[id].intArray[i] = v
+                    }
+                }
+            case .strArray(let arr):
+                if parser.checkVar(name) == nil {
+                    let id = parser.newStrArrayVar(name, size: arr.count)
+                    for (i, v) in arr.enumerated() {
+                        parser.variables[id].strArray[i] = v
+                    }
+                }
             }
         }
-        if !current.isEmpty { tokens.append(current) }
-        return tokens
     }
 
-    private func parseAddSub(_ tokens: [String], _ pos: inout Int) -> Int {
-        var left = parseMulDiv(tokens, &pos)
-        while pos < tokens.count {
-            let op = tokens[pos]
-            if op == "+" || op == "-" {
-                pos += 1
-                let right = parseMulDiv(tokens, &pos)
-                left = op == "+" ? left + right : left - right
-            } else {
+    /// Sync parser variables back to MacroRunner after expression evaluation
+    private func syncVariablesFromParser() {
+        for v in parser.variables {
+            switch v.type {
+            case .integer:
+                variables[v.name.lowercased()] = .integer(v.intValue)
+            case .string:
+                variables[v.name.lowercased()] = .string(v.strValue)
+            case .intArray:
+                variables[v.name.lowercased()] = .intArray(v.intArray)
+            case .strArray:
+                variables[v.name.lowercased()] = .strArray(v.strArray)
+            default:
                 break
             }
         }
-        return left
+        // Sync back system variables
+        if parser.resultVarId >= 0 {
+            resultValue = parser.getIntVal(id: parser.resultVarId)
+        }
     }
 
-    private func parseMulDiv(_ tokens: [String], _ pos: inout Int) -> Int {
-        var left = parsePrimary(tokens, &pos)
-        while pos < tokens.count {
-            let op = tokens[pos]
-            if op == "*" || op == "/" || op == "%" {
-                pos += 1
-                let right = parsePrimary(tokens, &pos)
-                if op == "*" { left = left * right }
-                else if op == "/" { left = right != 0 ? left / right : 0 }
-                else { left = right != 0 ? left % right : 0 }
-            } else {
-                break
-            }
-        }
-        return left
-    }
-
-    private func parsePrimary(_ tokens: [String], _ pos: inout Int) -> Int {
-        guard pos < tokens.count else { return 0 }
-        let tok = tokens[pos]
-        if tok == "(" {
-            pos += 1
-            let val = parseAddSub(tokens, &pos)
-            if pos < tokens.count && tokens[pos] == ")" { pos += 1 }
-            return val
-        }
-        if tok == "-" {
-            pos += 1
-            return -parsePrimary(tokens, &pos)
-        }
-        pos += 1
-        return resolveInt(tok)
-    }
+    // [DEPRECATED: replaced by TTLParser] - Simple expression parser removed.
+    // The full recursive descent parser from TTLMacroShared now handles
+    // all expression evaluation with 11 precedence levels.
 
     // MARK: - Assignment
 
     private func handleAssignment(_ parts: [String]) {
         let varName = parts[0].lowercased()
         let exprStr = parts.dropFirst(2).joined(separator: " ")
-        // Try integer expression first
-        let resolved = resolveValue(exprStr)
-        switch resolved {
-        case .integer:
-            variables[varName] = .integer(evalIntExpr(exprStr))
-        default:
-            variables[varName] = resolved
+
+        // Use full TTLParser for expression evaluation
+        syncVariablesToParser()
+        parser.lineBuffer = exprStr
+        parser.linePtr = 0
+        parser.lineParsePtr = 0
+        do {
+            let result = try parser.getExpression()
+            syncVariablesFromParser()
+            switch result {
+            case .integer(let v):
+                variables[varName] = .integer(v)
+            case .string(let id):
+                variables[varName] = .string(parser.getStrVal(id: id))
+            case .stringLiteral(let s):
+                variables[varName] = .string(s)
+            case .intArray(let id):
+                variables[varName] = .intArray(parser.variables[id].intArray)
+            case .strArray(let id):
+                variables[varName] = .strArray(parser.variables[id].strArray)
+            }
+        } catch {
+            // Fallback to simple value resolution
+            variables[varName] = resolveValue(exprStr)
         }
     }
 
@@ -1364,58 +1413,53 @@ extension MacroRunner {
 
         cancelExecTimer()
         var accumulated = ""
-        let startTime = Date()
         let timeout = timeoutValue
 
-        func poll() {
-            guard self.isRunning, !self.isCancelled else { return }
-
-            if timeout > 0 && Date().timeIntervalSince(startTime) > Double(timeout) {
+        // Set timeout timer (event-driven, no polling)
+        var timeoutTimer: Timer?
+        if timeout > 0 {
+            timeoutTimer = Timer.scheduledTimer(withTimeInterval: Double(timeout), repeats: false) { [weak self] _ in
+                guard let self = self, self.isRunning else { return }
                 self.resultValue = 0
                 self.variables["result"] = .integer(0)
+                self.variables["timeout"] = .integer(1)
                 self.matchStr = ""
                 self.variables["matchstr"] = .string("")
                 self.scheduleNextLine()
-                return
             }
-
-            self.clientProxy?.recvFromTerminal(timeout: 1, reply: { [weak self] data in
-                guard let self = self else { return }
-                if let data = data, let str = String(data: data, encoding: .utf8) {
-                    accumulated += str
-                }
-
-                let searchStr = ln ? accumulated : accumulated
-                for (idx, pattern) in patterns.enumerated() {
-                    if searchStr.contains(pattern) {
-                        self.resultValue = idx + 1
-                        self.variables["result"] = .integer(idx + 1)
-                        self.matchStr = pattern
-                        self.variables["matchstr"] = .string(pattern)
-                        if ln {
-                            // Extract the line containing the match
-                            let lines = accumulated.components(separatedBy: .newlines)
-                            for line in lines {
-                                if line.contains(pattern) {
-                                    self.inputStr = line
-                                    self.variables["inputstr"] = .string(line)
-                                    break
-                                }
-                            }
-                        }
-                        self.scheduleNextLine()
-                        return
-                    }
-                }
-
-                // Not found yet, poll again
-                self.execTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: false) { _ in
-                    poll()
-                }
-            })
         }
 
-        poll()
+        // Event-driven: subscribe to terminal data stream
+        clientProxy?.subscribeToTerminalData(reply: { [weak self] data in
+            guard let self = self, self.isRunning, !self.isCancelled else { return }
+            if let str = String(data: data, encoding: .utf8) {
+                accumulated += str
+            }
+
+            for (idx, pattern) in patterns.enumerated() {
+                if accumulated.contains(pattern) {
+                    timeoutTimer?.invalidate()
+                    self.resultValue = idx + 1
+                    self.variables["result"] = .integer(idx + 1)
+                    self.variables["timeout"] = .integer(0)
+                    self.matchStr = pattern
+                    self.variables["matchstr"] = .string(pattern)
+                    if ln {
+                        let lines = accumulated.components(separatedBy: .newlines)
+                        for line in lines {
+                            if line.contains(pattern) {
+                                self.inputStr = line
+                                self.variables["inputstr"] = .string(line)
+                                break
+                            }
+                        }
+                    }
+                    self.scheduleNextLine()
+                    return
+                }
+            }
+            // Data received but no match yet — wait for next data event
+        })
     }
 
     // MARK: waitmatch - [IMPLEMENTED]
@@ -1453,63 +1497,66 @@ extension MacroRunner {
             return
         }
 
-        cancelExecTimer()
-        var accumulated = ""
-        let startTime = Date()
-        let timeout = timeoutValue
-
-        func poll() {
-            guard self.isRunning, !self.isCancelled else { return }
-
-            if timeout > 0 && Date().timeIntervalSince(startTime) > Double(timeout) {
-                self.resultValue = 0
-                self.variables["result"] = .integer(0)
-                self.scheduleNextLine()
+        // Validate regex patterns upfront
+        var options: NSRegularExpression.Options = []
+        if regexCaseInsensitive { options.insert(.caseInsensitive) }
+        for pattern in patterns {
+            if (try? NSRegularExpression(pattern: pattern, options: options)) == nil {
+                reportError("waitregex: invalid regex: \(pattern)")
                 return
             }
-
-            self.clientProxy?.recvFromTerminal(timeout: 1, reply: { [weak self] data in
-                guard let self = self else { return }
-                if let data = data, let str = String(data: data, encoding: .utf8) {
-                    accumulated += str
-                }
-
-                var options: NSRegularExpression.Options = []
-                if self.regexCaseInsensitive {
-                    options.insert(.caseInsensitive)
-                }
-
-                for (idx, pattern) in patterns.enumerated() {
-                    if let regex = try? NSRegularExpression(pattern: pattern, options: options),
-                       let match = regex.firstMatch(in: accumulated,
-                                                     range: NSRange(accumulated.startIndex..., in: accumulated)) {
-                        self.resultValue = idx + 1
-                        self.variables["result"] = .integer(idx + 1)
-
-                        let matchRange = Range(match.range, in: accumulated)!
-                        self.matchStr = String(accumulated[matchRange])
-                        self.variables["matchstr"] = .string(self.matchStr)
-
-                        // Extract group matches
-                        for g in 1...min(9, match.numberOfRanges - 1) {
-                            if let gRange = Range(match.range(at: g), in: accumulated) {
-                                self.groupMatchStrs[g] = String(accumulated[gRange])
-                                self.variables["groupmatchstr\(g)"] = .string(self.groupMatchStrs[g])
-                            }
-                        }
-
-                        self.scheduleNextLine()
-                        return
-                    }
-                }
-
-                self.execTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: false) { _ in
-                    poll()
-                }
-            })
         }
 
-        poll()
+        cancelExecTimer()
+        var accumulated = ""
+        let timeout = timeoutValue
+
+        // Set timeout timer (event-driven, no polling)
+        var timeoutTimer: Timer?
+        if timeout > 0 {
+            timeoutTimer = Timer.scheduledTimer(withTimeInterval: Double(timeout), repeats: false) { [weak self] _ in
+                guard let self = self, self.isRunning else { return }
+                self.resultValue = 0
+                self.variables["result"] = .integer(0)
+                self.variables["timeout"] = .integer(1)
+                self.scheduleNextLine()
+            }
+        }
+
+        // Event-driven: subscribe to terminal data stream
+        clientProxy?.subscribeToTerminalData(reply: { [weak self] data in
+            guard let self = self, self.isRunning, !self.isCancelled else { return }
+            if let str = String(data: data, encoding: .utf8) {
+                accumulated += str
+            }
+
+            for (idx, pattern) in patterns.enumerated() {
+                if let regex = try? NSRegularExpression(pattern: pattern, options: options),
+                   let match = regex.firstMatch(in: accumulated,
+                                                 range: NSRange(accumulated.startIndex..., in: accumulated)) {
+                    timeoutTimer?.invalidate()
+                    self.resultValue = idx + 1
+                    self.variables["result"] = .integer(idx + 1)
+                    self.variables["timeout"] = .integer(0)
+
+                    let matchRange = Range(match.range, in: accumulated)!
+                    self.matchStr = String(accumulated[matchRange])
+                    self.variables["matchstr"] = .string(self.matchStr)
+
+                    // Extract group captures into groupmatchstr1..9
+                    for g in 1...min(9, match.numberOfRanges - 1) {
+                        if let gRange = Range(match.range(at: g), in: accumulated) {
+                            self.groupMatchStrs[g] = String(accumulated[gRange])
+                            self.variables["groupmatchstr\(g)"] = .string(self.groupMatchStrs[g])
+                        }
+                    }
+
+                    self.scheduleNextLine()
+                    return
+                }
+            }
+            // Data received but no regex match yet — wait for next data event
+        })
     }
 
     // MARK: waitn - [IMPLEMENTED]
@@ -1522,36 +1569,36 @@ extension MacroRunner {
         let byteCount = resolveInt(args[0])
         cancelExecTimer()
         var accumulated = Data()
-        let startTime = Date()
+        let timeout = timeoutValue
 
-        func poll() {
-            guard self.isRunning, !self.isCancelled else { return }
-            if self.timeoutValue > 0 && Date().timeIntervalSince(startTime) > Double(self.timeoutValue) {
+        // Set timeout timer (event-driven)
+        var timeoutTimer: Timer?
+        if timeout > 0 {
+            timeoutTimer = Timer.scheduledTimer(withTimeInterval: Double(timeout), repeats: false) { [weak self] _ in
+                guard let self = self, self.isRunning else { return }
                 self.resultValue = 0
                 self.variables["result"] = .integer(0)
+                self.variables["timeout"] = .integer(1)
                 self.scheduleNextLine()
-                return
             }
-
-            self.clientProxy?.recvFromTerminal(timeout: 1, reply: { [weak self] data in
-                guard let self = self else { return }
-                if let data = data { accumulated.append(data) }
-
-                if accumulated.count >= byteCount {
-                    self.inputStr = String(data: accumulated, encoding: .utf8) ?? ""
-                    self.variables["inputstr"] = .string(self.inputStr)
-                    self.resultValue = 1
-                    self.variables["result"] = .integer(1)
-                    self.scheduleNextLine()
-                } else {
-                    self.execTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: false) { _ in
-                        poll()
-                    }
-                }
-            })
         }
 
-        poll()
+        // Event-driven: subscribe to terminal data stream
+        clientProxy?.subscribeToTerminalData(reply: { [weak self] data in
+            guard let self = self, self.isRunning, !self.isCancelled else { return }
+            accumulated.append(data)
+
+            if accumulated.count >= byteCount {
+                timeoutTimer?.invalidate()
+                self.inputStr = String(data: accumulated, encoding: .utf8) ?? ""
+                self.variables["inputstr"] = .string(self.inputStr)
+                self.resultValue = 1
+                self.variables["result"] = .integer(1)
+                self.variables["timeout"] = .integer(0)
+                self.scheduleNextLine()
+            }
+            // Else wait for more data events
+        })
     }
 
     // MARK: wait4all - [IMPLEMENTED]
@@ -1563,42 +1610,42 @@ extension MacroRunner {
         cancelExecTimer()
         var accumulated = ""
         var found = Array(repeating: false, count: patterns.count)
-        let startTime = Date()
+        let timeout = timeoutValue
 
-        func poll() {
-            guard self.isRunning, !self.isCancelled else { return }
-            if self.timeoutValue > 0 && Date().timeIntervalSince(startTime) > Double(self.timeoutValue) {
+        // Set timeout timer (event-driven, no polling)
+        var timeoutTimer: Timer?
+        if timeout > 0 {
+            timeoutTimer = Timer.scheduledTimer(withTimeInterval: Double(timeout), repeats: false) { [weak self] _ in
+                guard let self = self, self.isRunning else { return }
                 self.resultValue = 0
                 self.variables["result"] = .integer(0)
+                self.variables["timeout"] = .integer(1)
                 self.scheduleNextLine()
-                return
             }
-
-            self.clientProxy?.recvFromTerminal(timeout: 1, reply: { [weak self] data in
-                guard let self = self else { return }
-                if let data = data, let str = String(data: data, encoding: .utf8) {
-                    accumulated += str
-                }
-
-                for (idx, pattern) in patterns.enumerated() {
-                    if !found[idx] && accumulated.contains(pattern) {
-                        found[idx] = true
-                    }
-                }
-
-                if found.allSatisfy({ $0 }) {
-                    self.resultValue = 1
-                    self.variables["result"] = .integer(1)
-                    self.scheduleNextLine()
-                } else {
-                    self.execTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: false) { _ in
-                        poll()
-                    }
-                }
-            })
         }
 
-        poll()
+        // Event-driven: subscribe to terminal data stream
+        clientProxy?.subscribeToTerminalData(reply: { [weak self] data in
+            guard let self = self, self.isRunning, !self.isCancelled else { return }
+            if let str = String(data: data, encoding: .utf8) {
+                accumulated += str
+            }
+
+            for (idx, pattern) in patterns.enumerated() {
+                if !found[idx] && accumulated.contains(pattern) {
+                    found[idx] = true
+                }
+            }
+
+            if found.allSatisfy({ $0 }) {
+                timeoutTimer?.invalidate()
+                self.resultValue = 1
+                self.variables["result"] = .integer(1)
+                self.variables["timeout"] = .integer(0)
+                self.scheduleNextLine()
+            }
+            // Else wait for more data events
+        })
     }
 
     // MARK: waitevent - [IMPLEMENTED]

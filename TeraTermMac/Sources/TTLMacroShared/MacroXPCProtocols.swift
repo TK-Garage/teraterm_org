@@ -16,7 +16,7 @@ import Foundation
 
 // MARK: - XPC Service Identifier
 
-public let kTTLMacroXPCServiceName = "com.yourapp.TeraTermMac.TTLMacro"
+public let kTTLMacroXPCServiceName = "com.teraterm.mac.TTLMacro"
 
 // MARK: - Dialog Types
 
@@ -277,6 +277,29 @@ public enum TransferStatusString: String {
 
     /// Send password data to terminal (secure, no logging)
     func sendPasswordData(data: Data, reply: @escaping () -> Void)
+
+    // --- Broadcast / Multicast methods ---
+
+    /// Send data to all connected terminal sessions
+    func broadcastData(data: Data, reply: @escaping (Int) -> Void)
+
+    /// Set multicast group name for the active session
+    func setMulticastName(name: String, reply: @escaping () -> Void)
+
+    /// Send data to sessions matching a multicast group name
+    func multicastData(groupName: String, data: Data, reply: @escaping (Int) -> Void)
+
+    /// Get list of all terminal sessions ("sessionId:host:port" format)
+    func getSessionList(reply: @escaping ([String]) -> Void)
+
+    /// Send data to a specific session by ID
+    func sendToSession(sessionId: String, data: Data, reply: @escaping (Bool) -> Void)
+
+    /// Subscribe to terminal data (event-driven receive for wait commands)
+    func subscribeToTerminalData(reply: @escaping (Data) -> Void)
+
+    /// Set terminal size (columns x rows)
+    func setTerminalSize(cols: Int, rows: Int, reply: @escaping () -> Void)
 }
 
 // MARK: - XPC Interface Helpers

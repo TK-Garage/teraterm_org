@@ -403,7 +403,7 @@ All commands are case-insensitive (`Send` = `send` = `SEND`).
 
 ## XPC Protocol Definition
 
-XPC service name: `com.yourapp.TeraTermMac.TTLMacro.xpc`
+XPC service name: `com.teraterm.mac.TTLMacro`
 
 ### MacroServiceProtocol (TeraTermMac --> TTLMacro)
 
@@ -748,14 +748,14 @@ Processing locations:
 | 項目 | 値 |
 |---|---|
 | kSecClass | kSecClassGenericPassword |
-| kSecAttrService | `com.yourapp.TeraTermMac.TTLMacro` |
+| kSecAttrService | `com.teraterm.mac.ttl` |
 | kSecAttrAccount | `<host>:<username>` (例: `192.168.1.1:admin`) |
 | kSecAttrAccessible | kSecAttrAccessibleWhenUnlockedThisDeviceOnly |
 
 ### service 名・account 名の命名規則
 
 ```
-service: "com.yourapp.TeraTermMac.TTLMacro" (固定)
+service: "com.teraterm.mac.ttl" (固定)
 account: "<接続先ホスト>:<ユーザー名>"
   例: "192.168.1.1:admin"
   例: "server.example.com:root"

@@ -177,6 +177,16 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         return windowControllers.first { $0.window == keyWindow }
     }
 
+    /// Public accessor for MacroXPCManager to get the active terminal window.
+    var activeTerminalWindowController: TerminalWindowController? {
+        return activeWindowController
+    }
+
+    /// All open window controllers (for broadcast operations).
+    var allTerminalWindowControllers: [TerminalWindowController] {
+        return windowControllers
+    }
+
     // MARK: - Main Menu (port of vtwin.cpp InitMenu)
 
     /// Assign an SF Symbol image to an NSMenuItem (macOS 11+).
