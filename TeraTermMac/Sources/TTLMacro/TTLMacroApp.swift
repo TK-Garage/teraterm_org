@@ -96,6 +96,16 @@ class TTLMacroAppDelegate: NSObject, NSApplicationDelegate {
             self?.statusBarManager?.updateLineNumber(lineNumber)
         }
 
+        macroRunner?.onTransferProgress = { [weak self] status, bytes, total in
+            self?.statusBarManager?.updateTransferProgress(status: status, bytes: bytes, total: total)
+        }
+
+        macroRunner?.onDebugPause = { [weak self] lineNumber, lineText in
+            DispatchQueue.main.async {
+                self?.statusBarManager?.showPausedMenu()
+            }
+        }
+
         macroRunner?.onComplete = { [weak self] exitCode in
             DispatchQueue.main.async {
                 self?.statusBarManager?.cleanup()
@@ -145,6 +155,18 @@ extension TTLMacroAppDelegate: StatusBarManagerDelegate {
                 self.macroRunner?.stop()
             }
         }
+    }
+
+    func statusBarDidRequestStepLine() {
+        macroRunner?.stepLine()
+    }
+
+    func statusBarDidRequestStepOver() {
+        macroRunner?.stepOver()
+    }
+
+    func statusBarDidRequestStepOut() {
+        macroRunner?.stepOut()
     }
 
     func statusBarDidRequestQuit() {

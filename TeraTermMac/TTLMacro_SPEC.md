@@ -34,7 +34,9 @@ TTLMacro.app is a standalone macOS application that serves as the macro executio
          +------------------------------+
 
    MacroServiceProtocol: TeraTermMac.app --> TTLMacro.app
-     (runMacro, stopMacro, pauseMacro, resumeMacro, macroStatus, sendVariable)
+     (runMacro, stopMacro, pauseMacro, resumeMacro, macroStatus, sendVariable,
+      stepLine, stepOver, stepOut, addBreakpoint, removeBreakpoint,
+      clearBreakpoints, getVariables)
 
    MacroClientProtocol:  TTLMacro.app --> TeraTermMac.app
      (sendToTerminal, recvFromTerminal, showDialog, setWindowTitle,
@@ -879,7 +881,7 @@ TTLMacro.app                          TeraTermMac.app
 
 ---
 
-## 実装ノート (2026-03-15 更新)
+## 実装ノート (2026-03-15 更新 / #5-#7 追記)
 
 ### ログ基盤: os.Logger への統一
 
@@ -915,6 +917,73 @@ TTLMacro.app 側は独自の `Logger(subsystem: "com.teraterm.ttlmacro", categor
 `inputEnabled` プロパティに委譲する形に変更。
 従来の `userDefinedKeys["__disabled__"]` センチネル方式と Mirror リフレクションを完全除去。
 
+### XPC 再接続ハンドリング (#5)
+
+`MacroXPCManager.handleConnectionError()` を実装。TTLMacro.app がクラッシュした場合:
+
+1. 既存の XPC 接続を invalidate
+2. 指数バックオフ (2s × attempt数) で TTLMacro.app を再起動
+3. endpoint ファイルのポーリングで新しい接続を確立
+4. `lastMacroScriptPath` を使って実行中だったマクロを自動再実行
+5. 最大3回リトライ、失敗時は `onConnectionLost` コールバックで通知
+
+```
+XPC Connection Lost
+    ↓
+handleConnectionError() [main thread]
+    ↓ (delay: 2s × attempt)
+findTTLMacroApp() → launchTTLMacro()
+    ↓
+pollForEndpoint() → establishXPCConnection()
+    ↓ (成功時)
+runMacro(lastMacroScriptPath) [自動再実行]
+```
+
+### ファイル転送の進捗 UI (#6)
+
+`StatusBarManager` にファイル転送進捗表示を追加。
+
+- `updateTransferProgress(status:bytes:total:)` メソッドを追加
+- Running/Paused メニューに `transferItem` (NSMenuItem) を追加
+- 転送中: `"Transfer: 1.2 KB/3.4 MB (35%)"` 形式で表示
+- 転送完了/アイドル: アイテムを非表示
+- `MacroRunner.onTransferProgress` コールバック経由で `pollTransferStatus()` の結果を通知
+
+### マクロデバッガ (#7)
+
+ブレークポイント・ステップ実行を `MacroRunner` + `MacroServiceProtocol` に実装。
+
+**MacroRunner 追加 API:**
+
+| メソッド | 動作 |
+|---|---|
+| `addBreakpoint(at:)` | 指定行にブレークポイントを設定 (1-based) |
+| `removeBreakpoint(at:)` | 指定行のブレークポイントを除去 |
+| `clearBreakpoints()` | 全ブレークポイントを除去 |
+| `stepLine()` | 1行実行して停止 (Step Into) |
+| `stepOver()` | callStack 深度を維持してステップ |
+| `stepOut()` | callStack が浅くなるまで実行 |
+| `getVariables()` | 全変数の値を辞書で返す |
+
+**MacroServiceProtocol 追加メソッド (7個):**
+
+```swift
+func stepLine(reply:)
+func stepOver(reply:)
+func stepOut(reply:)
+func addBreakpoint(line:, reply:)
+func removeBreakpoint(line:, reply:)
+func clearBreakpoints(reply:)
+func getVariables(reply:)
+```
+
+**ブレークポイント判定:**
+`executeNextLine()` 内でブレークポイント Set と stepMode を確認。
+ヒット時に `isPaused = true` + `onDebugPause` コールバックを発火。
+
+**ステータスバー UI:**
+Paused メニューに `Step Line (F10)` / `Step Over (F11)` / `Step Out (Shift+F11)` を追加。
+
 ---
 
 ## 残課題一覧
@@ -925,6 +994,9 @@ TTLMacro.app 側は独自の `Logger(subsystem: "com.teraterm.ttlmacro", categor
 | 2 | ~~SerialConnection.fileDescriptor アクセス~~ | ~~Low~~ | **解決済み** — `private(set)` に変更、Mirror 除去 |
 | 3 | ~~KeyboardHandler.keyboardEnabled のセンチネル方式~~ | ~~Low~~ | **解決済み** — `inputEnabled` プロパティに変更 |
 | 4 | ~~NSLog 統一~~ | ~~Low~~ | **解決済み** — 全箇所 `os.Logger` (TTLog) に移行 |
-| 5 | XPC 接続の再接続ハンドリング | Medium | TTLMacro.app がクラッシュした場合の自動再接続・エラー復旧 |
-| 6 | ファイル転送の進捗 UI | Low | ステータスバーに転送進捗の表示 (現状はログ出力のみ) |
-| 7 | マクロデバッガ UI | Low | ブレークポイント設定・ステップ実行等のデバッグ支援 |
+| 5 | ~~XPC 接続の再接続ハンドリング~~ | ~~Medium~~ | **解決済み** — 指数バックオフ再接続 + マクロ自動再実行 |
+| 6 | ~~ファイル転送の進捗 UI~~ | ~~Low~~ | **解決済み** — ステータスバーにバイト数/パーセント表示 |
+| 7 | ~~マクロデバッガ UI~~ | ~~Low~~ | **解決済み** — ブレークポイント・Step Line/Over/Out + 変数閲覧 |
+| 8 | デバッガ変数ウォッチパネル | Low | ステップ実行時に変数値をリアルタイム表示する専用ウィンドウ |
+| 9 | ブレークポイント永続化 | Low | `.ttl` ファイルに対応するブレークポイントを設定ファイルに保存 |
+| 10 | ファイル転送エラー詳細表示 | Low | 転送エラー時にプロトコル別のエラー詳細をダイアログ表示 |

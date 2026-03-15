@@ -6,7 +6,7 @@
  * XPC Protocol definitions for TeraTermMac ↔ TTLMacro communication.
  *
  * MacroClientProtocol: 56 methods (terminal ops, file transfer, broadcast)
- * MacroServiceProtocol: 6 methods (macro control)
+ * MacroServiceProtocol: 13 methods (macro control + debugger)
  */
 
 import Foundation
@@ -69,6 +69,29 @@ public enum TransferStatusString: String {
 
     /// Pass a variable to the macro environment
     func sendVariable(name: String, value: String, reply: @escaping () -> Void)
+
+    // --- Debugger methods ---
+
+    /// Execute one line then pause (step into)
+    func stepLine(reply: @escaping () -> Void)
+
+    /// Execute until call stack returns to current depth (step over)
+    func stepOver(reply: @escaping () -> Void)
+
+    /// Execute until call stack becomes shallower (step out)
+    func stepOut(reply: @escaping () -> Void)
+
+    /// Add a breakpoint at the given line number (1-based)
+    func addBreakpoint(line: Int, reply: @escaping () -> Void)
+
+    /// Remove a breakpoint at the given line number (1-based)
+    func removeBreakpoint(line: Int, reply: @escaping () -> Void)
+
+    /// Remove all breakpoints
+    func clearBreakpoints(reply: @escaping () -> Void)
+
+    /// Get current variable values for debugger inspection
+    func getVariables(reply: @escaping ([String: String]) -> Void)
 }
 
 // MARK: - MacroClientProtocol (TTLMacro → TeraTermMac direction)

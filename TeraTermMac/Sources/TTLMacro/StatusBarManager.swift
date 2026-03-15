@@ -19,6 +19,9 @@ protocol StatusBarManagerDelegate: AnyObject {
     func statusBarDidRequestResume()
     func statusBarDidRequestStop()
     func statusBarDidRequestQuit()
+    func statusBarDidRequestStepLine()
+    func statusBarDidRequestStepOver()
+    func statusBarDidRequestStepOut()
 }
 
 // MARK: - Execution State
@@ -45,6 +48,12 @@ class StatusBarManager: NSObject, NSMenuDelegate {
     // Menu items that need updating
     private var lineNumberItem: NSMenuItem?
     private var quitItem: NSMenuItem?
+    private var transferItem: NSMenuItem?
+
+    // Transfer progress state
+    private var transferStatus: String = ""
+    private var transferBytes: Int = 0
+    private var transferTotal: Int = 0
 
     // MARK: - Lifecycle
 
@@ -92,6 +101,36 @@ class StatusBarManager: NSObject, NSMenuDelegate {
             guard let self = self else { return }
             self.lineNumberItem?.title = String(format: L("macro.menu.lineNumber"), line)
         }
+    }
+
+    /// Update file transfer progress in the status bar menu.
+    func updateTransferProgress(status: String, bytes: Int, total: Int) {
+        transferStatus = status
+        transferBytes = bytes
+        transferTotal = total
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            if status == "idle" || status == "done" {
+                self.transferItem?.isHidden = true
+            } else {
+                self.transferItem?.isHidden = false
+                let progressText: String
+                if total > 0 {
+                    let percent = min(100, bytes * 100 / max(total, 1))
+                    progressText = "Transfer: \(self.formatBytes(bytes))/\(self.formatBytes(total)) (\(percent)%)"
+                } else {
+                    progressText = "Transfer: \(self.formatBytes(bytes))"
+                }
+                self.transferItem?.title = progressText
+            }
+        }
+    }
+
+    /// Format byte count for display (e.g. "1.2 KB", "3.4 MB").
+    private func formatBytes(_ bytes: Int) -> String {
+        if bytes < 1024 { return "\(bytes) B" }
+        if bytes < 1024 * 1024 { return String(format: "%.1f KB", Double(bytes) / 1024.0) }
+        return String(format: "%.1f MB", Double(bytes) / (1024.0 * 1024.0))
     }
 
     // MARK: - Idle Menu
@@ -142,6 +181,13 @@ class StatusBarManager: NSObject, NSMenuDelegate {
         menu.addItem(lineItem)
         self.lineNumberItem = lineItem
 
+        // Transfer progress item (hidden when idle)
+        let xferItem = NSMenuItem(title: "", action: nil, keyEquivalent: "")
+        xferItem.isEnabled = false
+        xferItem.isHidden = true
+        menu.addItem(xferItem)
+        self.transferItem = xferItem
+
         menu.addItem(.separator())
 
         let pauseItem = NSMenuItem(title: L("macro.menu.pause"),
@@ -188,6 +234,13 @@ class StatusBarManager: NSObject, NSMenuDelegate {
         menu.addItem(lineItem)
         self.lineNumberItem = lineItem
 
+        // Transfer progress item (hidden when idle)
+        let xferItem = NSMenuItem(title: "", action: nil, keyEquivalent: "")
+        xferItem.isEnabled = false
+        xferItem.isHidden = true
+        menu.addItem(xferItem)
+        self.transferItem = xferItem
+
         menu.addItem(.separator())
 
         let resumeItem = NSMenuItem(title: L("macro.menu.resume"),
@@ -201,6 +254,27 @@ class StatusBarManager: NSObject, NSMenuDelegate {
                                   keyEquivalent: "")
         stopItem.target = self
         menu.addItem(stopItem)
+
+        menu.addItem(.separator())
+
+        // Debug step controls (available when paused)
+        let stepLineItem = NSMenuItem(title: "Step Line (F10)",
+                                      action: #selector(stepLineAction),
+                                      keyEquivalent: "")
+        stepLineItem.target = self
+        menu.addItem(stepLineItem)
+
+        let stepOverItem = NSMenuItem(title: "Step Over (F11)",
+                                      action: #selector(stepOverAction),
+                                      keyEquivalent: "")
+        stepOverItem.target = self
+        menu.addItem(stepOverItem)
+
+        let stepOutItem = NSMenuItem(title: "Step Out (Shift+F11)",
+                                     action: #selector(stepOutAction),
+                                     keyEquivalent: "")
+        stepOutItem.target = self
+        menu.addItem(stepOutItem)
 
         menu.addItem(.separator())
 
@@ -305,6 +379,18 @@ class StatusBarManager: NSObject, NSMenuDelegate {
 
     @objc private func stopAction() {
         delegate?.statusBarDidRequestStop()
+    }
+
+    @objc private func stepLineAction() {
+        delegate?.statusBarDidRequestStepLine()
+    }
+
+    @objc private func stepOverAction() {
+        delegate?.statusBarDidRequestStepOver()
+    }
+
+    @objc private func stepOutAction() {
+        delegate?.statusBarDidRequestStepOut()
     }
 
     @objc private func quitAction() {

@@ -217,26 +217,89 @@ class MacroXPCManager: NSObject {
                log: logger, type: .info)
     }
 
+    /// Callback invoked when XPC connection is lost and recovery fails.
+    var onConnectionLost: (() -> Void)?
+
+    /// The last macro script path, used for auto-recovery after crash.
+    private var lastMacroScriptPath: String?
+
     // MARK: - Error Handling & Reconnection
 
     private func handleConnectionError() {
+        DispatchQueue.main.async { [weak self] in
+            self?._handleConnectionErrorOnMain()
+        }
+    }
+
+    private func _handleConnectionErrorOnMain() {
         guard reconnectAttempts < MacroConstants.maxReconnectAttempts else {
-            os_log("Max reconnection attempts reached", log: logger, type: .error)
+            os_log("Max reconnection attempts (%d) reached, giving up",
+                   log: logger, type: .error, MacroConstants.maxReconnectAttempts)
+            connection = nil
+            isTransferInProgress = false
+            onConnectionLost?()
             return
         }
 
         reconnectAttempts += 1
-        let delay = MacroConstants.reconnectInterval
+        let delay = MacroConstants.reconnectInterval * Double(reconnectAttempts)
 
-        os_log("Attempting reconnection %d/%d in %.1f seconds",
+        os_log("XPC connection lost. Attempting reconnection %d/%d in %.1f seconds",
                log: logger, type: .info,
                reconnectAttempts, MacroConstants.maxReconnectAttempts, delay)
 
+        // Invalidate stale connection
+        connection?.invalidate()
+        connection = nil
+
         DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
-            // Cannot reconnect without a new endpoint, so just log
-            os_log("Reconnection would require re-launch of TTLMacro",
-                   log: self?.logger ?? .default, type: .error)
+            guard let self = self else { return }
+
+            guard let macroAppURL = self.findTTLMacroApp() else {
+                os_log("TTLMacro.app not found during reconnection",
+                       log: self.logger, type: .error)
+                self.onConnectionLost?()
+                return
+            }
+
+            os_log("Re-launching TTLMacro.app for reconnection",
+                   log: self.logger, type: .info)
+
+            self.launchTTLMacro(at: macroAppURL) { [weak self] success in
+                guard let self = self, success else {
+                    os_log("Failed to re-launch TTLMacro.app",
+                           log: self?.logger ?? .default, type: .error)
+                    self?.handleConnectionError()
+                    return
+                }
+                self.pollForEndpoint { [weak self] connected in
+                    if connected {
+                        os_log("XPC reconnection successful (attempt %d)",
+                               log: self?.logger ?? .default, type: .info,
+                               self?.reconnectAttempts ?? 0)
+                        self?.reconnectAttempts = 0
+
+                        // Re-run the macro if one was active
+                        if let scriptPath = self?.lastMacroScriptPath {
+                            self?.macroService?.runMacro(scriptPath: scriptPath) { error in
+                                if let error = error {
+                                    os_log("Failed to re-run macro after reconnection: %{public}@",
+                                           log: self?.logger ?? .default, type: .error,
+                                           error.localizedDescription)
+                                }
+                            }
+                        }
+                    } else {
+                        self?.handleConnectionError()
+                    }
+                }
+            }
         }
+    }
+
+    /// Record the script path for auto-recovery after crash.
+    func setActiveMacroPath(_ path: String?) {
+        lastMacroScriptPath = path
     }
 }
 

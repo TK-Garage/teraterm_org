@@ -70,6 +70,7 @@ class MacroRunner {
     var onLineExecuted: ((Int, String) -> Void)?
     var onComplete: ((Int) -> Void)?
     var onError: ((String, Int) -> Void)?
+    var onTransferProgress: ((String, Int, Int) -> Void)?
 
     // MARK: - State
 
@@ -132,6 +133,24 @@ class MacroRunner {
     // MARK: - Debug / Options
 
     private var debugMode: Bool = false
+
+    // MARK: - Debugger
+
+    /// Set of line numbers where breakpoints are set (0-based).
+    private(set) var breakpoints: Set<Int> = []
+
+    /// Step execution mode.
+    enum StepMode {
+        case none       // Normal execution
+        case stepLine   // Execute one line then pause
+        case stepOver   // Execute until call stack returns to same depth
+        case stepOut    // Execute until call stack is shallower
+    }
+    private var stepMode: StepMode = .none
+    private var stepTargetDepth: Int = 0
+
+    /// Callback invoked when debugger hits a breakpoint or step pause.
+    var onDebugPause: ((Int, String) -> Void)?
     private var regexCaseInsensitive: Bool = false
     private var dlgPosX: Int = -1
     private var dlgPosY: Int = -1
@@ -204,6 +223,66 @@ class MacroRunner {
         if isPaused { return .paused }
         return .running
     }
+
+    // MARK: - Debugger Public API
+
+    /// Add a breakpoint at the given line number (1-based, converted to 0-based internally).
+    func addBreakpoint(at line: Int) {
+        breakpoints.insert(max(0, line - 1))
+    }
+
+    /// Remove a breakpoint at the given line number (1-based).
+    func removeBreakpoint(at line: Int) {
+        breakpoints.remove(max(0, line - 1))
+    }
+
+    /// Remove all breakpoints.
+    func clearBreakpoints() {
+        breakpoints.removeAll()
+    }
+
+    /// Execute one line then pause (step line / step into).
+    func stepLine() {
+        guard isRunning, isPaused else { return }
+        stepMode = .stepLine
+        isPaused = false
+        scheduleNextLine()
+    }
+
+    /// Execute until the call stack returns to the current depth or shallower (step over).
+    func stepOver() {
+        guard isRunning, isPaused else { return }
+        stepMode = .stepOver
+        stepTargetDepth = callStack.count
+        isPaused = false
+        scheduleNextLine()
+    }
+
+    /// Execute until the call stack becomes shallower than current (step out).
+    func stepOut() {
+        guard isRunning, isPaused else { return }
+        stepMode = .stepOut
+        stepTargetDepth = callStack.count
+        isPaused = false
+        scheduleNextLine()
+    }
+
+    /// Get current variable values for debugger inspection.
+    func getVariables() -> [String: String] {
+        var result: [String: String] = [:]
+        for (key, val) in variables {
+            switch val {
+            case .integer(let i): result[key] = String(i)
+            case .string(let s): result[key] = s
+            case .intArray(let arr): result[key] = arr.map(String.init).joined(separator: ", ")
+            case .strArray(let arr): result[key] = arr.joined(separator: ", ")
+            }
+        }
+        return result
+    }
+
+    /// Get call stack depth for debugger display.
+    var callStackDepth: Int { callStack.count }
 
     func setVariable(name: String, value: String) {
         variables[name.lowercased()] = .string(value)
@@ -282,8 +361,31 @@ class MacroRunner {
             return
         }
 
+        let lineIndex = currentLineNumber
         let line = scriptLines[currentLineNumber]
         currentLineNumber += 1
+
+        // Debugger: check breakpoints and step modes
+        let shouldBreak: Bool
+        switch stepMode {
+        case .none:
+            shouldBreak = breakpoints.contains(lineIndex)
+        case .stepLine:
+            shouldBreak = true
+        case .stepOver:
+            shouldBreak = callStack.count <= stepTargetDepth
+        case .stepOut:
+            shouldBreak = callStack.count < stepTargetDepth
+        }
+
+        if shouldBreak {
+            stepMode = .none
+            isPaused = true
+            onDebugPause?(currentLineNumber, line)
+            onLineExecuted?(currentLineNumber, line)
+            clientProxy?.didExecuteLine(lineNumber: currentLineNumber, lineText: line, reply: {})
+            return
+        }
 
         onLineExecuted?(currentLineNumber, line)
         clientProxy?.didExecuteLine(lineNumber: currentLineNumber, lineText: line, reply: {})
@@ -3840,17 +3942,21 @@ extension MacroRunner {
 
             let status = TransferStatusString(rawValue: statusStr) ?? .idle
 
+            self.onTransferProgress?(statusStr, bytesSent, totalBytes)
+
             switch status {
             case .done:
                 self.isTransferWaiting = false
                 self.resultValue = 0
                 self.variables["result"] = .integer(0)
+                self.onTransferProgress?("done", bytesSent, totalBytes)
                 self.scheduleNextLine()
 
             case .error:
                 self.isTransferWaiting = false
                 self.resultValue = -1
                 self.variables["result"] = .integer(-1)
+                self.onTransferProgress?("idle", 0, 0)
                 self.scheduleNextLine()
 
             case .idle:
@@ -3858,6 +3964,7 @@ extension MacroRunner {
                 self.isTransferWaiting = false
                 self.resultValue = 0
                 self.variables["result"] = .integer(0)
+                self.onTransferProgress?("idle", 0, 0)
                 self.scheduleNextLine()
 
             case .sending, .receiving:
