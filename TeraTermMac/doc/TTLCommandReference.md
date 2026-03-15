@@ -1141,20 +1141,54 @@ getipv6addr ip6
 
 ### `getfileattr` / `setfileattr`
 
-ファイル属性を取得する。
-
-> **macOS 固有動作**: オリジナル Tera Term では 1 引数で `result` に属性値を格納するが、macOS 版では 2 引数で変数に格納する（§25 参照）。
+ファイル属性を取得・設定する。
 
 ```ttl
-getfileattr '/tmp/file.txt' attr
-; attr: bit 0 = 読み取り専用、bit 4 = ディレクトリ
+getfileattr <filename>
+; result: -1 = ファイル未検出、それ以外 = 属性値ビットマスク
+
+setfileattr <filename> <attr>
 ; result: 0 = 成功、-1 = エラー
 ```
 
 | 引数 | 型 | 説明 |
 |------|------|------|
 | `<filename>` | 文字列 | ファイルパス |
-| `<intvar>` | 整数変数 | 属性値の格納先 |
+| `<attr>` | 整数 | 属性値（`setfileattr` 用） |
+
+**属性ビット**:
+
+| ビット | 16進値 | 説明 |
+|--------|--------|------|
+| bit 0 | `$1` | 読み取り専用 |
+| bit 4 | `$10` | ディレクトリ |
+
+**使用例**:
+
+```ttl
+; 読み取り専用チェック
+getfileattr '/tmp/file.txt'
+if result <> -1 then
+  if result & $1 > 0 then
+    messagebox 'Read-only' 'Info'
+  endif
+endif
+
+; ディレクトリ判定
+getfileattr '/tmp/testdir'
+if result < 0 then
+  messagebox 'Not found' 'Error'
+elseif result & $10 then
+  messagebox 'Directory' 'Info'
+else
+  messagebox 'File' 'Info'
+endif
+
+; 属性を保持しつつ読み取り専用を追加
+getfileattr '/tmp/file.txt'
+attr = result | $1
+setfileattr '/tmp/file.txt' attr
+```
 
 ### `getmodemstatus`
 
@@ -1995,7 +2029,6 @@ s = "double quotes"
 | `strsplit` | `groupmatchstr1`〜`groupmatchstr9` に格納（最大 9） | 内部文字列配列変数に格納（制限なし） |
 | `strjoin` | `groupmatchstr1`〜`groupmatchstr9` を結合 | 文字列配列変数を結合 |
 | `filenamebox` | `filenamebox <msg> <flag> [<dir>]`、`inputstr` に格納 | `filenamebox <strvar> <title> [<save>]`、指定変数に格納 |
-| `getfileattr` | 1 引数、`result` に属性値を格納 | 2 引数、指定変数に属性値を格納 |
 | `getpassword` 等 | パスワードファイルに暗号化保存 | macOS Keychain に保存 |
 | `sendfile` | `sendfile <filename> <binary_flag>`（0=テキスト, 1=バイナリ） | `<binary_flag>` を無視し常にバイナリモードで送信 |
 | `logopen` | `logopen <filename> <binary> <append> [plaintext [timestamp ...]]` | 第 2 引数を `<append>` として解釈（`<binary>` 以降のオプション未対応） |
