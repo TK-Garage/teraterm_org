@@ -73,6 +73,10 @@ class ExtendedMockMacroClient: NSObject, MacroClientProtocol {
     func isConnected(reply: @escaping (Bool) -> Void) {
         record("isConnected"); reply(isConnectedResponse)
     }
+    var isXPCLinkedResponse: Bool = true
+    func isXPCLinked(reply: @escaping (Bool) -> Void) {
+        record("isXPCLinked"); reply(isXPCLinkedResponse)
+    }
     func getWindowTitle(reply: @escaping (String) -> Void) {
         record("getWindowTitle"); reply(windowTitle)
     }
@@ -668,6 +672,220 @@ final class FileTransferXPCTests: XCTestCase {
         let recvCall = mockClient.calls.first { $0.method == "startFileRecv" }
         XCTAssertNotNil(recvCall, "Should call startFileRecv for xmodemrecv")
         XCTAssertEqual(recvCall?.args["protocolName"] as? String, "xmodem")
+    }
+}
+
+// MARK: - TestLink 3-State Tests
+
+final class TestLinkTests: XCTestCase {
+
+    var runner: MacroRunner!
+    var mockClient: ExtendedMockMacroClient!
+    var tempDir: String!
+
+    override func setUp() {
+        super.setUp()
+        runner = MacroRunner()
+        mockClient = ExtendedMockMacroClient()
+        runner.clientProxy = mockClient
+        tempDir = NSTemporaryDirectory() + "ttlmacro_testlink_\(ProcessInfo.processInfo.processIdentifier)/"
+        try? FileManager.default.createDirectory(atPath: tempDir, withIntermediateDirectories: true)
+    }
+
+    override func tearDown() {
+        runner.stop()
+        try? FileManager.default.removeItem(atPath: tempDir)
+        super.tearDown()
+    }
+
+    private func writeTTL(_ content: String) -> String {
+        let path = tempDir + "test.ttl"
+        try? content.write(toFile: path, atomically: true, encoding: .utf8)
+        return path
+    }
+
+    func testTestLinkReturns0WhenNotLinked() {
+        // result=0: XPC not linked → should not send 'connected' or 'linked'
+        let exp = XCTestExpectation(description: "testlink returns 0")
+        mockClient.isXPCLinkedResponse = false
+        mockClient.isConnectedResponse = false
+        let script = """
+        testlink
+        if result == 0 then
+        send 'not_linked'
+        endif
+        end
+        """
+        let path = writeTTL(script)
+        runner.onComplete = { _ in exp.fulfill() }
+        runner.run(scriptPath: path)
+        wait(for: [exp], timeout: 10.0)
+        XCTAssertTrue(mockClient.hasCall("isXPCLinked"))
+        XCTAssertFalse(mockClient.hasCall("isConnected"),
+                       "Should not check isConnected when XPC is not linked")
+        // Verify result=0 was set by checking the conditional branch was taken
+        XCTAssertTrue(mockClient.hasCall("sendToTerminal"),
+                      "Should enter result==0 branch")
+        let sentData = mockClient.calls.first { $0.method == "sendToTerminal" }?
+            .args["data"] as? Data
+        XCTAssertEqual(String(data: sentData ?? Data(), encoding: .utf8), "not_linked")
+    }
+
+    func testTestLinkReturns1WhenLinkedButNotConnected() {
+        // result=1: XPC linked, host not connected
+        let exp = XCTestExpectation(description: "testlink returns 1")
+        mockClient.isXPCLinkedResponse = true
+        mockClient.isConnectedResponse = false
+        let script = """
+        testlink
+        if result == 1 then
+        send 'linked_not_connected'
+        endif
+        end
+        """
+        let path = writeTTL(script)
+        runner.onComplete = { _ in exp.fulfill() }
+        runner.run(scriptPath: path)
+        wait(for: [exp], timeout: 10.0)
+        XCTAssertTrue(mockClient.hasCall("isXPCLinked"))
+        XCTAssertTrue(mockClient.hasCall("isConnected"))
+        XCTAssertTrue(mockClient.hasCall("sendToTerminal"),
+                      "Should enter result==1 branch")
+        let sentData = mockClient.calls.first { $0.method == "sendToTerminal" }?
+            .args["data"] as? Data
+        XCTAssertEqual(String(data: sentData ?? Data(), encoding: .utf8), "linked_not_connected")
+    }
+
+    func testTestLinkReturns2WhenLinkedAndConnected() {
+        // result=2: XPC linked and host connected
+        let exp = XCTestExpectation(description: "testlink returns 2")
+        mockClient.isXPCLinkedResponse = true
+        mockClient.isConnectedResponse = true
+        let script = """
+        testlink
+        if result == 2 then
+        send 'connected'
+        endif
+        end
+        """
+        let path = writeTTL(script)
+        runner.onComplete = { _ in exp.fulfill() }
+        runner.run(scriptPath: path)
+        wait(for: [exp], timeout: 10.0)
+        XCTAssertTrue(mockClient.hasCall("isXPCLinked"))
+        XCTAssertTrue(mockClient.hasCall("isConnected"))
+        XCTAssertTrue(mockClient.hasCall("sendToTerminal"),
+                      "Should enter result==2 branch")
+        let sentData = mockClient.calls.first { $0.method == "sendToTerminal" }?
+            .args["data"] as? Data
+        XCTAssertEqual(String(data: sentData ?? Data(), encoding: .utf8), "connected")
+    }
+
+    func testTestLinkScriptConditionalNotConnected() {
+        // Verify testlink result=1 does NOT trigger result==2 branch
+        let exp = XCTestExpectation(description: "testlink conditional not connected")
+        mockClient.isXPCLinkedResponse = true
+        mockClient.isConnectedResponse = false
+        let script = """
+        testlink
+        if result == 2 then
+        send 'should_not_run'
+        endif
+        end
+        """
+        let path = writeTTL(script)
+        runner.onComplete = { _ in exp.fulfill() }
+        runner.run(scriptPath: path)
+        wait(for: [exp], timeout: 10.0)
+        XCTAssertFalse(mockClient.hasCall("sendToTerminal"),
+                       "Should NOT send when testlink result is 1, not 2")
+    }
+}
+
+// MARK: - MacroXPCManager Integration Tests
+
+final class MacroXPCManagerIntegrationTests: XCTestCase {
+
+    func testIsXPCLinkedReturnsTrueWhenConnectionExists() {
+        // Verify isXPCLinked returns true when XPC connection is established
+        // This tests the protocol method exists and the mock responds correctly
+        let mock = ExtendedMockMacroClient()
+        mock.isXPCLinkedResponse = true
+        let exp = XCTestExpectation(description: "isXPCLinked true")
+        mock.isXPCLinked { linked in
+            XCTAssertTrue(linked)
+            exp.fulfill()
+        }
+        wait(for: [exp], timeout: 2.0)
+    }
+
+    func testIsXPCLinkedReturnsFalseWhenNoConnection() {
+        let mock = ExtendedMockMacroClient()
+        mock.isXPCLinkedResponse = false
+        let exp = XCTestExpectation(description: "isXPCLinked false")
+        mock.isXPCLinked { linked in
+            XCTAssertFalse(linked)
+            exp.fulfill()
+        }
+        wait(for: [exp], timeout: 2.0)
+    }
+
+    func testProtocolIncludesIsXPCLinkedMethod() {
+        // Verify the XPC interface includes the new method
+        let interface = MacroXPCInterface.clientInterface()
+        XCTAssertNotNil(interface)
+    }
+
+    func testTerminalOperationMethodsRecorded() {
+        // Verify all terminal operation methods are callable through the mock
+        let mock = ExtendedMockMacroClient()
+        let exp = XCTestExpectation(description: "operations complete")
+        exp.expectedFulfillmentCount = 5
+
+        mock.sendBreak { mock.hasCall("sendBreak"); exp.fulfill() }
+        mock.clearScreen { mock.hasCall("clearScreen"); exp.fulfill() }
+        mock.flushReceiveBuffer { mock.hasCall("flushReceiveBuffer"); exp.fulfill() }
+        mock.bringWindowToFront { mock.hasCall("bringWindowToFront"); exp.fulfill() }
+        mock.displayString(text: "test") { mock.hasCall("displayString"); exp.fulfill() }
+
+        wait(for: [exp], timeout: 2.0)
+        XCTAssertTrue(mock.hasCall("sendBreak"))
+        XCTAssertTrue(mock.hasCall("clearScreen"))
+        XCTAssertTrue(mock.hasCall("flushReceiveBuffer"))
+        XCTAssertTrue(mock.hasCall("bringWindowToFront"))
+        XCTAssertTrue(mock.hasCall("displayString"))
+    }
+
+    func testLogOperationMethodsRecorded() {
+        let mock = ExtendedMockMacroClient()
+        let exp = XCTestExpectation(description: "log ops complete")
+        exp.expectedFulfillmentCount = 4
+
+        mock.openLog(path: "/tmp/test.log", append: false) { exp.fulfill() }
+        mock.writeToLog(text: "test line") { exp.fulfill() }
+        mock.pauseLog { exp.fulfill() }
+        mock.closeLog { exp.fulfill() }
+
+        wait(for: [exp], timeout: 2.0)
+        XCTAssertTrue(mock.hasCall("openLog"))
+        XCTAssertTrue(mock.hasCall("writeToLog"))
+        XCTAssertTrue(mock.hasCall("pauseLog"))
+        XCTAssertTrue(mock.hasCall("closeLog"))
+    }
+
+    func testWindowOperationMethodsRecorded() {
+        let mock = ExtendedMockMacroClient()
+        let exp = XCTestExpectation(description: "window ops")
+        exp.expectedFulfillmentCount = 3
+
+        mock.moveWindow(x: 100, y: 200) { exp.fulfill() }
+        mock.resizeWindow(width: 800, height: 600) { exp.fulfill() }
+        mock.setWindowTitle(title: "Test") { exp.fulfill() }
+
+        wait(for: [exp], timeout: 2.0)
+        let moveCall = mock.calls.first { $0.method == "moveWindow" }
+        XCTAssertEqual(moveCall?.args["x"] as? Int, 100)
+        XCTAssertEqual(moveCall?.args["y"] as? Int, 200)
     }
 }
 

@@ -117,6 +117,9 @@ public enum TransferStatusString: String {
     /// Check if terminal is connected
     func isConnected(reply: @escaping (Bool) -> Void)
 
+    /// Check if XPC link is active (connection to TeraTermMac exists, regardless of host connection)
+    func isXPCLinked(reply: @escaping (Bool) -> Void)
+
     /// Get terminal window title
     func getWindowTitle(reply: @escaping (String) -> Void)
 

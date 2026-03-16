@@ -1656,11 +1656,24 @@ extension MacroRunner {
 
     func cmdTestLink() { // [IMPLEMENTED]
         cancelExecTimer()
-        clientProxy?.isConnected(reply: { [weak self] connected in
+        // First check XPC link status, then host connection status
+        // result: 0 = not linked, 1 = linked but not connected, 2 = linked and connected
+        clientProxy?.isXPCLinked(reply: { [weak self] linked in
             guard let self = self else { return }
-            self.resultValue = connected ? 2 : 0
-            self.variables["result"] = .integer(self.resultValue)
-            self.scheduleNextLine()
+            guard linked else {
+                // No XPC link at all
+                self.resultValue = 0
+                self.variables["result"] = .integer(self.resultValue)
+                self.scheduleNextLine()
+                return
+            }
+            // XPC linked, now check host connection
+            self.clientProxy?.isConnected(reply: { [weak self] connected in
+                guard let self = self else { return }
+                self.resultValue = connected ? 2 : 1
+                self.variables["result"] = .integer(self.resultValue)
+                self.scheduleNextLine()
+            })
         })
     }
 

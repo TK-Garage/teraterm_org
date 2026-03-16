@@ -62,7 +62,7 @@ class TerminalWindowController: NSWindowController {
 
     // State
     private var useTelnet: Bool = false
-    private var isConnected: Bool = false
+    private(set) var isConnected: Bool = false
 
     // Key input send queue — offloads network I/O from the main thread
     // to prevent blocking UI during key input handling.
@@ -73,6 +73,9 @@ class TerminalWindowController: NSWindowController {
     private var resizeTooltipWindow: NSWindow?
     private var resizeTooltipLabel: NSTextField?
     private var resizeHideTimer: Timer?
+
+    // Macro XPC manager for external macro app communication
+    private(set) var macroXPCManager: MacroXPCManager?
 
     // Macro file transfer state
     var macroTransferCompletion: ((Bool) -> Void)?
@@ -122,6 +125,8 @@ class TerminalWindowController: NSWindowController {
         resizeHideTimer = nil
         macroRecvTimer?.invalidate()
         macroRecvTimer = nil
+        macroXPCManager?.disconnect()
+        macroXPCManager = nil
     }
 
     // MARK: - Component Setup
@@ -507,6 +512,29 @@ class TerminalWindowController: NSWindowController {
     func resetPort() {
         connectionManager.resetPort()
         updateWindowTitle()
+    }
+
+    // MARK: - XPC Macro Management
+
+    /// Launch TTLMacro.app and establish XPC connection for external macro execution.
+    func connectMacroXPC(completion: @escaping (Bool) -> Void) {
+        let manager = MacroXPCManager()
+        manager.terminalController = self
+        manager.fileTransferManager = fileTransferManager
+        macroXPCManager = manager
+
+        manager.connect { success in
+            if !success {
+                self.macroXPCManager = nil
+            }
+            completion(success)
+        }
+    }
+
+    /// Disconnect from TTLMacro.app XPC service.
+    func disconnectMacroXPC() {
+        macroXPCManager?.disconnect()
+        macroXPCManager = nil
     }
 
     // MARK: - Macro Actions

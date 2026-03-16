@@ -1223,7 +1223,7 @@ MacroRunner には **120 以上のコマンド**が登録されており、全�
 
 | コマンド | 仕様 | 実装状況 | 詳細 |
 |---------|------|:-------:|------|
-| `testlink` | result: 0=未リンク, 1=リンク済み・未接続, 2=リンク済み・接続中 | **部分実装** | 現在は `isConnected` の結果のみで 0 または 2 を返す。XPC 接続状態（result=1）の判定が未実装。`MacroRunner.swift:1661` で `connected ? 2 : 0` のみ |
+| `testlink` | result: 0=未リンク, 1=リンク済み・未接続, 2=リンク済み・接続中 | **実装済み** | `isXPCLinked` → `isConnected` の 2 段階チェックで 3 状態を返す |
 | `protocolrecv` | 汎用プロトコル受信 | **未実装** | MacroRunner の case 文に未登録 |
 | `protocolsend` | 汎用プロトコル送信 | **未実装** | MacroRunner の case 文に未登録 |
 | `waitevent` | ターミナルイベント待機 | **簡易実装** | `cmdWaitRecv()` へのエイリアス。ターミナルイベント種別の区別なし |
@@ -1238,7 +1238,7 @@ MacroRunner には **120 以上のコマンド**が登録されており、全�
 | ダイアログ | 10 | 10 | messagebox〜setdlgpos |
 | ファイル I/O | 21 | 21 | fileopen〜fileunlock |
 | ディレクトリ | 13 | 13 | findfirst〜setdir |
-| 接続 | 5 | 4+1 | testlink が部分実装（0/2 のみ、1 未対応） |
+| 接続 | 5 | 5 | testlink 完全実装（0/1/2 の 3 状態対応） |
 | 待機 | 9 | 9 | wait〜mpause（waitevent は簡易実装） |
 | アプリ制御 | 11 | 11 | closett〜dispstr |
 | システム | 21 | 21 | exec〜var2clipb |
@@ -1272,7 +1272,7 @@ MacroRunner には **120 以上のコマンド**が登録されており、全�
 
 ### 6. 対応履歴・残件
 
-#### 対応済み（2026-03-16）
+#### 対応済み（2026-03-16 第1回）
 
 | 項目 | 対応内容 |
 |------|---------|
@@ -1282,16 +1282,26 @@ MacroRunner には **120 以上のコマンド**が登録されており、全�
 | テスト絶対パスバグ修正 | `RemainingTaskTests.swift:291` の `/home/user/teraterm_org/` → `#filePath` ベースの相対パスに修正 |
 | テスト追加 | 転送プログレスポーリング確認テスト、`xmodemrecv` の `startFileRecv` 呼び出しテストを追加 |
 
+#### 対応済み（2026-03-16 第2回）
+
+| 項目 | 対応内容 |
+|------|---------|
+| testlink result=1 完全実装 | `MacroClientProtocol` に `isXPCLinked` メソッドを追加。`cmdTestLink()` を `isXPCLinked` → `isConnected` の 2 段階チェックに変更し、0/1/2 の 3 状態を正しく返すよう修正 |
+| MacroClientProtocol 実結合 | `MacroXPCManager` の全スタブメソッド（送受信、ウィンドウ操作、ログ、シリアル設定、SCP、ファイル転送等）を `TerminalWindowController` の実メソッドに結合。`terminalController` weak 参照を追加 |
+| MacroXPCManager インスタンス化統合 | `TerminalWindowController` に `macroXPCManager` プロパティと `connectMacroXPC()`/`disconnectMacroXPC()` メソッドを追加。deinit での cleanup も実装 |
+| `isConnected` アクセシビリティ修正 | `TerminalWindowController.isConnected` を `private` → `private(set)` に変更し、XPC Manager からの読み取りを可能に |
+| `KeyboardHandler.isEnabled` 追加 | マクロ `enablekeyboard` コマンド用の `isEnabled` プロパティを `KeyboardHandler` に追加 |
+| `TransferProtocolType.from()` 追加 | XPC プロトコル名文字列から `TransferProtocolType` を生成するファクトリメソッドを追加 |
+| テスト大幅強化 | `MockMacroClient` に全 MacroClientProtocol メソッドを実装。`TestLinkTests`（3 状態テスト 4 件）、`MacroXPCManagerIntegrationTests`（XPC 操作テスト 5 件）を追加 |
+
 #### 残件・要対応の優先度
 
 | 優先度 | 項目 | 対応内容 | 関連ファイル |
 |:------:|------|---------|-------------|
-| **高** | testlink result=1 未対応 | XPC connection の有効性チェックを追加し、XPC 接続あり + ホスト未接続 → result=1 を返すようにする | `MacroRunner.swift:1661` |
-| **高** | MacroClientProtocol 統合 | TeraTermMac のターミナルエンジン（送受信バッファ、接続管理、ウィンドウ制御等）と XPC メソッドを実結合する | `MacroXPCManager.swift` 全体 |
-| **高** | MacroXPCManager のインスタンス化未統合 | `MacroXPCManager` が `TerminalWindowController` からインスタンス化・参照される箇所が未実装。`fileTransferManager` プロパティの接続が必要 | `TerminalWindowController.swift` |
 | **中** | protocolrecv / protocolsend 未登録 | MacroRunner の case 文に追加し、汎用ファイル転送コマンドとして実装する | `MacroRunner.swift:573-823` |
-| **中** | ファイル転送エンジン最終統合 | `MacroXPCManager.fileTransferManager` を `TerminalWindowController.fileTransferManager` に接続し、`FileTransferDelegate` の二重委譲（TerminalWindowController + MacroXPCManager）を解決する | `MacroXPCManager.swift`, `TerminalWindowController.swift` |
-| **中** | XPC 転送バイト型の Int64 対応 | `getTransferStatus` の XPC シグネチャが `(String, Int, Int)` のため、2GB 超ファイルでオーバーフローの可能性。`Int64` への変更を検討 | `MacroXPCProtocols.swift:242`, `MacroRunner.swift:3986` |
+| **中** | FileTransferDelegate 二重委譲問題 | XPC 転送時に `MacroXPCManager` と `TerminalWindowController` の両方がデリゲートを必要とする。転送開始時のデリゲート切り替えまたは MulticastDelegate パターンの検討 | `MacroXPCManager.swift`, `TerminalWindowController.swift` |
+| **中** | XPC 転送バイト型の Int64 対応 | `getTransferStatus` の XPC シグネチャが `(String, Int, Int)` のため、2GB 超ファイルでオーバーフローの可能性。`Int64` への変更を検討 | `MacroXPCProtocols.swift:243`, `MacroRunner.swift` |
+| **中** | getModemStatus 実装 | macOS ではシリアルポートの modem status 取得に `ioctl(TIOCMGET)` が必要。現在は常に 0 を返す | `MacroXPCManager.swift` |
 | **低** | waitevent の完全実装 | 現在は waitrecv のエイリアス。ターミナルイベント種別（接続/切断/ウィンドウ等）の区別に対応する | `MacroRunner.swift` |
 | **低** | デバッグモード出力の可視化 | setdebug 有効時のマクロ実行トレース表示。現在はフラグ切り替えのみ | `MacroRunner.swift` |
 | **低** | テスト：プロトコル定数のマジックナンバー | `TransferMenuProtocolTests.swift` 等でプロトコル定数（128, 1024, 0x10 等）がハードコード。名前付き定数への抽出を推奨 | `TransferMenuProtocolTests.swift`, `FileTransferSelfTests.swift` |

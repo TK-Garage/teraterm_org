@@ -42,6 +42,9 @@ class MacroXPCManager: NSObject {
     /// Weak reference to the terminal's FileTransferManager for progress queries
     weak var fileTransferManager: FileTransferManager?
 
+    /// Weak reference to the owning TerminalWindowController for terminal operations
+    weak var terminalController: TerminalWindowController?
+
     /// The remote macro service proxy
     var macroService: MacroServiceProtocol? {
         return connection?.remoteObjectProxyWithErrorHandler { [weak self] error in
@@ -260,15 +263,25 @@ class MacroXPCManager: NSObject {
 extension MacroXPCManager: MacroClientProtocol {
 
     func sendToTerminal(data: Data, reply: @escaping () -> Void) {
-        DispatchQueue.main.async {
-            // Integration point: forward data to active terminal
+        DispatchQueue.main.async { [weak self] in
+            self?.terminalController?.connectionManager.send(data)
             reply()
         }
     }
 
     func recvFromTerminal(timeout: Int, reply: @escaping (Data?) -> Void) {
-        DispatchQueue.main.async {
-            reply(nil)
+        DispatchQueue.main.async { [weak self] in
+            guard let ctrl = self?.terminalController else {
+                reply(nil)
+                return
+            }
+            let data = ctrl.terminalEmulator.macroReceiveBuffer
+            if !data.isEmpty {
+                ctrl.terminalEmulator.macroReceiveBuffer = ""
+                reply(Data(data.utf8))
+            } else {
+                reply(nil)
+            }
         }
     }
 
@@ -279,8 +292,8 @@ extension MacroXPCManager: MacroClientProtocol {
     }
 
     func setWindowTitle(title: String, reply: @escaping () -> Void) {
-        DispatchQueue.main.async {
-            // Integration point: set window title
+        DispatchQueue.main.async { [weak self] in
+            self?.terminalController?.window?.title = title
             reply()
         }
     }
@@ -320,161 +333,220 @@ extension MacroXPCManager: MacroClientProtocol {
     // --- New terminal operation methods ---
 
     func isConnected(reply: @escaping (Bool) -> Void) {
-        DispatchQueue.main.async {
-            // Integration point: check terminal connection status
-            reply(false)
+        DispatchQueue.main.async { [weak self] in
+            reply(self?.terminalController?.isConnected ?? false)
         }
     }
 
+    func isXPCLinked(reply: @escaping (Bool) -> Void) {
+        // XPC link is active if this manager has a valid connection
+        reply(connection != nil)
+    }
+
     func getWindowTitle(reply: @escaping (String) -> Void) {
-        DispatchQueue.main.async {
-            reply("")
+        DispatchQueue.main.async { [weak self] in
+            reply(self?.terminalController?.window?.title ?? "")
         }
     }
 
     func showWindow(visible: Bool, reply: @escaping () -> Void) {
-        DispatchQueue.main.async {
+        DispatchQueue.main.async { [weak self] in
+            if visible {
+                self?.terminalController?.window?.makeKeyAndOrderFront(nil)
+            } else {
+                self?.terminalController?.window?.orderOut(nil)
+            }
             reply()
         }
     }
 
     func clearScreen(reply: @escaping () -> Void) {
-        DispatchQueue.main.async {
+        DispatchQueue.main.async { [weak self] in
+            self?.terminalController?.clearScreen()
             reply()
         }
     }
 
     func sendBreak(reply: @escaping () -> Void) {
-        DispatchQueue.main.async {
+        DispatchQueue.main.async { [weak self] in
+            self?.terminalController?.connectionManager.sendBreak()
             reply()
         }
     }
 
     func disconnectFromHost(reply: @escaping () -> Void) {
-        DispatchQueue.main.async {
+        DispatchQueue.main.async { [weak self] in
+            self?.terminalController?.disconnect()
             reply()
         }
     }
 
     func connectToHost(param: String, reply: @escaping (Bool) -> Void) {
-        DispatchQueue.main.async {
-            // Integration point: establish connection
-            reply(false)
+        DispatchQueue.main.async { [weak self] in
+            guard let ctrl = self?.terminalController else {
+                reply(false)
+                return
+            }
+            // Parse connection string: "host:port" or "/dev/ttyXXX"
+            if param.hasPrefix("/dev/") {
+                ctrl.connectSerial(device: param)
+            } else {
+                let parts = param.components(separatedBy: ":")
+                let host = parts.first ?? "localhost"
+                let port = parts.count > 1 ? (Int(parts[1]) ?? 23) : 23
+                ctrl.connectTCP(host: host, port: port)
+            }
+            // Connection is async; report success that the attempt was initiated
+            reply(true)
         }
     }
 
     func connectLocalShell(reply: @escaping (Bool) -> Void) {
-        DispatchQueue.main.async {
-            reply(false)
+        DispatchQueue.main.async { [weak self] in
+            guard let ctrl = self?.terminalController else {
+                reply(false)
+                return
+            }
+            ctrl.connectLocalShell()
+            reply(true)
         }
     }
 
     func flushReceiveBuffer(reply: @escaping () -> Void) {
-        DispatchQueue.main.async {
+        DispatchQueue.main.async { [weak self] in
+            self?.terminalController?.terminalEmulator.macroReceiveBuffer = ""
             reply()
         }
     }
 
     func moveWindow(x: Int, y: Int, reply: @escaping () -> Void) {
-        DispatchQueue.main.async {
+        DispatchQueue.main.async { [weak self] in
+            self?.terminalController?.window?.setFrameOrigin(NSPoint(x: x, y: y))
             reply()
         }
     }
 
     func resizeWindow(width: Int, height: Int, reply: @escaping () -> Void) {
-        DispatchQueue.main.async {
+        DispatchQueue.main.async { [weak self] in
+            guard let win = self?.terminalController?.window else {
+                reply()
+                return
+            }
+            var frame = win.frame
+            frame.size = NSSize(width: width, height: height)
+            win.setFrame(frame, display: true)
             reply()
         }
     }
 
     func bringWindowToFront(reply: @escaping () -> Void) {
-        DispatchQueue.main.async {
+        DispatchQueue.main.async { [weak self] in
+            self?.terminalController?.window?.makeKeyAndOrderFront(nil)
             reply()
         }
     }
 
     func getWindowPosition(reply: @escaping (Int, Int) -> Void) {
-        DispatchQueue.main.async {
-            reply(0, 0)
+        DispatchQueue.main.async { [weak self] in
+            let origin = self?.terminalController?.window?.frame.origin ?? .zero
+            reply(Int(origin.x), Int(origin.y))
         }
     }
 
     func setBaudRate(rate: Int, reply: @escaping () -> Void) {
-        DispatchQueue.main.async {
+        DispatchQueue.main.async { [weak self] in
+            self?.terminalController?.settings.baudRate = rate
             reply()
         }
     }
 
     func setFlowControl(mode: Int, reply: @escaping () -> Void) {
-        DispatchQueue.main.async {
+        DispatchQueue.main.async { [weak self] in
+            self?.terminalController?.ttlSetFlowCtrl(mode)
             reply()
         }
     }
 
     func setDtr(on: Int, reply: @escaping () -> Void) {
-        DispatchQueue.main.async {
+        DispatchQueue.main.async { [weak self] in
+            self?.terminalController?.ttlSetDtr(on)
             reply()
         }
     }
 
     func setRts(on: Int, reply: @escaping () -> Void) {
-        DispatchQueue.main.async {
+        DispatchQueue.main.async { [weak self] in
+            self?.terminalController?.ttlSetRts(on)
             reply()
         }
     }
 
     func getModemStatus(reply: @escaping (Int) -> Void) {
         DispatchQueue.main.async {
+            // Modem status bits not available on macOS PTY
             reply(0)
         }
     }
 
     func setSerialDelayChar(ms: Int, reply: @escaping () -> Void) {
-        reply()
+        DispatchQueue.main.async { [weak self] in
+            self?.terminalController?.settings.serialDelayPerChar = ms
+            reply()
+        }
     }
 
     func setSerialDelayLine(ms: Int, reply: @escaping () -> Void) {
-        reply()
+        DispatchQueue.main.async { [weak self] in
+            self?.terminalController?.settings.serialDelayPerLine = ms
+            reply()
+        }
     }
 
     func openLog(path: String, append: Bool, reply: @escaping () -> Void) {
-        DispatchQueue.main.async {
+        DispatchQueue.main.async { [weak self] in
+            self?.terminalController?.ttlLogOpen(path, append: append)
             reply()
         }
     }
 
     func closeLog(reply: @escaping () -> Void) {
-        DispatchQueue.main.async {
+        DispatchQueue.main.async { [weak self] in
+            self?.terminalController?.ttlLogClose()
             reply()
         }
     }
 
     func pauseLog(reply: @escaping () -> Void) {
-        DispatchQueue.main.async {
+        DispatchQueue.main.async { [weak self] in
+            self?.terminalController?.ttlLogPause()
             reply()
         }
     }
 
     func resumeLog(reply: @escaping () -> Void) {
-        DispatchQueue.main.async {
+        DispatchQueue.main.async { [weak self] in
+            self?.terminalController?.ttlLogStart()
             reply()
         }
     }
 
     func writeToLog(text: String, reply: @escaping () -> Void) {
-        DispatchQueue.main.async {
+        DispatchQueue.main.async { [weak self] in
+            self?.terminalController?.ttlLogWrite(text)
             reply()
         }
     }
 
     func getLogInfo(reply: @escaping (Int, String) -> Void) {
-        DispatchQueue.main.async {
-            reply(0, "")
+        DispatchQueue.main.async { [weak self] in
+            let info = self?.terminalController?.ttlLogInfo() ?? (state: -1, filePath: "")
+            reply(info.state, info.filePath)
         }
     }
 
     func setLogRotation(mode: String, value: Int, reply: @escaping () -> Void) {
-        DispatchQueue.main.async {
+        DispatchQueue.main.async { [weak self] in
+            self?.terminalController?.ttlLogRotateSet(mode: mode, value: value)
             reply()
         }
     }
@@ -505,20 +577,25 @@ extension MacroXPCManager: MacroClientProtocol {
 
     func showError(message: String, line: Int, lineText: String, fileName: String,
                    reply: @escaping (Bool) -> Void) {
-        DispatchQueue.main.async {
-            // Default: stop on error
-            reply(true)
+        DispatchQueue.main.async { [weak self] in
+            guard let ctrl = self?.terminalController else {
+                reply(true)
+                return
+            }
+            ctrl.ttlShowError(message, line: line, lineText: lineText, fileName: fileName, completion: reply)
         }
     }
 
     func showStatusBox(message: String, title: String, reply: @escaping () -> Void) {
-        DispatchQueue.main.async {
+        DispatchQueue.main.async { [weak self] in
+            self?.terminalController?.ttlShowStatusBox(message, title: title)
             reply()
         }
     }
 
     func closeStatusBox(reply: @escaping () -> Void) {
-        DispatchQueue.main.async {
+        DispatchQueue.main.async { [weak self] in
+            self?.terminalController?.ttlCloseStatusBox()
             reply()
         }
     }
@@ -537,7 +614,22 @@ extension MacroXPCManager: MacroClientProtocol {
             self.isTransferInProgress = true
             self.currentTransferDirection = .send
             self.currentTransferState = .starting
-            // Integration point: start file transfer
+
+            guard let ctrl = self.terminalController,
+                  let protocolType = TransferProtocolType.from(protocolName) else {
+                self.isTransferInProgress = false
+                reply(false, "Invalid protocol or no terminal")
+                return
+            }
+
+            ctrl.ttlStartFileTransfer(
+                protocol: protocolType, direction: .send, filePath: localPath
+            ) { [weak self] success in
+                if !success {
+                    self?.isTransferInProgress = false
+                    self?.currentTransferState = .idle
+                }
+            }
             reply(true, "")
         }
     }
@@ -556,7 +648,22 @@ extension MacroXPCManager: MacroClientProtocol {
             self.isTransferInProgress = true
             self.currentTransferDirection = .receive
             self.currentTransferState = .starting
-            // Integration point: start file receive
+
+            guard let ctrl = self.terminalController,
+                  let protocolType = TransferProtocolType.from(protocolName) else {
+                self.isTransferInProgress = false
+                reply(false, "Invalid protocol or no terminal", "")
+                return
+            }
+
+            ctrl.ttlStartFileTransfer(
+                protocol: protocolType, direction: .receive, filePath: localDir
+            ) { [weak self] success in
+                if !success {
+                    self?.isTransferInProgress = false
+                    self?.currentTransferState = .idle
+                }
+            }
             reply(true, "", "")
         }
     }
@@ -610,58 +717,75 @@ extension MacroXPCManager: MacroClientProtocol {
     }
 
     func scpSend(localPath: String, remotePath: String, reply: @escaping (Bool) -> Void) {
-        DispatchQueue.main.async {
-            // Integration point: SCP send
-            reply(false)
+        DispatchQueue.main.async { [weak self] in
+            guard let ctrl = self?.terminalController else {
+                reply(false)
+                return
+            }
+            ctrl.ttlScpSend(localPath: localPath, remotePath: remotePath) { success in
+                reply(success)
+            }
         }
     }
 
     func scpRecv(remotePath: String, localPath: String, reply: @escaping (Bool) -> Void) {
-        DispatchQueue.main.async {
-            // Integration point: SCP receive
-            reply(false)
+        DispatchQueue.main.async { [weak self] in
+            guard let ctrl = self?.terminalController else {
+                reply(false)
+                return
+            }
+            ctrl.ttlScpRecv(remotePath: remotePath, localPath: localPath) { success in
+                reply(success)
+            }
         }
     }
 
     func restoreSetup(path: String, reply: @escaping () -> Void) {
-        DispatchQueue.main.async {
+        DispatchQueue.main.async { [weak self] in
+            self?.terminalController?.ttlRestoreSetup(from: path)
             reply()
         }
     }
 
     func callMenu(menuId: Int, reply: @escaping () -> Void) {
-        DispatchQueue.main.async {
+        DispatchQueue.main.async { [weak self] in
+            self?.terminalController?.ttlCallMenu(menuId: menuId)
             reply()
         }
     }
 
     func loadKeyMap(path: String, reply: @escaping () -> Void) {
-        DispatchQueue.main.async {
+        DispatchQueue.main.async { [weak self] in
+            self?.terminalController?.ttlLoadKeyMap(from: path)
             reply()
         }
     }
 
     func enableKeyboard(flag: Int, reply: @escaping () -> Void) {
-        DispatchQueue.main.async {
+        DispatchQueue.main.async { [weak self] in
+            self?.terminalController?.keyboardHandler.isEnabled = (flag != 0)
             reply()
         }
     }
 
     func setEcho(flag: Int, reply: @escaping () -> Void) {
-        DispatchQueue.main.async {
+        DispatchQueue.main.async { [weak self] in
+            self?.terminalController?.settings.localEcho = (flag != 0)
             reply()
         }
     }
 
     func displayString(text: String, reply: @escaping () -> Void) {
-        DispatchQueue.main.async {
+        DispatchQueue.main.async { [weak self] in
+            self?.terminalController?.terminalEmulator.processData(Data(text.utf8))
             reply()
         }
     }
 
     func sendPasswordData(data: Data, reply: @escaping () -> Void) {
-        DispatchQueue.main.async {
-            // Integration point: send password data to terminal (no logging)
+        DispatchQueue.main.async { [weak self] in
+            // Send password data directly to terminal without logging
+            self?.terminalController?.connectionManager.send(data)
             reply()
         }
     }
