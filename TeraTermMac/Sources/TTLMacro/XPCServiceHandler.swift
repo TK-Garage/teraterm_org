@@ -160,4 +160,9 @@ extension XPCServiceHandler: MacroServiceProtocol {
         macroRunner?.setVariable(name: name, value: value)
         reply()
     }
+
+    func notifyTerminalEvent(eventType: Int, reply: @escaping () -> Void) {
+        macroRunner?.enqueueTerminalEvent(eventType)
+        reply()
+    }
 }

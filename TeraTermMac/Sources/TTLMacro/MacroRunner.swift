@@ -142,6 +142,29 @@ class MacroRunner {
 
     private var isTransferWaiting: Bool = false
 
+    // MARK: - Terminal Event Queue (push from TeraTermMac)
+
+    private var terminalEventQueue: [Int] = []
+    private let terminalEventLock = NSLock()
+
+    /// Called by XPCServiceHandler when TeraTermMac pushes a terminal event.
+    func enqueueTerminalEvent(_ eventType: Int) {
+        terminalEventLock.lock()
+        terminalEventQueue.append(eventType)
+        if terminalEventQueue.count > 32 {
+            terminalEventQueue.removeFirst(terminalEventQueue.count - 32)
+        }
+        terminalEventLock.unlock()
+    }
+
+    /// Dequeue the oldest terminal event, returns 0 if none.
+    private func dequeueTerminalEvent() -> Int {
+        terminalEventLock.lock()
+        defer { terminalEventLock.unlock() }
+        if terminalEventQueue.isEmpty { return 0 }
+        return terminalEventQueue.removeFirst()
+    }
+
     // MARK: - Keychain
 
     private let keychainManager = TTLKeychainManager.shared
@@ -1611,18 +1634,36 @@ extension MacroRunner {
     ///   7 = window unfocus
     func cmdWaitEvent() { // [IMPLEMENTED]
         cancelExecTimer()
-        // First check for pending window events
+
+        // 1. Check local push-delivered event queue first (no XPC round-trip)
+        let localEvent = dequeueTerminalEvent()
+        if localEvent != 0 {
+            // Map event types: push delivers 1=resize,2=move,3=close,4=focus,5=unfocus,6=connected,7=disconnected
+            // waitevent result: 3=resize,4=move,5=close,6=focus,7=unfocus; 2=disconnect
+            if localEvent == 7 {
+                // disconnected event
+                resultValue = 2
+            } else if localEvent >= 1 && localEvent <= 5 {
+                resultValue = localEvent + 2
+            } else {
+                // connected (6) or unknown — treat as data event trigger
+                resultValue = 1
+            }
+            variables["result"] = .integer(resultValue)
+            scheduleNextLine()
+            return
+        }
+
+        // 2. Fallback: poll XPC for queued window events on TeraTermMac side
         clientProxy?.waitWindowEvent(timeout: 0, reply: { [weak self] windowEvent in
             guard let self = self else { return }
             if windowEvent != 0 {
-                // Map window event types: XPC returns 1=resize,2=move,3=close,4=focus,5=unfocus
-                // waitevent result: 3=resize,4=move,5=close,6=focus,7=unfocus
                 self.resultValue = windowEvent + 2
                 self.variables["result"] = .integer(self.resultValue)
                 self.scheduleNextLine()
                 return
             }
-            // Check connection state change (disconnect)
+            // 3. Check connection state change (disconnect)
             self.clientProxy?.isConnected(reply: { [weak self] connected in
                 guard let self = self else { return }
                 if !connected {
@@ -1631,7 +1672,7 @@ extension MacroRunner {
                     self.scheduleNextLine()
                     return
                 }
-                // Wait for data with timeout
+                // 4. Wait for data with timeout
                 self.clientProxy?.recvFromTerminal(timeout: self.timeoutValue, reply: { [weak self] data in
                     guard let self = self else { return }
                     if let data = data, let str = String(data: data, encoding: .utf8), !str.isEmpty {

@@ -61,6 +61,14 @@ class MockMacroService: NSObject, MacroServiceProtocol {
         reply()
     }
 
+    var notifyTerminalEventCalled = false
+    var lastTerminalEventType: Int = 0
+    func notifyTerminalEvent(eventType: Int, reply: @escaping () -> Void) {
+        notifyTerminalEventCalled = true
+        lastTerminalEventType = eventType
+        reply()
+    }
+
     func reset() {
         runMacroCalled = false
         lastScriptPath = nil

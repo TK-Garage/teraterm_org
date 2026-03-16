@@ -1309,6 +1309,74 @@ final class SetDebugTraceTests: XCTestCase {
     }
 }
 
+// MARK: - Push Event Queue Tests
+
+final class PushEventQueueTests: XCTestCase {
+
+    func testEnqueueTerminalEventResizeDeliveredViaWaitEvent() {
+        let mockClient = ExtendedMockMacroClient()
+        mockClient.windowEventResponse = 0 // No XPC-side events
+        mockClient.isConnectedResponse = true
+        mockClient.recvData = nil
+        let runner = MacroRunner()
+        runner.clientProxy = mockClient
+
+        // Push a resize event directly to the runner's local queue
+        runner.enqueueTerminalEvent(1) // 1 = resize
+
+        let script = """
+        waitevent
+        if result == 3 then send 'PUSH_RESIZE'
+        """
+        let path = NSTemporaryDirectory() + "test_push_resize.ttl"
+        try! script.write(toFile: path, atomically: true, encoding: .utf8)
+
+        let exp = expectation(description: "script done")
+        runner.onComplete = { _ in exp.fulfill() }
+        runner.run(scriptPath: path)
+        wait(for: [exp], timeout: 5.0)
+
+        let sendCall = mockClient.calls.first { $0.method == "sendToTerminal" }
+        XCTAssertNotNil(sendCall, "Push-delivered resize event should be detected (result=3)")
+    }
+
+    func testEnqueueTerminalEventDisconnectDeliveredViaWaitEvent() {
+        let mockClient = ExtendedMockMacroClient()
+        mockClient.windowEventResponse = 0
+        mockClient.isConnectedResponse = true
+        let runner = MacroRunner()
+        runner.clientProxy = mockClient
+
+        // Push a disconnect event
+        runner.enqueueTerminalEvent(7) // 7 = disconnected
+
+        let script = """
+        waitevent
+        if result == 2 then send 'PUSH_DISCONNECT'
+        """
+        let path = NSTemporaryDirectory() + "test_push_disconnect.ttl"
+        try! script.write(toFile: path, atomically: true, encoding: .utf8)
+
+        let exp = expectation(description: "script done")
+        runner.onComplete = { _ in exp.fulfill() }
+        runner.run(scriptPath: path)
+        wait(for: [exp], timeout: 5.0)
+
+        let sendCall = mockClient.calls.first { $0.method == "sendToTerminal" }
+        XCTAssertNotNil(sendCall, "Push-delivered disconnect event should map to result=2")
+    }
+
+    func testMockMacroServiceNotifyTerminalEvent() {
+        let mockService = MockMacroService()
+        XCTAssertFalse(mockService.notifyTerminalEventCalled)
+
+        mockService.notifyTerminalEvent(eventType: 1) {}
+
+        XCTAssertTrue(mockService.notifyTerminalEventCalled)
+        XCTAssertEqual(mockService.lastTerminalEventType, 1)
+    }
+}
+
 // MARK: - XPC Protocol Completeness Tests
 
 final class XPCProtocolCompletenessTests: XCTestCase {

@@ -1325,10 +1325,23 @@ MacroRunner には **120 以上のコマンド**が登録されており、全�
 | FileTransferSelfTests 定数適用拡大 | `XMODEMConstant.standardBlockSize`/`SOH`/`SUB` をテスト本文中のプロトコル定数使用箇所に適用（ブロックサイズ計算、SOH 判定、パディング検証等） |
 | テスト追加 | `WaitEventTests` にウィンドウイベント 3 件（resize/close/focus）追加、モック全体に `waitWindowEvent` メソッド追加 |
 
-#### 残件・要対応の優先度
+#### 対応済み（2026-03-16 第6回）
 
-| 優先度 | 項目 | 対応内容 | 関連ファイル |
-|:------:|------|---------|-------------|
-| **低** | XPC 双方向イベント通知 | 現在はポーリング方式。将来的にはプッシュ型通知（MacroServiceProtocol 経由）への変更を検討 | `MacroXPCProtocols.swift`, `MacroXPCManager.swift` |
-| **低** | Entitlements の本番環境調整 | `com.apple.security.temporary-exception.mach-lookup.global-name` は一時的例外。XPC Service として正式に組み込む場合は不要になる | `TTLMacro.entitlements`, `TeraTermMac.entitlements` |
-| **低** | FileTransferTests.swift の定数適用 | `FileTransferTests.swift` にも 128/1024/0x01 等のプロトコル定数が多数存在。`TransferMenuProtocolTests.swift` 同様の名前付き定数化が可能 | `FileTransferTests.swift` |
+| 項目 | 対応内容 |
+|------|---------|
+| XPC 双方向イベント通知（プッシュ型） | `MacroServiceProtocol` に `notifyTerminalEvent(eventType:reply:)` を追加。`XPCServiceHandler` で受信し `MacroRunner.enqueueTerminalEvent()` でローカルキューに格納。`TerminalWindowController.enqueueWindowEvent()` から `macroXPCManager.macroService` 経由でプッシュ送信。`cmdWaitEvent()` はローカルキュー → XPC ポーリング → 接続チェック → データ待機の 4 段階チェックに拡張 |
+| Entitlements 本番環境調整 | 両アプリの `temporary-exception.mach-lookup.global-name` を削除し、`application-groups` (`$(TeamIdentifierPrefix)com.teraterm.group`) に置換。App Group 経由の正式な XPC 通信に移行 |
+| FileTransferTests.swift 定数適用 | `XMODEMBlock` enum（SOH/STX/EOT/ACK/NAK/CAN/CRC_START/SUB/standardBlockSize/extendedBlockSize）を追加。XMODEM/YMODEM テスト全体のプロトコル定数をシンボル化（30+ 箇所） |
+| テスト追加 | `PushEventQueueTests` 3 件（プッシュ配信リサイズ、プッシュ配信切断、MockMacroService.notifyTerminalEvent）を追加 |
+
+#### 残件
+
+全ての優先度「高」「中」「低」の残件を対応済み。現時点で要対応の残件はなし。
+
+以下は将来的な改善候補（優先度なし・任意）:
+
+| 項目 | 内容 |
+|------|------|
+| App Group ID の正式決定 | 現在は `com.teraterm.group` プレースホルダ。Developer Program 登録後に正式な App Group ID を設定 |
+| Keychain access group の正式化 | `com.yourapp.TeraTermMac` プレースホルダを正式な Bundle ID に置換 |
+| ZMODEM / Kermit / B-Plus テストの定数化 | `FileTransferTests.swift` の ZMODEM/Kermit セクションにもプロトコル固有の定数が存在するが、可読性とのバランスで未対応 |

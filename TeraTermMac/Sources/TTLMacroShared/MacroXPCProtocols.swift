@@ -72,6 +72,11 @@ public enum TransferStatusString: String {
 
     /// Pass a variable to the macro environment
     func sendVariable(name: String, value: String, reply: @escaping () -> Void)
+
+    /// Push a terminal event notification to the macro (TeraTermMac → TTLMacro).
+    /// Event types: 1=resize, 2=move, 3=close, 4=focus, 5=unfocus,
+    ///              6=connected, 7=disconnected
+    func notifyTerminalEvent(eventType: Int, reply: @escaping () -> Void)
 }
 
 // MARK: - MacroClientProtocol (TTLMacro → TeraTermMac direction)

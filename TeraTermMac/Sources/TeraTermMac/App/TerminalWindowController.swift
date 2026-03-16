@@ -711,6 +711,9 @@ extension TerminalWindowController: NSWindowDelegate {
             pendingWindowEvents.removeFirst(pendingWindowEvents.count - 32)
         }
         windowEventLock.unlock()
+
+        // Push event to TTLMacro via XPC (non-blocking, fire-and-forget)
+        macroXPCManager?.macroService?.notifyTerminalEvent(eventType: eventType, reply: {})
     }
 
     /// Dequeue the oldest window event, returns 0 if none
