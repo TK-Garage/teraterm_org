@@ -482,9 +482,14 @@ extension MacroXPCManager: MacroClientProtocol {
     }
 
     func getModemStatus(reply: @escaping (Int) -> Void) {
-        DispatchQueue.main.async {
-            // Modem status bits not available on macOS PTY
-            reply(0)
+        DispatchQueue.main.async { [weak self] in
+            guard let ctrl = self?.terminalController,
+                  let serial = ctrl.connectionManager.currentConnection as? SerialConnection else {
+                // Not a serial connection — return 0
+                reply(0)
+                return
+            }
+            reply(serial.getModemStatus())
         }
     }
 
@@ -622,12 +627,18 @@ extension MacroXPCManager: MacroClientProtocol {
                 return
             }
 
+            // Take over as FileTransferManager delegate during XPC transfer
+            // so that currentTransferState is updated for status polling.
+            // Delegate is restored in transferDidComplete/transferDidFail.
+            ctrl.fileTransferManager.delegate = self
+
             ctrl.ttlStartFileTransfer(
                 protocol: protocolType, direction: .send, filePath: localPath
             ) { [weak self] success in
                 if !success {
                     self?.isTransferInProgress = false
                     self?.currentTransferState = .idle
+                    self?.restoreTerminalDelegate()
                 }
             }
             reply(true, "")
@@ -656,19 +667,23 @@ extension MacroXPCManager: MacroClientProtocol {
                 return
             }
 
+            // Take over as FileTransferManager delegate during XPC transfer
+            ctrl.fileTransferManager.delegate = self
+
             ctrl.ttlStartFileTransfer(
                 protocol: protocolType, direction: .receive, filePath: localDir
             ) { [weak self] success in
                 if !success {
                     self?.isTransferInProgress = false
                     self?.currentTransferState = .idle
+                    self?.restoreTerminalDelegate()
                 }
             }
             reply(true, "", "")
         }
     }
 
-    func getTransferStatus(reply: @escaping (String, Int, Int) -> Void) {
+    func getTransferStatus(reply: @escaping (String, Int64, Int64) -> Void) {
         DispatchQueue.main.async { [weak self] in
             guard let self = self else {
                 reply(TransferStatusString.idle.rawValue, 0, 0)
@@ -679,8 +694,7 @@ extension MacroXPCManager: MacroClientProtocol {
             case .inProgress(let bytesTransferred, let totalBytes, _):
                 let status: TransferStatusString =
                     self.currentTransferDirection == .send ? .sending : .receiving
-                reply(status.rawValue, Int(clamping: bytesTransferred),
-                      Int(clamping: totalBytes ?? 0))
+                reply(status.rawValue, bytesTransferred, totalBytes ?? 0)
 
             case .completed:
                 self.isTransferInProgress = false
@@ -800,17 +814,31 @@ extension MacroXPCManager: FileTransferDelegate {
     }
 
     func transferDidRequestSend(_ data: Data) {
-        // Data sending is handled by TerminalWindowController
+        // Forward send requests to the terminal's connection manager
+        terminalController?.connectionManager.send(data)
     }
 
     func transferDidComplete(fileName: String, bytes: Int64) {
         currentTransferState = .completed(fileName: fileName, bytes: bytes)
         isTransferInProgress = false
+        // Also notify the terminal controller (for UI updates like panel close)
+        terminalController?.transferDidComplete(fileName: fileName, bytes: bytes)
+        restoreTerminalDelegate()
     }
 
     func transferDidFail(error: String) {
         currentTransferState = .failed(error: error)
         isTransferInProgress = false
+        terminalController?.transferDidFail(error: error)
+        restoreTerminalDelegate()
+    }
+
+    /// Restore the FileTransferManager delegate back to TerminalWindowController
+    /// after XPC-initiated transfer completes.
+    private func restoreTerminalDelegate() {
+        if let ctrl = terminalController {
+            fileTransferManager?.delegate = ctrl
+        }
     }
 }
 

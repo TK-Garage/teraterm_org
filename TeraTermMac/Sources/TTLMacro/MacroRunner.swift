@@ -817,6 +817,8 @@ class MacroRunner {
         case "scprecv":     cmdScpRecv(args) // [IMPLEMENTED]
         case "scpsend":     cmdScpSend(args) // [IMPLEMENTED]
         case "recvfile":    cmdRecvFile(args) // [IMPLEMENTED]
+        case "protocolrecv": cmdProtocolRecv(args) // [IMPLEMENTED]
+        case "protocolsend": cmdProtocolSend(args) // [IMPLEMENTED]
 
         case "then": break // handled by if
 
@@ -3929,6 +3931,51 @@ extension MacroRunner {
 
 extension MacroRunner {
 
+    // MARK: Protocol argument resolver - [IMPLEMENTED]
+
+    /// Resolve protocol name from first argument for protocolsend/protocolrecv.
+    /// Usage: protocolrecv <protocol> [path]
+    /// Supported: xmodem, ymodem, zmodem, kermit, bplus, quickvan
+    func resolveProtocolArg(_ args: [String]) -> String {
+        guard !args.isEmpty else { return "xmodem" }
+        let name = resolveString(args[0]).lowercased()
+        switch name {
+        case "xmodem", "ymodem", "zmodem", "kermit", "bplus", "quickvan":
+            return name
+        case "xmodem-crc":  return "xmodem"
+        case "xmodem-1k":   return "xmodem"
+        case "b-plus", "b+": return "bplus"
+        case "quick-van":    return "quickvan"
+        default:
+            reportError("protocolsend/recv: unknown protocol '\(name)'")
+            return name
+        }
+    }
+
+    // MARK: protocolsend / protocolrecv - [IMPLEMENTED]
+
+    /// Generic protocol send: protocolsend <protocol> <filepath> [option]
+    func cmdProtocolSend(_ args: [String]) { // [IMPLEMENTED]
+        guard args.count >= 2 else {
+            reportError("protocolsend: usage: protocolsend <protocol> <filepath> [option]")
+            return
+        }
+        let proto = resolveProtocolArg(args)
+        let remaining = Array(args.dropFirst())
+        cmdFileTransferSend(remaining, proto: proto)
+    }
+
+    /// Generic protocol receive: protocolrecv <protocol> [localdir]
+    func cmdProtocolRecv(_ args: [String]) { // [IMPLEMENTED]
+        guard !args.isEmpty else {
+            reportError("protocolrecv: usage: protocolrecv <protocol> [localdir]")
+            return
+        }
+        let proto = resolveProtocolArg(args)
+        let remaining = Array(args.dropFirst())
+        cmdFileTransferRecv(remaining, proto: proto)
+    }
+
     // MARK: File transfer send - [IMPLEMENTED]
 
     func cmdFileTransferSend(_ args: [String], proto: String) { // [IMPLEMENTED]
@@ -3999,7 +4046,7 @@ extension MacroRunner {
     private func pollTransferStatus() {
         guard isRunning, !isCancelled, isTransferWaiting else { return }
 
-        clientProxy?.getTransferStatus(reply: { [weak self] statusStr, bytesSent, totalBytes in
+        clientProxy?.getTransferStatus(reply: { [weak self] statusStr, _, _ in
             guard let self = self else { return }
 
             let status = TransferStatusString(rawValue: statusStr) ?? .idle

@@ -1276,11 +1276,15 @@ extension TerminalWindowController: TTLInterpreterDelegate {
     }
 
     func ttlSetDtr(_ on: Int) {
-        // DTR signal
+        if let serial = connectionManager.currentConnection as? SerialConnection {
+            serial.setDtr(on != 0)
+        }
     }
 
     func ttlSetRts(_ on: Int) {
-        // RTS signal
+        if let serial = connectionManager.currentConnection as? SerialConnection {
+            serial.setRts(on != 0)
+        }
     }
 
     func ttlStartFileTransfer(protocol type: TransferProtocolType, direction: TransferDirection, filePath: String, completion: @escaping (Bool) -> Void) {

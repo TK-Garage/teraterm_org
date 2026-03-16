@@ -211,7 +211,7 @@ class MockMacroClient: NSObject, MacroClientProtocol {
                        reply: @escaping (Bool, String) -> Void) { reply(true, "") }
     func startFileRecv(protocolName: String, localDir: String,
                        reply: @escaping (Bool, String, String) -> Void) { reply(true, "", "") }
-    func getTransferStatus(reply: @escaping (String, Int, Int) -> Void) { reply("done", 0, 0) }
+    func getTransferStatus(reply: @escaping (String, Int64, Int64) -> Void) { reply("done", 0, 0) }
     func cancelTransfer(reply: @escaping () -> Void) { reply() }
     func scpSend(localPath: String, remotePath: String, reply: @escaping (Bool) -> Void) { reply(true) }
     func scpRecv(remotePath: String, localPath: String, reply: @escaping (Bool) -> Void) { reply(true) }

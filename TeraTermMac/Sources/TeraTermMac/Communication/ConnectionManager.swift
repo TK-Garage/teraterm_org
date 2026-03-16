@@ -543,6 +543,36 @@ class SerialConnection: Connection {
         return false
     }
 
+    /// Set DTR signal on/off via ioctl.
+    func setDtr(_ on: Bool) {
+        guard fileDescriptor >= 0 else { return }
+        var bits: Int32 = Int32(TIOCM_DTR)
+        _ = ioctl(fileDescriptor, UInt(on ? TIOCMBIS : TIOCMBIC), &bits)
+    }
+
+    /// Set RTS signal on/off via ioctl.
+    func setRts(_ on: Bool) {
+        guard fileDescriptor >= 0 else { return }
+        var bits: Int32 = Int32(TIOCM_RTS)
+        _ = ioctl(fileDescriptor, UInt(on ? TIOCMBIS : TIOCMBIC), &bits)
+    }
+
+    /// Get modem status bits via ioctl(TIOCMGET).
+    /// Returns a bitmask: bit0=CTS, bit1=DSR, bit2=RI, bit3=DCD (Tera Term convention).
+    /// Returns 0 if the port is not open or ioctl fails.
+    func getModemStatus() -> Int {
+        guard fileDescriptor >= 0 else { return 0 }
+        var status: Int32 = 0
+        guard ioctl(fileDescriptor, UInt(TIOCMGET), &status) == 0 else { return 0 }
+        // Map POSIX modem bits to Tera Term convention
+        var result = 0
+        if status & Int32(TIOCM_CTS) != 0 { result |= 0x01 }
+        if status & Int32(TIOCM_DSR) != 0 { result |= 0x02 }
+        if status & Int32(TIOCM_RI)  != 0 { result |= 0x04 }
+        if status & Int32(TIOCM_CD)  != 0 { result |= 0x08 }
+        return result
+    }
+
     init(device: String, baudRate: Int, dataBits: Int, parity: Parity, stopBits: Int, flowControl: FlowControl) {
         self.device = device
         self.baudRate = baudRate

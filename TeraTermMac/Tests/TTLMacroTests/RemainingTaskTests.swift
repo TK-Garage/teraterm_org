@@ -31,7 +31,7 @@ class ExtendedMockMacroClient: NSObject, MacroClientProtocol {
     var hostname: String = "testhost"
     var windowTitle: String = "Test Window"
     var clipboardText: String = "clipboard"
-    var transferStatus: (String, Int, Int) = ("done", 100, 100)
+    var transferStatus: (String, Int64, Int64) = ("done", 100, 100)
     var connectResult: Bool = true
 
     private func record(_ method: String, _ args: [String: Any] = [:]) {
@@ -187,7 +187,7 @@ class ExtendedMockMacroClient: NSObject, MacroClientProtocol {
         record("startFileRecv", ["protocolName": protocolName])
         reply(true, "", "")
     }
-    func getTransferStatus(reply: @escaping (String, Int, Int) -> Void) {
+    func getTransferStatus(reply: @escaping (String, Int64, Int64) -> Void) {
         record("getTransferStatus")
         reply(transferStatus.0, transferStatus.1, transferStatus.2)
     }
@@ -886,6 +886,171 @@ final class MacroXPCManagerIntegrationTests: XCTestCase {
         let moveCall = mock.calls.first { $0.method == "moveWindow" }
         XCTAssertEqual(moveCall?.args["x"] as? Int, 100)
         XCTAssertEqual(moveCall?.args["y"] as? Int, 200)
+    }
+}
+
+// MARK: - Protocol Send/Recv Tests
+
+final class ProtocolSendRecvTests: XCTestCase {
+
+    var runner: MacroRunner!
+    var mockClient: ExtendedMockMacroClient!
+    var tempDir: String!
+
+    override func setUp() {
+        super.setUp()
+        runner = MacroRunner()
+        mockClient = ExtendedMockMacroClient()
+        runner.clientProxy = mockClient
+        tempDir = NSTemporaryDirectory() + "ttlmacro_proto_\(ProcessInfo.processInfo.processIdentifier)/"
+        try? FileManager.default.createDirectory(atPath: tempDir, withIntermediateDirectories: true)
+    }
+
+    override func tearDown() {
+        runner.stop()
+        try? FileManager.default.removeItem(atPath: tempDir)
+        super.tearDown()
+    }
+
+    private func writeTTL(_ content: String) -> String {
+        let path = tempDir + "test.ttl"
+        try? content.write(toFile: path, atomically: true, encoding: .utf8)
+        return path
+    }
+
+    func testProtocolSendCallsStartFileSendWithProtocol() {
+        let exp = XCTestExpectation(description: "protocolsend completes")
+        mockClient.transferStatus = ("done", 100, 100)
+        let testFile = tempDir + "proto_send.bin"
+        FileManager.default.createFile(atPath: testFile, contents: Data([0x01]))
+        let path = writeTTL("protocolsend 'zmodem' '\(testFile)'\nend")
+        runner.onComplete = { _ in exp.fulfill() }
+        runner.run(scriptPath: path)
+        wait(for: [exp], timeout: 10.0)
+        let sendCall = mockClient.calls.first { $0.method == "startFileSend" }
+        XCTAssertNotNil(sendCall, "Should call startFileSend")
+        XCTAssertEqual(sendCall?.args["protocolName"] as? String, "zmodem")
+    }
+
+    func testProtocolRecvCallsStartFileRecvWithProtocol() {
+        let exp = XCTestExpectation(description: "protocolrecv completes")
+        mockClient.transferStatus = ("done", 256, 256)
+        let path = writeTTL("protocolrecv 'kermit'\nend")
+        runner.onComplete = { _ in exp.fulfill() }
+        runner.run(scriptPath: path)
+        wait(for: [exp], timeout: 10.0)
+        let recvCall = mockClient.calls.first { $0.method == "startFileRecv" }
+        XCTAssertNotNil(recvCall, "Should call startFileRecv")
+        XCTAssertEqual(recvCall?.args["protocolName"] as? String, "kermit")
+    }
+
+    func testProtocolSendWithoutProtocolNameErrors() {
+        let exp = XCTestExpectation(description: "protocolsend errors")
+        let path = writeTTL("protocolsend\nend")
+        runner.onError = { _, _ in exp.fulfill() }
+        runner.onComplete = { _ in exp.fulfill() }
+        runner.run(scriptPath: path)
+        wait(for: [exp], timeout: 10.0)
+        // Should have errored or sent a macroDidFail
+    }
+}
+
+// MARK: - Int64 Transfer Status Tests
+
+final class Int64TransferStatusTests: XCTestCase {
+
+    func testTransferStatusUsesInt64() {
+        let mock = ExtendedMockMacroClient()
+        // Set a value larger than Int32.max to verify Int64 support
+        mock.transferStatus = ("sending", 3_000_000_000, 5_000_000_000)
+        let exp = XCTestExpectation(description: "Int64 status")
+        mock.getTransferStatus { status, bytes, total in
+            XCTAssertEqual(status, "sending")
+            XCTAssertEqual(bytes, 3_000_000_000)
+            XCTAssertEqual(total, 5_000_000_000)
+            exp.fulfill()
+        }
+        wait(for: [exp], timeout: 2.0)
+    }
+
+    func testTransferStatusDoneValues() {
+        let mock = ExtendedMockMacroClient()
+        mock.transferStatus = ("done", 0, 0)
+        let exp = XCTestExpectation(description: "done status")
+        mock.getTransferStatus { status, bytes, total in
+            XCTAssertEqual(status, "done")
+            XCTAssertEqual(bytes, 0)
+            XCTAssertEqual(total, 0)
+            exp.fulfill()
+        }
+        wait(for: [exp], timeout: 2.0)
+    }
+}
+
+// MARK: - Protocol Name Resolution Tests
+
+final class ProtocolNameResolutionTests: XCTestCase {
+
+    var runner: MacroRunner!
+    var mockClient: ExtendedMockMacroClient!
+    var tempDir: String!
+
+    override func setUp() {
+        super.setUp()
+        runner = MacroRunner()
+        mockClient = ExtendedMockMacroClient()
+        runner.clientProxy = mockClient
+        tempDir = NSTemporaryDirectory() + "ttlmacro_protoname_\(ProcessInfo.processInfo.processIdentifier)/"
+        try? FileManager.default.createDirectory(atPath: tempDir, withIntermediateDirectories: true)
+    }
+
+    override func tearDown() {
+        runner.stop()
+        try? FileManager.default.removeItem(atPath: tempDir)
+        super.tearDown()
+    }
+
+    private func writeTTL(_ content: String) -> String {
+        let path = tempDir + "test.ttl"
+        try? content.write(toFile: path, atomically: true, encoding: .utf8)
+        return path
+    }
+
+    func testProtocolSendPassesXmodem() {
+        let exp = XCTestExpectation(description: "xmodem protocol")
+        mockClient.transferStatus = ("done", 100, 100)
+        let testFile = tempDir + "test.bin"
+        FileManager.default.createFile(atPath: testFile, contents: Data([0x01]))
+        let path = writeTTL("protocolsend 'xmodem' '\(testFile)'\nend")
+        runner.onComplete = { _ in exp.fulfill() }
+        runner.run(scriptPath: path)
+        wait(for: [exp], timeout: 10.0)
+        let call = mockClient.calls.first { $0.method == "startFileSend" }
+        XCTAssertEqual(call?.args["protocolName"] as? String, "xmodem")
+    }
+
+    func testProtocolSendPassesYmodem() {
+        let exp = XCTestExpectation(description: "ymodem protocol")
+        mockClient.transferStatus = ("done", 100, 100)
+        let testFile = tempDir + "test.bin"
+        FileManager.default.createFile(atPath: testFile, contents: Data([0x01]))
+        let path = writeTTL("protocolsend 'ymodem' '\(testFile)'\nend")
+        runner.onComplete = { _ in exp.fulfill() }
+        runner.run(scriptPath: path)
+        wait(for: [exp], timeout: 10.0)
+        let call = mockClient.calls.first { $0.method == "startFileSend" }
+        XCTAssertEqual(call?.args["protocolName"] as? String, "ymodem")
+    }
+
+    func testProtocolRecvPassesBplus() {
+        let exp = XCTestExpectation(description: "bplus protocol")
+        mockClient.transferStatus = ("done", 100, 100)
+        let path = writeTTL("protocolrecv 'bplus'\nend")
+        runner.onComplete = { _ in exp.fulfill() }
+        runner.run(scriptPath: path)
+        wait(for: [exp], timeout: 10.0)
+        let call = mockClient.calls.first { $0.method == "startFileRecv" }
+        XCTAssertEqual(call?.args["protocolName"] as? String, "bplus")
     }
 }
 

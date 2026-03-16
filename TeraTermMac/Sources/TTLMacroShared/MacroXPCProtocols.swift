@@ -242,8 +242,8 @@ public enum TransferStatusString: String {
     func startFileRecv(protocolName: String, localDir: String,
                        reply: @escaping (Bool, String, String) -> Void)
 
-    /// Get transfer status
-    func getTransferStatus(reply: @escaping (String, Int, Int) -> Void)
+    /// Get transfer status (status, bytesTransferred, totalBytes)
+    func getTransferStatus(reply: @escaping (String, Int64, Int64) -> Void)
 
     /// Cancel current transfer
     func cancelTransfer(reply: @escaping () -> Void)

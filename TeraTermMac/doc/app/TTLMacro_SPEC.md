@@ -1224,8 +1224,8 @@ MacroRunner には **120 以上のコマンド**が登録されており、全�
 | コマンド | 仕様 | 実装状況 | 詳細 |
 |---------|------|:-------:|------|
 | `testlink` | result: 0=未リンク, 1=リンク済み・未接続, 2=リンク済み・接続中 | **実装済み** | `isXPCLinked` → `isConnected` の 2 段階チェックで 3 状態を返す |
-| `protocolrecv` | 汎用プロトコル受信 | **未実装** | MacroRunner の case 文に未登録 |
-| `protocolsend` | 汎用プロトコル送信 | **未実装** | MacroRunner の case 文に未登録 |
+| `protocolrecv` | 汎用プロトコル受信 | **実装済み** | `protocolrecv <proto> [localdir]` — 第1引数でプロトコル名を指定、内部で `cmdFileTransferRecv` に委譲 |
+| `protocolsend` | 汎用プロトコル送信 | **実装済み** | `protocolsend <proto> <filepath> [option]` — 第1引数でプロトコル名を指定、内部で `cmdFileTransferSend` に委譲 |
 | `waitevent` | ターミナルイベント待機 | **簡易実装** | `cmdWaitRecv()` へのエイリアス。ターミナルイベント種別の区別なし |
 
 #### コマンドカテゴリ別の実装状況
@@ -1244,7 +1244,7 @@ MacroRunner には **120 以上のコマンド**が登録されており、全�
 | システム | 21 | 21 | exec〜var2clipb |
 | ログ | 8 | 8 | logopen〜logautoclosemode |
 | シリアル | 7 | 7 | setbaud〜setserialdelayline |
-| ファイル転送 | 17 | 17 | xmodem〜recvfile（protocolrecv/send は未登録） |
+| ファイル転送 | 19 | 19 | xmodem〜recvfile + protocolrecv/protocolsend（全登録済み） |
 | セキュリティ | 8 | 8 | getpassword〜ispassword2（Keychain 連携済み） |
 | チェックサム | 10 | 10 | crc16〜checksum32file |
 | ビット操作 | 2 | 2 | rotateleft/rotateright |
@@ -1294,14 +1294,22 @@ MacroRunner には **120 以上のコマンド**が登録されており、全�
 | `TransferProtocolType.from()` 追加 | XPC プロトコル名文字列から `TransferProtocolType` を生成するファクトリメソッドを追加 |
 | テスト大幅強化 | `MockMacroClient` に全 MacroClientProtocol メソッドを実装。`TestLinkTests`（3 状態テスト 4 件）、`MacroXPCManagerIntegrationTests`（XPC 操作テスト 5 件）を追加 |
 
+#### 対応済み（2026-03-16 第3回）
+
+| 項目 | 対応内容 |
+|------|---------|
+| protocolrecv / protocolsend 実装 | MacroRunner に `cmdProtocolSend`/`cmdProtocolRecv` を追加。第1引数でプロトコル名を指定し、内部で `cmdFileTransferSend`/`cmdFileTransferRecv` に委譲。`resolveProtocolArg` ヘルパーでプロトコル名をバリデーション |
+| FileTransferDelegate 二重委譲解決 | XPC 転送開始時に `fileTransferManager.delegate = self (MacroXPCManager)` に切り替え。転送完了/失敗時に `restoreTerminalDelegate()` で `TerminalWindowController` に戻す。`transferDidRequestSend` も `connectionManager.send()` に転送 |
+| XPC 転送バイト型 Int64 化 | `getTransferStatus` のシグネチャを `(String, Int, Int)` → `(String, Int64, Int64)` に変更。プロトコル・実装・モック・テスト全箇所を一括更新。2GB 超ファイル転送に対応 |
+| getModemStatus 実装 | `SerialConnection` に `getModemStatus()` メソッド追加。`ioctl(TIOCMGET)` で CTS/DSR/RI/DCD ビットを取得し Tera Term 互換のビットマスクで返す |
+| DTR/RTS 信号制御実装 | `SerialConnection` に `setDtr()`/`setRts()` メソッド追加。`ioctl(TIOCMBIS/TIOCMBIC)` で制御。`TerminalWindowController.ttlSetDtr()`/`ttlSetRts()` を実結合 |
+| テスト追加 | `ProtocolSendRecvTests` 3 件、`Int64TransferStatusTests` 2 件、`ProtocolNameResolutionTests` 3 件を追加 |
+
 #### 残件・要対応の優先度
 
 | 優先度 | 項目 | 対応内容 | 関連ファイル |
 |:------:|------|---------|-------------|
-| **中** | protocolrecv / protocolsend 未登録 | MacroRunner の case 文に追加し、汎用ファイル転送コマンドとして実装する | `MacroRunner.swift:573-823` |
-| **中** | FileTransferDelegate 二重委譲問題 | XPC 転送時に `MacroXPCManager` と `TerminalWindowController` の両方がデリゲートを必要とする。転送開始時のデリゲート切り替えまたは MulticastDelegate パターンの検討 | `MacroXPCManager.swift`, `TerminalWindowController.swift` |
-| **中** | XPC 転送バイト型の Int64 対応 | `getTransferStatus` の XPC シグネチャが `(String, Int, Int)` のため、2GB 超ファイルでオーバーフローの可能性。`Int64` への変更を検討 | `MacroXPCProtocols.swift:243`, `MacroRunner.swift` |
-| **中** | getModemStatus 実装 | macOS ではシリアルポートの modem status 取得に `ioctl(TIOCMGET)` が必要。現在は常に 0 を返す | `MacroXPCManager.swift` |
+| **中** | setFlowControl 実装 | macOS シリアルポートの `tcsetattr` によるフロー制御切り替え。現在は空実装 | `TerminalWindowController.swift`, `SerialConnection` |
 | **低** | waitevent の完全実装 | 現在は waitrecv のエイリアス。ターミナルイベント種別（接続/切断/ウィンドウ等）の区別に対応する | `MacroRunner.swift` |
 | **低** | デバッグモード出力の可視化 | setdebug 有効時のマクロ実行トレース表示。現在はフラグ切り替えのみ | `MacroRunner.swift` |
 | **低** | テスト：プロトコル定数のマジックナンバー | `TransferMenuProtocolTests.swift` 等でプロトコル定数（128, 1024, 0x10 等）がハードコード。名前付き定数への抽出を推奨 | `TransferMenuProtocolTests.swift`, `FileTransferSelfTests.swift` |
