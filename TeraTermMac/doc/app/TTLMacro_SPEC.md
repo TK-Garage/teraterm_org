@@ -1148,3 +1148,135 @@ TTLMacro.app                          TeraTermMac.app
 - 待機中も `pause` / `stop` を受付（DispatchQueue 非同期ポーリング + キャンセルフラグ）
 - 転送中に別の転送コマンド実行時: `macroDidFail(error: "Transfer already in progress", line: N)`
 - TeraTermMac.app 側で `isTransferInProgress` フラグを管理
+
+---
+
+## 実装状況（Implementation Status）
+
+本セクションは TTLMacro_SPEC.md の各仕様に対する実装状況をまとめる。
+
+凡例:
+- **実装済み**: 仕様通りに動作するコードが存在
+- **部分実装**: コードは存在するが仕様を完全には満たしていない
+- **統合待ち**: TTLMacro 側は実装済みだが TeraTermMac 側の統合ポイントがスタブ
+- **未実装**: コードが存在しない
+
+### 1. アーキテクチャ・起動フロー
+
+| 項目 | 状態 | 備考 |
+|------|:----:|------|
+| パターン A: 直接起動 | 実装済み | `TTLMacroApp.swift` — NSOpenPanel 表示、マクロ実行、完了後終了 |
+| パターン B: XPC 起動 | 実装済み | `--xpc-mode` 引数検出、XPCServiceHandler 起動、idle メニュー表示 |
+| Anonymous Listener + endpoint ファイル | 実装済み | `XPCServiceHandler.swift` — `/tmp/ttlmacro_endpoint_{PID}.dat` 経由 |
+| endpoint ポーリング（0.2 秒間隔、最大 10 秒） | 実装済み | `MacroXPCManager.swift` — Timer + fallback scan |
+| 再接続ポリシー（3 回、2 秒間隔） | 実装済み | `MacroConstants.maxReconnectAttempts=3`, `reconnectInterval=2.0` |
+
+### 2. XPC プロトコル
+
+| プロトコル | メソッド数 | 状態 | 備考 |
+|-----------|:---------:|:----:|------|
+| MacroServiceProtocol（6 メソッド） | 6/6 | 実装済み | `XPCServiceHandler.swift` で全メソッド実装 |
+| MacroClientProtocol（57 メソッド） | 57/57 | 統合待ち | `MacroXPCManager.swift` で全メソッド定義済み。ただし TeraTermMac のターミナルエンジン未統合のため多数が `// Integration point:` スタブ |
+
+#### MacroClientProtocol 統合待ちメソッド一覧
+
+以下のメソッドは XPC 応答を返すが、TeraTermMac 側のターミナルエンジンとの実結合が未完了。
+
+| カテゴリ | メソッド | 現状の動作 |
+|---------|---------|-----------|
+| 送受信 | `sendToTerminal(data:)` | データ破棄（ターミナル送信バッファ未接続） |
+| 送受信 | `recvFromTerminal(timeout:)` | 空データ応答（ターミナル受信バッファ未接続） |
+| 接続 | `isConnected(reply:)` | 常に `false` を応答 |
+| 接続 | `connectToHost(param:reply:)` | 接続ロジック未接続 |
+| 接続 | `connectLocalShell(reply:)` | PTY 起動ロジック未接続 |
+| 接続 | `disconnectFromHost(reply:)` | 切断ロジック未接続 |
+| ウィンドウ | `setWindowTitle` / `getWindowTitle` / `showWindow` / `moveWindow` / `resizeWindow` / `bringWindowToFront` / `getWindowPosition` | TerminalWindowController 未接続 |
+| 画面 | `clearScreen` / `displayString` | TerminalView 未接続 |
+| シリアル | `setBaudRate` / `setFlowControl` / `setDtr` / `setRts` / `getModemStatus` / `setSerialDelayChar` / `setSerialDelayLine` | シリアルポート層未接続 |
+| ログ | `openLog` / `closeLog` / `pauseLog` / `resumeLog` / `writeToLog` / `getLogInfo` / `setLogRotation` | ログエンジン未接続 |
+| ファイル転送 | `startFileSend` / `startFileRecv` / `getTransferStatus` / `cancelTransfer` | 転送エンジン未接続。`isTransferInProgress` フラグ管理のみ実装 |
+| SCP | `scpSend` / `scpRecv` | SSH/SCP 層未接続 |
+| キーボード | `enableKeyboard` / `setEcho` | ターミナル入力層未接続 |
+| 設定 | `restoreSetup` / `callMenu` / `loadKeyMap` / `sendBreak` | 各設定マネージャー未接続 |
+
+#### MacroClientProtocol 実装済みメソッド
+
+| メソッド | 備考 |
+|---------|------|
+| `macroDidFinish` / `macroDidFail` | マクロ完了・エラー通知 |
+| `logMessage` | ログ出力 |
+| `terminateApp` | アプリ終了 |
+| `getAppVersion` | バンドルバージョン取得 |
+| `didExecuteLine` | 行実行通知 |
+| `showDialog` | ダイアログ表示（messagebox/inputbox/yesnobox 等） |
+| `showError` / `showStatusBox` / `closeStatusBox` | エラー・ステータスダイアログ |
+| `getClipboard` / `setClipboard` | クリップボード操作 |
+| `getHostname` | ホスト名取得 |
+| `getAppDirectory` | アプリディレクトリ取得 |
+| `sendPasswordData` | パスワード安全送信 |
+
+### 3. マクロコマンド（MacroRunner）
+
+MacroRunner には **120 以上のコマンド**が登録されており、全コマンドに `[IMPLEMENTED]` マークが付いている。
+
+#### 仕様と実装の差異
+
+| コマンド | 仕様 | 実装状況 | 詳細 |
+|---------|------|:-------:|------|
+| `testlink` | result: 0=未リンク, 1=リンク済み・未接続, 2=リンク済み・接続中 | **部分実装** | 現在は `isConnected` の結果のみで 0 または 2 を返す。XPC 接続状態（result=1）の判定が未実装。`MacroRunner.swift:1661` で `connected ? 2 : 0` のみ |
+| `protocolrecv` | 汎用プロトコル受信 | **未実装** | MacroRunner の case 文に未登録 |
+| `protocolsend` | 汎用プロトコル送信 | **未実装** | MacroRunner の case 文に未登録 |
+| `waitevent` | ターミナルイベント待機 | **簡易実装** | `cmdWaitRecv()` へのエイリアス。ターミナルイベント種別の区別なし |
+
+#### コマンドカテゴリ別の実装状況
+
+| カテゴリ | 登録数 | 実装済み | 備考 |
+|---------|:------:|:-------:|------|
+| 制御フロー | 21 | 21 | if/else/for/while/do/goto/call/return/include 等 |
+| 送受信 | 9 | 9 | send/sendln/sendtext/sendbinary/sendbreak/sendkcode/sendfile/recvln/flushrecv |
+| 文字列操作 | 22 | 22 | strlen〜sprintf2 |
+| ダイアログ | 10 | 10 | messagebox〜setdlgpos |
+| ファイル I/O | 21 | 21 | fileopen〜fileunlock |
+| ディレクトリ | 13 | 13 | findfirst〜setdir |
+| 接続 | 5 | 4+1 | testlink が部分実装（0/2 のみ、1 未対応） |
+| 待機 | 9 | 9 | wait〜mpause（waitevent は簡易実装） |
+| アプリ制御 | 11 | 11 | closett〜dispstr |
+| システム | 21 | 21 | exec〜var2clipb |
+| ログ | 8 | 8 | logopen〜logautoclosemode |
+| シリアル | 7 | 7 | setbaud〜setserialdelayline |
+| ファイル転送 | 17 | 17 | xmodem〜recvfile（protocolrecv/send は未登録） |
+| セキュリティ | 8 | 8 | getpassword〜ispassword2（Keychain 連携済み） |
+| チェックサム | 10 | 10 | crc16〜checksum32file |
+| ビット操作 | 2 | 2 | rotateleft/rotateright |
+| ブロードキャスト | 5 | 5 | sendbroadcast〜setmulticastname（スタブ） |
+| その他 | 10 | 10 | beep〜loadkeymap |
+
+### 4. UI コンポーネント
+
+| コンポーネント | 状態 | 備考 |
+|--------------|:----:|------|
+| アプリアイコン | 実装済み | 7 サイズ PNG（16〜1024px）+ Contents.json 完備 |
+| メニューバー（StatusBarManager） | 実装済み | idle/running/paused 3 状態メニュー、SF Symbol アイコンアニメーション |
+| 停止確認ダイアログ | 実装済み | `MacroDialogHelper.showStopConfirmation()` |
+| ローカライズ（en/ja） | 実装済み | 18 キー、英語・日本語完備 |
+| デバッグモード（setdebug） | 実装済み | フラグ切り替えのみ。デバッグ出力 UI は TeraTermMac 側の追加設定タブに存在 |
+
+### 5. セキュリティ
+
+| 項目 | 状態 | 備考 |
+|------|:----:|------|
+| Keychain 連携 | 実装済み | `TTLKeychainManager` — Security.framework 使用、全 8 コマンド対応 |
+| パスワード安全送信（sendPasswordData） | 実装済み | XPC 経由で送信、sendToTerminal は使用しない |
+| メモリ消去（zeroData） | 実装済み | `TTLKeychainManager.zeroData(&data)` |
+| iCloud 同期防止 | 実装済み | `kSecAttrAccessibleWhenUnlockedThisDeviceOnly` |
+
+### 6. 未対応・要対応の優先度
+
+| 優先度 | 項目 | 対応内容 |
+|:------:|------|---------|
+| **高** | testlink result=1 未対応 | XPC connection の有効性チェックを追加し、XPC 接続あり + ホスト未接続 → result=1 を返すようにする |
+| **高** | MacroClientProtocol 統合 | TeraTermMac のターミナルエンジン（送受信バッファ、接続管理、ウィンドウ制御等）と XPC メソッドを実結合する |
+| **中** | protocolrecv / protocolsend 未登録 | MacroRunner の case 文に追加し、汎用ファイル転送コマンドとして実装する |
+| **中** | ファイル転送エンジン統合 | TeraTermMac 側に XMODEM/ZMODEM/Kermit 等の実転送エンジンを接続する |
+| **低** | waitevent の完全実装 | 現在は waitrecv のエイリアス。ターミナルイベント種別（接続/切断/ウィンドウ等）の区別に対応する |
+| **低** | デバッグモード出力の可視化 | setdebug 有効時のマクロ実行トレース表示。現在はフラグ切り替えのみ |
