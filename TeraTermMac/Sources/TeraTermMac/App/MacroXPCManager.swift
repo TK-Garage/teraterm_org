@@ -33,6 +33,15 @@ class MacroXPCManager: NSObject {
     /// Whether transfer is in progress (exclusion flag)
     private(set) var isTransferInProgress: Bool = false
 
+    /// Current transfer state reported by FileTransferDelegate
+    private var currentTransferState: TransferState = .idle
+
+    /// Current transfer direction (send or receive)
+    private var currentTransferDirection: TransferDirection = .send
+
+    /// Weak reference to the terminal's FileTransferManager for progress queries
+    weak var fileTransferManager: FileTransferManager?
+
     /// The remote macro service proxy
     var macroService: MacroServiceProtocol? {
         return connection?.remoteObjectProxyWithErrorHandler { [weak self] error in
@@ -77,6 +86,7 @@ class MacroXPCManager: NSObject {
         connection = nil
         reconnectAttempts = 0
         isTransferInProgress = false
+        currentTransferState = .idle
     }
 
     // MARK: - TTLMacro.app Launch
@@ -525,6 +535,8 @@ extension MacroXPCManager: MacroClientProtocol {
                 return
             }
             self.isTransferInProgress = true
+            self.currentTransferDirection = .send
+            self.currentTransferState = .starting
             // Integration point: start file transfer
             reply(true, "")
         }
@@ -542,6 +554,8 @@ extension MacroXPCManager: MacroClientProtocol {
                 return
             }
             self.isTransferInProgress = true
+            self.currentTransferDirection = .receive
+            self.currentTransferState = .starting
             // Integration point: start file receive
             reply(true, "", "")
         }
@@ -549,18 +563,48 @@ extension MacroXPCManager: MacroClientProtocol {
 
     func getTransferStatus(reply: @escaping (String, Int, Int) -> Void) {
         DispatchQueue.main.async { [weak self] in
-            if self?.isTransferInProgress == true {
-                // TODO: Track actual transfer progress (bytes transferred, total size)
-                reply(TransferStatusString.sending.rawValue, 0, 0)
-            } else {
+            guard let self = self else {
                 reply(TransferStatusString.idle.rawValue, 0, 0)
+                return
+            }
+
+            switch self.currentTransferState {
+            case .inProgress(let bytesTransferred, let totalBytes, _):
+                let status: TransferStatusString =
+                    self.currentTransferDirection == .send ? .sending : .receiving
+                reply(status.rawValue, Int(clamping: bytesTransferred),
+                      Int(clamping: totalBytes ?? 0))
+
+            case .completed:
+                self.isTransferInProgress = false
+                reply(TransferStatusString.done.rawValue, 0, 0)
+
+            case .failed:
+                self.isTransferInProgress = false
+                reply(TransferStatusString.error.rawValue, 0, 0)
+
+            case .cancelled:
+                self.isTransferInProgress = false
+                reply(TransferStatusString.idle.rawValue, 0, 0)
+
+            case .starting, .completing:
+                reply(TransferStatusString.sending.rawValue, 0, 0)
+
+            case .idle:
+                if self.isTransferInProgress {
+                    reply(TransferStatusString.sending.rawValue, 0, 0)
+                } else {
+                    reply(TransferStatusString.idle.rawValue, 0, 0)
+                }
             }
         }
     }
 
     func cancelTransfer(reply: @escaping () -> Void) {
         DispatchQueue.main.async { [weak self] in
+            self?.fileTransferManager?.cancelTransfer()
             self?.isTransferInProgress = false
+            self?.currentTransferState = .idle
             reply()
         }
     }
@@ -620,6 +664,29 @@ extension MacroXPCManager: MacroClientProtocol {
             // Integration point: send password data to terminal (no logging)
             reply()
         }
+    }
+}
+
+// MARK: - FileTransferDelegate
+
+extension MacroXPCManager: FileTransferDelegate {
+
+    func transferDidUpdateState(_ state: TransferState) {
+        currentTransferState = state
+    }
+
+    func transferDidRequestSend(_ data: Data) {
+        // Data sending is handled by TerminalWindowController
+    }
+
+    func transferDidComplete(fileName: String, bytes: Int64) {
+        currentTransferState = .completed(fileName: fileName, bytes: bytes)
+        isTransferInProgress = false
+    }
+
+    func transferDidFail(error: String) {
+        currentTransferState = .failed(error: error)
+        isTransferInProgress = false
     }
 }
 

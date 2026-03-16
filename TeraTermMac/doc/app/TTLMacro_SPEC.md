@@ -1194,7 +1194,7 @@ TTLMacro.app                          TeraTermMac.app
 | 画面 | `clearScreen` / `displayString` | TerminalView 未接続 |
 | シリアル | `setBaudRate` / `setFlowControl` / `setDtr` / `setRts` / `getModemStatus` / `setSerialDelayChar` / `setSerialDelayLine` | シリアルポート層未接続 |
 | ログ | `openLog` / `closeLog` / `pauseLog` / `resumeLog` / `writeToLog` / `getLogInfo` / `setLogRotation` | ログエンジン未接続 |
-| ファイル転送 | `startFileSend` / `startFileRecv` / `getTransferStatus` / `cancelTransfer` | 転送エンジン未接続。`isTransferInProgress` フラグ管理のみ実装 |
+| ファイル転送 | `startFileSend` / `startFileRecv` / `getTransferStatus` / `cancelTransfer` | `getTransferStatus` は `FileTransferDelegate` 経由で実際の `TransferState` を参照し、転送バイト数・合計バイト数・送受信方向を正確に返す。`cancelTransfer` は `FileTransferManager.cancelTransfer()` を呼び出す。転送エンジン（FileTransferManager）との統合ポイントあり |
 | SCP | `scpSend` / `scpRecv` | SSH/SCP 層未接続 |
 | キーボード | `enableKeyboard` / `setEcho` | ターミナル入力層未接続 |
 | 設定 | `restoreSetup` / `callMenu` / `loadKeyMap` / `sendBreak` | 各設定マネージャー未接続 |
@@ -1277,6 +1277,6 @@ MacroRunner には **120 以上のコマンド**が登録されており、全�
 | **高** | testlink result=1 未対応 | XPC connection の有効性チェックを追加し、XPC 接続あり + ホスト未接続 → result=1 を返すようにする |
 | **高** | MacroClientProtocol 統合 | TeraTermMac のターミナルエンジン（送受信バッファ、接続管理、ウィンドウ制御等）と XPC メソッドを実結合する |
 | **中** | protocolrecv / protocolsend 未登録 | MacroRunner の case 文に追加し、汎用ファイル転送コマンドとして実装する |
-| **中** | ファイル転送エンジン統合 | TeraTermMac 側に XMODEM/ZMODEM/Kermit 等の実転送エンジンを接続する |
+| **中** | ファイル転送エンジン統合 | `MacroXPCManager` が `FileTransferDelegate` に準拠し `getTransferStatus` でリアルタイム進捗を返すよう実装済み。`fileTransferManager` プロパティ経由で `TerminalWindowController` の `FileTransferManager` を接続すれば完了 |
 | **低** | waitevent の完全実装 | 現在は waitrecv のエイリアス。ターミナルイベント種別（接続/切断/ウィンドウ等）の区別に対応する |
 | **低** | デバッグモード出力の可視化 | setdebug 有効時のマクロ実行トレース表示。現在はフラグ切り替えのみ |

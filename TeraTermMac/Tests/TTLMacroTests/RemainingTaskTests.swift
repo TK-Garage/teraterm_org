@@ -288,7 +288,12 @@ final class XPCAnonymousListenerTests: XCTestCase {
 
     func testNoServiceNameConnectionInCode() throws {
         // Verify that NSXPCConnection(serviceName:) is not used in production code
-        let macroXPCPath = "/home/user/teraterm_org/TeraTermMac/Sources/TeraTermMac/App/MacroXPCManager.swift"
+        let macroXPCPath = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()  // Tests/TTLMacroTests
+            .deletingLastPathComponent()  // Tests
+            .deletingLastPathComponent()  // TeraTermMac
+            .appendingPathComponent("Sources/TeraTermMac/App/MacroXPCManager.swift")
+            .path
         let content = try String(contentsOfFile: macroXPCPath, encoding: .utf8)
         XCTAssertFalse(content.contains("NSXPCConnection(serviceName:"),
                        "Production code should not use NSXPCConnection(serviceName:)")
@@ -638,6 +643,31 @@ final class FileTransferXPCTests: XCTestCase {
         runner.run(scriptPath: path)
         wait(for: [exp], timeout: 10.0)
         XCTAssertTrue(mockClient.hasCall("cancelTransfer"))
+    }
+
+    func testTransferProgressReportedWithBytes() {
+        let exp = XCTestExpectation(description: "transfer with progress")
+        mockClient.transferStatus = ("done", 512, 1024)
+        let testFile = tempDir + "progress.bin"
+        FileManager.default.createFile(atPath: testFile, contents: Data(repeating: 0xAA, count: 128))
+        let path = writeTTL("xmodemsend '\(testFile)' 2\nend")
+        runner.onComplete = { _ in exp.fulfill() }
+        runner.run(scriptPath: path)
+        wait(for: [exp], timeout: 10.0)
+        let statusCalls = mockClient.calls.filter { $0.method == "getTransferStatus" }
+        XCTAssertFalse(statusCalls.isEmpty, "Should poll transfer status at least once")
+    }
+
+    func testRecvTransferCallsStartFileRecv() {
+        let exp = XCTestExpectation(description: "recv transfer")
+        mockClient.transferStatus = ("done", 256, 256)
+        let path = writeTTL("xmodemrecv\nend")
+        runner.onComplete = { _ in exp.fulfill() }
+        runner.run(scriptPath: path)
+        wait(for: [exp], timeout: 10.0)
+        let recvCall = mockClient.calls.first { $0.method == "startFileRecv" }
+        XCTAssertNotNil(recvCall, "Should call startFileRecv for xmodemrecv")
+        XCTAssertEqual(recvCall?.args["protocolName"] as? String, "xmodem")
     }
 }
 
