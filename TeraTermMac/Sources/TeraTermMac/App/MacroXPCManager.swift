@@ -803,6 +803,34 @@ extension MacroXPCManager: MacroClientProtocol {
             reply()
         }
     }
+
+    func waitWindowEvent(timeout: Int, reply: @escaping (Int) -> Void) {
+        let timeoutSec = max(timeout, 0)
+        let deadline = Date().addingTimeInterval(Double(timeoutSec))
+
+        func poll() {
+            DispatchQueue.main.async { [weak self] in
+                guard let ctrl = self?.terminalController else {
+                    reply(0)
+                    return
+                }
+                let event = ctrl.dequeueWindowEvent()
+                if event != 0 {
+                    reply(event)
+                    return
+                }
+                if Date() >= deadline {
+                    reply(0) // timeout
+                    return
+                }
+                // Poll every 100ms
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    poll()
+                }
+            }
+        }
+        poll()
+    }
 }
 
 // MARK: - FileTransferDelegate

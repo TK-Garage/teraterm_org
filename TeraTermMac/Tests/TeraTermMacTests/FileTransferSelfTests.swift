@@ -319,7 +319,7 @@ class YMODEMLoopbackTests: XCTestCase {
         XCTAssertEqual(block0[2], 0xFF, "Complement should be 0xFF")
 
         // Parse the payload from block 0
-        let blockSize = (block0[0] == 0x01) ? 128 : 1024
+        let blockSize = (block0[0] == XMODEMConstant.SOH) ? XMODEMConstant.standardBlockSize : XMODEMConstant.extendedBlockSize
         let payload = Data(block0[3..<(3 + blockSize)])
 
         // Find filename
@@ -353,11 +353,11 @@ class YMODEMLoopbackTests: XCTestCase {
 
         // When sender has no files, the batch should complete quickly.
         // We verify the empty block 0 packet structure directly.
-        let emptyPayload = Data(repeating: 0, count: 128)
+        let emptyPayload = Data(repeating: 0, count: XMODEMConstant.standardBlockSize)
         let crcVal = crc16(emptyPayload)
 
         var expectedBlock0 = Data()
-        expectedBlock0.append(0x01) // SOH
+        expectedBlock0.append(XMODEMConstant.SOH) // SOH
         expectedBlock0.append(0x00) // block 0
         expectedBlock0.append(0xFF) // complement
         expectedBlock0.append(emptyPayload)
@@ -365,7 +365,7 @@ class YMODEMLoopbackTests: XCTestCase {
         expectedBlock0.append(UInt8(crcVal & 0xFF))
 
         // Verify the CRC of all-zero payload
-        XCTAssertEqual(expectedBlock0.count, 1 + 2 + 128 + 2,
+        XCTAssertEqual(expectedBlock0.count, 1 + 2 + XMODEMConstant.standardBlockSize + 2,
                        "Empty block 0 should be 133 bytes")
 
         // Verify CRC is valid
@@ -937,10 +937,10 @@ class XMODEMPacketIntegrityTests: XCTestCase {
         XCTAssertFalse(delegate.sentData.isEmpty)
         let packet = delegate.sentData.last!
 
-        // Packet: SOH(1) + blk(1) + ~blk(1) + data(128) + CRC(2) = 133
-        XCTAssertEqual(packet.count, 133)
+        // Packet: SOH(1) + blk(1) + ~blk(1) + data(standardBlockSize) + CRC(2) = 133
+        XCTAssertEqual(packet.count, 3 + XMODEMConstant.standardBlockSize + 2)
 
-        let payload = Data(packet[3..<131])
+        let payload = Data(packet[3..<(3 + XMODEMConstant.standardBlockSize)])
         let packetCRC = (UInt16(packet[131]) << 8) | UInt16(packet[132])
         let computedCRC = crc16(payload)
 
@@ -969,11 +969,11 @@ class XMODEMPacketIntegrityTests: XCTestCase {
         XCTAssertFalse(delegate.sentData.isEmpty)
         let packet = delegate.sentData.last!
 
-        // SOH(1) + blk(1) + ~blk(1) + data(128) + checksum(1) = 132
-        XCTAssertEqual(packet.count, 132)
+        // SOH(1) + blk(1) + ~blk(1) + data(standardBlockSize) + checksum(1) = 132
+        XCTAssertEqual(packet.count, 3 + XMODEMConstant.standardBlockSize + 1)
 
-        let payload = Data(packet[3..<131])
-        let packetChecksum = packet[131]
+        let payload = Data(packet[3..<(3 + XMODEMConstant.standardBlockSize)])
+        let packetChecksum = packet[3 + XMODEMConstant.standardBlockSize]
         let computedChecksum = payload.reduce(UInt8(0)) { $0 &+ $1 }
 
         XCTAssertEqual(packetChecksum, computedChecksum,
@@ -984,8 +984,8 @@ class XMODEMPacketIntegrityTests: XCTestCase {
         for i in 0..<50 {
             XCTAssertEqual(payload[i], 0xAA)
         }
-        for i in 50..<128 {
-            XCTAssertEqual(payload[i], 0x1A, "Byte \(i) should be SUB padding")
+        for i in 50..<XMODEMConstant.standardBlockSize {
+            XCTAssertEqual(payload[i], XMODEMConstant.SUB, "Byte \(i) should be SUB padding")
         }
     }
 
@@ -1033,10 +1033,10 @@ class FileTransferManagerSelfTests: XCTestCase {
         XCTAssertTrue(mgr.isTransferActive)
 
         // Build and send a valid CRC block
-        let payload = Data(repeating: 0x42, count: 128)
+        let payload = Data(repeating: 0x42, count: XMODEMConstant.standardBlockSize)
         let crcVal = crc16(payload)
         var block = Data()
-        block.append(0x01) // SOH
+        block.append(XMODEMConstant.SOH) // SOH
         block.append(0x01) // block 1
         block.append(0xFE) // complement
         block.append(payload)

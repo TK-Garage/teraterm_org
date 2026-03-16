@@ -1604,30 +1604,46 @@ extension MacroRunner {
     ///   0 = timeout (no event)
     ///   1 = data received
     ///   2 = connection state changed (disconnect detected)
+    ///   3 = window resize
+    ///   4 = window move
+    ///   5 = window close
+    ///   6 = window focus
+    ///   7 = window unfocus
     func cmdWaitEvent() { // [IMPLEMENTED]
         cancelExecTimer()
-        // First check connection state change (disconnect)
-        clientProxy?.isConnected(reply: { [weak self] connected in
+        // First check for pending window events
+        clientProxy?.waitWindowEvent(timeout: 0, reply: { [weak self] windowEvent in
             guard let self = self else { return }
-            if !connected {
-                // Disconnection event
-                self.resultValue = 2
+            if windowEvent != 0 {
+                // Map window event types: XPC returns 1=resize,2=move,3=close,4=focus,5=unfocus
+                // waitevent result: 3=resize,4=move,5=close,6=focus,7=unfocus
+                self.resultValue = windowEvent + 2
                 self.variables["result"] = .integer(self.resultValue)
                 self.scheduleNextLine()
                 return
             }
-            // Otherwise wait for data with timeout
-            self.clientProxy?.recvFromTerminal(timeout: self.timeoutValue, reply: { [weak self] data in
+            // Check connection state change (disconnect)
+            self.clientProxy?.isConnected(reply: { [weak self] connected in
                 guard let self = self else { return }
-                if let data = data, let str = String(data: data, encoding: .utf8), !str.isEmpty {
-                    self.inputStr = str
-                    self.variables["inputstr"] = .string(str)
-                    self.resultValue = 1
-                } else {
-                    self.resultValue = 0
+                if !connected {
+                    self.resultValue = 2
+                    self.variables["result"] = .integer(self.resultValue)
+                    self.scheduleNextLine()
+                    return
                 }
-                self.variables["result"] = .integer(self.resultValue)
-                self.scheduleNextLine()
+                // Wait for data with timeout
+                self.clientProxy?.recvFromTerminal(timeout: self.timeoutValue, reply: { [weak self] data in
+                    guard let self = self else { return }
+                    if let data = data, let str = String(data: data, encoding: .utf8), !str.isEmpty {
+                        self.inputStr = str
+                        self.variables["inputstr"] = .string(str)
+                        self.resultValue = 1
+                    } else {
+                        self.resultValue = 0
+                    }
+                    self.variables["result"] = .integer(self.resultValue)
+                    self.scheduleNextLine()
+                })
             })
         })
     }

@@ -77,6 +77,11 @@ class TerminalWindowController: NSWindowController {
     // Macro XPC manager for external macro app communication
     private(set) var macroXPCManager: MacroXPCManager?
 
+    /// Window event queue for waitevent command
+    /// Event types: 1=resize, 2=move, 3=close, 4=focus, 5=unfocus
+    private(set) var pendingWindowEvents: [Int] = []
+    private let windowEventLock = NSLock()
+
     // Macro file transfer state
     var macroTransferCompletion: ((Bool) -> Void)?
     var macroRecvFileHandle: FileHandle?
@@ -650,6 +655,7 @@ extension TerminalWindowController: NSWindowDelegate {
         if window?.inLiveResize == true {
             showResizeTooltip()
         }
+        enqueueWindowEvent(1) // resize
     }
 
     func windowDidEndLiveResize(_ notification: Notification) {
@@ -666,6 +672,7 @@ extension TerminalWindowController: NSWindowDelegate {
         resizeHideTimer = nil
         macroRecvTimer?.invalidate()
         macroRecvTimer = nil
+        enqueueWindowEvent(3) // close
         disconnect()
         logger.stopLogging()
     }
@@ -677,6 +684,7 @@ extension TerminalWindowController: NSWindowDelegate {
                 self?.connectionManager.send(data)
             }
         }
+        enqueueWindowEvent(4) // focus
     }
 
     func windowDidResignKey(_ notification: Notification) {
@@ -686,6 +694,31 @@ extension TerminalWindowController: NSWindowDelegate {
                 self?.connectionManager.send(data)
             }
         }
+        enqueueWindowEvent(5) // unfocus
+    }
+
+    /// Add windowDidMove delegate to track move events
+    func windowDidMove(_ notification: Notification) {
+        enqueueWindowEvent(2) // move
+    }
+
+    /// Enqueue a window event for the waitevent command
+    private func enqueueWindowEvent(_ eventType: Int) {
+        windowEventLock.lock()
+        pendingWindowEvents.append(eventType)
+        // Keep only last 32 events to prevent unbounded growth
+        if pendingWindowEvents.count > 32 {
+            pendingWindowEvents.removeFirst(pendingWindowEvents.count - 32)
+        }
+        windowEventLock.unlock()
+    }
+
+    /// Dequeue the oldest window event, returns 0 if none
+    func dequeueWindowEvent() -> Int {
+        windowEventLock.lock()
+        defer { windowEventLock.unlock() }
+        if pendingWindowEvents.isEmpty { return 0 }
+        return pendingWindowEvents.removeFirst()
     }
 
     // MARK: - Resize Tooltip

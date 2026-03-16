@@ -1226,7 +1226,7 @@ MacroRunner には **120 以上のコマンド**が登録されており、全�
 | `testlink` | result: 0=未リンク, 1=リンク済み・未接続, 2=リンク済み・接続中 | **実装済み** | `isXPCLinked` → `isConnected` の 2 段階チェックで 3 状態を返す |
 | `protocolrecv` | 汎用プロトコル受信 | **実装済み** | `protocolrecv <proto> [localdir]` — 第1引数でプロトコル名を指定、内部で `cmdFileTransferRecv` に委譲 |
 | `protocolsend` | 汎用プロトコル送信 | **実装済み** | `protocolsend <proto> <filepath> [option]` — 第1引数でプロトコル名を指定、内部で `cmdFileTransferSend` に委譲 |
-| `waitevent` | ターミナルイベント待機 | **実装済み** | result: 0=タイムアウト, 1=データ受信, 2=切断検知。`isConnected` で接続状態を先行チェックし、接続中なら `recvFromTerminal` でデータ待機 |
+| `waitevent` | ターミナルイベント待機 | **実装済み** | result: 0=タイムアウト, 1=データ受信, 2=切断検知, 3=ウィンドウリサイズ, 4=ウィンドウ移動, 5=ウィンドウクローズ, 6=フォーカス取得, 7=フォーカス喪失。`waitWindowEvent` → `isConnected` → `recvFromTerminal` の 3 段階チェック |
 
 #### コマンドカテゴリ別の実装状況
 
@@ -1316,10 +1316,19 @@ MacroRunner には **120 以上のコマンド**が登録されており、全�
 | Entitlements 見直し | App Sandbox を `true` に変更。network.client、files.user-selected.read-write、files.downloads.read-write、device.serial、XPC mach-lookup の entitlement を追加 |
 | テスト追加 | `SetFlowControlTests`（3 件）、`WaitEventTests`（3 件）、`SetDebugTraceTests`（2 件）を追加 |
 
+#### 対応済み（2026-03-16 第5回）
+
+| 項目 | 対応内容 |
+|------|---------|
+| TeraTermMac 本体側 entitlements | `TeraTermMac.entitlements` を新規作成。App Sandbox 有効化、network.client/server、files.user-selected.read-write、files.downloads.read-write、device.serial、device.usb、XPC mach-lookup の entitlement を追加。Xcode プロジェクト（Debug/Release）に `CODE_SIGN_ENTITLEMENTS` 設定を追加 |
+| waitevent ウィンドウイベント対応 | `MacroClientProtocol` に `waitWindowEvent(timeout:reply:)` メソッドを追加。`TerminalWindowController` に `pendingWindowEvents` イベントキューを実装し、`windowDidResize`/`windowDidMove`/`windowWillClose`/`windowDidBecomeKey`/`windowDidResignKey` でイベントを記録。`MacroXPCManager` にポーリング方式の `waitWindowEvent` を実装。`cmdWaitEvent()` を拡張し result: 3=リサイズ, 4=移動, 5=クローズ, 6=フォーカス, 7=フォーカス喪失 のウィンドウイベントに対応 |
+| FileTransferSelfTests 定数適用拡大 | `XMODEMConstant.standardBlockSize`/`SOH`/`SUB` をテスト本文中のプロトコル定数使用箇所に適用（ブロックサイズ計算、SOH 判定、パディング検証等） |
+| テスト追加 | `WaitEventTests` にウィンドウイベント 3 件（resize/close/focus）追加、モック全体に `waitWindowEvent` メソッド追加 |
+
 #### 残件・要対応の優先度
 
 | 優先度 | 項目 | 対応内容 | 関連ファイル |
 |:------:|------|---------|-------------|
-| **低** | TeraTermMac 本体側の entitlements | TTLMacro.entitlements は対応済みだが、TeraTermMac 本体の entitlements ファイルが未作成。配布時に必要 | `TeraTermMac.entitlements`（新規） |
-| **低** | waitevent のウィンドウイベント対応 | 現在は接続状態変更（切断）とデータ受信のみ。ウィンドウリサイズ等のイベントは未対応 | `MacroRunner.swift` |
-| **低** | FileTransferSelfTests 定数適用拡大 | `XMODEMConstant` を定義済みだが、テスト本文中の 128/1024 への適用は限定的。全箇所への展開は可読性とのバランスで任意 | `FileTransferSelfTests.swift` |
+| **低** | XPC 双方向イベント通知 | 現在はポーリング方式。将来的にはプッシュ型通知（MacroServiceProtocol 経由）への変更を検討 | `MacroXPCProtocols.swift`, `MacroXPCManager.swift` |
+| **低** | Entitlements の本番環境調整 | `com.apple.security.temporary-exception.mach-lookup.global-name` は一時的例外。XPC Service として正式に組み込む場合は不要になる | `TTLMacro.entitlements`, `TeraTermMac.entitlements` |
+| **低** | FileTransferTests.swift の定数適用 | `FileTransferTests.swift` にも 128/1024/0x01 等のプロトコル定数が多数存在。`TransferMenuProtocolTests.swift` 同様の名前付き定数化が可能 | `FileTransferTests.swift` |

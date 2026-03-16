@@ -280,6 +280,12 @@ public enum TransferStatusString: String {
 
     /// Send password data to terminal (secure, no logging)
     func sendPasswordData(data: Data, reply: @escaping () -> Void)
+
+    // --- Window event methods ---
+
+    /// Wait for a window event with timeout. Returns event type:
+    /// 0 = timeout, 1 = resize, 2 = move, 3 = close, 4 = focus, 5 = unfocus
+    func waitWindowEvent(timeout: Int, reply: @escaping (Int) -> Void)
 }
 
 // MARK: - XPC Interface Helpers

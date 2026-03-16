@@ -221,6 +221,10 @@ class ExtendedMockMacroClient: NSObject, MacroClientProtocol {
     func sendPasswordData(data: Data, reply: @escaping () -> Void) {
         record("sendPasswordData"); reply()
     }
+    var windowEventResponse: Int = 0
+    func waitWindowEvent(timeout: Int, reply: @escaping (Int) -> Void) {
+        record("waitWindowEvent", ["timeout": timeout]); reply(windowEventResponse)
+    }
 
     func reset() { calls.removeAll() }
 
@@ -1187,6 +1191,72 @@ final class WaitEventTests: XCTestCase {
 
         let sendCall = mockClient.calls.first { $0.method == "sendToTerminal" }
         XCTAssertNotNil(sendCall, "Should send TIMEOUT marker when result=0")
+    }
+
+    func testWaitEventWindowResizeReturns3() {
+        let mockClient = ExtendedMockMacroClient()
+        mockClient.windowEventResponse = 1  // XPC: 1=resize → result: 3
+        let runner = MacroRunner()
+        runner.clientProxy = mockClient
+
+        let script = """
+        waitevent
+        if result == 3 then send 'RESIZED'
+        """
+        let path = NSTemporaryDirectory() + "test_waitevent_resize.ttl"
+        try! script.write(toFile: path, atomically: true, encoding: .utf8)
+
+        let exp = expectation(description: "script done")
+        runner.onComplete = { _ in exp.fulfill() }
+        runner.run(scriptPath: path)
+        wait(for: [exp], timeout: 5.0)
+
+        let sendCall = mockClient.calls.first { $0.method == "sendToTerminal" }
+        XCTAssertNotNil(sendCall, "Should send RESIZED marker when window resize event (result=3)")
+    }
+
+    func testWaitEventWindowCloseReturns5() {
+        let mockClient = ExtendedMockMacroClient()
+        mockClient.windowEventResponse = 3  // XPC: 3=close → result: 5
+        let runner = MacroRunner()
+        runner.clientProxy = mockClient
+
+        let script = """
+        waitevent
+        if result == 5 then send 'CLOSED'
+        """
+        let path = NSTemporaryDirectory() + "test_waitevent_close.ttl"
+        try! script.write(toFile: path, atomically: true, encoding: .utf8)
+
+        let exp = expectation(description: "script done")
+        runner.onComplete = { _ in exp.fulfill() }
+        runner.run(scriptPath: path)
+        wait(for: [exp], timeout: 5.0)
+
+        let sendCall = mockClient.calls.first { $0.method == "sendToTerminal" }
+        XCTAssertNotNil(sendCall, "Should send CLOSED marker when window close event (result=5)")
+    }
+
+    func testWaitEventWindowFocusReturns6() {
+        let mockClient = ExtendedMockMacroClient()
+        mockClient.windowEventResponse = 4  // XPC: 4=focus → result: 6
+        let runner = MacroRunner()
+        runner.clientProxy = mockClient
+
+        let script = """
+        waitevent
+        if result == 6 then send 'FOCUSED'
+        """
+        let path = NSTemporaryDirectory() + "test_waitevent_focus.ttl"
+        try! script.write(toFile: path, atomically: true, encoding: .utf8)
+
+        let exp = expectation(description: "script done")
+        runner.onComplete = { _ in exp.fulfill() }
+        runner.run(scriptPath: path)
+        wait(for: [exp], timeout: 5.0)
+
+        let sendCall = mockClient.calls.first { $0.method == "sendToTerminal" }
+        XCTAssertNotNil(sendCall, "Should send FOCUSED marker when window focus event (result=6)")
     }
 }
 

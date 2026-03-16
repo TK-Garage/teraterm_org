@@ -222,6 +222,8 @@ class MockMacroClient: NSObject, MacroClientProtocol {
     func setEcho(flag: Int, reply: @escaping () -> Void) { reply() }
     func displayString(text: String, reply: @escaping () -> Void) { reply() }
     func sendPasswordData(data: Data, reply: @escaping () -> Void) { reply() }
+    var windowEventResponse: Int = 0
+    func waitWindowEvent(timeout: Int, reply: @escaping (Int) -> Void) { reply(windowEventResponse) }
 
     func reset() {
         sendToTerminalCalled = false
