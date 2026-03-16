@@ -1334,6 +1334,14 @@ MacroRunner には **120 以上のコマンド**が登録されており、全�
 | FileTransferTests.swift 定数適用 | `XMODEMBlock` enum（SOH/STX/EOT/ACK/NAK/CAN/CRC_START/SUB/standardBlockSize/extendedBlockSize）を追加。XMODEM/YMODEM テスト全体のプロトコル定数をシンボル化（30+ 箇所） |
 | テスト追加 | `PushEventQueueTests` 3 件（プッシュ配信リサイズ、プッシュ配信切断、MockMacroService.notifyTerminalEvent）を追加 |
 
+#### 対応済み（2026-03-16 第7回）
+
+| 項目 | 対応内容 |
+|------|---------|
+| ZMODEM テスト定数化 | `ZMODEMFrame` enum（ZPAD/ZDLE/ZHEX/BS/cancelZDLECount/cancelBSCount/cancelTotalLength）を `FileTransferTests.swift` に追加。ZMODEM テスト全体のプロトコル定数をシンボル化（15+ 箇所） |
+| Kermit テスト定数化 | `KermitPacket` enum（MARK/EOL/QCTL/escapedCR/escapedLF/typeS/typeY/typeF/typeD/typeZ/typeB/typeE）を `FileTransferTests.swift` に追加。Kermit テスト全体のプロトコル定数をシンボル化（10+ 箇所）。`buildKermitPacket`/`buildKermitInitData` ヘルパーにも適用 |
+| B-Plus / Quick-VAN テスト定数化 | `TransferMenuProtocolTests.swift` の `ControlChar` enum に EOT/ACK/NAK/CAN を追加。`KermitChar` enum（MARK/EOL/QCTL/typeI/typeY/typeR/typeG/typeS）を追加。Quick-VAN/Kermit テスト全体のマジックナンバーをシンボル化（20+ 箇所） |
+
 #### 残件
 
 全ての優先度「高」「中」「低」の残件を対応済み。現時点で要対応の残件はなし。
@@ -1344,4 +1352,3 @@ MacroRunner には **120 以上のコマンド**が登録されており、全�
 |------|------|
 | App Group ID の正式決定 | 現在は `com.teraterm.group` プレースホルダ。Developer Program 登録後に正式な App Group ID を設定 |
 | Keychain access group の正式化 | `com.yourapp.TeraTermMac` プレースホルダを正式な Bundle ID に置換 |
-| ZMODEM / Kermit / B-Plus テストの定数化 | `FileTransferTests.swift` の ZMODEM/Kermit セクションにもプロトコル固有の定数が存在するが、可読性とのバランスで未対応 |

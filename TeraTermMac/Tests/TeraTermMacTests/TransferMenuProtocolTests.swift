@@ -19,8 +19,12 @@ private enum ControlChar {
     static let SOH: UInt8 = 0x01   // Start of Heading (XMODEM/YMODEM 128-byte block)
     static let STX: UInt8 = 0x02   // Start of Text (XMODEM-1K/YMODEM 1024-byte block)
     static let ETX: UInt8 = 0x03   // End of Text
+    static let EOT: UInt8 = 0x04   // End of Transmission
+    static let ACK: UInt8 = 0x06   // Acknowledge
     static let CR: UInt8 = 0x0D    // Carriage Return
     static let DLE: UInt8 = 0x10   // Data Link Escape (B-Plus framing)
+    static let NAK: UInt8 = 0x15   // Negative Acknowledge
+    static let CAN: UInt8 = 0x18   // Cancel
 }
 
 private enum ProtocolConstant {
@@ -28,6 +32,17 @@ private enum ProtocolConstant {
     static let xmodemBlockSize = 128           // Standard XMODEM block size
     static let xmodem1KBlockSize = 1024        // XMODEM-1K / YMODEM block size
     static let sinitType: UInt8 = 0x01         // Quick-VAN SINIT packet type
+}
+
+private enum KermitChar {
+    static let MARK: UInt8 = 0x01              // SOH — Packet start marker
+    static let EOL: UInt8 = 0x0D               // CR — End of line terminator
+    static let QCTL: UInt8 = 0x23              // '#' — Control character escape prefix
+    static let typeI = UInt8(Character("I").asciiValue!)  // Initialize
+    static let typeY = UInt8(Character("Y").asciiValue!)  // ACK
+    static let typeR = UInt8(Character("R").asciiValue!)  // Receive-Init (file request)
+    static let typeG = UInt8(Character("G").asciiValue!)  // Generic command
+    static let typeS = UInt8(Character("S").asciiValue!)  // Send-Init
 }
 
 // MARK: - TransferProtocolType Enum Tests
@@ -243,7 +258,7 @@ class QuickVANProtocolTests: XCTestCase {
         // Should send NAK to initiate
         XCTAssertFalse(delegate.sentData.isEmpty, "Quick-VAN receiver should send NAK")
         let sent = delegate.allSentData
-        XCTAssertEqual(sent[0], 0x15, "First byte should be NAK (0x15)")
+        XCTAssertEqual(sent[0], ControlChar.NAK, "First byte should be NAK")
 
         let hasStarting = delegate.stateUpdates.contains { s in
             if case .starting = s { return true }; return false
@@ -266,8 +281,8 @@ class QuickVANProtocolTests: XCTestCase {
         // Should send SINIT packet (STX frame)
         XCTAssertFalse(delegate.sentData.isEmpty, "Quick-VAN sender should send SINIT")
         let sent = delegate.allSentData
-        XCTAssertEqual(sent[0], 0x02, "First byte should be STX (0x02)")
-        XCTAssertEqual(sent[1], 0x01, "Second byte should be SINIT type (0x01)")
+        XCTAssertEqual(sent[0], ControlChar.STX, "First byte should be STX")
+        XCTAssertEqual(sent[1], ProtocolConstant.sinitType, "Second byte should be SINIT type")
     }
 
     func testQuickVANCancel() {
@@ -282,7 +297,7 @@ class QuickVANProtocolTests: XCTestCase {
         // Should send CAN
         XCTAssertFalse(delegate.sentData.isEmpty, "Cancel should send CAN")
         let sent = delegate.allSentData
-        XCTAssertEqual(sent[0], 0x18, "Cancel byte should be CAN (0x18)")
+        XCTAssertEqual(sent[0], ControlChar.CAN, "Cancel byte should be CAN")
     }
 
     func testQuickVANEOTHandling() {
@@ -294,7 +309,7 @@ class QuickVANProtocolTests: XCTestCase {
         delegate.sentData.removeAll()
 
         // Send EOT to receiver
-        qv.processData(Data([0x04]))
+        qv.processData(Data([ControlChar.EOT]))
 
         // Should ACK and complete
         let hasCompleted = delegate.stateUpdates.contains { s in
@@ -376,8 +391,8 @@ class KermitGetFinishTests: XCTestCase {
         // Should have sent an I (Initialize) packet
         XCTAssertFalse(delegate.sentData.isEmpty, "Kermit Get should send I packet")
         let sent = delegate.sentData[0]
-        XCTAssertEqual(sent[0], 0x01, "MARK byte")
-        XCTAssertEqual(sent[3], UInt8(Character("I").asciiValue!), "Type should be 'I'")
+        XCTAssertEqual(sent[0], KermitChar.MARK, "MARK byte")
+        XCTAssertEqual(sent[3], KermitChar.typeI, "Type should be 'I'")
 
         let hasStarting = delegate.stateUpdates.contains { s in
             if case .starting = s { return true }; return false
@@ -411,15 +426,15 @@ class KermitGetFinishTests: XCTestCase {
 
         // Simulate ACK for I packet with init data
         var ackData = Data()
-        ackData.append(0x01) // MARK
+        ackData.append(KermitChar.MARK) // MARK
         let ackPayload = Data([UInt8(Character("Y").asciiValue!)])
         let ackLen = ackPayload.count + 3
         ackData.append(UInt8(ackLen + 32)) // LEN
         ackData.append(UInt8(0 + 32)) // SEQ=0
-        ackData.append(UInt8(Character("Y").asciiValue!)) // TYPE='Y'
+        ackData.append(KermitChar.typeY) // TYPE='Y'
 
         // Add init data in ACK
-        let initReply = Data([UInt8(94 + 32), UInt8(10 + 32), UInt8(0 + 32), UInt8(0), UInt8(13 + 32), 0x23, 0x59, 0x31, 0x7E])
+        let initReply = Data([UInt8(94 + 32), UInt8(10 + 32), UInt8(0 + 32), UInt8(0), UInt8(KermitChar.EOL + 32), KermitChar.QCTL, 0x59, 0x31, 0x7E])
         ackData.append(initReply)
 
         // Recalculate length
@@ -431,15 +446,15 @@ class KermitGetFinishTests: XCTestCase {
         let sum = checksumData.reduce(0) { $0 + Int($1) } & 0xFF
         let check = UInt8(((sum + (sum >> 6)) & 0x3F) + 32)
         ackData.append(check)
-        ackData.append(0x0D) // EOL
+        ackData.append(KermitChar.EOL) // EOL
 
         km.processData(ackData)
 
         // After ACK for I packet, should send R packet with filename
         XCTAssertFalse(delegate.sentData.isEmpty, "Should send R packet after I-ACK")
         if let rPkt = delegate.sentData.first {
-            XCTAssertEqual(rPkt[0], 0x01, "MARK")
-            XCTAssertEqual(rPkt[3], UInt8(Character("R").asciiValue!), "Type should be 'R'")
+            XCTAssertEqual(rPkt[0], KermitChar.MARK, "MARK")
+            XCTAssertEqual(rPkt[3], KermitChar.typeR, "Type should be 'R'")
         }
     }
 
@@ -452,8 +467,8 @@ class KermitGetFinishTests: XCTestCase {
         // Should send I packet first
         XCTAssertFalse(delegate.sentData.isEmpty, "Kermit Finish should send I packet")
         let sent = delegate.sentData[0]
-        XCTAssertEqual(sent[0], 0x01, "MARK byte")
-        XCTAssertEqual(sent[3], UInt8(Character("I").asciiValue!), "Type should be 'I'")
+        XCTAssertEqual(sent[0], KermitChar.MARK, "MARK byte")
+        XCTAssertEqual(sent[3], KermitChar.typeI, "Type should be 'I'")
     }
 
     func testKermitFinishState() {
@@ -680,8 +695,8 @@ class QuickVANLoopbackTests: XCTestCase {
 
         XCTAssertFalse(sDelegate.sentData.isEmpty, "Quick-VAN sender should produce SINIT")
         let sinit = sDelegate.allSentData
-        XCTAssertEqual(sinit[0], 0x02, "First byte: STX")
-        XCTAssertEqual(sinit[1], 0x01, "Second byte: SINIT type")
+        XCTAssertEqual(sinit[0], ControlChar.STX, "First byte: STX")
+        XCTAssertEqual(sinit[1], ProtocolConstant.sinitType, "Second byte: SINIT type")
     }
 
     func testQuickVANReceiverSendsNAK() {
@@ -695,7 +710,7 @@ class QuickVANLoopbackTests: XCTestCase {
 
         XCTAssertFalse(rDelegate.sentData.isEmpty, "Receiver should send NAK")
         let sent = rDelegate.allSentData
-        XCTAssertEqual(sent[0], 0x15, "Should be NAK (0x15)")
+        XCTAssertEqual(sent[0], ControlChar.NAK, "Should be NAK")
     }
 
     func testQuickVANBlockChecksumRoundtrip() {
@@ -703,14 +718,14 @@ class QuickVANLoopbackTests: XCTestCase {
         let blockData = Data(repeating: 0x42, count: 128)
         let blk: UInt8 = 1
 
-        var sum: UInt8 = 0x01  // SOH
+        var sum: UInt8 = ControlChar.SOH
         sum = sum &+ blk
         sum = sum &+ (~blk)
         for b in blockData { sum = sum &+ b }
 
         // Build packet
         var packet = Data()
-        packet.append(0x01) // SOH
+        packet.append(ControlChar.SOH)
         packet.append(blk)
         packet.append(~blk)
         packet.append(blockData)
@@ -782,25 +797,22 @@ class KermitGetFinishPacketTests: XCTestCase {
 
     func testKermitIPacketType() {
         // 'I' packet is used for Initialize in both Get and Finish flows
-        let typeChar = UInt8(Character("I").asciiValue!)
-        XCTAssertEqual(typeChar, 0x49, "'I' should be 0x49")
+        XCTAssertEqual(KermitChar.typeI, 0x49, "'I' should be 0x49")
     }
 
     func testKermitRPacketType() {
         // 'R' packet is used for Receive-Init (file request in Get)
-        let typeChar = UInt8(Character("R").asciiValue!)
-        XCTAssertEqual(typeChar, 0x52, "'R' should be 0x52")
+        XCTAssertEqual(KermitChar.typeR, 0x52, "'R' should be 0x52")
     }
 
     func testKermitGPacketType() {
         // 'G' packet is used for Generic command (Finish sends G with 'F')
-        let typeChar = UInt8(Character("G").asciiValue!)
-        XCTAssertEqual(typeChar, 0x47, "'G' should be 0x47")
+        XCTAssertEqual(KermitChar.typeG, 0x47, "'G' should be 0x47")
     }
 
     func testKermitFinishSubcommand() {
         // Finish subcommand is 'F' (0x46)
-        let finishCmd: UInt8 = 0x46
+        let finishCmd = UInt8(Character("F").asciiValue!)
         XCTAssertEqual(Character(UnicodeScalar(finishCmd)), "F",
             "Finish subcommand should be 'F'")
     }

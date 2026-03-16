@@ -21,6 +21,32 @@ private enum XMODEMBlock {
     static let extendedBlockSize = 1024    // XMODEM-1K / YMODEM block payload
 }
 
+private enum ZMODEMFrame {
+    static let ZPAD: UInt8 = 0x2A          // '*' — Padding character
+    static let ZDLE: UInt8 = 0x18          // Data Link Escape (also used as CAN)
+    static let ZHEX: UInt8 = 0x42          // 'B' — Hex header encoding
+    static let BS: UInt8 = 0x08            // Backspace (cancel trailer)
+    static let cancelZDLECount = 8         // Number of ZDLE bytes in cancel sequence
+    static let cancelBSCount = 10          // Number of BS bytes in cancel sequence
+    static let cancelTotalLength = 18      // cancelZDLECount + cancelBSCount
+}
+
+private enum KermitPacket {
+    static let MARK: UInt8 = 0x01          // SOH — Packet start marker
+    static let EOL: UInt8 = 0x0D           // CR — End of line terminator
+    static let QCTL: UInt8 = 0x23          // '#' — Control character escape prefix
+    static let escapedCR: UInt8 = 0x4D     // 'M' — Escaped form of CR (0x0D)
+    static let escapedLF: UInt8 = 0x4A     // 'J' — Escaped form of LF (0x0A)
+    // Packet type characters
+    static let typeS = UInt8(Character("S").asciiValue!)  // Send-Init
+    static let typeY = UInt8(Character("Y").asciiValue!)  // ACK
+    static let typeF = UInt8(Character("F").asciiValue!)  // File-Header
+    static let typeD = UInt8(Character("D").asciiValue!)  // Data
+    static let typeZ = UInt8(Character("Z").asciiValue!)  // EOF
+    static let typeB = UInt8(Character("B").asciiValue!)  // Break (end of transaction)
+    static let typeE = UInt8(Character("E").asciiValue!)  // Error
+}
+
 // MARK: - Mock File Transfer Delegate
 
 class MockFileTransferDelegate: FileTransferDelegate {
@@ -821,7 +847,7 @@ class ZMODEMTests: XCTestCase {
 
         let header = delegate.allSentData
         // ZRINIT header starts with ZPAD ZPAD ZDLE ZHEX
-        XCTAssertTrue(header.contains(0x2A), "Header should contain ZPAD (0x2A)")
+        XCTAssertTrue(header.contains(ZMODEMFrame.ZPAD), "Header should contain ZPAD")
 
         let hasStarting = delegate.stateUpdates.contains { state in
             if case .starting = state { return true }
@@ -890,21 +916,21 @@ class ZMODEMTests: XCTestCase {
         let header = delegate.allSentData
         // Check ZPAD ZPAD ZDLE ZHEX sequence
         XCTAssertTrue(header.count >= 4, "Header should have at least 4 bytes")
-        XCTAssertEqual(header[0], 0x2A) // ZPAD
-        XCTAssertEqual(header[1], 0x2A) // ZPAD
-        XCTAssertEqual(header[2], 0x18) // ZDLE
-        XCTAssertEqual(header[3], 0x42) // ZHEX
+        XCTAssertEqual(header[0], ZMODEMFrame.ZPAD)
+        XCTAssertEqual(header[1], ZMODEMFrame.ZPAD)
+        XCTAssertEqual(header[2], ZMODEMFrame.ZDLE)
+        XCTAssertEqual(header[3], ZMODEMFrame.ZHEX)
     }
 
     func testZMODEMAutoDetect() {
         // Test the ZMODEM auto-detection sequence
-        let data1 = Data([0x2A, 0x2A, 0x18, 0x42, 0x30, 0x30])
+        let data1 = Data([ZMODEMFrame.ZPAD, ZMODEMFrame.ZPAD, ZMODEMFrame.ZDLE, ZMODEMFrame.ZHEX, 0x30, 0x30])
         XCTAssertTrue(ZMODEMProtocol.detectZMODEM(in: data1), "Should detect ZMODEM in data")
 
         let data2 = Data([0x41, 0x42, 0x43])
         XCTAssertFalse(ZMODEMProtocol.detectZMODEM(in: data2), "Should not detect ZMODEM in random data")
 
-        let data3 = Data([0x2A, 0x2A])
+        let data3 = Data([ZMODEMFrame.ZPAD, ZMODEMFrame.ZPAD])
         XCTAssertFalse(ZMODEMProtocol.detectZMODEM(in: data3), "Should not detect incomplete sequence")
     }
 
@@ -918,13 +944,13 @@ class ZMODEMTests: XCTestCase {
         zm.cancel()
 
         let cancelData = delegate.allSentData
-        // Should send 8x ZDLE (0x18) + 10x BS (0x08)
-        XCTAssertEqual(cancelData.count, 18, "Cancel should be 8 ZDLE + 10 BS")
-        for i in 0..<8 {
-            XCTAssertEqual(cancelData[i], 0x18, "First 8 bytes should be ZDLE/CAN")
+        // Should send 8x ZDLE + 10x BS
+        XCTAssertEqual(cancelData.count, ZMODEMFrame.cancelTotalLength, "Cancel should be \(ZMODEMFrame.cancelZDLECount) ZDLE + \(ZMODEMFrame.cancelBSCount) BS")
+        for i in 0..<ZMODEMFrame.cancelZDLECount {
+            XCTAssertEqual(cancelData[i], ZMODEMFrame.ZDLE, "First 8 bytes should be ZDLE/CAN")
         }
-        for i in 8..<18 {
-            XCTAssertEqual(cancelData[i], 0x08, "Last 10 bytes should be BS")
+        for i in ZMODEMFrame.cancelZDLECount..<ZMODEMFrame.cancelTotalLength {
+            XCTAssertEqual(cancelData[i], ZMODEMFrame.BS, "Last 10 bytes should be BS")
         }
     }
 
@@ -940,7 +966,7 @@ class ZMODEMTests: XCTestCase {
         XCTAssertFalse(manager.isTransferActive)
 
         // Should auto-detect ZMODEM initiation
-        let zmodemInit = Data([0x2A, 0x2A, 0x18, 0x42, 0x30, 0x31, 0x30, 0x30])
+        let zmodemInit = Data([ZMODEMFrame.ZPAD, ZMODEMFrame.ZPAD, ZMODEMFrame.ZDLE, ZMODEMFrame.ZHEX, 0x30, 0x31, 0x30, 0x30])
         XCTAssertTrue(manager.checkAutoDetect(zmodemInit, savePath: savePath))
         XCTAssertTrue(manager.isTransferActive)
 
@@ -978,8 +1004,8 @@ class KermitTests: XCTestCase {
         // Should send Send-Init (S) packet
         XCTAssertFalse(delegate.sentData.isEmpty, "Should send init packet")
         let packet = delegate.sentData[0]
-        XCTAssertEqual(packet[0], 0x01, "Should start with MARK/SOH")
-        XCTAssertEqual(packet[3], UInt8(Character("S").asciiValue!), "Type should be 'S'")
+        XCTAssertEqual(packet[0], KermitPacket.MARK, "Should start with MARK/SOH")
+        XCTAssertEqual(packet[3], KermitPacket.typeS, "Type should be 'S'")
     }
 
     func testKermitReceiveStart() {
@@ -1013,7 +1039,7 @@ class KermitTests: XCTestCase {
         // Should respond with ACK (Y) packet
         XCTAssertFalse(delegate.sentData.isEmpty, "Should send ACK to Send-Init")
         let ackPacket = delegate.sentData[0]
-        XCTAssertEqual(ackPacket[3], UInt8(Character("Y").asciiValue!), "Should send 'Y' (ACK)")
+        XCTAssertEqual(ackPacket[3], KermitPacket.typeY, "Should send 'Y' (ACK)")
     }
 
     func testKermitHandleFileHeader() {
@@ -1125,7 +1151,7 @@ class KermitTests: XCTestCase {
         delegate.reset()
 
         // Data with control char escaping: #M → 0x0D (CR), #J → 0x0A (LF)
-        let escapedData = Data([0x23, 0x4D, 0x23, 0x4A, 0x41]) // #M #J A
+        let escapedData = Data([KermitPacket.QCTL, KermitPacket.escapedCR, KermitPacket.QCTL, KermitPacket.escapedLF, 0x41]) // #M #J A
         km.processData(buildKermitPacket(seq: 2, type: "D", data: escapedData))
 
         let hasProgress = delegate.stateUpdates.contains { state in
@@ -1146,7 +1172,7 @@ class KermitTests: XCTestCase {
 
         // Should send Error (E) packet
         let packet = delegate.sentData.last!
-        XCTAssertEqual(packet[3], UInt8(Character("E").asciiValue!), "Cancel should send Error packet")
+        XCTAssertEqual(packet[3], KermitPacket.typeE, "Cancel should send Error packet")
     }
 
     // MARK: - Helper Methods
@@ -1157,8 +1183,8 @@ class KermitTests: XCTestCase {
         data.append(UInt8(5 + 32))    // TIME
         data.append(UInt8(0 + 32))    // NPAD
         data.append(0)                // PADC
-        data.append(UInt8(13 + 32))   // EOL
-        data.append(UInt8(Character("#").asciiValue!))  // QCTL
+        data.append(UInt8(KermitPacket.EOL + 32)) // EOL
+        data.append(KermitPacket.QCTL)                    // QCTL
         data.append(UInt8(Character("N").asciiValue!))  // QBIN
         data.append(UInt8(Character("1").asciiValue!))  // CHKT
         data.append(UInt8(Character(" ").asciiValue!))  // REPT
@@ -1167,7 +1193,7 @@ class KermitTests: XCTestCase {
 
     private func buildKermitPacket(seq: Int, type: String, data: Data) -> Data {
         var packet = Data()
-        packet.append(0x01) // MARK/SOH
+        packet.append(KermitPacket.MARK) // MARK/SOH
         packet.append(UInt8(data.count + 3 + 32)) // LEN
         packet.append(UInt8(seq + 32))              // SEQ
         packet.append(UInt8(Character(type).asciiValue!)) // TYPE
@@ -1175,7 +1201,7 @@ class KermitTests: XCTestCase {
         // Checksum (type 1: single-byte)
         let checksum = packet[1...].reduce(0) { ($0 + Int($1)) } % 256
         packet.append(UInt8((checksum + (checksum >> 6)) & 0x3F + 32))
-        packet.append(0x0D) // EOL
+        packet.append(KermitPacket.EOL) // EOL
         return packet
     }
 }
