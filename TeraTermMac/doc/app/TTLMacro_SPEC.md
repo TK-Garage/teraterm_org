@@ -1270,13 +1270,29 @@ MacroRunner には **120 以上のコマンド**が登録されており、全�
 | メモリ消去（zeroData） | 実装済み | `TTLKeychainManager.zeroData(&data)` |
 | iCloud 同期防止 | 実装済み | `kSecAttrAccessibleWhenUnlockedThisDeviceOnly` |
 
-### 6. 未対応・要対応の優先度
+### 6. 対応履歴・残件
 
-| 優先度 | 項目 | 対応内容 |
-|:------:|------|---------|
-| **高** | testlink result=1 未対応 | XPC connection の有効性チェックを追加し、XPC 接続あり + ホスト未接続 → result=1 を返すようにする |
-| **高** | MacroClientProtocol 統合 | TeraTermMac のターミナルエンジン（送受信バッファ、接続管理、ウィンドウ制御等）と XPC メソッドを実結合する |
-| **中** | protocolrecv / protocolsend 未登録 | MacroRunner の case 文に追加し、汎用ファイル転送コマンドとして実装する |
-| **中** | ファイル転送エンジン統合 | `MacroXPCManager` が `FileTransferDelegate` に準拠し `getTransferStatus` でリアルタイム進捗を返すよう実装済み。`fileTransferManager` プロパティ経由で `TerminalWindowController` の `FileTransferManager` を接続すれば完了 |
-| **低** | waitevent の完全実装 | 現在は waitrecv のエイリアス。ターミナルイベント種別（接続/切断/ウィンドウ等）の区別に対応する |
-| **低** | デバッグモード出力の可視化 | setdebug 有効時のマクロ実行トレース表示。現在はフラグ切り替えのみ |
+#### 対応済み（2026-03-16）
+
+| 項目 | 対応内容 |
+|------|---------|
+| `getTransferStatus()` プログレス追跡 | `TransferState` ベースに変更。転送バイト数/合計バイト数/送受信方向を正確に返す。`FileTransferDelegate` 準拠を追加 |
+| `cancelTransfer()` 改善 | `FileTransferManager.cancelTransfer()` を呼び出すよう変更 |
+| `startFileSend`/`startFileRecv` 状態初期化 | `currentTransferDirection` と `currentTransferState = .starting` を設定 |
+| テスト絶対パスバグ修正 | `RemainingTaskTests.swift:291` の `/home/user/teraterm_org/` → `#filePath` ベースの相対パスに修正 |
+| テスト追加 | 転送プログレスポーリング確認テスト、`xmodemrecv` の `startFileRecv` 呼び出しテストを追加 |
+
+#### 残件・要対応の優先度
+
+| 優先度 | 項目 | 対応内容 | 関連ファイル |
+|:------:|------|---------|-------------|
+| **高** | testlink result=1 未対応 | XPC connection の有効性チェックを追加し、XPC 接続あり + ホスト未接続 → result=1 を返すようにする | `MacroRunner.swift:1661` |
+| **高** | MacroClientProtocol 統合 | TeraTermMac のターミナルエンジン（送受信バッファ、接続管理、ウィンドウ制御等）と XPC メソッドを実結合する | `MacroXPCManager.swift` 全体 |
+| **高** | MacroXPCManager のインスタンス化未統合 | `MacroXPCManager` が `TerminalWindowController` からインスタンス化・参照される箇所が未実装。`fileTransferManager` プロパティの接続が必要 | `TerminalWindowController.swift` |
+| **中** | protocolrecv / protocolsend 未登録 | MacroRunner の case 文に追加し、汎用ファイル転送コマンドとして実装する | `MacroRunner.swift:573-823` |
+| **中** | ファイル転送エンジン最終統合 | `MacroXPCManager.fileTransferManager` を `TerminalWindowController.fileTransferManager` に接続し、`FileTransferDelegate` の二重委譲（TerminalWindowController + MacroXPCManager）を解決する | `MacroXPCManager.swift`, `TerminalWindowController.swift` |
+| **中** | XPC 転送バイト型の Int64 対応 | `getTransferStatus` の XPC シグネチャが `(String, Int, Int)` のため、2GB 超ファイルでオーバーフローの可能性。`Int64` への変更を検討 | `MacroXPCProtocols.swift:242`, `MacroRunner.swift:3986` |
+| **低** | waitevent の完全実装 | 現在は waitrecv のエイリアス。ターミナルイベント種別（接続/切断/ウィンドウ等）の区別に対応する | `MacroRunner.swift` |
+| **低** | デバッグモード出力の可視化 | setdebug 有効時のマクロ実行トレース表示。現在はフラグ切り替えのみ | `MacroRunner.swift` |
+| **低** | テスト：プロトコル定数のマジックナンバー | `TransferMenuProtocolTests.swift` 等でプロトコル定数（128, 1024, 0x10 等）がハードコード。名前付き定数への抽出を推奨 | `TransferMenuProtocolTests.swift`, `FileTransferSelfTests.swift` |
+| **低** | Entitlements の見直し | App Sandbox が `false` のまま。配布時にサンドボックス有効化と必要な entitlement（network, file access 等）の追加が必要 | `TTLMacro.entitlements` |
