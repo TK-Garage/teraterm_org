@@ -1272,7 +1272,10 @@ extension TerminalWindowController: TTLInterpreterDelegate {
     }
 
     func ttlSetFlowCtrl(_ mode: Int) {
-        // Flow control setting
+        if let serial = connectionManager.currentConnection as? SerialConnection {
+            let fc = FlowControl(rawValue: mode) ?? .none
+            serial.setFlowControl(fc)
+        }
     }
 
     func ttlSetDtr(_ on: Int) {

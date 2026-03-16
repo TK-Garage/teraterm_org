@@ -318,6 +318,13 @@ class MacroRunner {
             return
         }
 
+        // Debug mode: trace command execution
+        if debugMode {
+            let traceMsg = "[DEBUG] L\(currentLineNumber): \(cmdName) \(Array(parts.dropFirst()).joined(separator: " "))"
+            NSLog("%@", traceMsg)
+            clientProxy?.displayString(text: traceMsg + "\r\n", reply: {})
+        }
+
         executeCommand(cmdName, args: Array(parts.dropFirst()), fullLine: trimmed)
     }
 
@@ -1593,9 +1600,36 @@ extension MacroRunner {
 
     // MARK: waitevent - [IMPLEMENTED]
 
+    /// Wait for a terminal event. Sets `result` to the event type:
+    ///   0 = timeout (no event)
+    ///   1 = data received
+    ///   2 = connection state changed (disconnect detected)
     func cmdWaitEvent() { // [IMPLEMENTED]
-        // Wait for any event (simplified: just wait for data)
-        cmdWaitRecv()
+        cancelExecTimer()
+        // First check connection state change (disconnect)
+        clientProxy?.isConnected(reply: { [weak self] connected in
+            guard let self = self else { return }
+            if !connected {
+                // Disconnection event
+                self.resultValue = 2
+                self.variables["result"] = .integer(self.resultValue)
+                self.scheduleNextLine()
+                return
+            }
+            // Otherwise wait for data with timeout
+            self.clientProxy?.recvFromTerminal(timeout: self.timeoutValue, reply: { [weak self] data in
+                guard let self = self else { return }
+                if let data = data, let str = String(data: data, encoding: .utf8), !str.isEmpty {
+                    self.inputStr = str
+                    self.variables["inputstr"] = .string(str)
+                    self.resultValue = 1
+                } else {
+                    self.resultValue = 0
+                }
+                self.variables["result"] = .integer(self.resultValue)
+                self.scheduleNextLine()
+            })
+        })
     }
 
     // MARK: pause/mpause - [IMPLEMENTED]

@@ -557,6 +557,29 @@ class SerialConnection: Connection {
         _ = ioctl(fileDescriptor, UInt(on ? TIOCMBIS : TIOCMBIC), &bits)
     }
 
+    /// Change flow control on an active serial port via tcsetattr.
+    /// mode: 0 = none, 1 = Xon/Xoff, 2 = hardware (RTS/CTS)
+    func setFlowControl(_ mode: FlowControl) {
+        guard fileDescriptor >= 0 else { return }
+        var options = termios()
+        tcgetattr(fileDescriptor, &options)
+
+        // Clear existing flow control bits
+        options.c_cflag &= ~UInt(CRTSCTS)
+        options.c_iflag &= ~UInt(IXON | IXOFF)
+
+        switch mode {
+        case .hardware:
+            options.c_cflag |= UInt(CRTSCTS)
+        case .xonXoff:
+            options.c_iflag |= UInt(IXON | IXOFF)
+        case .none:
+            break
+        }
+
+        tcsetattr(fileDescriptor, TCSANOW, &options)
+    }
+
     /// Get modem status bits via ioctl(TIOCMGET).
     /// Returns a bitmask: bit0=CTS, bit1=DSR, bit2=RI, bit3=DCD (Tera Term convention).
     /// Returns 0 if the port is not open or ioctl fails.

@@ -9,6 +9,16 @@
 import XCTest
 @testable import TeraTermMac
 
+// MARK: - Transfer Protocol Constants
+
+private enum XMODEMConstant {
+    static let standardBlockSize = 128     // Standard XMODEM block payload size
+    static let extendedBlockSize = 1024    // XMODEM-1K / YMODEM block payload size
+    static let SOH: UInt8 = 0x01          // Start of Heading (128-byte block)
+    static let STX: UInt8 = 0x02          // Start of Text (1024-byte block)
+    static let SUB: UInt8 = 0x1A          // Padding byte for short blocks
+}
+
 // MARK: - Loopback Test Harness
 
 /// Wires a sender and receiver together, pumping data between them

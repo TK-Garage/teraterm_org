@@ -117,7 +117,7 @@ class ExtendedMockMacroClient: NSObject, MacroClientProtocol {
         record("setBaudRate", ["rate": rate]); reply()
     }
     func setFlowControl(mode: Int, reply: @escaping () -> Void) {
-        record("setFlowControl"); reply()
+        record("setFlowControl", ["mode": mode]); reply()
     }
     func setDtr(on: Int, reply: @escaping () -> Void) {
         record("setDtr"); reply()
@@ -1051,6 +1051,191 @@ final class ProtocolNameResolutionTests: XCTestCase {
         wait(for: [exp], timeout: 10.0)
         let call = mockClient.calls.first { $0.method == "startFileRecv" }
         XCTAssertEqual(call?.args["protocolName"] as? String, "bplus")
+    }
+}
+
+// MARK: - SetFlowControl Tests
+
+final class SetFlowControlTests: XCTestCase {
+
+    func testSetFlowCtrlNone() {
+        let mockClient = ExtendedMockMacroClient()
+        let runner = MacroRunner()
+        runner.clientProxy = mockClient
+
+        let script = "setflowctrl 0\n"
+        let path = NSTemporaryDirectory() + "test_flowctrl_none.ttl"
+        try! script.write(toFile: path, atomically: true, encoding: .utf8)
+
+        let exp = expectation(description: "script done")
+        runner.onComplete = { _ in exp.fulfill() }
+        runner.run(scriptPath: path)
+        wait(for: [exp], timeout: 5.0)
+
+        let call = mockClient.calls.first { $0.method == "setFlowControl" }
+        XCTAssertNotNil(call, "setFlowControl should be called")
+        XCTAssertEqual(call?.args["mode"] as? Int, 0, "Mode should be 0 (none)")
+    }
+
+    func testSetFlowCtrlXonXoff() {
+        let mockClient = ExtendedMockMacroClient()
+        let runner = MacroRunner()
+        runner.clientProxy = mockClient
+
+        let script = "setflowctrl 1\n"
+        let path = NSTemporaryDirectory() + "test_flowctrl_xon.ttl"
+        try! script.write(toFile: path, atomically: true, encoding: .utf8)
+
+        let exp = expectation(description: "script done")
+        runner.onComplete = { _ in exp.fulfill() }
+        runner.run(scriptPath: path)
+        wait(for: [exp], timeout: 5.0)
+
+        let call = mockClient.calls.first { $0.method == "setFlowControl" }
+        XCTAssertNotNil(call, "setFlowControl should be called")
+        XCTAssertEqual(call?.args["mode"] as? Int, 1, "Mode should be 1 (xon/xoff)")
+    }
+
+    func testSetFlowCtrlHardware() {
+        let mockClient = ExtendedMockMacroClient()
+        let runner = MacroRunner()
+        runner.clientProxy = mockClient
+
+        let script = "setflowctrl 2\n"
+        let path = NSTemporaryDirectory() + "test_flowctrl_hw.ttl"
+        try! script.write(toFile: path, atomically: true, encoding: .utf8)
+
+        let exp = expectation(description: "script done")
+        runner.onComplete = { _ in exp.fulfill() }
+        runner.run(scriptPath: path)
+        wait(for: [exp], timeout: 5.0)
+
+        let call = mockClient.calls.first { $0.method == "setFlowControl" }
+        XCTAssertNotNil(call, "setFlowControl should be called")
+        XCTAssertEqual(call?.args["mode"] as? Int, 2, "Mode should be 2 (hardware)")
+    }
+}
+
+// MARK: - WaitEvent Tests
+
+final class WaitEventTests: XCTestCase {
+
+    func testWaitEventDisconnectedReturns2() {
+        let mockClient = ExtendedMockMacroClient()
+        mockClient.isConnectedResponse = false
+        let runner = MacroRunner()
+        runner.clientProxy = mockClient
+
+        // Script checks if result == 2 after waitevent when disconnected
+        let script = """
+        waitevent
+        if result == 2 then send 'DISCONNECTED'
+        """
+        let path = NSTemporaryDirectory() + "test_waitevent_dc.ttl"
+        try! script.write(toFile: path, atomically: true, encoding: .utf8)
+
+        let exp = expectation(description: "script done")
+        runner.onComplete = { _ in exp.fulfill() }
+        runner.run(scriptPath: path)
+        wait(for: [exp], timeout: 5.0)
+
+        let sendCall = mockClient.calls.first { $0.method == "sendToTerminal" }
+        XCTAssertNotNil(sendCall, "Should send DISCONNECTED marker when result=2")
+    }
+
+    func testWaitEventDataReceivedReturns1() {
+        let mockClient = ExtendedMockMacroClient()
+        mockClient.isConnectedResponse = true
+        mockClient.recvData = "test data".data(using: .utf8)
+        let runner = MacroRunner()
+        runner.clientProxy = mockClient
+
+        let script = """
+        waitevent
+        if result == 1 then send 'DATARECEIVED'
+        """
+        let path = NSTemporaryDirectory() + "test_waitevent_data.ttl"
+        try! script.write(toFile: path, atomically: true, encoding: .utf8)
+
+        let exp = expectation(description: "script done")
+        runner.onComplete = { _ in exp.fulfill() }
+        runner.run(scriptPath: path)
+        wait(for: [exp], timeout: 5.0)
+
+        let sendCall = mockClient.calls.first { $0.method == "sendToTerminal" }
+        XCTAssertNotNil(sendCall, "Should send DATARECEIVED marker when result=1")
+    }
+
+    func testWaitEventTimeoutReturns0() {
+        let mockClient = ExtendedMockMacroClient()
+        mockClient.isConnectedResponse = true
+        mockClient.recvData = nil
+        let runner = MacroRunner()
+        runner.clientProxy = mockClient
+
+        let script = """
+        waitevent
+        if result == 0 then send 'TIMEOUT'
+        """
+        let path = NSTemporaryDirectory() + "test_waitevent_timeout.ttl"
+        try! script.write(toFile: path, atomically: true, encoding: .utf8)
+
+        let exp = expectation(description: "script done")
+        runner.onComplete = { _ in exp.fulfill() }
+        runner.run(scriptPath: path)
+        wait(for: [exp], timeout: 5.0)
+
+        let sendCall = mockClient.calls.first { $0.method == "sendToTerminal" }
+        XCTAssertNotNil(sendCall, "Should send TIMEOUT marker when result=0")
+    }
+}
+
+// MARK: - SetDebug Trace Tests
+
+final class SetDebugTraceTests: XCTestCase {
+
+    func testSetDebugEnablesTraceOutput() {
+        let mockClient = ExtendedMockMacroClient()
+        let runner = MacroRunner()
+        runner.clientProxy = mockClient
+
+        // Enable debug mode, then run a command — should produce displayString trace
+        let script = """
+        setdebug 1
+        pause 1
+        """
+        let path = NSTemporaryDirectory() + "test_setdebug_trace.ttl"
+        try! script.write(toFile: path, atomically: true, encoding: .utf8)
+
+        let exp = expectation(description: "script done")
+        runner.onComplete = { _ in exp.fulfill() }
+        runner.run(scriptPath: path)
+        wait(for: [exp], timeout: 5.0)
+
+        // After setdebug 1, the next command (pause) should trigger a displayString trace
+        let displayCalls = mockClient.calls.filter { $0.method == "displayString" }
+        XCTAssertFalse(displayCalls.isEmpty, "Debug mode should produce trace output via displayString")
+    }
+
+    func testSetDebugDisabledNoTrace() {
+        let mockClient = ExtendedMockMacroClient()
+        let runner = MacroRunner()
+        runner.clientProxy = mockClient
+
+        // Debug mode disabled (default) — no trace output
+        let script = """
+        pause 1
+        """
+        let path = NSTemporaryDirectory() + "test_setdebug_off.ttl"
+        try! script.write(toFile: path, atomically: true, encoding: .utf8)
+
+        let exp = expectation(description: "script done")
+        runner.onComplete = { _ in exp.fulfill() }
+        runner.run(scriptPath: path)
+        wait(for: [exp], timeout: 5.0)
+
+        let displayCalls = mockClient.calls.filter { $0.method == "displayString" }
+        XCTAssertTrue(displayCalls.isEmpty, "No trace output when debug mode is off")
     }
 }
 

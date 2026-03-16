@@ -1226,7 +1226,7 @@ MacroRunner には **120 以上のコマンド**が登録されており、全�
 | `testlink` | result: 0=未リンク, 1=リンク済み・未接続, 2=リンク済み・接続中 | **実装済み** | `isXPCLinked` → `isConnected` の 2 段階チェックで 3 状態を返す |
 | `protocolrecv` | 汎用プロトコル受信 | **実装済み** | `protocolrecv <proto> [localdir]` — 第1引数でプロトコル名を指定、内部で `cmdFileTransferRecv` に委譲 |
 | `protocolsend` | 汎用プロトコル送信 | **実装済み** | `protocolsend <proto> <filepath> [option]` — 第1引数でプロトコル名を指定、内部で `cmdFileTransferSend` に委譲 |
-| `waitevent` | ターミナルイベント待機 | **簡易実装** | `cmdWaitRecv()` へのエイリアス。ターミナルイベント種別の区別なし |
+| `waitevent` | ターミナルイベント待機 | **実装済み** | result: 0=タイムアウト, 1=データ受信, 2=切断検知。`isConnected` で接続状態を先行チェックし、接続中なら `recvFromTerminal` でデータ待機 |
 
 #### コマンドカテゴリ別の実装状況
 
@@ -1239,7 +1239,7 @@ MacroRunner には **120 以上のコマンド**が登録されており、全�
 | ファイル I/O | 21 | 21 | fileopen〜fileunlock |
 | ディレクトリ | 13 | 13 | findfirst〜setdir |
 | 接続 | 5 | 5 | testlink 完全実装（0/1/2 の 3 状態対応） |
-| 待機 | 9 | 9 | wait〜mpause（waitevent は簡易実装） |
+| 待機 | 9 | 9 | wait〜mpause（waitevent 完全実装：0/1/2 の 3 状態対応） |
 | アプリ制御 | 11 | 11 | closett〜dispstr |
 | システム | 21 | 21 | exec〜var2clipb |
 | ログ | 8 | 8 | logopen〜logautoclosemode |
@@ -1259,7 +1259,7 @@ MacroRunner には **120 以上のコマンド**が登録されており、全�
 | メニューバー（StatusBarManager） | 実装済み | idle/running/paused 3 状態メニュー、SF Symbol アイコンアニメーション |
 | 停止確認ダイアログ | 実装済み | `MacroDialogHelper.showStopConfirmation()` |
 | ローカライズ（en/ja） | 実装済み | 18 キー、英語・日本語完備 |
-| デバッグモード（setdebug） | 実装済み | フラグ切り替えのみ。デバッグ出力 UI は TeraTermMac 側の追加設定タブに存在 |
+| デバッグモード（setdebug） | 実装済み | フラグ切り替え + コマンドトレース出力（`displayString` + `NSLog`）。有効時は各コマンドの行番号・コマンド名・引数をターミナルに表示 |
 
 ### 5. セキュリティ
 
@@ -1305,12 +1305,21 @@ MacroRunner には **120 以上のコマンド**が登録されており、全�
 | DTR/RTS 信号制御実装 | `SerialConnection` に `setDtr()`/`setRts()` メソッド追加。`ioctl(TIOCMBIS/TIOCMBIC)` で制御。`TerminalWindowController.ttlSetDtr()`/`ttlSetRts()` を実結合 |
 | テスト追加 | `ProtocolSendRecvTests` 3 件、`Int64TransferStatusTests` 2 件、`ProtocolNameResolutionTests` 3 件を追加 |
 
+#### 対応済み（2026-03-16 第4回）
+
+| 項目 | 対応内容 |
+|------|---------|
+| setFlowControl 実装 | `SerialConnection.setFlowControl()` を追加。`tcgetattr`/`tcsetattr` によるフロー制御切り替え（none/xonXoff/hardware）を実装。`TerminalWindowController.ttlSetFlowCtrl()` を空スタブから実結合に変更 |
+| waitevent 完全実装 | `cmdWaitEvent()` を `cmdWaitRecv` エイリアスから完全実装に変更。`isConnected` で接続状態を先行チェックし、result: 0=タイムアウト, 1=データ受信, 2=切断検知の 3 状態を返す |
+| デバッグモード出力の可視化 | `setdebug` 有効時にコマンド実行トレースを `displayString` + `NSLog` で出力。行番号・コマンド名・引数を `[DEBUG] L<n>: <cmd> <args>` 形式で表示 |
+| テスト：プロトコル定数のマジックナンバー抽出 | `TransferMenuProtocolTests.swift` に `ControlChar`/`ProtocolConstant` enum、`FileTransferSelfTests.swift` に `XMODEMConstant` enum を追加。DLE/SOH/STX/ETX/CR 等の名前付き定数に置換 |
+| Entitlements 見直し | App Sandbox を `true` に変更。network.client、files.user-selected.read-write、files.downloads.read-write、device.serial、XPC mach-lookup の entitlement を追加 |
+| テスト追加 | `SetFlowControlTests`（3 件）、`WaitEventTests`（3 件）、`SetDebugTraceTests`（2 件）を追加 |
+
 #### 残件・要対応の優先度
 
 | 優先度 | 項目 | 対応内容 | 関連ファイル |
 |:------:|------|---------|-------------|
-| **中** | setFlowControl 実装 | macOS シリアルポートの `tcsetattr` によるフロー制御切り替え。現在は空実装 | `TerminalWindowController.swift`, `SerialConnection` |
-| **低** | waitevent の完全実装 | 現在は waitrecv のエイリアス。ターミナルイベント種別（接続/切断/ウィンドウ等）の区別に対応する | `MacroRunner.swift` |
-| **低** | デバッグモード出力の可視化 | setdebug 有効時のマクロ実行トレース表示。現在はフラグ切り替えのみ | `MacroRunner.swift` |
-| **低** | テスト：プロトコル定数のマジックナンバー | `TransferMenuProtocolTests.swift` 等でプロトコル定数（128, 1024, 0x10 等）がハードコード。名前付き定数への抽出を推奨 | `TransferMenuProtocolTests.swift`, `FileTransferSelfTests.swift` |
-| **低** | Entitlements の見直し | App Sandbox が `false` のまま。配布時にサンドボックス有効化と必要な entitlement（network, file access 等）の追加が必要 | `TTLMacro.entitlements` |
+| **低** | TeraTermMac 本体側の entitlements | TTLMacro.entitlements は対応済みだが、TeraTermMac 本体の entitlements ファイルが未作成。配布時に必要 | `TeraTermMac.entitlements`（新規） |
+| **低** | waitevent のウィンドウイベント対応 | 現在は接続状態変更（切断）とデータ受信のみ。ウィンドウリサイズ等のイベントは未対応 | `MacroRunner.swift` |
+| **低** | FileTransferSelfTests 定数適用拡大 | `XMODEMConstant` を定義済みだが、テスト本文中の 128/1024 への適用は限定的。全箇所への展開は可読性とのバランスで任意 | `FileTransferSelfTests.swift` |

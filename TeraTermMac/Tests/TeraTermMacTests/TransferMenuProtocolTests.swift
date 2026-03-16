@@ -13,6 +13,23 @@
 import XCTest
 @testable import TeraTermMac
 
+// MARK: - Transfer Protocol Constants
+
+private enum ControlChar {
+    static let SOH: UInt8 = 0x01   // Start of Heading (XMODEM/YMODEM 128-byte block)
+    static let STX: UInt8 = 0x02   // Start of Text (XMODEM-1K/YMODEM 1024-byte block)
+    static let ETX: UInt8 = 0x03   // End of Text
+    static let CR: UInt8 = 0x0D    // Carriage Return
+    static let DLE: UInt8 = 0x10   // Data Link Escape (B-Plus framing)
+}
+
+private enum ProtocolConstant {
+    static let bPlusStartChar: UInt8 = 0x42    // 'B' — B-Plus protocol identifier
+    static let xmodemBlockSize = 128           // Standard XMODEM block size
+    static let xmodem1KBlockSize = 1024        // XMODEM-1K / YMODEM block size
+    static let sinitType: UInt8 = 0x01         // Quick-VAN SINIT packet type
+}
+
 // MARK: - TransferProtocolType Enum Tests
 
 class TransferProtocolTypeTests: XCTestCase {
@@ -100,11 +117,11 @@ class BPlusProtocolTests: XCTestCase {
         // Should have sent a parameter packet
         XCTAssertFalse(delegate.sentData.isEmpty, "B-Plus sender should send parameter packet")
 
-        // First bytes should be DLE (0x10) 'B' (0x42)
+        // First bytes should be DLE 'B'
         let sent = delegate.allSentData
         XCTAssertTrue(sent.count >= 2, "Sent data should have at least 2 bytes")
-        XCTAssertEqual(sent[0], 0x10, "First byte should be DLE")
-        XCTAssertEqual(sent[1], 0x42, "Second byte should be 'B'")
+        XCTAssertEqual(sent[0], ControlChar.DLE, "First byte should be DLE")
+        XCTAssertEqual(sent[1], ProtocolConstant.bPlusStartChar, "Second byte should be 'B'")
     }
 
     func testBPlusReceiveStart() {
@@ -150,13 +167,13 @@ class BPlusProtocolTests: XCTestCase {
 
         let sent = delegate.allSentData
         // Packet starts with DLE B
-        XCTAssertEqual(sent[0], 0x10, "DLE")
-        XCTAssertEqual(sent[1], 0x42, "'B'")
+        XCTAssertEqual(sent[0], ControlChar.DLE, "DLE")
+        XCTAssertEqual(sent[1], ProtocolConstant.bPlusStartChar, "'B'")
 
         // Should contain DLE ETX somewhere (end marker)
         var foundDLEETX = false
         for i in 2..<(sent.count - 1) {
-            if sent[i] == 0x10 && sent[i + 1] == 0x03 {
+            if sent[i] == ControlChar.DLE && sent[i + 1] == ControlChar.ETX {
                 foundDLEETX = true
                 break
             }
@@ -181,7 +198,7 @@ class BPlusProtocolTests: XCTestCase {
         let sent = delegate.allSentData
         // Find DLE ETX position
         for i in 2..<(sent.count - 1) {
-            if sent[i] == 0x10 && sent[i + 1] == 0x03 {
+            if sent[i] == ControlChar.DLE && sent[i + 1] == ControlChar.ETX {
                 // After DLE ETX should be 1 checksum byte (standard mode)
                 let remaining = sent.count - (i + 2)
                 XCTAssertEqual(remaining, 1,
@@ -299,31 +316,32 @@ class QuickVANProtocolTests: XCTestCase {
         qv.start()
 
         let sent = delegate.allSentData
-        // SINIT: STX(02) SINIT(01) NUM VERSION WINSIZE CHECKSUM CR
+        // SINIT: STX SINIT NUM VERSION WINSIZE CHECKSUM CR
         XCTAssertTrue(sent.count >= 7, "SINIT packet should be at least 7 bytes")
-        XCTAssertEqual(sent[0], 0x02, "STX")
-        XCTAssertEqual(sent[1], 0x01, "SINIT type")
-        // Last byte should be CR (0x0D)
-        XCTAssertEqual(sent[sent.count - 1], 0x0D, "SINIT should end with CR")
+        XCTAssertEqual(sent[0], ControlChar.STX, "STX")
+        XCTAssertEqual(sent[1], ProtocolConstant.sinitType, "SINIT type")
+        // Last byte should be CR
+        XCTAssertEqual(sent[sent.count - 1], ControlChar.CR, "SINIT should end with CR")
     }
 
     func testQuickVANDataBlockFormat() {
-        // Verify 128-byte data block format: SOH BLK ~BLK DATA[128] CHECKSUM
-        let testData = Data(repeating: 0x42, count: 128)
-        var sum: UInt8 = 0x01  // SOH
+        // Verify data block format: SOH BLK ~BLK DATA[blockSize] CHECKSUM
+        let testData = Data(repeating: 0x42, count: ProtocolConstant.xmodemBlockSize)
+        var sum: UInt8 = ControlChar.SOH
         sum = sum &+ 0x01    // BLK=1
         sum = sum &+ 0xFE    // ~BLK
         for b in testData { sum = sum &+ b }
 
         // Build a data packet manually
         var packet = Data()
-        packet.append(0x01) // SOH
+        packet.append(ControlChar.SOH)
         packet.append(0x01) // BLK
         packet.append(0xFE) // ~BLK
         packet.append(testData)
         packet.append(sum)
 
-        XCTAssertEqual(packet.count, 132, "Data block should be 132 bytes (SOH+BLK+~BLK+128+CHECKSUM)")
+        let expectedSize = 3 + ProtocolConstant.xmodemBlockSize + 1 // SOH+BLK+~BLK+DATA+CHECKSUM
+        XCTAssertEqual(packet.count, expectedSize, "Data block should be \(expectedSize) bytes (SOH+BLK+~BLK+\(ProtocolConstant.xmodemBlockSize)+CHECKSUM)")
 
         // Verify complement
         XCTAssertEqual(packet[1] ^ packet[2], 0xFF, "Block number and complement should XOR to 0xFF")
