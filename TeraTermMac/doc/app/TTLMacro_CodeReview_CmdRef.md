@@ -3,6 +3,7 @@
 > **基準文書**: `TTLCommandReference.md`（権威的リファレンス）
 > **対象文書**: `TTLMacro_SPEC.md`（TTLCommandReference.md に基づき記載された仕様書）
 > **レビュー日**: 2026-03-16
+> **検証日**: 2026-03-17（実ソースと突合検証済み）
 
 ---
 
@@ -10,53 +11,44 @@
 
 TTLCommandReference.md を正とし、TTLMacro_SPEC.md に存在する問題点・不整合を分類して列挙する。
 
-| 重大度 | 件数 |
-|--------|------|
-| Critical（動作が正反対） | 2 |
-| Major（コマンド名・引数の相違） | 8 |
-| Minor（記述不足・表記差異） | 12 |
-| Info（構成上の欠落） | 5 |
-| **合計** | **27** |
+> **検証結果**: 元の27件中3件（C-1, C-2, m-12）は実ソース検証で INVALID と判定。
+> 有効件数は **24件**。3件は記述に誤りがあり修正済み（M-3, M-5, m-8）。
+
+| 重大度 | 元件数 | 有効件数 | 備考 |
+|--------|--------|----------|------|
+| Critical（動作が正反対） | 2 | **0** | 両件とも SPEC で既に修正済み |
+| Major（コマンド名・引数の相違） | 8 | **8** | 3件で説明を修正 |
+| Minor（記述不足・表記差異） | 12 | **11** | m-12 は INVALID |
+| Info（構成上の欠落） | 5 | **5** | 全件有効 |
+| **合計** | **27** | **24** |
 
 ---
 
 ## Critical（動作が正反対）
 
-### C-1. sprintf / sprintf2 の入出力先が逆
+> **2026-03-17 検証結果: 2件とも INVALID。SPEC は既に修正済みで CommandReference と一致。**
+
+### C-1. sprintf / sprintf2 の入出力先が逆 — ~~INVALID（検証済み）~~
 
 **CommandReference の定義:**
-- `sprintf` — 引数: `<format> [<args>...]`、結果は **`inputstr`** に格納。変数名引数なし。
-  ```ttl
-  sprintf 'Count: %d, Name: %s' 42 'Alice'
-  ; inputstr = 'Count: 42, Name: Alice'
-  ```
+- `sprintf` — 引数: `<format> [<args>...]`、結果は **`inputstr`** に格納。
 - `sprintf2` — 引数: `<strvar> <format> [<args>...]`、結果は **指定変数** に格納。
-  ```ttl
-  sprintf2 buf 'Error %d: %s' 404 'Not Found'
-  ; buf = 'Error 404: Not Found'
-  ```
 
-**SPEC の記述 (line 145-146):**
-- `sprintf` — `<strvar> <format> [<args>...]` → "Format string into **named variable**"
-- `sprintf2` — `<strvar> <format> [<args>...]` → "Format string, store result in **`inputstr`**"
+**SPEC の現在の記述 (line 143-144):**
+- `sprintf` — `<format> [<args>...]` | `inputstr: 書式化文字列`
+- `sprintf2` — `<strvar> <format> [<args>...]` | `--` (書式化結果を指定変数に格納)
 
-**問題:** 格納先が完全に逆。さらに SPEC は `sprintf` に存在しない `<strvar>` 引数を追加している。これは TeraTerm Windows 版との互換性を破壊する。
+**検証結果:** SPEC は既に CommandReference と一致している。格納先は正しく、`sprintf` に `<strvar>` 引数は含まれていない。本指摘は旧版 SPEC に対するものであり、現行版では解消済み。
 
 ---
 
-### C-2. logautoclose vs logautoclosemode — コマンド名が異なる
+### C-2. logautoclose vs logautoclosemode — ~~INVALID（検証済み）~~
 
-**CommandReference (line 1576-1581):**
-```ttl
-logautoclosemode 1
-```
+**CommandReference:** `logautoclosemode`
 
-**SPEC (line 322):**
-```
-| `logautoclose` | `<mode>` (int) | -- | Set log auto-close mode. |
-```
+**SPEC の現在の記述 (line 320):** `logautoclosemode`
 
-**問題:** CommandReference は `logautoclosemode` だが、SPEC は `logautoclose` と記載。コマンド名が異なるため、どちらかに基づいて実装するとスクリプト互換性が壊れる。
+**検証結果:** SPEC は既に `logautoclosemode` と正しく記載されている。本指摘は旧版 SPEC に対するものであり、現行版では解消済み。
 
 ---
 
@@ -82,39 +74,41 @@ getpassword pass 'Enter password for server'
 
 ---
 
-### M-2. `filesearch` のセマンティクスが曖昧
+### M-2. `filesearch` のセマンティクスが異なる — **CONFIRMED（検証で悪化判定）**
 
-**CommandReference (line 735-741):**
+**CommandReference (line 796-809):**
 ```ttl
-filesearch '/tmp/data.txt' 'pattern'
+filesearch '/tmp/data.txt'
+; result = 1 (存在する) or 0 (存在しない)
 ```
-"ファイル内を検索" — 引数は `<filepath> <pattern>`、ファイル **内容** を検索する意味。
+"ファイルの存在を確認する" — 引数は `<filename>` **1引数**。return 値: `result: 1=存在, 0=不在`。
 
-**SPEC (line 218):**
+**SPEC (line 216):**
 ```
-| `filesearch` | `<filepath> <pattern>` | -- | Search within file. |
+| `filesearch` | `<filepath> <pattern>` | -- | ファイル内を検索 |
 ```
+**2引数**で、操作がファイル **内容検索**。return 値なし。
 
-**問題:** 両者とも「ファイル内検索」と読めるが、return 値の記述がない。既存コードレビュー（TTLMacro_CodeReview_CmdRef.md）では、実装がファイル **存在チェック** になっている可能性が指摘されている。SPEC は CommandReference に合わせて return 値（result: 1=found, 0=not found など）を明記すべき。
+**問題:** 元のレビューでは「両者ともファイル内検索」としていたが、実際には CommandReference は **ファイル存在チェック**（1引数）、SPEC は **ファイル内検索**（2引数）と操作自体が完全に異なる。引数の数、操作の意味、return 値の全てが不一致。
 
 ---
 
-### M-3. `str2int` の引数順序が曖昧
+### M-3. `str2int` の引数順序が逆 — **CONFIRMED（レビュー記述を修正）**
 
-**CommandReference (line 477-486):**
+**CommandReference (line 481-493):**
 ```ttl
-str2int '42' val
+str2int val '42'
 ; val = 42, result = 1
-```
-引数順: `<string> <intvar>` — 文字列が先、変数が後。
-
-**SPEC (line 132, 182):**
-```
-| `str2int` | `<intvar> <string>` | `result`: 1=success, 0=failure | ... |
 ```
 引数順: `<intvar> <string>` — **変数が先、文字列が後**。
 
-**問題:** 引数順が逆。CommandReference のサンプルコードでは `str2int '42' val` だが、SPEC では `<intvar> <string>` と記載。
+**SPEC (line 130, 180):**
+```
+| `str2int` | `<string> <intvar>` | `result`: 1=成功, 0=失敗 | ... |
+```
+引数順: `<string> <intvar>` — **文字列が先、変数が後**。
+
+**問題:** 引数順が逆。元のレビューではどちらがどちらか記載が逆だったため修正。CommandReference は `str2int val '42'`（変数先）、SPEC は `<string> <intvar>`（文字列先）。
 
 ---
 
@@ -136,23 +130,25 @@ int2str buf 1234
 
 ---
 
-### M-5. `str2code` / `code2str` の引数順序
+### M-5. `str2code` / `code2str` の引数順序 — **CONFIRMED（レビュー記述を修正）**
 
-**CommandReference (line 498-513):**
+**CommandReference (line 504-520):**
 ```ttl
-str2code 'A' code    ; code = 65
-code2str 65 ch       ; ch = 'A'
+str2code code 'A'    ; code = 65
+code2str ch 65       ; ch = 'A'
 ```
-- `str2code`: `<string> <intvar>` — 入力が先
-- `code2str`: `<intcode> <strvar>` — 入力が先
+- `str2code`: `<intvar> <string>` — **出力変数が先**
+- `code2str`: `<strvar> <intcode>` — **出力変数が先**
 
-**SPEC (line 134-135):**
+**SPEC (line 132-133):**
 ```
 | `str2code` | `<string> <intvar>` | -- | ... |
 | `code2str` | `<intcode> <strvar>` | -- | ... |
 ```
+- `str2code`: **入力が先**
+- `code2str`: **入力が先**
 
-**問題:** 引数順は一致。ただし SPEC が2箇所（String Operations テーブルと Variables テーブル）で重複記載しており、不整合のリスクがある。
+**問題:** 元のレビューでは「引数順は一致」と記載したが、実際には **不一致**。CommandReference は全て出力変数が先（M-3 の str2int と同じパターン）、SPEC は入力が先。加えて SPEC は2箇所で重複記載しており不整合リスクがある。
 
 ---
 
@@ -176,21 +172,25 @@ recvfile '/tmp/received.dat' 1 5
 
 ---
 
-### M-7. `getver` の計算式に補足なし
+### M-7. `getver` の戻り値の型が異なる — **CONFIRMED（検証で悪化判定）**
 
-**CommandReference (line 1037-1043):**
+**CommandReference (line 1193-1202):**
 ```ttl
 getver ver
-; ver = 50000  (5.0.0 の場合)
+; ver = '1.0.0'
 ```
-計算式: `major*10000 + minor*100 + patch`
+結果: **文字列**（CFBundleShortVersionString）。
 
-**SPEC (line 278):**
+**SPEC (line 276):**
 ```
-| `getver` | `<intvar>` | -- | Get version number (major*10000 + minor*100 + patch). |
+| `getver` | `<intvar>` | -- | バージョン番号を取得（major*10000 + minor*100 + patch） |
 ```
+結果: **整数**（計算式による）。
 
-**問題:** 計算式自体は記載されているが、コードレビュー（TTLMacro_CodeReview_CmdRef.md）で実装が `major*10000 + minor*100 + patch` ではなく異なる計算をしている可能性が指摘されている。SPEC はコード実装と CommandReference の両方と整合を取る必要がある。
+**実装（TTLInterpreter.swift line 2982-2987, MacroRunner.swift line 3246-3254）:**
+`getStrVar()` / `setStrVal()` を使用 — **文字列を返す**。
+
+**問題:** SPEC は `<intvar>` で整数計算式と記載しているが、CommandReference と実装の両方が **文字列**（バージョン文字列）を返す。SPEC の変数型と計算式が誤り。
 
 ---
 
@@ -209,7 +209,16 @@ getver ver
 | `getspecialfolder` | `<strvar> <folderid>` | -- | Get special folder path. 0=Desktop, 1=App Support, 2=Documents, 3=Downloads. |
 ```
 
-**問題:** 値自体は一致しているが、コードレビュー（TTLMacro_CodeReview_CmdRef.md）で実装のフォルダ番号が Windows TeraTerm と異なる可能性が指摘されている。Windows 版 TeraTerm では 0=AllUsersDesktop, 1=AllUsersPrograms 等の異なるマッピングを使用する。SPEC は macOS 固有マッピングであることを明記すべき。
+**問題（検証で悪化判定）:** フォルダ番号マッピングが4つのソース間で不一致:
+
+| ID | CommandRef | SPEC | TTLInterpreter.swift | MacroRunner.swift |
+|----|-----------|------|---------------------|------------------|
+| 0 | Desktop | Desktop | Desktop | Desktop |
+| 1 | Documents | App Support | App Support | Documents |
+| 2 | App Support | Documents | Documents | App Support |
+| 3 | Home | Downloads | Downloads | Home |
+
+SPEC と TTLInterpreter は一致するが、CommandReference と MacroRunner は別のマッピング。**実装ファイル間でも不一致**がある。SPEC は macOS 固有マッピングであることを明記し、実装を統一すべき。
 
 ---
 
@@ -320,18 +329,12 @@ strsplit 'a,b,c,d' ','
 
 ---
 
-### m-8. MacroClientProtocol のメソッド数の不一致
+### m-8. MacroClientProtocol のメソッド数記述 — **PARTIALLY CONFIRMED（レビュー記述を修正）**
 
-**SPEC (line 434):**
-> "64 methods total."
+**SPEC (line 1179):**
+> "MacroClientProtocol（57 メソッド）"
 
-**SPEC の XPC メソッドテーブル:**
-- TTLInterpreterDelegate マッピング: #1〜#41
-- Additional XPC methods: #42〜#70
-
-実際のリスト: **70 メソッド** が列挙されている。
-
-**問題:** "64 methods total" という記述と、テーブルの70行が矛盾。
+**問題:** 元のレビューでは「SPEC (line 434) に "64 methods total" と記載」と指摘していたが、実際にはその記述は line 434 に存在しない。SPEC line 1179 では「57 メソッド」と記載。XPC マッピングテーブルの実際のメソッド数と照合し、正確な数を確認する必要がある。
 
 ---
 
@@ -384,7 +387,7 @@ sendbinary '0D0A'          ; CR LF
 
 ---
 
-### m-12. `for` ループの例で `sprintf` の使い方が CommandReference と矛盾
+### m-12. `for` ループの例で `sprintf` の使い方が CommandReference と矛盾 — ~~INVALID（検証済み）~~
 
 **CommandReference (line 126-135):**
 ```ttl
@@ -393,12 +396,12 @@ for i 1 10
   dispstr inputstr
 next
 ```
-ここでは `sprintf` の結果を `inputstr` から `dispstr` で表示 — CommandReference の sprintf 定義（結果は inputstr）と一致。
+`sprintf` の結果を `inputstr` から `dispstr` で表示 — CommandReference の sprintf 定義と一致。
 
-**SPEC (line 145):**
-SPEC の `sprintf` 定義では結果が named variable に入るとされるため、上記の `dispstr inputstr` パターンが成立しない。
+**SPEC (line 143):**
+SPEC の `sprintf` 定義は `<format> [<args>...]` | `inputstr: 書式化文字列` と正しく記載。
 
-**問題:** CommandReference のサンプルコードとSPECの仕様定義が矛盾する。
+**検証結果:** C-1 が INVALID（SPEC の sprintf 定義は既に正しい）であるため、この矛盾も存在しない。`dispstr inputstr` パターンは SPEC の定義と整合する。
 
 ---
 
@@ -461,21 +464,25 @@ SPEC (line 619-720) に 70 メソッドの XPC マッピングテーブルがあ
 
 ## 修正推奨の優先順位
 
-### 即時対応（Critical）
+### ~~即時対応（Critical）~~ — 解消済み
 
-1. **sprintf / sprintf2 を CommandReference に合わせる** — 結果格納先を修正、sprintf から `<strvar>` 引数を削除
-2. **logautoclose → logautoclosemode に修正** — コマンド名を CommandReference に合わせる
+1. ~~sprintf / sprintf2~~ — SPEC は既に CommandReference と一致（INVALID）
+2. ~~logautoclose → logautoclosemode~~ — SPEC は既に正しい（INVALID）
 
-### 早期対応（Major）
+### 即時対応（Major — 実装への影響大）
 
-3. **getpassword の引数セマンティクスを明確化** — CommandReference との差異（スタブ vs Keychain）を意図的な拡張として明記
-4. **str2int の引数順を確認・修正** — CommandReference のサンプルコードに合わせる
-5. **MacroClientProtocol メソッド数を修正** — "64 methods" → 実際の数に更新
+3. **filesearch の定義を CommandReference に合わせる** — ファイル存在チェック(1引数)に修正、result値を記載
+4. **str2int / str2code / code2str の引数順を CommandReference に合わせる** — 出力変数を先に
+5. **getver を文字列型に修正** — `<intvar>` → `<strvar>`、計算式を削除
+6. **getspecialfolder のマッピングを統一** — CommandRef/SPEC/実装間の不一致を解消
+7. **getpassword の引数セマンティクスを明確化** — CommandReference との差異を明記
 
-### 計画対応（Minor）
+### 早期対応（Minor — ドキュメント品質）
 
-6. **システム変数セクションを追加** — `timeout`, `mtimeout`, `paramcnt`, `param1`〜`param9`, `result`, `inputstr`, `matchstr`, `groupmatchstr1..N`
-7. **式と演算子セクションを追加** — `#XX` 文字コードリテラルを含む
-8. **macOS 固有動作差異セクションを追加**
-9. **重複コマンド記載を整理**
-10. **sendbinary の実装とSPECの整合を確認**
+8. **システム変数セクションを追加** — `timeout`, `mtimeout`, `paramcnt`, `param1`〜`param9`, `result`, `inputstr`, `matchstr`, `groupmatchstr1..N`
+9. **式と演算子セクションを追加** — `#XX` 文字コードリテラルを含む
+10. **macOS 固有動作差異セクションを追加**
+11. **重複コマンド記載を整理** — `str2int` 等の2テーブル重複を解消
+12. **recvfile の binary 引数説明を補足** — 「常にバイナリモード固定」を追記
+13. **sendtext の send との違いを説明** — 特殊コード解釈の有無
+14. **sendbinary の実装とSPECの整合を確認** — 16進パースの実装状況
