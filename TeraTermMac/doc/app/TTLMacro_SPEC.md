@@ -1344,11 +1344,62 @@ MacroRunner には **120 以上のコマンド**が登録されており、全�
 
 #### 残件
 
-全ての優先度「高」「中」「低」の残件を対応済み。現時点で要対応の残件はなし。
+全ての優先度「高」「中」「低」の実装残件を対応済み。
 
-以下は将来的な改善候補（優先度なし・任意）:
+以下は `TTLMacro_CodeReview_CmdRef.md` によるレビュー指摘事項（27件）および将来的な改善候補:
+
+##### Critical（即時対応・動作が正反対）— 2件
+
+| ID | 項目 | 内容 |
+|----|------|------|
+| C-1 | sprintf / sprintf2 の入出力先が逆 | SPEC では `sprintf` が named variable、`sprintf2` が `inputstr` に格納と記載。CommandReference では逆（`sprintf` → `inputstr`、`sprintf2` → 指定変数）。さらに SPEC は `sprintf` に存在しない `<strvar>` 引数を追加。SPEC・実装ともに CommandReference に合わせて修正が必要 |
+| C-2 | logautoclose → logautoclosemode | CommandReference は `logautoclosemode` だが SPEC は `logautoclose` と記載。コマンド名の不一致 |
+
+##### Major（早期対応・コマンド名/引数の相違）— 8件
+
+| ID | 項目 | 内容 |
+|----|------|------|
+| M-1 | getpassword の第2引数の意味 | CommandReference: プロンプト文字列（スタブ実装）。SPEC: Keychain account 名（完全実装）。意図的な macOS 拡張であれば明記が必要 |
+| M-2 | filesearch の return 値未記載 | CommandReference・SPEC とも return 値の記述なし。`result: 1=found, 0=not found` 等を明記すべき |
+| M-3 | str2int の引数順序 | CommandReference: `<string> <intvar>`（文字列先）。SPEC: `<intvar> <string>`（変数先）。引数順が逆 |
+| M-4 | int2str の引数順序確認 | 一致しているが str2int との一貫性が SPEC 内で崩れている |
+| M-5 | str2code / code2str の重複記載 | 引数順は一致。ただし SPEC 内2箇所で重複記載しており不整合リスクあり |
+| M-6 | recvfile の binary 引数説明不足 | 「binary: 常に 1（バイナリモード固定）」の重要な補足が SPEC に欠落 |
+| M-7 | getver の計算式と実装の整合 | 計算式は記載あるが実装と一致するか要確認 |
+| M-8 | getspecialfolder の macOS 固有マッピング | Windows 版と異なるフォルダ番号マッピングであることを SPEC に明記すべき |
+
+##### Minor（計画対応・記述不足/表記差異）— 12件
+
+| ID | 項目 | 内容 |
+|----|------|------|
+| m-1 | `#XX` 文字コードリテラル構文の未記載 | TTL の数値リテラル構文 `#XX` の説明が SPEC にない |
+| m-2 | システム変数セクションの欠落 | `timeout`, `mtimeout`, `paramcnt`, `param1`〜`param9`, `result`, `inputstr`, `matchstr`, `groupmatchstr1..N` の専用セクションが必要 |
+| m-3 | 式と演算子セクションの欠落 | 算術/比較/論理/ビット演算子、数値・文字列リテラルの説明セクションが必要 |
+| m-4 | macOS 固有動作差異セクションの欠落 | `cygconnect`, `setdate`, `settime`, `filelock`/`fileunlock`, `getmodemstatus` の macOS 差異まとめが必要 |
+| m-5 | groupmatchstr1..N の説明不足 | `waitregex` の Return 列に `groupmatchstr1..N` の明記がない |
+| m-6 | waitregex の result 値未記載 | `result` の値（0=timeout, 1=matched 等）の記載がない |
+| m-7 | makedir が CommandReference に未記載 | SPEC 独自のエイリアス。実装根拠を明記すべき |
+| m-8 | MacroClientProtocol メソッド数の不一致 | "64 methods total" → 実際は 70 メソッド |
+| m-9 | アーキテクチャ図のメソッドリスト不完全 | 10 メソッドのみ列挙、「等」の注記なし |
+| m-10 | sendtext の send との違い未説明 | 特殊コード解釈の有無の違いが説明されていない |
+| m-11 | sendbinary の実装乖離の可能性 | 仕様は16進パースだが実装が UTF-8 バイト直送の可能性 |
+| m-12 | for ループ例の sprintf 矛盾 | CommandReference の例（`dispstr inputstr`）と SPEC の sprintf 定義が矛盾 |
+
+##### Info（構成上の欠落）— 5件
+
+| ID | 項目 | 内容 |
+|----|------|------|
+| I-1 | コマンドの重複記載 | `str2int`, `int2str`, `str2code`, `code2str` が2テーブルに重複 |
+| I-2 | strsplit / strjoin の例が欠落 | CommandReference にはサンプルコードあり、SPEC はテーブル1行のみ |
+| I-3 | waitrecv / waitevent の仕様不明確 | return 値、タイムアウト動作、wait/waitln との使い分けが不明 |
+| I-4 | XPC Mapping Table が SPEC 独自仕様 | CommandReference のスコープ外であることを明記すべき |
+| I-5 | SPEC にのみ存在するコマンド・概念 | `makedir`, Pattern A/B, Keychain 完全仕様, デバッガ仕様等が SPEC 独自拡張 |
+
+##### 将来的な改善候補（優先度なし・任意）
 
 | 項目 | 内容 |
 |------|------|
 | App Group ID の正式決定 | 現在は `com.teraterm.group` プレースホルダ。Developer Program 登録後に正式な App Group ID を設定 |
 | Keychain access group の正式化 | `com.yourapp.TeraTermMac` プレースホルダを正式な Bundle ID に置換 |
+
+> 詳細は `TTLMacro_CodeReview_CmdRef.md` を参照。
