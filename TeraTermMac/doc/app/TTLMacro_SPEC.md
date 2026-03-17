@@ -115,7 +115,7 @@ runMacro(scriptPath:) 受信 --> MacroParser が実行開始
 | `send` | `<arg1> [<arg2>...]`（文字列または整数） | -- | ターミナルに文字列を送信。複数引数は連結。`#13` = CR | Yes |
 | `sendln` | `<string>` | -- | 文字列 + CR をターミナルに送信 | Yes |
 | `sendtext` | `<string>` | -- | 文字列式をターミナルに送信 | Yes |
-| `sendbinary` | `<hexstring>` | -- | 16 進文字列としてバイナリデータを送信（例: `'48656C6C6F'`） | Yes |
+| `sendbinary` | `<byte1> [<byte2>...]`（整数） | -- | 各引数を整数として解釈し下位1バイトを送信（例: `sendbinary 72 101 108`→`"Hel"`）。※オリジナル TT は16進文字列パース | Yes（※macOS 版は整数引数方式） |
 | `sendbreak` | -- | -- | ブレーク信号を送信 | Yes |
 | `sendkcode` | `<charcode>`（整数） | -- | 文字コードで 1 文字送信 | Yes |
 | `sendfile` | `<filepath>`（文字列） | -- | ファイル内容をターミナルに送信 | Yes |
@@ -127,10 +127,10 @@ runMacro(scriptPath:) 受信 --> MacroParser が実行開始
 | `strcompare` | `<str1> <str2>` | `result`: -1, 0, 1 | 2 つの文字列を比較 | Yes |
 | `strscan` | `<string> <pattern>` | `result`: 位置（1 始まり）, 0=未検出 | 部分文字列を検索 | Yes |
 | `strmatch` | `<string> <regex>` | `result`: マッチ位置（1 始まり）, 0=不一致; `matchstr`: マッチ文字列 | 正規表現マッチ | Yes |
-| `str2int` | `<string> <intvar>` | `result`: 1=成功, 0=失敗 | 文字列を整数に変換。`$FF` 16 進対応 | Yes |
+| `str2int` | `<intvar> <string>` | `result`: 1=成功, 0=失敗 | 文字列を整数に変換。`$FF` 16 進対応 | Yes |
 | `int2str` | `<strvar> <int>` | -- | 整数を文字列に変換 | Yes |
-| `str2code` | `<string> <intvar>` | -- | 先頭文字をコードに変換 | Yes |
-| `code2str` | `<intcode> <strvar>` | -- | 文字コードを文字列に変換 | Yes |
+| `str2code` | `<intvar> <string>` | -- | 先頭文字のコードを取得 | Yes |
+| `code2str` | `<strvar> <intcode>` | -- | 文字コードを文字列に変換 | Yes |
 | `strinsert` | `<strvar> <position> <string>` | -- | 指定位置に文字列を挿入（1 始まり） | Yes |
 | `strremove` | `<strvar> <position> <length>` | -- | 部分文字列を削除 | Yes |
 | `strreplace` | `<strvar> <pattern> <replacement>` | `result`: 1=置換, 0=不一致 | 正規表現置換 | Yes |
@@ -177,9 +177,9 @@ runMacro(scriptPath:) 受信 --> MacroParser が実行開始
 | `intdim` | `<arrayname> <size>` | -- | 整数配列を宣言 | Yes |
 | `strdim` | `<arrayname> <size>` | -- | 文字列配列を宣言 | Yes |
 | `int2str` | `<strvar> <int>` | -- | 整数を文字列に変換 | Yes |
-| `str2int` | `<string> <intvar>` | `result`: 1=成功, 0=失敗 | 文字列を整数に変換 | Yes |
-| `str2code` | `<string> <intvar>` | -- | 先頭文字をコードに変換 | Yes |
-| `code2str` | `<intcode> <strvar>` | -- | コードを文字列に変換 | Yes |
+| `str2int` | `<intvar> <string>` | `result`: 1=成功, 0=失敗 | 文字列を整数に変換 | Yes |
+| `str2code` | `<intvar> <string>` | -- | 先頭文字のコードを取得 | Yes |
+| `code2str` | `<strvar> <intcode>` | -- | コードを文字列に変換 | Yes |
 | `random` | `<intvar> <max>` | -- | 0 から max-1 の乱数を生成 | Yes |
 
 ### ダイアログ
@@ -213,7 +213,7 @@ runMacro(scriptPath:) 受信 --> MacroParser が実行開始
 | `filecopy` | `<source> <dest>` | -- | ファイルをコピー | Yes |
 | `filerename` | `<old> <new>` | -- | ファイル名を変更 | Yes |
 | `fileconcat` | `<dest> <source>` | -- | ソースファイルを宛先に追記 | Yes |
-| `filesearch` | `<filepath> <pattern>` | -- | ファイル内を検索 | Yes |
+| `filesearch` | `<filename>` | `result`: 1=存在, 0=不在 | ファイルの存在を確認 | Yes |
 | `fileseek` | `<handle> <offset>` | -- | 指定位置にシーク | Yes |
 | `fileseekback` | `<handle> <bytes>` | -- | 後方にシーク | Yes |
 | `filemarkptr` | `<handle>` | -- | 現在位置にマーカーを設定 | Yes |
@@ -273,7 +273,7 @@ runMacro(scriptPath:) 受信 --> MacroParser が実行開始
 | `closett` | -- | -- | ターミナルウィンドウを閉じる | Yes |
 | `show` | `<flag>`（整数） | -- | ウィンドウを表示（1）または非表示（0） | Yes |
 | `showtt` | `<flag>`（整数） | -- | ターミナルの表示/非表示（エイリアス） | Yes |
-| `getver` | `<intvar>` | -- | バージョン番号を取得（major*10000 + minor*100 + patch） | Yes |
+| `getver` | `<strvar>` | -- | バージョン文字列を取得（CFBundleShortVersionString、例: `'1.0.0'`） | Yes（※macOS 版は文字列型） |
 | `getttdir` | `<strvar>` | -- | アプリケーションディレクトリを取得 | Yes |
 | `getttpos` | `<xvar> <yvar>` | -- | ターミナルウィンドウの位置を取得 | Yes |
 | `enablekeyb` | `<flag>`（整数） | -- | キーボードを有効（1）または無効（0）にする | Yes |
@@ -296,7 +296,7 @@ runMacro(scriptPath:) 受信 --> MacroParser が実行開始
 | `setdate` | `<datestr>` | `result`: 0=成功, -1=失敗 | システム日付を設定。macOS では常に失敗（root 権限が必要） | Yes（macOS スタブ） |
 | `settime` | `<timestr>` | `result`: 0=成功, -1=失敗 | システム時刻を設定。macOS では常に失敗（root 権限が必要） | Yes（macOS スタブ） |
 | `gethostname` | `<strvar>` | -- | ホスト名を取得 | Yes |
-| `getspecialfolder` | `<strvar> <folderid>` | -- | 特殊フォルダのパスを取得。0=デスクトップ, 1=App Support, 2=書類, 3=ダウンロード | Yes |
+| `getspecialfolder` | `<strvar> <folderid>` | `result`: 1=成功, 0=失敗 | 特殊フォルダのパスを取得。0=デスクトップ, 1=書類, 2=App Support, 3=ホーム, 4=一時, 5=ダウンロード | Yes（※macOS 版は数値 ID、§25 参照） |
 | `getipv4addr` | `<strvar>` | -- | IPv4 アドレスを取得 | Yes |
 | `getipv6addr` | `<strvar>` | -- | IPv6 アドレスを取得 | Yes |
 | `getfileattr` | `<filepath> <intvar>` | -- | ファイル属性を取得（bit 0=読み取り専用, bit 4=ディレクトリ） | Yes |
@@ -1355,18 +1355,18 @@ MacroRunner には **120 以上のコマンド**が登録されており、全�
 | ~~C-1~~ | ~~sprintf / sprintf2 の入出力先が逆~~ | SPEC lines 143-144 は既に正しい（`sprintf`→`inputstr`, `sprintf2`→指定変数） |
 | ~~C-2~~ | ~~logautoclose → logautoclosemode~~ | SPEC line 320 は既に `logautoclosemode` と正しく記載 |
 
-##### Major（即時対応・コマンド定義/引数の相違）— 8件
+##### Major（コマンド定義/引数の相違）— 8件（うち5件修正済み）
 
-| ID | 項目 | 内容 |
-|----|------|------|
-| M-1 | getpassword の引数不一致 | CommandRef: 3引数(filename, keyname, varname) Keychain実装。SPEC: 2引数(strvar, prompt) スタブ。意図的拡張なら明記要 |
-| M-2 | **filesearch の定義が異なる** | CommandRef: ファイル **存在チェック**(1引数), result:1=存在。SPEC: ファイル **内検索**(2引数), return値なし。操作自体が異なる |
-| M-3 | **str2int の引数順が逆** | CommandRef: `str2int val '42'`=`<intvar><string>`（変数先）。SPEC: `<string><intvar>`（文字列先） |
-| M-4 | int2str の引数順確認 | 一致。str2int との SPEC 内部一貫性が崩れている |
-| M-5 | **str2code / code2str の引数順が逆** | CommandRef: 出力変数が先（`str2code code 'A'`）。SPEC: 入力が先（`<string><intvar>`）。SPEC 内2箇所で重複記載 |
-| M-6 | recvfile の binary 引数説明不足 | 「binary: 常にバイナリモード固定」が SPEC に欠落 |
-| M-7 | **getver の戻り値型が異なる** | SPEC: `<intvar>` + 計算式。CommandRef + 実装: **文字列**（CFBundleShortVersionString）。型も値も不一致 |
-| M-8 | **getspecialfolder マッピング不一致** | CommandRef/SPEC/TTLInterpreter/MacroRunner の4ソースでフォルダ番号マッピングが異なる。実装間でも不一致 |
+| ID | 項目 | 内容 | 状態 |
+|----|------|------|------|
+| M-1 | getpassword の引数不一致 | CommandRef: 3引数(filename, keyname, varname) Keychain実装。SPEC: 2引数(strvar, prompt) スタブ。意図的拡張なら明記要 | 未対応 |
+| ~~M-2~~ | ~~filesearch の定義が異なる~~ | ~~ファイル内検索→ファイル存在チェックに修正~~ | **修正済み** |
+| ~~M-3~~ | ~~str2int の引数順が逆~~ | ~~`<intvar><string>` に修正~~ | **修正済み** |
+| M-4 | int2str の引数順確認 | 一致。str2int との SPEC 内部一貫性が崩れている | 不要（一致済み） |
+| ~~M-5~~ | ~~str2code / code2str の引数順が逆~~ | ~~出力変数を先に修正（2テーブル分）~~ | **修正済み** |
+| M-6 | recvfile の binary 引数説明不足 | 「binary: 常にバイナリモード固定」が SPEC に欠落 | 未対応 |
+| ~~M-7~~ | ~~getver の戻り値型が異なる~~ | ~~`<strvar>` + CFBundleShortVersionString に修正~~ | **修正済み** |
+| ~~M-8~~ | ~~getspecialfolder マッピング不一致~~ | ~~実装を正としてマッピングを統一（0-5の6フォルダ）~~ | **修正済み** |
 
 ##### Minor（計画対応・記述不足/表記差異）— 11件
 
@@ -1382,7 +1382,7 @@ MacroRunner には **120 以上のコマンド**が登録されており、全�
 | m-8 | MacroClientProtocol メソッド数の確認 | SPEC line 1179 に「57 メソッド」と記載。XPC テーブルの実数と照合要 |
 | m-9 | アーキテクチャ図のメソッドリスト不完全 | 10 メソッドのみ列挙、「等」の注記なし |
 | m-10 | sendtext の send との違い未説明 | 特殊コード解釈（`#13` 等）の有無の違いが説明されていない |
-| m-11 | **sendbinary の実装乖離（確認済み）** | 仕様は16進文字列パースだが、実装は `resolveInt` で引数ごとに1バイト抽出。仕様と実装が乖離 |
+| ~~m-11~~ | ~~sendbinary の実装乖離~~ | ~~SPEC を実装に合わせて修正済み（整数引数方式、オリジナル TT との差異を明記）~~ |
 | ~~m-12~~ | ~~for ループ例の sprintf 矛盾~~ | ~~INVALID: C-1 が解消済みのため矛盾なし~~ |
 
 ##### Info（構成上の欠落）— 5件
@@ -1411,16 +1411,16 @@ MacroRunner には **120 以上のコマンド**が登録されており、全�
 > **レビュー日**: 2026-03-16 / **検証日**: 2026-03-17（実ソース検証済み）
 > **有効件数**: 24件（元27件中 C-1, C-2, m-12 は INVALID）
 
-#### 優先度 1: 即時対応（Major — コマンド定義・実装への直接影響）
+#### ~~優先度 1: 即時対応（Major — コマンド定義・実装への直接影響）~~ — **対応済み（2026-03-17）**
 
-| # | ID | 残課題 | 対応方針 | 対象ファイル |
-|---|-----|--------|---------|-------------|
-| 1 | M-2 | filesearch: SPEC がファイル内検索(2引数)と定義。CommandRef・実装はファイル存在チェック(1引数) | SPEC の定義を CommandRef に合わせる。`result` 値(1=存在)を記載 | SPEC line 161 |
-| 2 | M-3 | str2int: SPEC の引数順が逆(`<string><intvar>`)。CommandRef は `<intvar><string>` | SPEC の引数順を `<intvar> <string>` に修正 | SPEC line 130 |
-| 3 | M-5 | str2code / code2str: SPEC の引数順が逆。出力変数が後ろ | 出力変数を先に修正。重複テーブル(I-1)も同時修正 | SPEC lines 132-133, 181-182 |
-| 4 | M-7 | getver: SPEC は `<intvar>` + 計算式。実装は文字列(CFBundleShortVersionString) | `<strvar>` に修正、計算式を削除。macOS 版は文字列返却を明記 | SPEC line 172 |
-| 5 | M-8 | getspecialfolder: CommandRef/SPEC/TTLInterpreter/MacroRunner の4ソースでマッピング不一致 | 実装(MacroRunner.swift)を正として SPEC を統一。CommandRef と差異があれば macOS 差異セクションに記載 | SPEC line 173, MacroRunner.swift |
-| 6 | M-11 | **sendbinary: 仕様と実装が乖離** — SPEC/CommandRef は16進文字列パース、実装は `resolveInt` で1引数1バイト | 実装を仕様に合わせるか、仕様を実装に合わせるか判断が必要。**要設計判断** | MacroRunner.swift line 1266, SPEC line 118, CommandRef line 236 |
+| # | ID | 残課題 | 対応内容 | 状態 |
+|---|-----|--------|---------|------|
+| 1 | M-2 | filesearch: ファイル内検索(2引数)→ファイル存在チェック(1引数) | `<filename>` 1引数に修正、`result`: 1=存在, 0=不在 を追加 | **修正済み** |
+| 2 | M-3 | str2int: 引数順 `<string><intvar>` → `<intvar><string>` | 出力変数を第1引数に修正（2箇所） | **修正済み** |
+| 3 | M-5 | str2code / code2str: 引数順を出力変数先に | `str2code <intvar> <string>`, `code2str <strvar> <intcode>` に修正（2箇所×2テーブル） | **修正済み** |
+| 4 | M-7 | getver: `<intvar>` + 計算式 → `<strvar>` | `<strvar>` に変更、CFBundleShortVersionString を明記 | **修正済み** |
+| 5 | M-8 | getspecialfolder: マッピング不一致 | 実装を正として統一: 0=デスクトップ, 1=書類, 2=App Support, 3=ホーム, 4=一時, 5=ダウンロード | **修正済み** |
+| 6 | M-11 | sendbinary: 16進文字列パース → 整数引数方式 | SPEC を実装に合わせて修正: 各引数を整数として解釈し下位1バイト送信。オリジナル TT との差異を明記 | **修正済み** |
 
 #### 優先度 2: 早期対応（Major/Minor — ドキュメント品質・正確性）
 
@@ -1459,10 +1459,10 @@ MacroRunner には **120 以上のコマンド**が登録されており、全�
 
 #### 統計
 
-| 優先度 | 件数 | 内訳 |
+| 優先度 | 件数 | 状態 |
 |--------|------|------|
-| 1: 即時対応 | 6 | Major 5 + 実装乖離 1（要設計判断） |
-| 2: 早期対応 | 7 | Major 2 + Minor 5（新規セクション追加含む） |
-| 3: 改善対応 | 11 | Minor 6 + Info 5 |
+| ~~1: 即時対応~~ | ~~6~~ | **全件対応済み**（2026-03-17） |
+| 2: 早期対応 | 7 | 未着手（Major 2 + Minor 5） |
+| 3: 改善対応 | 11 | 未着手（Minor 6 + Info 5） |
 | 将来対応 | 2 | 環境依存 |
-| **合計** | **26** | INVALID 3件除外済み |
+| **合計** | **26** | うち **6件対応済み**、20件残 |
