@@ -1403,3 +1403,66 @@ MacroRunner には **120 以上のコマンド**が登録されており、全�
 | Keychain access group の正式化 | `com.yourapp.TeraTermMac` プレースホルダを正式な Bundle ID に置換 |
 
 > 詳細は `TTLMacro_CodeReview_CmdRef.md` を参照（2026-03-17 実ソース検証済み）。
+
+---
+
+### 残課題一覧（対応方針・優先順位付き）
+
+> **レビュー日**: 2026-03-16 / **検証日**: 2026-03-17（実ソース検証済み）
+> **有効件数**: 24件（元27件中 C-1, C-2, m-12 は INVALID）
+
+#### 優先度 1: 即時対応（Major — コマンド定義・実装への直接影響）
+
+| # | ID | 残課題 | 対応方針 | 対象ファイル |
+|---|-----|--------|---------|-------------|
+| 1 | M-2 | filesearch: SPEC がファイル内検索(2引数)と定義。CommandRef・実装はファイル存在チェック(1引数) | SPEC の定義を CommandRef に合わせる。`result` 値(1=存在)を記載 | SPEC line 161 |
+| 2 | M-3 | str2int: SPEC の引数順が逆(`<string><intvar>`)。CommandRef は `<intvar><string>` | SPEC の引数順を `<intvar> <string>` に修正 | SPEC line 130 |
+| 3 | M-5 | str2code / code2str: SPEC の引数順が逆。出力変数が後ろ | 出力変数を先に修正。重複テーブル(I-1)も同時修正 | SPEC lines 132-133, 181-182 |
+| 4 | M-7 | getver: SPEC は `<intvar>` + 計算式。実装は文字列(CFBundleShortVersionString) | `<strvar>` に修正、計算式を削除。macOS 版は文字列返却を明記 | SPEC line 172 |
+| 5 | M-8 | getspecialfolder: CommandRef/SPEC/TTLInterpreter/MacroRunner の4ソースでマッピング不一致 | 実装(MacroRunner.swift)を正として SPEC を統一。CommandRef と差異があれば macOS 差異セクションに記載 | SPEC line 173, MacroRunner.swift |
+| 6 | M-11 | **sendbinary: 仕様と実装が乖離** — SPEC/CommandRef は16進文字列パース、実装は `resolveInt` で1引数1バイト | 実装を仕様に合わせるか、仕様を実装に合わせるか判断が必要。**要設計判断** | MacroRunner.swift line 1266, SPEC line 118, CommandRef line 236 |
+
+#### 優先度 2: 早期対応（Major/Minor — ドキュメント品質・正確性）
+
+| # | ID | 残課題 | 対応方針 | 対象ファイル |
+|---|-----|--------|---------|-------------|
+| 7 | M-1 | getpassword: CommandRef は Keychain 3引数、SPEC は2引数スタブ | 意図的拡張（Keychain→プロンプト方式）なら macOS 差異として明記。そうでなければ CommandRef に合わせる | SPEC line 126 |
+| 8 | M-6 | recvfile: `binary` 引数が SPEC に欠落 | 「binary: 常にバイナリモード固定（macOS版）」を補足 | SPEC line 353 |
+| 9 | m-1 | `#XX` 文字コードリテラル構文の未記載 | 「数値リテラル」セクションを追加し `#13`=CR 等を説明 | SPEC 新規セクション |
+| 10 | m-2 | システム変数セクションの欠落 | `timeout`, `mtimeout`, `paramcnt`, `param1`〜`param9`, `result`, `inputstr`, `matchstr`, `groupmatchstr1..N` のセクション追加 | SPEC 新規セクション |
+| 11 | m-3 | 式と演算子セクションの欠落 | 算術/比較/論理/ビット演算子、数値・文字列リテラル説明を追加 | SPEC 新規セクション |
+| 12 | m-4 | macOS 固有動作差異セクションの欠落 | M-1, M-4, M-7, M-8 等の macOS 差異をまとめるセクション追加 | SPEC 新規セクション |
+| 13 | m-10 | sendtext と send の違いが未説明 | `send` は `#13` 等の特殊コード解釈あり、`sendtext` はなし、を明記 | SPEC line 117, CommandRef line 228 |
+
+#### 優先度 3: 改善対応（Minor/Info — 整合性・完全性）
+
+| # | ID | 残課題 | 対応方針 | 対象ファイル |
+|---|-----|--------|---------|-------------|
+| 14 | M-4 | int2str: SPEC 内で str2int と引数順の一貫性が崩れている | M-3 修正時に合わせて確認・整合 | SPEC line 131 |
+| 15 | m-5 | groupmatchstr1..N の詳細セクション記載不足 | `waitregex` 詳細セクションにキャプチャグループの説明を追加 | SPEC waitregex セクション |
+| 16 | m-6 | waitregex の result 値未記載 | `result` の値（0=timeout, 1=matched 等）を追加 | SPEC, CommandRef 両方 |
+| 17 | m-7 | makedir が CommandRef に未記載 | SPEC 独自エイリアスである旨を明記。必要なら CommandRef にも追加 | SPEC line 238 |
+| 18 | m-8 | MacroClientProtocol メソッド数の不一致 | アーキテクチャ図(10), プロトコル表(10), 実装状況(57), マッピング表(63) — 数値を統一 | SPEC lines 39-42, 426-436, 858-928, 1179 |
+| 19 | m-9 | アーキテクチャ図のメソッドリスト不完全 | 10メソッドのみ列挙で「等」の注記なし。省略表記(...)を追加するか、代表メソッドである旨を明記 | SPEC lines 39-42 |
+| 20 | I-1 | str2int 等4コマンドが2テーブルに重複 | 一方のテーブルから削除、または「参照」リンクに置換 | SPEC lines 130-133, 179-182 |
+| 21 | I-2 | strsplit / strjoin の例が SPEC に欠落 | CommandRef のサンプルコードを参考にSPECにも例を追加 | SPEC lines 139-140 |
+| 22 | I-3 | waitrecv / waitevent の仕様不明確 | return 値、タイムアウト動作、wait/waitln との使い分けを記載 | SPEC line 261 |
+| 23 | I-4 | XPC Mapping Table が SPEC 独自仕様 | 「本セクションは SPEC 固有の実装仕様であり、CommandReference のスコープ外」と明記 | SPEC line 849 |
+| 24 | I-5 | SPEC にのみ存在するコマンド・概念 | `makedir`, Pattern A/B が SPEC 独自である旨を各所に明記 | SPEC 該当箇所 |
+
+#### 将来対応（優先度なし — 環境・設定依存）
+
+| # | 残課題 | 対応方針 |
+|---|--------|---------|
+| 25 | App Group ID の正式決定 | Developer Program 登録後に `com.teraterm.group` を正式 ID に置換 |
+| 26 | Keychain access group の正式化 | `com.yourapp.TeraTermMac` を正式 Bundle ID に置換 |
+
+#### 統計
+
+| 優先度 | 件数 | 内訳 |
+|--------|------|------|
+| 1: 即時対応 | 6 | Major 5 + 実装乖離 1（要設計判断） |
+| 2: 早期対応 | 7 | Major 2 + Minor 5（新規セクション追加含む） |
+| 3: 改善対応 | 11 | Minor 6 + Info 5 |
+| 将来対応 | 2 | 環境依存 |
+| **合計** | **26** | INVALID 3件除外済み |
