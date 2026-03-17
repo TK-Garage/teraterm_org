@@ -475,25 +475,39 @@ SPEC 独自の実装仕様（Pattern A/B、XPC フロー等）はその旨を明
 
 ## 修正推奨の優先順位
 
-### ~~即時対応（Critical）~~ — 解消済み
+> **全件対応済み**（2026-03-17）。詳細は `TTLMacro_SPEC.md` §残課題一覧 を参照。
+
+### ~~即時対応（Critical）~~ — 解消済み（INVALID）
 
 1. ~~sprintf / sprintf2~~ — SPEC は既に CommandReference と一致（INVALID）
 2. ~~logautoclose → logautoclosemode~~ — SPEC は既に正しい（INVALID）
 
-### 即時対応（Major — 実装への影響大）
+### ~~即時対応（Major — 実装への影響大）~~ — **全件対応済み**
 
-3. **filesearch の定義を CommandReference に合わせる** — ファイル存在チェック(1引数)に修正、result値を記載
-4. **str2int / str2code / code2str の引数順を CommandReference に合わせる** — 出力変数を先に
-5. **getver を文字列型に修正** — `<intvar>` → `<strvar>`、計算式を削除
-6. **getspecialfolder のマッピングを統一** — CommandRef/SPEC/実装間の不一致を解消
-7. **getpassword の引数セマンティクスを明確化** — CommandReference との差異を明記
+3. ~~filesearch の定義を CommandReference に合わせる~~ — ファイル存在チェック(1引数)に修正、result値を記載
+4. ~~str2int / str2code / code2str の引数順を CommandReference に合わせる~~ — 出力変数を先に
+5. ~~getver を文字列型に修正~~ — `<intvar>` → `<strvar>`、計算式を削除
+6. ~~getspecialfolder のマッピングを統一~~ — 実装を正としてマッピング統一（0-5の6フォルダ）
+7. ~~getpassword の引数セマンティクスを明確化~~ — Keychain 3引数方式を明記
 
-### 早期対応（Minor — ドキュメント品質）
+### ~~早期対応（Minor — ドキュメント品質）~~ — **全件対応済み**
 
-8. **システム変数セクションを追加** — `timeout`, `mtimeout`, `paramcnt`, `param1`〜`param9`, `result`, `inputstr`, `matchstr`, `groupmatchstr1..N`
-9. **式と演算子セクションを追加** — `#XX` 文字コードリテラルを含む
-10. **macOS 固有動作差異セクションを追加**
-11. **重複コマンド記載を整理** — `str2int` 等の2テーブル重複を解消
-12. **recvfile の binary 引数説明を補足** — 「常にバイナリモード固定」を追記
-13. **sendtext の send との違いを説明** — 特殊コード解釈の有無
-14. **sendbinary の実装とSPECの整合を確認** — 16進パースの実装状況
+8. ~~システム変数セクションを追加~~ — 8変数の専用セクションを新設
+9. ~~式と演算子セクションを追加~~ — `#XX` 文字コードリテラルを含む演算子・リテラルセクションを新設
+10. ~~macOS 固有動作差異セクションを追加~~ — 10コマンドの差異一覧セクションを新設
+11. ~~重複コマンド記載を整理~~ — 変数テーブルの4コマンドを「送受信・文字列操作テーブル参照」に置換
+12. ~~recvfile の binary 引数説明を補足~~ — 「常にバイナリモード固定」を追記
+13. ~~sendtext の send との違いを説明~~ — 文字コード解釈なし・単一文字列引数を明記
+14. ~~sendbinary の実装とSPECの整合を確認~~ — 整数引数方式に修正、オリジナル TT との差異を明記
+
+### ~~改善対応（Minor/Info）~~ — **全件対応済み**
+
+15. ~~waitregex に groupmatchstr1..N 説明追加~~
+16. ~~waitregex の result 値記載追加~~
+17. ~~makedir が SPEC 独自エイリアスである旨を明記~~
+18. ~~MacroClientProtocol メソッド数の統一~~（63メソッド）
+19. ~~アーキテクチャ図のメソッドリスト省略表記追加~~
+20. ~~strsplit/strjoin のサンプルコード追加~~
+21. ~~waitrecv/waitevent の仕様詳細化~~
+22. ~~XPC Mapping Table に SPEC 独自仕様と明記~~
+23. ~~SPEC 独自コマンド・概念に注記追加~~

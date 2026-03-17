@@ -36,15 +36,17 @@ TTLMacro.app は TeraTermMac のマクロ実行エンジンとして動作する
    MacroServiceProtocol: TeraTermMac.app --> TTLMacro.app
      (runMacro, stopMacro, pauseMacro, resumeMacro, macroStatus, sendVariable)
 
-   MacroClientProtocol:  TTLMacro.app --> TeraTermMac.app
+   MacroClientProtocol:  TTLMacro.app --> TeraTermMac.app（63 メソッド）
      (sendToTerminal, recvFromTerminal, showDialog, setWindowTitle,
       macroDidFinish, macroDidFail, logMessage, terminateApp,
-      getAppVersion, didExecuteLine)
+      getAppVersion, didExecuteLine, ... 等。全メソッドは §XPC マッピング表 参照)
 ```
 
 ---
 
 ## 起動フロー
+
+> **注**: 起動フロー（パターン A/B）は SPEC 固有の実装仕様であり、TTLCommandReference.md には記載がない。macOS 版 XPC アーキテクチャに固有の設計。
 
 ### パターン A: ユーザーが TTLMacro.app を直接起動
 
@@ -136,8 +138,8 @@ runMacro(scriptPath:) 受信 --> MacroParser が実行開始
 | `strreplace` | `<strvar> <pattern> <replacement>` | `result`: 1=置換, 0=不一致 | 正規表現置換 | Yes |
 | `strspecial` | `<strvar>` | -- | エスケープシーケンスを展開（`\n`, `\r`, `\t`, `\\`, `\"`, `\'`） | Yes |
 | `strtrim` | `<strvar> [<chars>] [<trimtype>]` | -- | 空白または指定文字をトリム。trimtype: 0=両端, 1=左, 2=右 | Yes |
-| `strsplit` | `<string> <delimiter>` | `result`: 要素数; `groupmatchstr1..N`: 各要素 | 区切り文字で分割 | Yes |
-| `strjoin` | `<strvar> <delimiter> <str1> [<str2>...]` | -- | 区切り文字で結合 | Yes |
+| `strsplit` | `<string> <delimiter> [<count>]` | `result`: 要素数; `groupmatchstr1..9`: 各要素 | 区切り文字で分割。`count` は最大分割数（1〜9、デフォルト9）。例: `strsplit 'a,b,c' ','` → result=3, groupmatchstr1='a', groupmatchstr2='b', groupmatchstr3='c' | Yes |
+| `strjoin` | `<strvar> <delimiter> [<count>]` | -- | `groupmatchstr1..N` を区切り文字で結合（`strsplit` の逆操作）。`count` は結合数（デフォルト9）。例: `strsplit 'a,b,c' ','` 後に `strjoin buf ','` → buf='a,b,c' | Yes |
 | `tolower` | `<strvar>` | -- | 小文字に変換 | Yes |
 | `toupper` | `<strvar>` | -- | 大文字に変換 | Yes |
 | `sprintf` | `<format> [<args>...]` | `inputstr`: 書式化文字列 | 文字列書式化（`%d`, `%s`, `%x`, `%o`, `%c`, `%%`） | Yes |
@@ -176,10 +178,10 @@ runMacro(scriptPath:) 受信 --> MacroParser が実行開始
 | （代入） | `<var> = <expr>` | -- | 代入式で変数を設定 | Yes |
 | `intdim` | `<arrayname> <size>` | -- | 整数配列を宣言 | Yes |
 | `strdim` | `<arrayname> <size>` | -- | 文字列配列を宣言 | Yes |
-| `int2str` | `<strvar> <int>` | -- | 整数を文字列に変換 | Yes |
-| `str2int` | `<intvar> <string>` | `result`: 1=成功, 0=失敗 | 文字列を整数に変換 | Yes |
-| `str2code` | `<intvar> <string>` | -- | 先頭文字のコードを取得 | Yes |
-| `code2str` | `<strvar> <intcode>` | -- | コードを文字列に変換 | Yes |
+| `int2str` | -- | -- | ※「送受信・文字列操作」テーブル参照 | Yes |
+| `str2int` | -- | -- | ※「送受信・文字列操作」テーブル参照 | Yes |
+| `str2code` | -- | -- | ※「送受信・文字列操作」テーブル参照 | Yes |
+| `code2str` | -- | -- | ※「送受信・文字列操作」テーブル参照 | Yes |
 | `random` | `<intvar> <max>` | -- | 0 から max-1 の乱数を生成 | Yes |
 
 ### ダイアログ
@@ -235,7 +237,7 @@ runMacro(scriptPath:) 受信 --> MacroParser が実行開始
 | `folderdelete` | `<path>` | -- | ディレクトリを削除 | Yes |
 | `foldersearch` | `<namevar> <pattern>` | -- | ディレクトリを検索 | Yes |
 | `changedir` | `<path>` | -- | カレントディレクトリを変更 | Yes |
-| `makedir` | `<path>` | -- | ディレクトリを作成（エイリアス） | Yes |
+| `makedir` | `<path>` | -- | ディレクトリを作成（`foldercreate` のエイリアス。SPEC 独自追加、CommandReference には未記載） | Yes |
 | `basename` | `<namevar> <path>` | -- | パスからファイル名を抽出 | Yes |
 | `dirname` | `<dirvar> <path>` | -- | パスからディレクトリを抽出 | Yes |
 | `makepath` | `<pathvar> <dir> <filename>` | -- | ディレクトリとファイル名を結合 | Yes |
@@ -258,11 +260,11 @@ runMacro(scriptPath:) 受信 --> MacroParser が実行開始
 |---------|------|--------|------|:------------------:|
 | `wait` | `<pattern1> [<pattern2>...<pattern10>]` | `result`: 0=タイムアウト, 1-10=マッチしたパターン番号 | 最大 10 パターンを待機 | Yes |
 | `waitln` | `<pattern1> [<pattern2>...<pattern10>]` | `result`: 0=タイムアウト, 1+=パターン番号; `inputstr`: マッチ行 | 行単位でパターンを待機 | Yes |
-| `waitrecv` | -- | -- | データ受信を待機 | Yes |
-| `waitregex` | `<regex>` | `matchstr`: 全体マッチ; `groupmatchstr1..N`: キャプチャグループ | 正規表現マッチを待機 | Yes |
+| `waitrecv` | -- | `result`: 0=タイムアウト, 1=データ受信 | 任意のデータ受信を待機。`timeout`/`mtimeout` でタイムアウト制御。`wait`/`waitln` と異なりパターンマッチなしで受信を検知 | Yes |
+| `waitregex` | `<regex>` | `result`: 0=タイムアウト, 1=マッチ; `matchstr`: 全体マッチ; `groupmatchstr1..N`: キャプチャグループ（最大9） | 正規表現マッチを待機。キャプチャグループ `()` の内容が `groupmatchstr1`〜`groupmatchstr9` に格納される | Yes |
 | `waitn` | `<bytecount>`（整数） | -- | 指定バイト数の受信を待機 | Yes |
 | `wait4all` | `<pattern1> [<pattern2>...]` | -- | 全パターンが出現するまで待機（順序不問） | Yes |
-| `waitevent` | -- | -- | ターミナルイベントを待機 | Yes |
+| `waitevent` | -- | `result`: 0=タイムアウト, 1=データ受信, 2=切断検知, 3=リサイズ, 4=移動, 5=クローズ, 6=フォーカス取得, 7=フォーカス喪失 | ターミナルイベントを待機。`timeout`/`mtimeout` でタイムアウト制御。ローカルキュー → XPC ポーリング → 接続チェック → データ待機の 4 段階で判定 | Yes |
 | `pause` | `<seconds>`（整数） | -- | 指定秒数一時停止 | Yes |
 | `mpause` | `<milliseconds>`（整数） | -- | 指定ミリ秒一時停止 | Yes |
 
@@ -418,9 +420,9 @@ XPC サービス名: `com.yourapp.TeraTermMac.TTLMacro.xpc`
 | `macroStatus` | -- | `(String) -> Void` | 現在のマクロ実行状態を取得 |
 | `sendVariable` | `name: String, value: String` | `() -> Void` | マクロ環境に変数を渡す |
 
-### MacroClientProtocol（TTLMacro --> TeraTermMac）
+### MacroClientProtocol（TTLMacro --> TeraTermMac、63 メソッド）
 
-マクロエンジンからターミナルへのコールバック。`MacroClientProtocol.swift` で定義。
+マクロエンジンからターミナルへのコールバック。`MacroClientProtocol.swift` で定義。以下は代表的なメソッド（全 63 メソッドの詳細は §XPC マッピング表 参照）。
 
 | メソッド | 引数 | 応答 | 説明 |
 |---------|------|------|------|
@@ -847,6 +849,8 @@ TeraTermMac.app の「追加設定」ダイアログにデバッグタブがあ�
 ---
 
 ## TTLInterpreterDelegate → XPC マッピング表
+
+> **注**: 本セクションは SPEC 固有の実装仕様であり、TTLCommandReference.md のスコープ外。XPC アーキテクチャは macOS 版独自の実装詳細である。
 
 TTLInterpreterDelegate の全メソッドと XPC プロトコルの対応。
 
@@ -1286,7 +1290,7 @@ s = "double quotes"
 | プロトコル | メソッド数 | 状態 | 備考 |
 |-----------|:---------:|:----:|------|
 | MacroServiceProtocol（6 メソッド） | 6/6 | 実装済み | `XPCServiceHandler.swift` で全メソッド実装 |
-| MacroClientProtocol（57 メソッド） | 57/57 | 統合待ち | `MacroXPCManager.swift` で全メソッド定義済み。ただし TeraTermMac のターミナルエンジン未統合のため多数が `// Integration point:` スタブ |
+| MacroClientProtocol（63 メソッド） | 63/63 | 統合待ち | `MacroXPCManager.swift` で全メソッド定義済み。ただし TeraTermMac のターミナルエンジン未統合のため多数が `// Integration point:` スタブ。§XPC マッピング表の delegate 41 + 追加 22 = 63 メソッド |
 
 #### MacroClientProtocol 統合待ちメソッド一覧
 
@@ -1478,32 +1482,32 @@ MacroRunner には **120 以上のコマンド**が登録されており、全�
 | ~~M-7~~ | ~~getver の戻り値型が異なる~~ | ~~`<strvar>` + CFBundleShortVersionString に修正~~ | **修正済み** |
 | ~~M-8~~ | ~~getspecialfolder マッピング不一致~~ | ~~実装を正としてマッピングを統一（0-5の6フォルダ）~~ | **修正済み** |
 
-##### Minor（記述不足/表記差異）— 11件（うち2件修正済み）
+##### Minor（記述不足/表記差異）— 11件（全件修正済み）
 
-| ID | 項目 | 内容 |
-|----|------|------|
-| m-1 | `#XX` 文字コードリテラル構文の未記載 | TTL の数値リテラル構文 `#XX` の説明が SPEC にない（CommandRef section 24 には記載あり） |
-| m-2 | システム変数セクションの欠落 | `timeout`, `mtimeout`, `paramcnt`, `param1`〜`param9` 等の専用セクションが必要（CommandRef section 23 には記載あり） |
-| m-3 | 式と演算子セクションの欠落 | 算術/比較/論理/ビット演算子、数値・文字列リテラルの説明セクションが必要（CommandRef section 24 には記載あり） |
-| m-4 | macOS 固有動作差異セクションの欠落 | macOS 差異まとめセクションが必要（CommandRef section 25 には記載あり） |
-| m-5 | groupmatchstr1..N の説明不足 | `waitregex` の詳細セクションで `groupmatchstr1..N` の明記がない（テーブルには記載あり） |
-| m-6 | waitregex の result 値未記載 | `result` の値（0=timeout, 1=matched 等）が両文書とも未記載 |
-| m-7 | makedir が CommandReference に未記載 | SPEC 独自のエイリアス。実装根拠を明記すべき |
-| m-8 | MacroClientProtocol メソッド数の確認 | SPEC line 1179 に「57 メソッド」と記載。XPC テーブルの実数と照合要 |
-| m-9 | アーキテクチャ図のメソッドリスト不完全 | 10 メソッドのみ列挙、「等」の注記なし |
-| ~~m-10~~ | ~~sendtext の send との違い未説明~~ | ~~修正済み: `send` との差異（文字コード解釈なし・単一文字列引数）を明記~~ |
-| ~~m-11~~ | ~~sendbinary の実装乖離~~ | ~~SPEC を実装に合わせて修正済み（整数引数方式、オリジナル TT との差異を明記）~~ |
-| ~~m-12~~ | ~~for ループ例の sprintf 矛盾~~ | ~~INVALID: C-1 が解消済みのため矛盾なし~~ |
+| ID | 項目 | 内容 | 状態 |
+|----|------|------|------|
+| ~~m-1~~ | ~~`#XX` 文字コードリテラル構文の未記載~~ | ~~「式と演算子」セクション内の「数値リテラル」に記載~~ | **修正済み** |
+| ~~m-2~~ | ~~システム変数セクションの欠落~~ | ~~「システム変数」セクションを新設~~ | **修正済み** |
+| ~~m-3~~ | ~~式と演算子セクションの欠落~~ | ~~「式と演算子」セクションを新設~~ | **修正済み** |
+| ~~m-4~~ | ~~macOS 固有動作差異セクションの欠落~~ | ~~「macOS 固有の動作差異」セクションを新設~~ | **修正済み** |
+| ~~m-5~~ | ~~groupmatchstr1..N の説明不足~~ | ~~waitregex テーブル行にキャプチャグループの詳細説明を追加~~ | **修正済み** |
+| ~~m-6~~ | ~~waitregex の result 値未記載~~ | ~~`result`: 0=タイムアウト, 1=マッチ を追加~~ | **修正済み** |
+| ~~m-7~~ | ~~makedir が CommandReference に未記載~~ | ~~SPEC 独自エイリアスである旨を明記~~ | **修正済み** |
+| ~~m-8~~ | ~~MacroClientProtocol メソッド数の確認~~ | ~~delegate 41 + 追加 22 = 63 メソッドに統一~~ | **修正済み** |
+| ~~m-9~~ | ~~アーキテクチャ図のメソッドリスト不完全~~ | ~~「...等。全メソッドは §XPC マッピング表 参照」の注記を追加~~ | **修正済み** |
+| ~~m-10~~ | ~~sendtext の send との違い未説明~~ | ~~修正済み: `send` との差異（文字コード解釈なし・単一文字列引数）を明記~~ | **修正済み** |
+| ~~m-11~~ | ~~sendbinary の実装乖離~~ | ~~SPEC を実装に合わせて修正済み（整数引数方式、オリジナル TT との差異を明記）~~ | **修正済み** |
+| ~~m-12~~ | ~~for ループ例の sprintf 矛盾~~ | ~~INVALID: C-1 が解消済みのため矛盾なし~~ | **INVALID** |
 
-##### Info（構成上の欠落）— 5件
+##### Info（構成上の欠落）— 5件（全件修正済み）
 
-| ID | 項目 | 内容 |
-|----|------|------|
-| I-1 | コマンドの重複記載 | `str2int`, `int2str`, `str2code`, `code2str` が2テーブルに重複 |
-| I-2 | strsplit / strjoin の例が欠落 | CommandReference にはサンプルコードあり、SPEC はテーブル1行のみ |
-| I-3 | waitrecv / waitevent の仕様不明確 | return 値、タイムアウト動作、wait/waitln との使い分けが不明 |
-| I-4 | XPC Mapping Table が SPEC 独自仕様 | CommandReference のスコープ外であることを明記すべき |
-| I-5 | SPEC にのみ存在するコマンド・概念 | `makedir`, Pattern A/B が SPEC 独自。`protocolrecv/send` と Keychain は CommandRef にも存在。`VariableWatchPanel`/`BreakpointStore` はどちらにも不在 |
+| ID | 項目 | 内容 | 状態 |
+|----|------|------|------|
+| ~~I-1~~ | ~~コマンドの重複記載~~ | ~~変数テーブルの4コマンドを「送受信・文字列操作テーブル参照」に置換~~ | **修正済み** |
+| ~~I-2~~ | ~~strsplit / strjoin の例が欠落~~ | ~~テーブル行にサンプルコードと引数詳細を追加~~ | **修正済み** |
+| ~~I-3~~ | ~~waitrecv / waitevent の仕様不明確~~ | ~~result 値、タイムアウト動作、wait/waitln との使い分けを記載~~ | **修正済み** |
+| ~~I-4~~ | ~~XPC Mapping Table が SPEC 独自仕様~~ | ~~「SPEC 固有の実装仕様」注記を追加~~ | **修正済み** |
+| ~~I-5~~ | ~~SPEC にのみ存在するコマンド・概念~~ | ~~起動フロー・XPC マッピング表・makedir に SPEC 独自仕様の注記を追加~~ | **修正済み** |
 
 ##### 将来的な改善候補（優先度なし・任意）
 
@@ -1544,21 +1548,21 @@ MacroRunner には **120 以上のコマンド**が登録されており、全�
 | 12 | m-4 | macOS 固有動作差異セクションの欠落 | 「macOS 固有の動作差異」セクションを新設。10コマンドの差異一覧を記載 | **修正済み** |
 | 13 | m-10 | sendtext の send との違い未説明 | sendtext の説明に「文字コード解釈なし、単一文字列引数」を明記 | **修正済み** |
 
-#### 優先度 3: 改善対応（Minor/Info — 整合性・完全性）
+#### ~~優先度 3: 改善対応（Minor/Info — 整合性・完全性）~~ — **対応済み（2026-03-17）**
 
-| # | ID | 残課題 | 対応方針 | 対象ファイル |
-|---|-----|--------|---------|-------------|
-| 14 | M-4 | int2str: SPEC 内で str2int と引数順の一貫性が崩れている | M-3 修正時に合わせて確認・整合 | SPEC line 131 |
-| 15 | m-5 | groupmatchstr1..N の詳細セクション記載不足 | `waitregex` 詳細セクションにキャプチャグループの説明を追加 | SPEC waitregex セクション |
-| 16 | m-6 | waitregex の result 値未記載 | `result` の値（0=timeout, 1=matched 等）を追加 | SPEC, CommandRef 両方 |
-| 17 | m-7 | makedir が CommandRef に未記載 | SPEC 独自エイリアスである旨を明記。必要なら CommandRef にも追加 | SPEC line 238 |
-| 18 | m-8 | MacroClientProtocol メソッド数の不一致 | アーキテクチャ図(10), プロトコル表(10), 実装状況(57), マッピング表(63) — 数値を統一 | SPEC lines 39-42, 426-436, 858-928, 1179 |
-| 19 | m-9 | アーキテクチャ図のメソッドリスト不完全 | 10メソッドのみ列挙で「等」の注記なし。省略表記(...)を追加するか、代表メソッドである旨を明記 | SPEC lines 39-42 |
-| 20 | I-1 | str2int 等4コマンドが2テーブルに重複 | 一方のテーブルから削除、または「参照」リンクに置換 | SPEC lines 130-133, 179-182 |
-| 21 | I-2 | strsplit / strjoin の例が SPEC に欠落 | CommandRef のサンプルコードを参考にSPECにも例を追加 | SPEC lines 139-140 |
-| 22 | I-3 | waitrecv / waitevent の仕様不明確 | return 値、タイムアウト動作、wait/waitln との使い分けを記載 | SPEC line 261 |
-| 23 | I-4 | XPC Mapping Table が SPEC 独自仕様 | 「本セクションは SPEC 固有の実装仕様であり、CommandReference のスコープ外」と明記 | SPEC line 849 |
-| 24 | I-5 | SPEC にのみ存在するコマンド・概念 | `makedir`, Pattern A/B が SPEC 独自である旨を各所に明記 | SPEC 該当箇所 |
+| # | ID | 残課題 | 対応内容 | 状態 |
+|---|-----|--------|---------|------|
+| 14 | M-4 | int2str/str2int: SPEC 内の引数順一貫性 | M-3 修正で str2int/int2str/str2code/code2str 全て出力変数先に統一済み。確認のみ | **確認済み** |
+| 15 | m-5 | groupmatchstr1..N の詳細記載不足 | waitregex テーブル行にキャプチャグループ(最大9)の説明を追加 | **修正済み** |
+| 16 | m-6 | waitregex の result 値未記載 | `result`: 0=タイムアウト, 1=マッチ を追加 | **修正済み** |
+| 17 | m-7 | makedir が CommandRef に未記載 | SPEC 独自エイリアスである旨を makedir の説明に明記 | **修正済み** |
+| 18 | m-8 | MacroClientProtocol メソッド数の不一致 | delegate 41 + 追加 22 = 63 メソッドに統一（アーキテクチャ図・プロトコル表・実装状況） | **修正済み** |
+| 19 | m-9 | アーキテクチャ図のメソッドリスト不完全 | 「...等。全メソッドは §XPC マッピング表 参照」の注記を追加 | **修正済み** |
+| 20 | I-1 | str2int 等4コマンドが2テーブルに重複 | 変数テーブルの4コマンドを「送受信・文字列操作テーブル参照」に置換 | **修正済み** |
+| 21 | I-2 | strsplit / strjoin の例が SPEC に欠落 | テーブル行にサンプルコード・引数詳細（count パラメータ含む）を追加 | **修正済み** |
+| 22 | I-3 | waitrecv / waitevent の仕様不明確 | waitrecv: result 値・タイムアウト動作を記載。waitevent: 7種イベントの result 値・4段階判定を記載 | **修正済み** |
+| 23 | I-4 | XPC Mapping Table が SPEC 独自仕様 | 「SPEC 固有の実装仕様であり、CommandReference のスコープ外」の注記を追加 | **修正済み** |
+| 24 | I-5 | SPEC にのみ存在するコマンド・概念 | 起動フロー・XPC マッピング表・makedir に SPEC 独自仕様の注記を追加 | **修正済み** |
 
 #### 将来対応（優先度なし — 環境・設定依存）
 
@@ -1573,6 +1577,6 @@ MacroRunner には **120 以上のコマンド**が登録されており、全�
 |--------|------|------|
 | ~~1: 即時対応~~ | ~~6~~ | **全件対応済み**（2026-03-17） |
 | ~~2: 早期対応~~ | ~~7~~ | **全件対応済み**（2026-03-17） |
-| 3: 改善対応 | 11 | 未着手（Minor 6 + Info 5） |
-| 将来対応 | 2 | 環境依存 |
-| **合計** | **26** | うち **13件対応済み**、13件残 |
+| ~~3: 改善対応~~ | ~~11~~ | **全件対応済み**（2026-03-17） |
+| 将来対応 | 2 | 環境依存（Developer Program 登録後） |
+| **合計** | **26** | **24件対応済み**、2件は将来対応（環境依存） |
