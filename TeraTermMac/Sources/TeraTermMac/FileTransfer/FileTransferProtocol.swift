@@ -40,6 +40,22 @@ enum TransferProtocolType {
     case kermit
     case bplus
     case quickVAN
+
+    /// Create from XPC protocol name string
+    static func from(_ name: String) -> TransferProtocolType? {
+        switch name.lowercased() {
+        case "xmodem":     return .xmodem
+        case "xmodem-crc": return .xmodemCRC
+        case "xmodem-1k":  return .xmodem1K
+        case "ymodem":     return .ymodem
+        case "ymodem-g":   return .ymodemG
+        case "zmodem":     return .zmodem
+        case "kermit":     return .kermit
+        case "bplus", "b-plus", "b+": return .bplus
+        case "quickvan", "quick-van": return .quickVAN
+        default:           return nil
+        }
+    }
 }
 
 // MARK: - Kermit Mode (for Get/Finish subcommands)

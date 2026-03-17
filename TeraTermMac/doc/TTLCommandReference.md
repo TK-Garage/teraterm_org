@@ -32,7 +32,7 @@ Tera Term Mac で利用可能な TTL マクロコマンドの一覧です。
 23. [システム変数](#23-システム変数)
 24. [式と演算子](#24-式と演算子)
 25. [macOS 固有の動作差異](#25-macos-固有の動作差異)
-26. [実装と仕様の差異一覧（要修正）](#26-実装と仕様の差異一覧要修正)
+26. [実装と仕様の差異一覧](#26-実装と仕様の差異一覧)
 
 ---
 
@@ -886,30 +886,38 @@ fileunlock fh
 
 ### `findfirst` / `findnext` / `findclose`
 
-ファイル検索（ディレクトリハンドルベース）。
+ファイル検索。
+
+> **macOS 固有動作**: オリジナル Tera Term の 3 引数形式 `findfirst <dirhandle> <pattern> <strvar>` とは異なり、macOS 版では 2 引数形式を使用する。ディレクトリハンドルは `result` 経由で返される。
 
 ```ttl
-findfirst <dirhandle> <pattern> <strvar>
-findnext <dirhandle> <strvar>
-findclose <dirhandle>
+findfirst <strvar> <pattern>
+findnext <strvar> <searchid>
+findclose <searchid>
 ```
 
 | 引数 | 型 | 説明 |
 |------|------|------|
-| `<dirhandle>` | 整数変数 | ディレクトリハンドル（`findfirst` が返す） |
-| `<pattern>` | 文字列 | 検索パターン（`'*.txt'` 等） |
 | `<strvar>` | 文字列変数 | 見つかったファイル名の格納先 |
+| `<pattern>` | 文字列 | 検索パターン（`'*.txt'` 等） |
+| `<searchid>` | 整数 | `findfirst` の `result` で返される検索 ID |
 
-**result**: 1 = 見つかった、0 = 該当なし（`findfirst` 失敗時 `dirhandle` は -1）
+**result**（`findfirst`）: 0 以上 = 検索 ID（成功）、-1 = 該当なし
+**result**（`findnext`）: 0 = 見つかった、-1 = これ以上なし
 
 ```ttl
-findfirst dh '*.txt' filename
-while result
-  sprintf '%s\n' filename
-  dispstr inputstr
-  findnext dh filename
-endwhile
-findclose dh
+findfirst filename '*.txt'
+if result >= 0 then
+  searchid = result
+  while 1
+    sprintf '%s\n' filename
+    dispstr inputstr
+    findnext filename searchid
+    if result == -1 goto done
+  endwhile
+endif
+:done
+findclose searchid
 ```
 
 ### `foldercreate`
@@ -1381,7 +1389,7 @@ unlink
 
 ### `testlink`
 
-リンク・接続状態をテスト。
+マクロとターミナル間のリンク状態、およびホストへの接続状態をテストする。
 
 ```ttl
 testlink
@@ -1396,7 +1404,13 @@ elseif result == 2 then
 endif
 ```
 
-**result**: 0 = 未リンク、1 = リンク済み・未接続、2 = リンク済み・接続中
+| result | 状態 |
+|:------:|------|
+| 0 | マクロがターミナルにリンクされていない |
+| 1 | ターミナルにリンク済みだが、ホストへの接続はされていない |
+| 2 | リンク済みかつホストに接続中 |
+
+> **未実装**: `result = 1`（リンク済み・未接続）は現在未実装（0/2 のみ返す）。マクロ実行アプリと通信アプリの分離後に対応予定。オリジナル Tera Term では MACRO プロセスと Tera Term プロセスが DDE で通信する 2 プロセス構成のため、`Linked`（DDE リンク状態）と `ComReady`（ホスト接続状態）を個別に管理できる。
 
 ### `clearscreen`
 
@@ -1840,11 +1854,52 @@ logwrite 'Manual log entry'
 
 ### `loginfo`
 
-ログ情報を取得。引数なし。
+現在のログ状態とログファイルパスを取得する。
+
+```ttl
+loginfo <strvar>
+```
+
+| 引数 | 型 | 説明 |
+|------|------|------|
+| `<strvar>` | 文字列変数 | ログファイルパスの格納先 |
+
+**result**: -1 = ログ未記録、0 以上 = ログ状態フラグのビット OR
+
+```ttl
+loginfo logfile
+if result == -1 then
+  logopen '/tmp/session.log' 0 0
+else
+  sprintf2 msg 'Logging to: %s' logfile
+  messagebox msg 'Log Info'
+endif
+```
 
 ### `logrotate`
 
-ログファイルをローテーション。引数なし。
+ログファイルのサイズベースローテーションを設定する。設定のみ行い、即座にローテーションは実行されない。
+
+```ttl
+logrotate 'size' '<size>'      ; ローテーションサイズ閾値を設定
+logrotate 'rotate' <count>     ; 保持するローテーションファイル数を設定
+logrotate 'halt'               ; ログローテーションを停止
+```
+
+| 引数 | 型 | 説明 |
+|------|------|------|
+| `'size'` | 文字列 | サイズモード: `<size>` に閾値を指定（128 以上、`'K'`/`'M'` サフィクス対応） |
+| `'rotate'` | 文字列 | ローテーション数モード: `<count>` に保持ファイル数を指定 |
+| `'halt'` | 文字列 | ローテーションを停止 |
+
+```ttl
+; ログローテーション開始
+logrotate 'size' '32K'
+logrotate 'rotate' 3
+
+; ログローテーション停止
+logrotate 'halt'
+```
 
 ### `logautoclosemode`
 
@@ -2219,95 +2274,11 @@ s = "double quotes"
 
 ---
 
-## 26. 実装と仕様の差異一覧（要修正）
+## 26. 実装と仕様の差異一覧
 
 以下は本ドキュメント（TTLCommandReference.md）の仕様と実際の Swift 実装（MacroRunner.swift / TTLInterpreter.swift）を比較して検出した差異の一覧。
-§25 の OS/安全による意図的差異とは異なり、修正すべき実装バグまたはドキュメント誤りである。
+§25 の OS/安全による意図的差異とは異なり、仕様上の未実装または独自拡張を記録する。
 
-### 分類凡例
-
-| 分類 | 意味 |
-|------|------|
-| **MR** | MacroRunner.swift（XPC プロセス側）のみの差異 |
-| **TI** | TTLInterpreter.swift（インプロセス側）のみの差異 |
-| **両方** | 両インタプリタ共通の差異 |
-| **Doc** | ドキュメント記述自体の誤り（実装が正しい） |
-
-### 26.1 引数の順序・形式の不一致
-
-| コマンド | 分類 | 仕様（本ドキュメント） | 実装 | 備考 |
-|----------|:----:|----------------------|------|------|
-| `getenv` | MR | `getenv <envname> <strvar>` | `args[0]`=destVar, `args[1]`=envName（逆順） | TTLInterpreter は仕様通り |
-| `fileopen` | MR | `fileopen <handle> <filename> <append> [<readonly>]` — append: 0=先頭, 1=末尾 | mode 列挙（0=read, 1=write, 2=rw, 3=append）で動作 | TTLInterpreter は仕様通り |
-| `filestat` | MR | `filestat <filename> <size> [<mtime> [<drive>]]` | `args[0]`=destVar, `args[1]`=filePath（逆順） | TTLInterpreter は仕様通り |
-| `getfileattr` | MR | `getfileattr <filename>` — result に属性値 | `args[0]`=destVar, `args[1]`=filePath（2引数、result ではなく変数に格納） | TTLInterpreter も別形式 `(filename, intvar)` |
-| `getfileattr` | TI | `getfileattr <filename>` — result に属性値 | `(filename, intvar)` の 2 引数（result ではなく intvar に格納） | 仕様では result のみ |
-| `dirnamebox` | MR | `dirnamebox <strvar> <title>` | `args[0]`=message, `args[1]`=defaultDir（strvar なし、inputstr に格納） | TTLInterpreter は仕様通り |
-| `str2code` | TI | `str2code <intvar> <string>` — 先頭文字のコードを取得 | 引数順が `(string, intvar)` で逆。さらに先頭 4 バイトを 32bit 整数にパックする（単一文字コードではない） | MacroRunner は仕様通り（Unicode scalar） |
-| `code2str` | TI | `code2str <strvar> <code>` — コードを文字に変換 | 32bit 整数を 4 バイトにアンパックし最大 4 文字を生成（単一文字変換ではない） | MacroRunner は仕様通り（Unicode scalar → 1 文字） |
-
-### 26.2 result / 戻り値の不一致
-
-| コマンド | 分類 | 仕様（本ドキュメント） | 実装 | 備考 |
-|----------|:----:|----------------------|------|------|
-| `ifdefined` | MR | `result` に 1（存在）/ 0（不存在）を設定 | 条件ブロック制御（`ifNest += 1, elseFlag`）を操作。`result` を設定しない | TTLInterpreter は仕様通り |
-| `recvln` | TI | result: 0=データなし, 1=受信成功 | result: 0=受信成功, 1=データなし（反転） | MacroRunner は仕様通り |
-| `testlink` | 両方 | result: 0=未リンク, 1=リンク済み・未接続, 2=リンク済み・接続中 | 0 または 2 のみ返す（1 を返せない） | リンク状態と接続状態を区別する機構がない |
-| `clipb2var` | 両方 | result: 0=データなし, 1=成功, 2=切り詰め | result を設定しない | offset パラメータも未対応（後述） |
-| `var2clipb` | 両方 | result: 0=失敗, 1=成功 | result を設定しない | |
-| `getver` | TI | 文字列変数に `'1.0.0'` 等のバージョン文字列を格納 | `getIntVar()` で整数変数に `50000` を格納 | MacroRunner は XPC 経由で文字列を返し仕様通り |
-
-### 26.3 未対応のパラメータ・機能
-
-| コマンド | 分類 | 仕様（本ドキュメント） | 実装 | 備考 |
-|----------|:----:|----------------------|------|------|
-| `clipb2var` | 両方 | 第 2 引数 `[<offset>]`（チャンク分割読み取り） | offset パラメータ未対応 | |
-| `expandenv` | 両方 | 2 引数形式 `expandenv <strvar> <strval>` | 1 引数形式のみ対応 | |
-| `filestat` | 両方 | 省略可能な `[<mtime> [<drive>]]` パラメータ | size のみ取得。mtime / drive 未対応 | |
-| `fileseekback` | TI | `fileseekback <handle> <bytes>` — 指定バイト数後退 | `filemarkptr` で記録した位置へ戻る（bytes 引数を無視） | MacroRunner は仕様通り |
-
-### 26.4 送信動作の差異
-
-| コマンド | 分類 | 仕様（本ドキュメント） | 実装 | 備考 |
-|----------|:----:|----------------------|------|------|
-| `sendln` | MR | 文字列 + CR を送信 | `\r\n`（CR+LF）を付加 | TTLInterpreter は delegate 経由で CR のみ |
-
-### 26.5 sprintf/sprintf2 の入れ替わり
-
-| コマンド | 分類 | 仕様（本ドキュメント） | 実装 | 備考 |
-|----------|:----:|----------------------|------|------|
-| `sprintf` | MR | 結果を `inputstr` に格納 | `args[0]`（destVar）に格納 | TTLInterpreter は仕様通り |
-| `sprintf2` | MR | 結果を指定変数に格納 | `inputstr` に格納 | TTLInterpreter は仕様通り。MacroRunner では sprintf/sprintf2 の動作が逆 |
-
-### 26.6 findfirst / findnext の引数不一致
-
-| コマンド | 分類 | 仕様（本ドキュメント） | 実装 | 備考 |
-|----------|:----:|----------------------|------|------|
-| `findfirst` | 両方 | `findfirst <dirhandle> <pattern> <strvar>` — 3 引数。result: 1=見つかった, 0=該当なし | 2 引数 `(strvar, pattern)`。dirhandle を返さず result に検索 ID を格納 | オリジナル TT は 3 引数 |
-| `findnext` | 両方 | `findnext <dirhandle> <strvar>` — dirhandle で検索を継続 | 2 引数 `(strvar, searchId)`。searchId の取得方法がインタプリタ間で異なる | |
-
-### 26.7 setdate / settime の result 未設定
-
-| コマンド | 分類 | 仕様（本ドキュメント） | 実装 | 備考 |
-|----------|:----:|----------------------|------|------|
-| `setdate` | MR | `result = -1`（macOS では常に失敗） | result を設定しない（内部変数 `_setdate` に格納するのみ） | TTLInterpreter は仕様通り result = -1 |
-| `settime` | MR | `result = -1`（macOS では常に失敗） | result を設定しない（内部変数 `_settime` に格納するのみ） | TTLInterpreter は仕様通り result = -1 |
-
-### 26.8 ドキュメント記述の誤り
-
-| コマンド | 分類 | 現在の記述 | 正しい仕様 | 備考 |
-|----------|:----:|----------|----------|------|
-| `logrotate` | Doc | "引数なし" | 引数あり: `logrotate <mode> [<value>]`（mode: "size"/"rotate"/"halt"） | 両実装とも引数を取る |
-| `loginfo` | Doc | "引数なし" | MacroRunner は引数なし（result + inputstr）、TTLInterpreter は `<strvar>` を取る | TTLInterpreter 側も要修正の可能性 |
-
-### 26.9 未ドキュメントコマンド
-
-以下のコマンドは両インタプリタのディスパッチテーブルに存在するが、本ドキュメントに記載がない。
-
-| コマンド | 実装内容 | 備考 |
-|----------|---------|------|
-| `inc` | 整数変数をインクリメント（`inc <intvar>`） | |
-| `dec` | 整数変数をデクリメント（`dec <intvar>`） | |
-| `recv` | データを受信（タイムアウト付き）。result + inputstr に格納 | `recvln` の行区切りなし版 |
-| `waitmatch` | `waitregex` のエイリアス | |
-| `settimeout` / `timeout` | タイムアウト値を設定（`settimeout <seconds>`）。システム変数 `timeout` にも反映 | `timeout` 変数への代入と同等 |
+| コマンド | 分類 | 内容 |
+|----------|:----:|------|
+| `testlink` | 両方 | `result = 1`（リンク済み・未接続）が未実装。現在は 0/2 のみ返す。マクロ実行アプリと通信アプリの分離後に対応予定（§12 参照） |

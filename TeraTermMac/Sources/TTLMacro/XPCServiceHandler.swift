@@ -164,6 +164,7 @@ extension XPCServiceHandler: MacroServiceProtocol {
         reply()
     }
 
+<<<<<<< HEAD
     // MARK: - Debugger
 
     func stepLine(reply: @escaping () -> Void) {
@@ -200,4 +201,10 @@ extension XPCServiceHandler: MacroServiceProtocol {
         let vars = macroRunner?.getVariables() ?? [:]
         reply(vars)
     }
+=======
+    func notifyTerminalEvent(eventType: Int, reply: @escaping () -> Void) {
+        macroRunner?.enqueueTerminalEvent(eventType)
+        reply()
+    }
+>>>>>>> 35bbf5e9f062c7ea9c28214c385b1235f86b8346
 }

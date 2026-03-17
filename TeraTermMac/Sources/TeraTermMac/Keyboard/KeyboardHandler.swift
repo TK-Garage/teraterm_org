@@ -35,6 +35,10 @@ class KeyboardHandler {
     var modes: TerminalModes = TerminalModes()
     var settings: TerminalSettings
 
+    /// Controls whether keyboard input is forwarded to the terminal.
+    /// Set to false by macro enablekeyboard command to suppress user input during automation.
+    var isEnabled: Bool = true
+
     // User-defined keys
     private var userDefinedKeys: [String: String] = [:]
 

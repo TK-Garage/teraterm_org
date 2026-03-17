@@ -61,6 +61,7 @@ class MockMacroService: NSObject, MacroServiceProtocol {
         reply()
     }
 
+<<<<<<< HEAD
     // --- Debugger stubs ---
     func stepLine(reply: @escaping () -> Void) { reply() }
     func stepOver(reply: @escaping () -> Void) { reply() }
@@ -69,6 +70,15 @@ class MockMacroService: NSObject, MacroServiceProtocol {
     func removeBreakpoint(line: Int, reply: @escaping () -> Void) { reply() }
     func clearBreakpoints(reply: @escaping () -> Void) { reply() }
     func getVariables(reply: @escaping ([String: String]) -> Void) { reply([:]) }
+=======
+    var notifyTerminalEventCalled = false
+    var lastTerminalEventType: Int = 0
+    func notifyTerminalEvent(eventType: Int, reply: @escaping () -> Void) {
+        notifyTerminalEventCalled = true
+        lastTerminalEventType = eventType
+        reply()
+    }
+>>>>>>> 35bbf5e9f062c7ea9c28214c385b1235f86b8346
 
     func reset() {
         runMacroCalled = false
@@ -176,9 +186,19 @@ class MockMacroClient: NSObject, MacroClientProtocol {
         reply()
     }
 
+<<<<<<< HEAD
     // --- Terminal operation stubs ---
     func isConnected(reply: @escaping (Bool) -> Void) { reply(true) }
     func getWindowTitle(reply: @escaping (String) -> Void) { reply("Mock") }
+=======
+    // New terminal operation methods (required by MacroClientProtocol)
+    var isConnectedResponse: Bool = false
+    var isXPCLinkedResponse: Bool = true
+
+    func isConnected(reply: @escaping (Bool) -> Void) { reply(isConnectedResponse) }
+    func isXPCLinked(reply: @escaping (Bool) -> Void) { reply(isXPCLinkedResponse) }
+    func getWindowTitle(reply: @escaping (String) -> Void) { reply("") }
+>>>>>>> 35bbf5e9f062c7ea9c28214c385b1235f86b8346
     func showWindow(visible: Bool, reply: @escaping () -> Void) { reply() }
     func clearScreen(reply: @escaping () -> Void) { reply() }
     func sendBreak(reply: @escaping () -> Void) { reply() }
@@ -186,14 +206,20 @@ class MockMacroClient: NSObject, MacroClientProtocol {
     func connectToHost(param: String, reply: @escaping (Bool) -> Void) { reply(true) }
     func connectLocalShell(reply: @escaping (Bool) -> Void) { reply(true) }
     func flushReceiveBuffer(reply: @escaping () -> Void) { reply() }
+<<<<<<< HEAD
 
     // --- Window operation stubs ---
+=======
+>>>>>>> 35bbf5e9f062c7ea9c28214c385b1235f86b8346
     func moveWindow(x: Int, y: Int, reply: @escaping () -> Void) { reply() }
     func resizeWindow(width: Int, height: Int, reply: @escaping () -> Void) { reply() }
     func bringWindowToFront(reply: @escaping () -> Void) { reply() }
     func getWindowPosition(reply: @escaping (Int, Int) -> Void) { reply(0, 0) }
+<<<<<<< HEAD
 
     // --- Serial stubs ---
+=======
+>>>>>>> 35bbf5e9f062c7ea9c28214c385b1235f86b8346
     func setBaudRate(rate: Int, reply: @escaping () -> Void) { reply() }
     func setFlowControl(mode: Int, reply: @escaping () -> Void) { reply() }
     func setDtr(on: Int, reply: @escaping () -> Void) { reply() }
@@ -201,8 +227,11 @@ class MockMacroClient: NSObject, MacroClientProtocol {
     func getModemStatus(reply: @escaping (Int) -> Void) { reply(0) }
     func setSerialDelayChar(ms: Int, reply: @escaping () -> Void) { reply() }
     func setSerialDelayLine(ms: Int, reply: @escaping () -> Void) { reply() }
+<<<<<<< HEAD
 
     // --- Log stubs ---
+=======
+>>>>>>> 35bbf5e9f062c7ea9c28214c385b1235f86b8346
     func openLog(path: String, append: Bool, reply: @escaping () -> Void) { reply() }
     func closeLog(reply: @escaping () -> Void) { reply() }
     func pauseLog(reply: @escaping () -> Void) { reply() }
@@ -210,6 +239,7 @@ class MockMacroClient: NSObject, MacroClientProtocol {
     func writeToLog(text: String, reply: @escaping () -> Void) { reply() }
     func getLogInfo(reply: @escaping (Int, String) -> Void) { reply(0, "") }
     func setLogRotation(mode: String, value: Int, reply: @escaping () -> Void) { reply() }
+<<<<<<< HEAD
 
     // --- Clipboard stubs ---
     func getClipboard(reply: @escaping (String) -> Void) { reply("") }
@@ -220,16 +250,26 @@ class MockMacroClient: NSObject, MacroClientProtocol {
     func getAppDirectory(reply: @escaping (String) -> Void) { reply("/tmp") }
 
     // --- Display stubs ---
+=======
+    func getClipboard(reply: @escaping (String) -> Void) { reply("") }
+    func setClipboard(text: String, reply: @escaping () -> Void) { reply() }
+    func getHostname(reply: @escaping (String) -> Void) { reply("localhost") }
+    func getAppDirectory(reply: @escaping (String) -> Void) { reply("/tmp") }
+>>>>>>> 35bbf5e9f062c7ea9c28214c385b1235f86b8346
     func showError(message: String, line: Int, lineText: String, fileName: String,
                    reply: @escaping (Bool) -> Void) { reply(true) }
     func showStatusBox(message: String, title: String, reply: @escaping () -> Void) { reply() }
     func closeStatusBox(reply: @escaping () -> Void) { reply() }
+<<<<<<< HEAD
 
     // --- File transfer stubs ---
+=======
+>>>>>>> 35bbf5e9f062c7ea9c28214c385b1235f86b8346
     func startFileSend(protocolName: String, localPath: String, option: String,
                        reply: @escaping (Bool, String) -> Void) { reply(true, "") }
     func startFileRecv(protocolName: String, localDir: String,
                        reply: @escaping (Bool, String, String) -> Void) { reply(true, "", "") }
+<<<<<<< HEAD
     func getTransferStatus(reply: @escaping (String, Int, Int) -> Void) { reply("done", 100, 100) }
     func cancelTransfer(reply: @escaping () -> Void) { reply() }
 
@@ -238,12 +278,19 @@ class MockMacroClient: NSObject, MacroClientProtocol {
     func scpRecv(remotePath: String, localPath: String, reply: @escaping (Bool) -> Void) { reply(true) }
 
     // --- Settings stubs ---
+=======
+    func getTransferStatus(reply: @escaping (String, Int64, Int64) -> Void) { reply("done", 0, 0) }
+    func cancelTransfer(reply: @escaping () -> Void) { reply() }
+    func scpSend(localPath: String, remotePath: String, reply: @escaping (Bool) -> Void) { reply(true) }
+    func scpRecv(remotePath: String, localPath: String, reply: @escaping (Bool) -> Void) { reply(true) }
+>>>>>>> 35bbf5e9f062c7ea9c28214c385b1235f86b8346
     func restoreSetup(path: String, reply: @escaping () -> Void) { reply() }
     func callMenu(menuId: Int, reply: @escaping () -> Void) { reply() }
     func loadKeyMap(path: String, reply: @escaping () -> Void) { reply() }
     func enableKeyboard(flag: Int, reply: @escaping () -> Void) { reply() }
     func setEcho(flag: Int, reply: @escaping () -> Void) { reply() }
     func displayString(text: String, reply: @escaping () -> Void) { reply() }
+<<<<<<< HEAD
 
     // --- Password stubs ---
     func sendPasswordData(data: Data, reply: @escaping () -> Void) { reply() }
@@ -256,6 +303,11 @@ class MockMacroClient: NSObject, MacroClientProtocol {
     func sendToSession(sessionId: String, data: Data, reply: @escaping (Bool) -> Void) { reply(true) }
     func subscribeToTerminalData(reply: @escaping (Data) -> Void) { /* event callback */ }
     func setTerminalSize(cols: Int, rows: Int, reply: @escaping () -> Void) { reply() }
+=======
+    func sendPasswordData(data: Data, reply: @escaping () -> Void) { reply() }
+    var windowEventResponse: Int = 0
+    func waitWindowEvent(timeout: Int, reply: @escaping (Int) -> Void) { reply(windowEventResponse) }
+>>>>>>> 35bbf5e9f062c7ea9c28214c385b1235f86b8346
 
     func reset() {
         sendToTerminalCalled = false

@@ -1317,9 +1317,9 @@ class TTLInterpreter {
             parser.setInputStr(line)
             // Clear consumed data
             _ = delegate?.ttlGetReceivedData(clear: true)
-            parser.setResult(0)
+            parser.setResult(1)  // 1 = 受信成功
         } else {
-            parser.setResult(1)  // No complete line yet
+            parser.setResult(0)  // 0 = データなし
         }
     }
 
@@ -1931,22 +1931,22 @@ class TTLInterpreter {
     }
 
     private func ttlStr2Code() throws {
-        let s = try parser.getStrExpression()
+        // str2code <intvar> <string> — 先頭文字の Unicode スカラー値を取得
         let varId = try parser.getIntVar()
-        var code: Int = 0
-        for (i, ch) in s.utf8.prefix(4).enumerated() {
-            code = code | (Int(ch) << ((3 - i) * 8))
-        }
+        let s = try parser.getStrExpression()
+        let code = s.first.map { Int($0.unicodeScalars.first!.value) } ?? 0
         parser.setIntVal(id: varId, value: code)
     }
 
     private func ttlCode2Str() throws {
+        // code2str <strvar> <code> — Unicode スカラー値を 1 文字に変換
         let varId = try parser.getStrVar()
         let code = try parser.getIntExpression()
-        var s = ""
-        for i in stride(from: 24, through: 0, by: -8) {
-            let byte = UInt8((code >> i) & 0xFF)
-            if byte > 0 { s.append(Character(UnicodeScalar(byte))) }
+        let s: String
+        if let scalar = Unicode.Scalar(code) {
+            s = String(Character(scalar))
+        } else {
+            s = ""
         }
         parser.setStrVal(id: varId, value: s)
     }
@@ -2529,10 +2529,14 @@ class TTLInterpreter {
     }
 
     private func ttlFileSeekBack() throws {
+        // fileseekback <handle> <bytes> — 指定バイト数だけ後退
         let fhi = try parser.getIntExpression()
+        let bytes = try parser.getIntExpression()
         guard let fh = handleGet(fhi) else { throw TTLError.syntax }
         guard fhi >= 0 && fhi < maxFileHandles else { throw TTLError.syntax }
-        fh.seek(toFileOffset: UInt64(filePointers[fhi]))
+        let current = fh.offsetInFile
+        let offset = UInt64(bytes)
+        fh.seek(toFileOffset: current >= offset ? current - offset : 0)
         parser.setResult(0)
     }
 
@@ -2544,16 +2548,39 @@ class TTLInterpreter {
     }
 
     private func ttlFileStat() throws {
+        // filestat <filename> <size> [<mtime> [<drive>]]
         let filename = try parser.getStrExpression()
-        let varId = try parser.getIntVar()
+        let sizeVarId = try parser.getIntVar()
+        // Try to parse optional mtime parameter
+        let mtimeVarId: Int?
+        do { mtimeVarId = try parser.getStrVar() } catch { mtimeVarId = nil }
+        // Try to parse optional drive parameter
+        let driveVarId: Int?
+        if mtimeVarId != nil {
+            do { driveVarId = try parser.getStrVar() } catch { driveVarId = nil }
+        } else {
+            driveVarId = nil
+        }
         let path = resolvePath(filename)
         do {
             let attrs = try FileManager.default.attributesOfItem(atPath: path)
             let size = (attrs[.size] as? Int) ?? 0
-            parser.setIntVal(id: varId, value: size)
+            parser.setIntVal(id: sizeVarId, value: size)
+            if let mtimeId = mtimeVarId {
+                if let mdate = attrs[.modificationDate] as? Date {
+                    let formatter = DateFormatter()
+                    formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
+                    parser.setStrVal(id: mtimeId, value: formatter.string(from: mdate))
+                } else {
+                    parser.setStrVal(id: mtimeId, value: "")
+                }
+            }
+            if let driveId = driveVarId {
+                parser.setStrVal(id: driveId, value: "")  // macOS では空文字列
+            }
             parser.setResult(0)
         } catch {
-            parser.setIntVal(id: varId, value: -1)
+            parser.setIntVal(id: sizeVarId, value: -1)
             parser.setResult(-1)
         }
     }
@@ -2916,8 +2943,16 @@ class TTLInterpreter {
     }
 
     private func ttlExpandEnv() throws {
+        // expandenv <strvar> [<strval>]
         let varId = try parser.getStrVar()
-        let s = parser.getStrVal(id: varId)
+        let s: String
+        do {
+            // 2引数形式: strval を展開して strvar に格納
+            s = try parser.getStrExpression()
+        } catch {
+            // 1引数形式: 変数の内容をその場で展開
+            s = parser.getStrVal(id: varId)
+        }
         // Expand %VAR% references
         var result = s
         let pattern = try NSRegularExpression(pattern: "%([^%]+)%")
@@ -2940,9 +2975,10 @@ class TTLInterpreter {
     }
 
     private func ttlGetVer() throws {
-        let varId = try parser.getIntVar()
-        // Return version as integer: major*10000 + minor*100 + patch
-        parser.setIntVal(id: varId, value: 50000)  // 5.0.0
+        // getver <strvar> — バージョン文字列を取得
+        let varId = try parser.getStrVar()
+        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0.0"
+        parser.setStrVal(id: varId, value: version)
     }
 
     private func ttlGetHostname() throws {
@@ -3020,20 +3056,19 @@ class TTLInterpreter {
     }
 
     private func ttlGetFileAttr() throws {
+        // getfileattr <filename> — result に属性値（-1=エラー）
         let filename = try parser.getStrExpression()
-        let varId = try parser.getIntVar()
         let path = resolvePath(filename)
         do {
             let attrs = try FileManager.default.attributesOfItem(atPath: path)
-            var result = 0
+            var attrBits = 0
             if let type = attrs[.type] as? FileAttributeType {
-                if type == .typeDirectory { result |= 0x10 }
+                if type == .typeDirectory { attrBits |= 0x10 }
             }
             if let perms = attrs[.posixPermissions] as? Int {
-                if perms & 0o200 == 0 { result |= 0x01 } // Read-only
+                if perms & 0o200 == 0 { attrBits |= 0x01 } // Read-only
             }
-            parser.setIntVal(id: varId, value: result)
-            parser.setResult(0)
+            parser.setResult(attrBits)
         } catch {
             parser.setResult(-1)
         }
@@ -3180,14 +3215,42 @@ class TTLInterpreter {
     // MARK: - Clipboard Commands
 
     private func ttlClipb2Var() throws {
+        // clipb2var <strvar> [<offset>]
         let varId = try parser.getStrVar()
+        // Try to parse optional offset argument
+        let offset: Int
+        do {
+            offset = try parser.getIntExpression()
+        } catch {
+            offset = 0
+        }
+        let chunkSize = 511
         let text = delegate?.ttlGetClipboard() ?? ""
-        parser.setStrVal(id: varId, value: text)
+        if text.isEmpty {
+            parser.setStrVal(id: varId, value: "")
+            parser.setResult(0)  // 0 = データなし
+        } else {
+            let startIndex = offset * chunkSize
+            if startIndex >= text.count {
+                parser.setStrVal(id: varId, value: "")
+                parser.setResult(0)
+            } else {
+                let start = text.index(text.startIndex, offsetBy: startIndex)
+                let end = text.index(start, offsetBy: min(chunkSize, text.count - startIndex))
+                parser.setStrVal(id: varId, value: String(text[start..<end]))
+                if text.count > startIndex + chunkSize {
+                    parser.setResult(2)  // 2 = 切り詰め（残りあり）
+                } else {
+                    parser.setResult(1)  // 1 = 成功
+                }
+            }
+        }
     }
 
     private func ttlVar2Clipb() throws {
         let s = try parser.getStrExpression()
         delegate?.ttlSetClipboard(s)
+        parser.setResult(1)  // 1 = 成功
     }
 
     // MARK: - Path Commands

@@ -6,6 +6,47 @@
 import XCTest
 @testable import TeraTermMac
 
+// MARK: - Transfer Protocol Constants
+
+private enum XMODEMBlock {
+    static let SOH: UInt8 = 0x01           // Start of Heading (128-byte block)
+    static let STX: UInt8 = 0x02           // Start of Text (1024-byte block)
+    static let EOT: UInt8 = 0x04           // End of Transmission
+    static let ACK: UInt8 = 0x06           // Acknowledge
+    static let NAK: UInt8 = 0x15           // Negative Acknowledge
+    static let CAN: UInt8 = 0x18           // Cancel
+    static let CRC_START: UInt8 = 0x43     // 'C' — CRC mode handshake
+    static let SUB: UInt8 = 0x1A           // Padding byte
+    static let standardBlockSize = 128     // Standard XMODEM block payload
+    static let extendedBlockSize = 1024    // XMODEM-1K / YMODEM block payload
+}
+
+private enum ZMODEMFrame {
+    static let ZPAD: UInt8 = 0x2A          // '*' — Padding character
+    static let ZDLE: UInt8 = 0x18          // Data Link Escape (also used as CAN)
+    static let ZHEX: UInt8 = 0x42          // 'B' — Hex header encoding
+    static let BS: UInt8 = 0x08            // Backspace (cancel trailer)
+    static let cancelZDLECount = 8         // Number of ZDLE bytes in cancel sequence
+    static let cancelBSCount = 10          // Number of BS bytes in cancel sequence
+    static let cancelTotalLength = 18      // cancelZDLECount + cancelBSCount
+}
+
+private enum KermitPacket {
+    static let MARK: UInt8 = 0x01          // SOH — Packet start marker
+    static let EOL: UInt8 = 0x0D           // CR — End of line terminator
+    static let QCTL: UInt8 = 0x23          // '#' — Control character escape prefix
+    static let escapedCR: UInt8 = 0x4D     // 'M' — Escaped form of CR (0x0D)
+    static let escapedLF: UInt8 = 0x4A     // 'J' — Escaped form of LF (0x0A)
+    // Packet type characters
+    static let typeS = UInt8(Character("S").asciiValue!)  // Send-Init
+    static let typeY = UInt8(Character("Y").asciiValue!)  // ACK
+    static let typeF = UInt8(Character("F").asciiValue!)  // File-Header
+    static let typeD = UInt8(Character("D").asciiValue!)  // Data
+    static let typeZ = UInt8(Character("Z").asciiValue!)  // EOF
+    static let typeB = UInt8(Character("B").asciiValue!)  // Break (end of transaction)
+    static let typeE = UInt8(Character("E").asciiValue!)  // Error
+}
+
 // MARK: - Mock File Transfer Delegate
 
 class MockFileTransferDelegate: FileTransferDelegate {
@@ -187,12 +228,12 @@ class XMODEMTests: XCTestCase {
         xm.start()
         delegate.reset()
 
-        // Build a valid XMODEM checksum block: SOH + blk(1) + ~blk(0xFE) + 128 bytes + checksum
+        // Build a valid XMODEM checksum block: SOH + blk(1) + ~blk(0xFE) + payload + checksum
         var block = Data()
-        block.append(0x01) // SOH
+        block.append(XMODEMBlock.SOH)
         block.append(0x01) // block number 1
         block.append(0xFE) // complement of block number
-        let payload = Data(repeating: 0x41, count: 128) // 'A' * 128
+        let payload = Data(repeating: 0x41, count: XMODEMBlock.standardBlockSize)
         block.append(payload)
         let checksum = payload.reduce(UInt8(0)) { $0 &+ $1 }
         block.append(checksum)
@@ -200,14 +241,14 @@ class XMODEMTests: XCTestCase {
         xm.processData(block)
 
         // Should have sent ACK
-        XCTAssertTrue(delegate.sentData.contains(Data([0x06])), "Should send ACK after valid block")
+        XCTAssertTrue(delegate.sentData.contains(Data([XMODEMBlock.ACK])), "Should send ACK after valid block")
 
         // Should have state update with progress
         let hasProgress = delegate.stateUpdates.contains { state in
-            if case .inProgress(let bytes, _, _) = state { return bytes == 128 }
+            if case .inProgress(let bytes, _, _) = state { return bytes == Int64(XMODEMBlock.standardBlockSize) }
             return false
         }
-        XCTAssertTrue(hasProgress, "Should report 128 bytes progress")
+        XCTAssertTrue(hasProgress, "Should report \(XMODEMBlock.standardBlockSize) bytes progress")
     }
 
     func testXMODEMReceiveInvalidChecksumSendsNAK() {
@@ -220,16 +261,16 @@ class XMODEMTests: XCTestCase {
         delegate.reset()
 
         var block = Data()
-        block.append(0x01) // SOH
+        block.append(XMODEMBlock.SOH)
         block.append(0x01) // block number
         block.append(0xFE)
-        let payload = Data(repeating: 0x41, count: 128)
+        let payload = Data(repeating: 0x41, count: XMODEMBlock.standardBlockSize)
         block.append(payload)
         block.append(0x00) // Wrong checksum
 
         xm.processData(block)
 
-        XCTAssertTrue(delegate.sentData.contains(Data([0x15])), "Should send NAK for bad checksum")
+        XCTAssertTrue(delegate.sentData.contains(Data([XMODEMBlock.NAK])), "Should send NAK for bad checksum")
     }
 
     func testXMODEMReceiveValidCRCBlock() {
@@ -242,11 +283,11 @@ class XMODEMTests: XCTestCase {
         xm.start()
         delegate.reset()
 
-        let payload = Data(repeating: 0x42, count: 128) // 'B' * 128
+        let payload = Data(repeating: 0x42, count: XMODEMBlock.standardBlockSize)
         let crcVal = crc16(payload)
 
         var block = Data()
-        block.append(0x01) // SOH
+        block.append(XMODEMBlock.SOH)
         block.append(0x01) // block 1
         block.append(0xFE)
         block.append(payload)
@@ -255,7 +296,7 @@ class XMODEMTests: XCTestCase {
 
         xm.processData(block)
 
-        XCTAssertTrue(delegate.sentData.contains(Data([0x06])), "Should ACK valid CRC block")
+        XCTAssertTrue(delegate.sentData.contains(Data([XMODEMBlock.ACK])), "Should ACK valid CRC block")
     }
 
     func testXMODEMReceiveEOT() {
@@ -269,10 +310,10 @@ class XMODEMTests: XCTestCase {
         delegate.reset()
 
         // Send EOT
-        xm.processData(Data([0x04]))
+        xm.processData(Data([XMODEMBlock.EOT]))
 
         // Should ACK the EOT
-        XCTAssertTrue(delegate.sentData.contains(Data([0x06])))
+        XCTAssertTrue(delegate.sentData.contains(Data([XMODEMBlock.ACK])))
 
         // Should complete
         let hasCompleted = delegate.stateUpdates.contains { state in
@@ -291,7 +332,7 @@ class XMODEMTests: XCTestCase {
         xm.start()
         delegate.reset()
 
-        xm.processData(Data([0x18])) // CAN
+        xm.processData(Data([XMODEMBlock.CAN])) // CAN
 
         let hasCancelled = delegate.stateUpdates.contains { state in
             if case .cancelled = state { return true }
@@ -309,11 +350,11 @@ class XMODEMTests: XCTestCase {
         xm.start()
         delegate.reset()
 
-        let payload = Data(repeating: 0x41, count: 128)
+        let payload = Data(repeating: 0x41, count: XMODEMBlock.standardBlockSize)
         let checksum = payload.reduce(UInt8(0)) { $0 &+ $1 }
 
         var block = Data()
-        block.append(0x01) // SOH
+        block.append(XMODEMBlock.SOH)
         block.append(0x02) // block 2 (expected 1!)
         block.append(0xFD) // complement
         block.append(payload)
@@ -321,7 +362,7 @@ class XMODEMTests: XCTestCase {
 
         xm.processData(block)
 
-        XCTAssertTrue(delegate.sentData.contains(Data([0x15])), "Should NAK wrong block number")
+        XCTAssertTrue(delegate.sentData.contains(Data([XMODEMBlock.NAK])), "Should NAK wrong block number")
     }
 
     func testXMODEMReceiveMultipleBlocks() {
@@ -336,11 +377,11 @@ class XMODEMTests: XCTestCase {
 
         // Send 3 blocks then EOT
         for blockNum in 1...3 {
-            let payload = Data(repeating: UInt8(blockNum), count: 128)
+            let payload = Data(repeating: UInt8(blockNum), count: XMODEMBlock.standardBlockSize)
             let checksum = payload.reduce(UInt8(0)) { $0 &+ $1 }
 
             var block = Data()
-            block.append(0x01)
+            block.append(XMODEMBlock.SOH)
             block.append(UInt8(blockNum))
             block.append(~UInt8(blockNum))
             block.append(payload)
@@ -348,10 +389,10 @@ class XMODEMTests: XCTestCase {
             xm.processData(block)
         }
 
-        xm.processData(Data([0x04])) // EOT
+        xm.processData(Data([XMODEMBlock.EOT]))
 
         XCTAssertEqual(delegate.completedFiles.count, 1)
-        XCTAssertEqual(delegate.completedFiles[0].1, 384) // 3 * 128
+        XCTAssertEqual(delegate.completedFiles[0].1, Int64(3 * XMODEMBlock.standardBlockSize))
     }
 
     func testXMODEMReceive1KBlock() {
@@ -364,11 +405,11 @@ class XMODEMTests: XCTestCase {
         xm.start()
         delegate.reset()
 
-        let payload = Data(repeating: 0x55, count: 1024)
+        let payload = Data(repeating: 0x55, count: XMODEMBlock.extendedBlockSize)
         let crcVal = crc16(payload)
 
         var block = Data()
-        block.append(0x02) // STX for 1K
+        block.append(XMODEMBlock.STX) // STX for 1K
         block.append(0x01)
         block.append(0xFE)
         block.append(payload)
@@ -376,10 +417,10 @@ class XMODEMTests: XCTestCase {
         block.append(UInt8(crcVal & 0xFF))
 
         xm.processData(block)
-        xm.processData(Data([0x04])) // EOT
+        xm.processData(Data([XMODEMBlock.EOT]))
 
         XCTAssertEqual(delegate.completedFiles.count, 1)
-        XCTAssertEqual(delegate.completedFiles[0].1, 1024)
+        XCTAssertEqual(delegate.completedFiles[0].1, Int64(XMODEMBlock.extendedBlockSize))
     }
 
     // MARK: - Send Tests
@@ -413,29 +454,29 @@ class XMODEMTests: XCTestCase {
         xm.start()
 
         // Simulate receiver sending 'C' to start
-        xm.processData(Data([0x43]))
+        xm.processData(Data([XMODEMBlock.CRC_START]))
 
         // Should have sent first block
         XCTAssertFalse(delegate.sentData.isEmpty, "Should send first block after 'C'")
         let firstPacket = delegate.sentData.last!
-        XCTAssertEqual(firstPacket[0], 0x01, "Should start with SOH")
+        XCTAssertEqual(firstPacket[0], XMODEMBlock.SOH, "Should start with SOH")
         XCTAssertEqual(firstPacket[1], 0x01, "Block number should be 1")
         XCTAssertEqual(firstPacket[2], 0xFE, "Block complement should be 0xFE")
-        XCTAssertEqual(firstPacket.count, 1 + 2 + 128 + 2, "CRC mode packet size")
+        XCTAssertEqual(firstPacket.count, 1 + 2 + XMODEMBlock.standardBlockSize + 2, "CRC mode packet size")
 
         // ACK → next block
         delegate.reset()
-        xm.processData(Data([0x06])) // ACK
+        xm.processData(Data([XMODEMBlock.ACK]))
         XCTAssertFalse(delegate.sentData.isEmpty, "Should send second block after ACK")
 
         // ACK → should send EOT
         delegate.reset()
-        xm.processData(Data([0x06])) // ACK
-        XCTAssertTrue(delegate.sentData.contains(Data([0x04])), "Should send EOT after all data")
+        xm.processData(Data([XMODEMBlock.ACK]))
+        XCTAssertTrue(delegate.sentData.contains(Data([XMODEMBlock.EOT])), "Should send EOT after all data")
     }
 
     func testXMODEMSendPadding() {
-        // File shorter than 128 bytes → padded with SUB (0x1A)
+        // File shorter than standardBlockSize → padded with SUB
         let filePath = tempDir.appendingPathComponent("short.bin")
         let testData = Data([0x41, 0x42, 0x43]) // 3 bytes
         try! testData.write(to: filePath)
@@ -447,17 +488,17 @@ class XMODEMTests: XCTestCase {
         xm.delegate = delegate
 
         xm.start()
-        xm.processData(Data([0x15])) // NAK to start
+        xm.processData(Data([XMODEMBlock.NAK])) // NAK to start
 
         let packet = delegate.sentData.last!
-        // Data payload starts at offset 3 and is 128 bytes
-        let payload = Data(packet[3..<131])
+        // Data payload starts at offset 3
+        let payload = Data(packet[3..<(3 + XMODEMBlock.standardBlockSize)])
         XCTAssertEqual(payload[0], 0x41)
         XCTAssertEqual(payload[1], 0x42)
         XCTAssertEqual(payload[2], 0x43)
         // Rest should be SUB padding
-        for i in 3..<128 {
-            XCTAssertEqual(payload[i], 0x1A, "Byte \(i) should be SUB padding")
+        for i in 3..<XMODEMBlock.standardBlockSize {
+            XCTAssertEqual(payload[i], XMODEMBlock.SUB, "Byte \(i) should be SUB padding")
         }
     }
 
@@ -471,7 +512,7 @@ class XMODEMTests: XCTestCase {
         delegate.reset()
         xm.cancel()
 
-        XCTAssertTrue(delegate.sentData.contains(Data([0x18, 0x18, 0x18])), "Should send 3x CAN")
+        XCTAssertTrue(delegate.sentData.contains(Data([XMODEMBlock.CAN, XMODEMBlock.CAN, XMODEMBlock.CAN])), "Should send 3x CAN")
     }
 
     // MARK: - Retry Tests
@@ -486,12 +527,12 @@ class XMODEMTests: XCTestCase {
         delegate.reset()
 
         // Send 11 blocks with wrong block number to exceed max retries (10)
-        let payload = Data(repeating: 0x41, count: 128)
+        let payload = Data(repeating: 0x41, count: XMODEMBlock.standardBlockSize)
         let checksum = payload.reduce(UInt8(0)) { $0 &+ $1 }
 
         for _ in 0...10 {
             var block = Data()
-            block.append(0x01)
+            block.append(XMODEMBlock.SOH)
             block.append(0xFF) // Wrong block number
             block.append(0x00) // Wrong complement
             block.append(payload)
@@ -534,7 +575,7 @@ class YMODEMTests: XCTestCase {
         ym.start()
 
         XCTAssertEqual(delegate.sentData.count, 1)
-        XCTAssertEqual(delegate.sentData[0], Data([0x43])) // 'C'
+        XCTAssertEqual(delegate.sentData[0], Data([XMODEMBlock.CRC_START])) // 'C'
     }
 
     func testYMODEMReceiveBlock0ParsesFileInfo() {
@@ -553,11 +594,11 @@ class YMODEMTests: XCTestCase {
         payload.append(Data("12345 14157745474 100644".utf8))
         payload.append(0) // NUL
 
-        while payload.count < 128 { payload.append(0) }
+        while payload.count < XMODEMBlock.standardBlockSize { payload.append(0) }
 
         let crcVal = crc16(payload)
         var block = Data()
-        block.append(0x01) // SOH
+        block.append(XMODEMBlock.SOH)
         block.append(0x00) // block 0
         block.append(0xFF) // complement
         block.append(payload)
@@ -567,8 +608,8 @@ class YMODEMTests: XCTestCase {
         ym.processData(block)
 
         // Should send ACK then 'C'
-        XCTAssertTrue(delegate.sentData.contains(Data([0x06])), "Should ACK block 0")
-        XCTAssertTrue(delegate.sentData.contains(Data([0x43])), "Should send 'C' after ACK")
+        XCTAssertTrue(delegate.sentData.contains(Data([XMODEMBlock.ACK])), "Should ACK block 0")
+        XCTAssertTrue(delegate.sentData.contains(Data([XMODEMBlock.CRC_START])), "Should send 'C' after ACK")
 
         // Should report starting progress
         let hasProgress = delegate.stateUpdates.contains { state in
@@ -588,11 +629,11 @@ class YMODEMTests: XCTestCase {
         delegate.reset()
 
         // Empty block 0 (all zeros) signals end of batch
-        let payload = Data(repeating: 0, count: 128)
+        let payload = Data(repeating: 0, count: XMODEMBlock.standardBlockSize)
         let crcVal = crc16(payload)
 
         var block = Data()
-        block.append(0x01) // SOH
+        block.append(XMODEMBlock.SOH)
         block.append(0x00) // block 0
         block.append(0xFF)
         block.append(payload)
@@ -623,11 +664,11 @@ class YMODEMTests: XCTestCase {
         payload0.append(0)
         payload0.append(Data("100".utf8))
         payload0.append(0)
-        while payload0.count < 128 { payload0.append(0) }
+        while payload0.count < XMODEMBlock.standardBlockSize { payload0.append(0) }
 
         let crc0 = crc16(payload0)
         var block0 = Data()
-        block0.append(0x01)
+        block0.append(XMODEMBlock.SOH)
         block0.append(0x00)
         block0.append(0xFF)
         block0.append(payload0)
@@ -637,11 +678,11 @@ class YMODEMTests: XCTestCase {
         ym.processData(block0)
         delegate.reset()
 
-        // Data block with 128 bytes (but file is only 100 bytes)
-        let payload1 = Data(repeating: 0x42, count: 128)
+        // Data block with standardBlockSize bytes (but file is only 100 bytes)
+        let payload1 = Data(repeating: 0x42, count: XMODEMBlock.standardBlockSize)
         let crc1 = crc16(payload1)
         var block1 = Data()
-        block1.append(0x01) // SOH
+        block1.append(XMODEMBlock.SOH)
         block1.append(0x01) // block 1
         block1.append(0xFE)
         block1.append(payload1)
@@ -691,17 +732,17 @@ class YMODEMTests: XCTestCase {
         ym.start()
 
         // Send 'C' to trigger block 0
-        ym.processData(Data([0x43]))
+        ym.processData(Data([XMODEMBlock.CRC_START]))
 
         XCTAssertFalse(delegate.sentData.isEmpty, "Should send block 0 after 'C'")
         let block0 = delegate.sentData[0]
-        XCTAssertEqual(block0[0], 0x01, "Block 0 should use SOH")
+        XCTAssertEqual(block0[0], XMODEMBlock.SOH, "Block 0 should use SOH")
         XCTAssertEqual(block0[1], 0x00, "Block number should be 0")
         XCTAssertEqual(block0[2], 0xFF, "Complement should be 0xFF")
 
         // Payload should contain filename
         let payloadStart = 3
-        let payload = Data(block0[payloadStart..<(payloadStart + 128)])
+        let payload = Data(block0[payloadStart..<(payloadStart + XMODEMBlock.standardBlockSize)])
         XCTAssertTrue(payload.starts(with: Data("send.bin".utf8)), "Block 0 should contain filename")
 
         // After filename NUL, should contain file size
@@ -726,7 +767,7 @@ class YMODEMTests: XCTestCase {
         let cancelData = delegate.allSentData
         XCTAssertEqual(cancelData.count, 10, "Cancel should be 5 CAN + 5 BS")
         for i in 0..<5 {
-            XCTAssertEqual(cancelData[i], 0x18, "First 5 bytes should be CAN")
+            XCTAssertEqual(cancelData[i], XMODEMBlock.CAN, "First 5 bytes should be CAN")
         }
         for i in 5..<10 {
             XCTAssertEqual(cancelData[i], 0x08, "Last 5 bytes should be BS")
@@ -746,32 +787,32 @@ class YMODEMTests: XCTestCase {
         payload0.append(0)
         payload0.append(Data("128".utf8))
         payload0.append(0)
-        while payload0.count < 128 { payload0.append(0) }
+        while payload0.count < XMODEMBlock.standardBlockSize { payload0.append(0) }
         let crc0 = crc16(payload0)
         var block0 = Data()
-        block0.append(0x01); block0.append(0x00); block0.append(0xFF)
+        block0.append(XMODEMBlock.SOH); block0.append(0x00); block0.append(0xFF)
         block0.append(payload0)
         block0.append(UInt8(crc0 >> 8)); block0.append(UInt8(crc0 & 0xFF))
         ym.processData(block0)
 
         // Send data block
-        let payload1 = Data(repeating: 0x42, count: 128)
+        let payload1 = Data(repeating: 0x42, count: XMODEMBlock.standardBlockSize)
         let crc1 = crc16(payload1)
         var block1 = Data()
-        block1.append(0x01); block1.append(0x01); block1.append(0xFE)
+        block1.append(XMODEMBlock.SOH); block1.append(0x01); block1.append(0xFE)
         block1.append(payload1)
         block1.append(UInt8(crc1 >> 8)); block1.append(UInt8(crc1 & 0xFF))
         ym.processData(block1)
         delegate.reset()
 
         // First EOT → should NAK
-        ym.processData(Data([0x04]))
-        XCTAssertTrue(delegate.sentData.contains(Data([0x15])), "Should NAK first EOT")
+        ym.processData(Data([XMODEMBlock.EOT]))
+        XCTAssertTrue(delegate.sentData.contains(Data([XMODEMBlock.NAK])), "Should NAK first EOT")
         delegate.reset()
 
         // Second EOT → should ACK
-        ym.processData(Data([0x04]))
-        XCTAssertTrue(delegate.sentData.contains(Data([0x06])), "Should ACK second EOT")
+        ym.processData(Data([XMODEMBlock.EOT]))
+        XCTAssertTrue(delegate.sentData.contains(Data([XMODEMBlock.ACK])), "Should ACK second EOT")
     }
 }
 
@@ -806,7 +847,7 @@ class ZMODEMTests: XCTestCase {
 
         let header = delegate.allSentData
         // ZRINIT header starts with ZPAD ZPAD ZDLE ZHEX
-        XCTAssertTrue(header.contains(0x2A), "Header should contain ZPAD (0x2A)")
+        XCTAssertTrue(header.contains(ZMODEMFrame.ZPAD), "Header should contain ZPAD")
 
         let hasStarting = delegate.stateUpdates.contains { state in
             if case .starting = state { return true }
@@ -875,21 +916,21 @@ class ZMODEMTests: XCTestCase {
         let header = delegate.allSentData
         // Check ZPAD ZPAD ZDLE ZHEX sequence
         XCTAssertTrue(header.count >= 4, "Header should have at least 4 bytes")
-        XCTAssertEqual(header[0], 0x2A) // ZPAD
-        XCTAssertEqual(header[1], 0x2A) // ZPAD
-        XCTAssertEqual(header[2], 0x18) // ZDLE
-        XCTAssertEqual(header[3], 0x42) // ZHEX
+        XCTAssertEqual(header[0], ZMODEMFrame.ZPAD)
+        XCTAssertEqual(header[1], ZMODEMFrame.ZPAD)
+        XCTAssertEqual(header[2], ZMODEMFrame.ZDLE)
+        XCTAssertEqual(header[3], ZMODEMFrame.ZHEX)
     }
 
     func testZMODEMAutoDetect() {
         // Test the ZMODEM auto-detection sequence
-        let data1 = Data([0x2A, 0x2A, 0x18, 0x42, 0x30, 0x30])
+        let data1 = Data([ZMODEMFrame.ZPAD, ZMODEMFrame.ZPAD, ZMODEMFrame.ZDLE, ZMODEMFrame.ZHEX, 0x30, 0x30])
         XCTAssertTrue(ZMODEMProtocol.detectZMODEM(in: data1), "Should detect ZMODEM in data")
 
         let data2 = Data([0x41, 0x42, 0x43])
         XCTAssertFalse(ZMODEMProtocol.detectZMODEM(in: data2), "Should not detect ZMODEM in random data")
 
-        let data3 = Data([0x2A, 0x2A])
+        let data3 = Data([ZMODEMFrame.ZPAD, ZMODEMFrame.ZPAD])
         XCTAssertFalse(ZMODEMProtocol.detectZMODEM(in: data3), "Should not detect incomplete sequence")
     }
 
@@ -903,13 +944,13 @@ class ZMODEMTests: XCTestCase {
         zm.cancel()
 
         let cancelData = delegate.allSentData
-        // Should send 8x ZDLE (0x18) + 10x BS (0x08)
-        XCTAssertEqual(cancelData.count, 18, "Cancel should be 8 ZDLE + 10 BS")
-        for i in 0..<8 {
-            XCTAssertEqual(cancelData[i], 0x18, "First 8 bytes should be ZDLE/CAN")
+        // Should send 8x ZDLE + 10x BS
+        XCTAssertEqual(cancelData.count, ZMODEMFrame.cancelTotalLength, "Cancel should be \(ZMODEMFrame.cancelZDLECount) ZDLE + \(ZMODEMFrame.cancelBSCount) BS")
+        for i in 0..<ZMODEMFrame.cancelZDLECount {
+            XCTAssertEqual(cancelData[i], ZMODEMFrame.ZDLE, "First 8 bytes should be ZDLE/CAN")
         }
-        for i in 8..<18 {
-            XCTAssertEqual(cancelData[i], 0x08, "Last 10 bytes should be BS")
+        for i in ZMODEMFrame.cancelZDLECount..<ZMODEMFrame.cancelTotalLength {
+            XCTAssertEqual(cancelData[i], ZMODEMFrame.BS, "Last 10 bytes should be BS")
         }
     }
 
@@ -925,7 +966,7 @@ class ZMODEMTests: XCTestCase {
         XCTAssertFalse(manager.isTransferActive)
 
         // Should auto-detect ZMODEM initiation
-        let zmodemInit = Data([0x2A, 0x2A, 0x18, 0x42, 0x30, 0x31, 0x30, 0x30])
+        let zmodemInit = Data([ZMODEMFrame.ZPAD, ZMODEMFrame.ZPAD, ZMODEMFrame.ZDLE, ZMODEMFrame.ZHEX, 0x30, 0x31, 0x30, 0x30])
         XCTAssertTrue(manager.checkAutoDetect(zmodemInit, savePath: savePath))
         XCTAssertTrue(manager.isTransferActive)
 
@@ -963,8 +1004,8 @@ class KermitTests: XCTestCase {
         // Should send Send-Init (S) packet
         XCTAssertFalse(delegate.sentData.isEmpty, "Should send init packet")
         let packet = delegate.sentData[0]
-        XCTAssertEqual(packet[0], 0x01, "Should start with MARK/SOH")
-        XCTAssertEqual(packet[3], UInt8(Character("S").asciiValue!), "Type should be 'S'")
+        XCTAssertEqual(packet[0], KermitPacket.MARK, "Should start with MARK/SOH")
+        XCTAssertEqual(packet[3], KermitPacket.typeS, "Type should be 'S'")
     }
 
     func testKermitReceiveStart() {
@@ -998,7 +1039,7 @@ class KermitTests: XCTestCase {
         // Should respond with ACK (Y) packet
         XCTAssertFalse(delegate.sentData.isEmpty, "Should send ACK to Send-Init")
         let ackPacket = delegate.sentData[0]
-        XCTAssertEqual(ackPacket[3], UInt8(Character("Y").asciiValue!), "Should send 'Y' (ACK)")
+        XCTAssertEqual(ackPacket[3], KermitPacket.typeY, "Should send 'Y' (ACK)")
     }
 
     func testKermitHandleFileHeader() {
@@ -1110,7 +1151,7 @@ class KermitTests: XCTestCase {
         delegate.reset()
 
         // Data with control char escaping: #M → 0x0D (CR), #J → 0x0A (LF)
-        let escapedData = Data([0x23, 0x4D, 0x23, 0x4A, 0x41]) // #M #J A
+        let escapedData = Data([KermitPacket.QCTL, KermitPacket.escapedCR, KermitPacket.QCTL, KermitPacket.escapedLF, 0x41]) // #M #J A
         km.processData(buildKermitPacket(seq: 2, type: "D", data: escapedData))
 
         let hasProgress = delegate.stateUpdates.contains { state in
@@ -1131,7 +1172,7 @@ class KermitTests: XCTestCase {
 
         // Should send Error (E) packet
         let packet = delegate.sentData.last!
-        XCTAssertEqual(packet[3], UInt8(Character("E").asciiValue!), "Cancel should send Error packet")
+        XCTAssertEqual(packet[3], KermitPacket.typeE, "Cancel should send Error packet")
     }
 
     // MARK: - Helper Methods
@@ -1142,8 +1183,8 @@ class KermitTests: XCTestCase {
         data.append(UInt8(5 + 32))    // TIME
         data.append(UInt8(0 + 32))    // NPAD
         data.append(0)                // PADC
-        data.append(UInt8(13 + 32))   // EOL
-        data.append(UInt8(Character("#").asciiValue!))  // QCTL
+        data.append(UInt8(KermitPacket.EOL + 32)) // EOL
+        data.append(KermitPacket.QCTL)                    // QCTL
         data.append(UInt8(Character("N").asciiValue!))  // QBIN
         data.append(UInt8(Character("1").asciiValue!))  // CHKT
         data.append(UInt8(Character(" ").asciiValue!))  // REPT
@@ -1152,7 +1193,7 @@ class KermitTests: XCTestCase {
 
     private func buildKermitPacket(seq: Int, type: String, data: Data) -> Data {
         var packet = Data()
-        packet.append(0x01) // MARK/SOH
+        packet.append(KermitPacket.MARK) // MARK/SOH
         packet.append(UInt8(data.count + 3 + 32)) // LEN
         packet.append(UInt8(seq + 32))              // SEQ
         packet.append(UInt8(Character(type).asciiValue!)) // TYPE
@@ -1160,7 +1201,7 @@ class KermitTests: XCTestCase {
         // Checksum (type 1: single-byte)
         let checksum = packet[1...].reduce(0) { ($0 + Int($1)) } % 256
         packet.append(UInt8((checksum + (checksum >> 6)) & 0x3F + 32))
-        packet.append(0x0D) // EOL
+        packet.append(KermitPacket.EOL) // EOL
         return packet
     }
 }

@@ -70,6 +70,7 @@ public enum TransferStatusString: String {
     /// Pass a variable to the macro environment
     func sendVariable(name: String, value: String, reply: @escaping () -> Void)
 
+<<<<<<< HEAD
     // --- Debugger methods ---
 
     /// Execute one line then pause (step into)
@@ -92,6 +93,12 @@ public enum TransferStatusString: String {
 
     /// Get current variable values for debugger inspection
     func getVariables(reply: @escaping ([String: String]) -> Void)
+=======
+    /// Push a terminal event notification to the macro (TeraTermMac → TTLMacro).
+    /// Event types: 1=resize, 2=move, 3=close, 4=focus, 5=unfocus,
+    ///              6=connected, 7=disconnected
+    func notifyTerminalEvent(eventType: Int, reply: @escaping () -> Void)
+>>>>>>> 35bbf5e9f062c7ea9c28214c385b1235f86b8346
 }
 
 // MARK: - MacroClientProtocol (TTLMacro → TeraTermMac direction)
@@ -136,6 +143,9 @@ public enum TransferStatusString: String {
 
     /// Check if terminal is connected
     func isConnected(reply: @escaping (Bool) -> Void)
+
+    /// Check if XPC link is active (connection to TeraTermMac exists, regardless of host connection)
+    func isXPCLinked(reply: @escaping (Bool) -> Void)
 
     /// Get terminal window title
     func getWindowTitle(reply: @escaping (String) -> Void)
@@ -259,8 +269,8 @@ public enum TransferStatusString: String {
     func startFileRecv(protocolName: String, localDir: String,
                        reply: @escaping (Bool, String, String) -> Void)
 
-    /// Get transfer status
-    func getTransferStatus(reply: @escaping (String, Int, Int) -> Void)
+    /// Get transfer status (status, bytesTransferred, totalBytes)
+    func getTransferStatus(reply: @escaping (String, Int64, Int64) -> Void)
 
     /// Cancel current transfer
     func cancelTransfer(reply: @escaping () -> Void)
@@ -298,6 +308,7 @@ public enum TransferStatusString: String {
     /// Send password data to terminal (secure, no logging)
     func sendPasswordData(data: Data, reply: @escaping () -> Void)
 
+<<<<<<< HEAD
     // --- Broadcast / Multicast methods ---
 
     /// Send data to all connected terminal sessions
@@ -320,6 +331,13 @@ public enum TransferStatusString: String {
 
     /// Set terminal size (columns x rows)
     func setTerminalSize(cols: Int, rows: Int, reply: @escaping () -> Void)
+=======
+    // --- Window event methods ---
+
+    /// Wait for a window event with timeout. Returns event type:
+    /// 0 = timeout, 1 = resize, 2 = move, 3 = close, 4 = focus, 5 = unfocus
+    func waitWindowEvent(timeout: Int, reply: @escaping (Int) -> Void)
+>>>>>>> 35bbf5e9f062c7ea9c28214c385b1235f86b8346
 }
 
 // MARK: - XPC Interface Helpers

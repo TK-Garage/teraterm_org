@@ -167,6 +167,29 @@ class MacroRunner {
     private var currentTransferPath: String = ""
     private var transferStartTime: Date?
 
+    // MARK: - Terminal Event Queue (push from TeraTermMac)
+
+    private var terminalEventQueue: [Int] = []
+    private let terminalEventLock = NSLock()
+
+    /// Called by XPCServiceHandler when TeraTermMac pushes a terminal event.
+    func enqueueTerminalEvent(_ eventType: Int) {
+        terminalEventLock.lock()
+        terminalEventQueue.append(eventType)
+        if terminalEventQueue.count > 32 {
+            terminalEventQueue.removeFirst(terminalEventQueue.count - 32)
+        }
+        terminalEventLock.unlock()
+    }
+
+    /// Dequeue the oldest terminal event, returns 0 if none.
+    private func dequeueTerminalEvent() -> Int {
+        terminalEventLock.lock()
+        defer { terminalEventLock.unlock() }
+        if terminalEventQueue.isEmpty { return 0 }
+        return terminalEventQueue.removeFirst()
+    }
+
     // MARK: - Keychain
 
     private let keychainManager = TTLKeychainManager.shared
@@ -450,6 +473,13 @@ class MacroRunner {
             handleAssignment(parts)
             scheduleNextLine()
             return
+        }
+
+        // Debug mode: trace command execution
+        if debugMode {
+            let traceMsg = "[DEBUG] L\(currentLineNumber): \(cmdName) \(Array(parts.dropFirst()).joined(separator: " "))"
+            NSLog("%@", traceMsg)
+            clientProxy?.displayString(text: traceMsg + "\r\n", reply: {})
         }
 
         executeCommand(cmdName, args: Array(parts.dropFirst()), fullLine: trimmed)
@@ -780,10 +810,6 @@ class MacroRunner {
         case "include":     cmdInclude(args) // [IMPLEMENTED]
         case "ifdefined":   cmdIfDefined(args) // [IMPLEMENTED]
 
-        // Arithmetic - [IMPLEMENTED]
-        case "inc":         cmdInc(args) // [IMPLEMENTED]
-        case "dec":         cmdDec(args) // [IMPLEMENTED]
-
         // Send/receive - [IMPLEMENTED]
         case "send":        cmdSend(args, addCR: false) // [IMPLEMENTED]
         case "sendln":      cmdSend(args, addCR: true) // [IMPLEMENTED]
@@ -792,7 +818,6 @@ class MacroRunner {
         case "sendbreak":   cmdSendBreak() // [IMPLEMENTED]
         case "sendkcode":   cmdSendKCode(args) // [IMPLEMENTED]
         case "sendfile":    cmdSendFile(args) // [IMPLEMENTED]
-        case "recv":        cmdRecv(args) // [IMPLEMENTED]
         case "recvln":      cmdRecvLn() // [IMPLEMENTED]
         case "flushrecv":   cmdFlushRecv() // [IMPLEMENTED]
 
@@ -804,7 +829,6 @@ class MacroRunner {
         case "waitn":       cmdWaitN(args) // [IMPLEMENTED]
         case "wait4all":    cmdWait4All(args) // [IMPLEMENTED]
         case "waitevent":   cmdWaitEvent() // [IMPLEMENTED]
-        case "waitmatch":   cmdWaitMatch(args) // [IMPLEMENTED]
 
         // Pause - [IMPLEMENTED]
         case "pause":       cmdPause(args) // [IMPLEMENTED]
@@ -816,8 +840,6 @@ class MacroRunner {
         case "testlink":    cmdTestLink() // [IMPLEMENTED]
         case "unlink":      cmdUnlink() // [IMPLEMENTED]
         case "cygconnect":  cmdCygConnect() // [IMPLEMENTED]
-        case "settimeout":  cmdSetTimeout(args) // [IMPLEMENTED]
-        case "timeout":     cmdSetTimeout(args) // [IMPLEMENTED]
 
         // String operations - [IMPLEMENTED]
         case "strlen":      cmdStrLen(args) // [IMPLEMENTED]
@@ -935,6 +957,7 @@ class MacroRunner {
         case "setsync":     cmdSetSync(args) // [IMPLEMENTED]
         case "dispstr":     cmdDispStr(args) // [IMPLEMENTED]
         case "setbaud":     cmdSetBaud(args) // [IMPLEMENTED]
+        case "setspeed":    cmdSetBaud(args) // [IMPLEMENTED] alias for setbaud (original TT v4.99+)
         case "setflowctrl": cmdSetFlowCtrl(args) // [IMPLEMENTED]
         case "setdtr":      cmdSetDtr(args) // [IMPLEMENTED]
         case "setrts":      cmdSetRts(args) // [IMPLEMENTED]
@@ -949,9 +972,9 @@ class MacroRunner {
         case "logpause":    cmdLogPause() // [IMPLEMENTED]
         case "logstart":    cmdLogStart() // [IMPLEMENTED]
         case "logwrite":    cmdLogWrite(args) // [IMPLEMENTED]
-        case "loginfo":     cmdLogInfo() // [IMPLEMENTED]
+        case "loginfo":     cmdLogInfo(args) // [IMPLEMENTED]
         case "logrotate":   cmdLogRotate(args) // [IMPLEMENTED]
-        case "logautoclose", "logautoclosemode": cmdLogAutoClose(args) // [IMPLEMENTED]
+        case "logautoclosemode": cmdLogAutoClose(args) // [IMPLEMENTED]
 
         // Checksum - [IMPLEMENTED]
         case "crc16":       cmdChecksum(args, type: "crc16") // [IMPLEMENTED]
@@ -1016,6 +1039,8 @@ class MacroRunner {
         case "scprecv":     cmdScpRecv(args) // [IMPLEMENTED]
         case "scpsend":     cmdScpSend(args) // [IMPLEMENTED]
         case "recvfile":    cmdRecvFile(args) // [IMPLEMENTED]
+        case "protocolrecv": cmdProtocolRecv(args) // [IMPLEMENTED]
+        case "protocolsend": cmdProtocolSend(args) // [IMPLEMENTED]
 
         case "then": break // handled by if
 
@@ -1387,25 +1412,16 @@ extension MacroRunner {
             return
         }
 
+        let exists = variables[varName] != nil
+        resultValue = exists ? 1 : 0
+        variables["result"] = .integer(resultValue)
+
         ifNest += 1
-        if variables[varName] == nil {
+        if !exists {
             elseFlag = 1
         }
     }
 
-    // MARK: inc/dec - [IMPLEMENTED]
-
-    func cmdInc(_ args: [String]) { // [IMPLEMENTED]
-        guard let varName = args.first?.lowercased() else { return }
-        let current = variables[varName]?.intValue ?? 0
-        variables[varName] = .integer(current + 1)
-    }
-
-    func cmdDec(_ args: [String]) { // [IMPLEMENTED]
-        guard let varName = args.first?.lowercased() else { return }
-        let current = variables[varName]?.intValue ?? 0
-        variables[varName] = .integer(current - 1)
-    }
 }
 
 // MARK: - Send/Receive Commands
@@ -1416,7 +1432,7 @@ extension MacroRunner {
 
     func cmdSend(_ args: [String], addCR: Bool) { // [IMPLEMENTED]
         var text = args.map { resolveString($0) }.joined()
-        if addCR { text += "\r\n" }
+        if addCR { text += "\r" }
 
         guard let data = text.data(using: .utf8) else { return }
         clientProxy?.sendToTerminal(data: data, reply: { [weak self] in
@@ -1514,6 +1530,7 @@ extension MacroRunner {
         cancelExecTimer()
     }
 
+<<<<<<< HEAD
     // MARK: sendbroadcast / sendlnbroadcast - [IMPLEMENTED]
 
     func cmdSendBroadcast(_ args: [String], addCR: Bool) { // [IMPLEMENTED]
@@ -1571,6 +1588,8 @@ extension MacroRunner {
         cancelExecTimer()
     }
 
+=======
+>>>>>>> 35bbf5e9f062c7ea9c28214c385b1235f86b8346
     // MARK: recvln - [IMPLEMENTED]
 
     func cmdRecvLn() { // [IMPLEMENTED]
@@ -1713,13 +1732,6 @@ extension MacroRunner {
             }
             // Data received but no match yet — wait for next data event
         })
-    }
-
-    // MARK: waitmatch - [IMPLEMENTED]
-
-    func cmdWaitMatch(_ args: [String]) { // [IMPLEMENTED]
-        // Same as wait but with regex matching
-        cmdWaitRegex(args)
     }
 
     // MARK: waitrecv - [IMPLEMENTED]
@@ -1911,9 +1923,70 @@ extension MacroRunner {
 
     // MARK: waitevent - [IMPLEMENTED]
 
+    /// Wait for a terminal event. Sets `result` to the event type:
+    ///   0 = timeout (no event)
+    ///   1 = data received
+    ///   2 = connection state changed (disconnect detected)
+    ///   3 = window resize
+    ///   4 = window move
+    ///   5 = window close
+    ///   6 = window focus
+    ///   7 = window unfocus
     func cmdWaitEvent() { // [IMPLEMENTED]
-        // Wait for any event (simplified: just wait for data)
-        cmdWaitRecv()
+        cancelExecTimer()
+
+        // 1. Check local push-delivered event queue first (no XPC round-trip)
+        let localEvent = dequeueTerminalEvent()
+        if localEvent != 0 {
+            // Map event types: push delivers 1=resize,2=move,3=close,4=focus,5=unfocus,6=connected,7=disconnected
+            // waitevent result: 3=resize,4=move,5=close,6=focus,7=unfocus; 2=disconnect
+            if localEvent == 7 {
+                // disconnected event
+                resultValue = 2
+            } else if localEvent >= 1 && localEvent <= 5 {
+                resultValue = localEvent + 2
+            } else {
+                // connected (6) or unknown — treat as data event trigger
+                resultValue = 1
+            }
+            variables["result"] = .integer(resultValue)
+            scheduleNextLine()
+            return
+        }
+
+        // 2. Fallback: poll XPC for queued window events on TeraTermMac side
+        clientProxy?.waitWindowEvent(timeout: 0, reply: { [weak self] windowEvent in
+            guard let self = self else { return }
+            if windowEvent != 0 {
+                self.resultValue = windowEvent + 2
+                self.variables["result"] = .integer(self.resultValue)
+                self.scheduleNextLine()
+                return
+            }
+            // 3. Check connection state change (disconnect)
+            self.clientProxy?.isConnected(reply: { [weak self] connected in
+                guard let self = self else { return }
+                if !connected {
+                    self.resultValue = 2
+                    self.variables["result"] = .integer(self.resultValue)
+                    self.scheduleNextLine()
+                    return
+                }
+                // 4. Wait for data with timeout
+                self.clientProxy?.recvFromTerminal(timeout: self.timeoutValue, reply: { [weak self] data in
+                    guard let self = self else { return }
+                    if let data = data, let str = String(data: data, encoding: .utf8), !str.isEmpty {
+                        self.inputStr = str
+                        self.variables["inputstr"] = .string(str)
+                        self.resultValue = 1
+                    } else {
+                        self.resultValue = 0
+                    }
+                    self.variables["result"] = .integer(self.resultValue)
+                    self.scheduleNextLine()
+                })
+            })
+        })
     }
 
     // MARK: pause/mpause - [IMPLEMENTED]
@@ -1976,11 +2049,24 @@ extension MacroRunner {
 
     func cmdTestLink() { // [IMPLEMENTED]
         cancelExecTimer()
-        clientProxy?.isConnected(reply: { [weak self] connected in
+        // First check XPC link status, then host connection status
+        // result: 0 = not linked, 1 = linked but not connected, 2 = linked and connected
+        clientProxy?.isXPCLinked(reply: { [weak self] linked in
             guard let self = self else { return }
-            self.resultValue = connected ? 2 : 0
-            self.variables["result"] = .integer(self.resultValue)
-            self.scheduleNextLine()
+            guard linked else {
+                // No XPC link at all
+                self.resultValue = 0
+                self.variables["result"] = .integer(self.resultValue)
+                self.scheduleNextLine()
+                return
+            }
+            // XPC linked, now check host connection
+            self.clientProxy?.isConnected(reply: { [weak self] connected in
+                guard let self = self else { return }
+                self.resultValue = connected ? 2 : 1
+                self.variables["result"] = .integer(self.resultValue)
+                self.scheduleNextLine()
+            })
         })
     }
 
@@ -2003,13 +2089,6 @@ extension MacroRunner {
         })
     }
 
-    // MARK: settimeout/timeout - [IMPLEMENTED]
-
-    func cmdSetTimeout(_ args: [String]) { // [IMPLEMENTED]
-        let val = args.isEmpty ? 0 : resolveInt(args[0])
-        timeoutValue = val
-        variables["timeout"] = .integer(val)
-    }
 }
 
 // MARK: - String Operation Commands
@@ -2382,10 +2461,24 @@ extension MacroRunner {
     // MARK: sprintf/sprintf2 - [IMPLEMENTED]
 
     func cmdSprintf(_ args: [String], mode: Int) { // [IMPLEMENTED]
-        guard args.count >= 2 else { return }
-        let destVar = args[0].lowercased()
-        let format = resolveString(args[1])
-        let fmtArgs = args.dropFirst(2).map { resolveString($0) }
+        // sprintf <format> [<args>...] — 結果を inputstr に格納
+        // sprintf2 <strvar> <format> [<args>...] — 結果を指定変数に格納
+        let destVar: String
+        let format: String
+        let fmtArgs: [String]
+        if mode == 0 {
+            // sprintf: args[0] = format
+            guard !args.isEmpty else { return }
+            destVar = ""
+            format = resolveString(args[0])
+            fmtArgs = args.dropFirst(1).map { resolveString($0) }
+        } else {
+            // sprintf2: args[0] = destVar, args[1] = format
+            guard args.count >= 2 else { return }
+            destVar = args[0].lowercased()
+            format = resolveString(args[1])
+            fmtArgs = args.dropFirst(2).map { resolveString($0) }
+        }
 
         // Simple format string processing
         var result = format
@@ -2465,11 +2558,12 @@ extension MacroRunner {
         }
 
         if mode == 0 {
-            variables[destVar] = .string(result)
-        } else {
-            // sprintf2 stores to inputstr
+            // sprintf: 結果を inputstr に格納
             inputStr = result
             variables["inputstr"] = .string(result)
+        } else {
+            // sprintf2: 結果を指定変数に格納
+            variables[destVar] = .string(result)
         }
     }
 }
@@ -2609,16 +2703,20 @@ extension MacroRunner {
     // MARK: dirnamebox - [IMPLEMENTED]
 
     func cmdDirnameBox(_ args: [String]) { // [IMPLEMENTED]
-        let message = args.isEmpty ? "" : resolveString(args[0])
-        let defaultDir = args.count > 1 ? resolveString(args[1]) : ""
+        // dirnamebox <strvar> <title>
+        let destVar = args.isEmpty ? "" : args[0].lowercased()
+        let title = args.count > 1 ? resolveString(args[1]) : ""
         cancelExecTimer()
         clientProxy?.showDialog(type: MacroDialogType.dirnamebox.rawValue,
-                                message: message, defaultValue: defaultDir,
+                                message: title, defaultValue: "",
                                 reply: { [weak self] resultCode, dirPath in
             guard let self = self else { return }
             self.resultValue = resultCode
             self.variables["result"] = .integer(resultCode)
             if resultCode == 1 {
+                if !destVar.isEmpty {
+                    self.variables[destVar] = .string(dirPath)
+                }
                 self.inputStr = dirPath
                 self.variables["inputstr"] = .string(dirPath)
             }
@@ -2647,41 +2745,36 @@ extension MacroRunner {
     // MARK: fileopen - [IMPLEMENTED]
 
     func cmdFileOpen(_ args: [String]) { // [IMPLEMENTED]
-        // fileopen <handlevar> <filepath> <mode>
-        // mode: 0=read, 1=write(create), 2=read+write, 3=append
+        // fileopen <handlevar> <filepath> <append> [<readonly>]
+        // append: 0=seek to beginning, 1=seek to end (append)
+        // readonly: 1=read-only (optional)
         guard args.count >= 3 else {
-            reportError("fileopen: requires handlevar, filepath, mode")
+            reportError("fileopen: requires handlevar, filepath, append")
             return
         }
         let handleVar = args[0].lowercased()
         let filePath = resolveString(args[1])
-        let mode = resolveInt(args[2])
+        let appendFlag = resolveInt(args[2])
+        let readOnly = args.count >= 4 ? resolveInt(args[3]) : 0
 
         let fm = FileManager.default
         var handle: FileHandle?
 
-        switch mode {
-        case 0: // read
+        if readOnly == 1 {
+            // Read-only mode
             handle = FileHandle(forReadingAtPath: filePath)
-        case 1: // write (create/truncate)
-            if !fm.fileExists(atPath: filePath) {
-                fm.createFile(atPath: filePath, contents: nil)
+            if handle != nil && appendFlag == 1 {
+                handle?.seekToEndOfFile()
             }
-            handle = FileHandle(forWritingAtPath: filePath)
-            handle?.truncateFile(atOffset: 0)
-        case 2: // read+write
+        } else {
+            // Read+write mode
             if !fm.fileExists(atPath: filePath) {
                 fm.createFile(atPath: filePath, contents: nil)
             }
             handle = FileHandle(forUpdatingAtPath: filePath)
-        case 3: // append
-            if !fm.fileExists(atPath: filePath) {
-                fm.createFile(atPath: filePath, contents: nil)
+            if handle != nil && appendFlag == 1 {
+                handle?.seekToEndOfFile()
             }
-            handle = FileHandle(forWritingAtPath: filePath)
-            handle?.seekToEndOfFile()
-        default:
-            handle = FileHandle(forReadingAtPath: filePath)
         }
 
         if let handle = handle {
@@ -2957,17 +3050,34 @@ extension MacroRunner {
     // MARK: filestat - [IMPLEMENTED]
 
     func cmdFileStat(_ args: [String]) { // [IMPLEMENTED]
+        // filestat <filename> <size> [<mtime> [<drive>]]
         guard args.count >= 2 else { return }
-        let destVar = args[0].lowercased()
-        let filePath = resolveString(args[1])
+        let filePath = resolveString(args[0])
+        let sizeVar = args[1].lowercased()
 
         do {
             let attrs = try FileManager.default.attributesOfItem(atPath: filePath)
             let size = (attrs[.size] as? Int) ?? 0
-            variables[destVar] = .integer(size)
+            variables[sizeVar] = .integer(size)
+            // Optional mtime parameter
+            if args.count >= 3 {
+                let mtimeVar = args[2].lowercased()
+                if let mdate = attrs[.modificationDate] as? Date {
+                    let formatter = DateFormatter()
+                    formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
+                    variables[mtimeVar] = .string(formatter.string(from: mdate))
+                } else {
+                    variables[mtimeVar] = .string("")
+                }
+            }
+            // Optional drive parameter (always empty on macOS)
+            if args.count >= 4 {
+                let driveVar = args[3].lowercased()
+                variables[driveVar] = .string("")
+            }
             resultValue = 0
         } catch {
-            variables[destVar] = .integer(0)
+            variables[sizeVar] = .integer(0)
             resultValue = -1
         }
         variables["result"] = .integer(resultValue)
@@ -3293,9 +3403,10 @@ extension MacroRunner {
     // MARK: getenv - [IMPLEMENTED]
 
     func cmdGetEnv(_ args: [String]) { // [IMPLEMENTED]
+        // getenv <envname> <strvar>
         guard args.count >= 2 else { return }
-        let destVar = args[0].lowercased()
-        let envName = resolveString(args[1])
+        let envName = resolveString(args[0])
+        let destVar = args[1].lowercased()
         let value = ProcessInfo.processInfo.environment[envName] ?? ""
         variables[destVar] = .string(value)
     }
@@ -3312,9 +3423,17 @@ extension MacroRunner {
     // MARK: expandenv - [IMPLEMENTED]
 
     func cmdExpandEnv(_ args: [String]) { // [IMPLEMENTED]
+        // expandenv <strvar> [<strval>]
         guard !args.isEmpty else { return }
         let destVar = args[0].lowercased()
-        var str = variables[destVar]?.strValue ?? ""
+        var str: String
+        if args.count >= 2 {
+            // 2引数形式: strval を展開して strvar に格納
+            str = resolveString(args[1])
+        } else {
+            // 1引数形式: 変数の内容をその場で展開
+            str = variables[destVar]?.strValue ?? ""
+        }
         // Replace %VARNAME% with environment variable values
         let env = ProcessInfo.processInfo.environment
         for (key, value) in env {
@@ -3540,17 +3659,21 @@ extension MacroRunner {
     // MARK: getfileattr - [IMPLEMENTED]
 
     func cmdGetFileAttr(_ args: [String]) { // [IMPLEMENTED]
-        guard args.count >= 2 else { return }
-        let destVar = args[0].lowercased()
-        let filePath = resolveString(args[1])
+        // getfileattr <filename> — result に属性値（-1=エラー）
+        guard !args.isEmpty else { return }
+        let filePath = resolveString(args[0])
 
         do {
             let attrs = try FileManager.default.attributesOfItem(atPath: filePath)
-            let posixPerms = (attrs[.posixPermissions] as? Int) ?? 0
-            variables[destVar] = .integer(posixPerms)
-            resultValue = 0
+            var attrBits = 0
+            if let type = attrs[.type] as? FileAttributeType {
+                if type == .typeDirectory { attrBits |= 0x10 }
+            }
+            if let perms = attrs[.posixPermissions] as? Int {
+                if perms & 0o200 == 0 { attrBits |= 0x01 } // Read-only
+            }
+            resultValue = attrBits
         } catch {
-            variables[destVar] = .integer(0)
             resultValue = -1
         }
         variables["result"] = .integer(resultValue)
@@ -3589,18 +3712,23 @@ extension MacroRunner {
     // MARK: setdate - [IMPLEMENTED]
 
     func cmdSetDate(_ args: [String]) { // [IMPLEMENTED]
-        // Setting system date requires root - just store for reference
+        // Setting system date requires root - always fails on macOS
         if !args.isEmpty {
             variables["_setdate"] = .string(resolveString(args[0]))
         }
+        resultValue = -1
+        variables["result"] = .integer(resultValue)
     }
 
     // MARK: settime - [IMPLEMENTED]
 
     func cmdSetTime(_ args: [String]) { // [IMPLEMENTED]
+        // Setting system time requires root - always fails on macOS
         if !args.isEmpty {
             variables["_settime"] = .string(resolveString(args[0]))
         }
+        resultValue = -1
+        variables["result"] = .integer(resultValue)
     }
 }
 
@@ -3747,12 +3875,34 @@ extension MacroRunner {
     // MARK: clipb2var - [IMPLEMENTED]
 
     func cmdClipb2Var(_ args: [String]) { // [IMPLEMENTED]
+        // clipb2var <strvar> [<offset>]
         guard !args.isEmpty else { return }
         let destVar = args[0].lowercased()
+        let offset = args.count >= 2 ? resolveInt(args[1]) : 0
+        let chunkSize = 511
         cancelExecTimer()
         clientProxy?.getClipboard(reply: { [weak self] text in
             guard let self = self else { return }
-            self.variables[destVar] = .string(text)
+            if text.isEmpty {
+                self.variables[destVar] = .string("")
+                self.resultValue = 0  // 0 = データなし
+            } else {
+                let startIndex = offset * chunkSize
+                if startIndex >= text.count {
+                    self.variables[destVar] = .string("")
+                    self.resultValue = 0  // 0 = データなし
+                } else {
+                    let start = text.index(text.startIndex, offsetBy: startIndex)
+                    let end = text.index(start, offsetBy: min(chunkSize, text.count - startIndex))
+                    self.variables[destVar] = .string(String(text[start..<end]))
+                    if text.count > startIndex + chunkSize {
+                        self.resultValue = 2  // 2 = 切り詰め（残りあり）
+                    } else {
+                        self.resultValue = 1  // 1 = 成功
+                    }
+                }
+            }
+            self.variables["result"] = .integer(self.resultValue)
             self.scheduleNextLine()
         })
     }
@@ -3764,7 +3914,10 @@ extension MacroRunner {
         let text = resolveString(args[0])
         cancelExecTimer()
         clientProxy?.setClipboard(text: text, reply: { [weak self] in
-            self?.scheduleNextLine()
+            guard let self = self else { return }
+            self.resultValue = 1  // 1 = 成功
+            self.variables["result"] = .integer(self.resultValue)
+            self.scheduleNextLine()
         })
     }
 }
@@ -3829,12 +3982,17 @@ extension MacroRunner {
 
     // MARK: loginfo - [IMPLEMENTED]
 
-    func cmdLogInfo() { // [IMPLEMENTED]
+    func cmdLogInfo(_ args: [String]) { // [IMPLEMENTED]
+        // loginfo <strvar> — ログファイルパスを strvar に、状態を result に格納
+        let destVar = args.isEmpty ? "" : args[0].lowercased()
         cancelExecTimer()
         clientProxy?.getLogInfo(reply: { [weak self] state, path in
             guard let self = self else { return }
             self.resultValue = state
             self.variables["result"] = .integer(state)
+            if !destVar.isEmpty {
+                self.variables[destVar] = .string(path)
+            }
             self.inputStr = path
             self.variables["inputstr"] = .string(path)
             self.scheduleNextLine()
@@ -3853,7 +4011,7 @@ extension MacroRunner {
         })
     }
 
-    // MARK: logautoclose - [IMPLEMENTED]
+    // MARK: logautoclosemode - [IMPLEMENTED]
 
     func cmdLogAutoClose(_ args: [String]) { // [IMPLEMENTED]
         // Store setting locally; actual auto-close handled by log system
@@ -4172,6 +4330,51 @@ extension MacroRunner {
 
 extension MacroRunner {
 
+    // MARK: Protocol argument resolver - [IMPLEMENTED]
+
+    /// Resolve protocol name from first argument for protocolsend/protocolrecv.
+    /// Usage: protocolrecv <protocol> [path]
+    /// Supported: xmodem, ymodem, zmodem, kermit, bplus, quickvan
+    func resolveProtocolArg(_ args: [String]) -> String {
+        guard !args.isEmpty else { return "xmodem" }
+        let name = resolveString(args[0]).lowercased()
+        switch name {
+        case "xmodem", "ymodem", "zmodem", "kermit", "bplus", "quickvan":
+            return name
+        case "xmodem-crc":  return "xmodem"
+        case "xmodem-1k":   return "xmodem"
+        case "b-plus", "b+": return "bplus"
+        case "quick-van":    return "quickvan"
+        default:
+            reportError("protocolsend/recv: unknown protocol '\(name)'")
+            return name
+        }
+    }
+
+    // MARK: protocolsend / protocolrecv - [IMPLEMENTED]
+
+    /// Generic protocol send: protocolsend <protocol> <filepath> [option]
+    func cmdProtocolSend(_ args: [String]) { // [IMPLEMENTED]
+        guard args.count >= 2 else {
+            reportError("protocolsend: usage: protocolsend <protocol> <filepath> [option]")
+            return
+        }
+        let proto = resolveProtocolArg(args)
+        let remaining = Array(args.dropFirst())
+        cmdFileTransferSend(remaining, proto: proto)
+    }
+
+    /// Generic protocol receive: protocolrecv <protocol> [localdir]
+    func cmdProtocolRecv(_ args: [String]) { // [IMPLEMENTED]
+        guard !args.isEmpty else {
+            reportError("protocolrecv: usage: protocolrecv <protocol> [localdir]")
+            return
+        }
+        let proto = resolveProtocolArg(args)
+        let remaining = Array(args.dropFirst())
+        cmdFileTransferRecv(remaining, proto: proto)
+    }
+
     // MARK: File transfer send - [IMPLEMENTED]
 
     func cmdFileTransferSend(_ args: [String], proto: String) { // [IMPLEMENTED]
@@ -4250,6 +4453,7 @@ extension MacroRunner {
     private func pollTransferStatus() {
         guard isRunning, !isCancelled, isTransferWaiting else { return }
 
+<<<<<<< HEAD
         // Check transfer timeout (default 600 seconds)
         if let startTime = transferStartTime {
             let elapsed = Date().timeIntervalSince(startTime)
@@ -4276,6 +4480,9 @@ extension MacroRunner {
         }
 
         clientProxy?.getTransferStatus(reply: { [weak self] statusStr, bytesSent, totalBytes in
+=======
+        clientProxy?.getTransferStatus(reply: { [weak self] statusStr, _, _ in
+>>>>>>> 35bbf5e9f062c7ea9c28214c385b1235f86b8346
             guard let self = self else { return }
 
             let status = TransferStatusString(rawValue: statusStr) ?? .idle

@@ -64,12 +64,15 @@ class TerminalWindowController: NSWindowController {
     // State
     private var useTelnet: Bool = false
     private(set) var isConnected: Bool = false
+<<<<<<< HEAD
 
     /// Unique session ID for macro broadcast operations
     let sessionId: String = UUID().uuidString
 
     /// Multicast group name (set by macro `setmulticastname` command)
     var multicastGroupName: String = ""
+=======
+>>>>>>> 35bbf5e9f062c7ea9c28214c385b1235f86b8346
 
     // Key input send queue — offloads network I/O from the main thread
     // to prevent blocking UI during key input handling.
@@ -80,6 +83,14 @@ class TerminalWindowController: NSWindowController {
     private var resizeTooltipWindow: NSWindow?
     private var resizeTooltipLabel: NSTextField?
     private var resizeHideTimer: Timer?
+
+    // Macro XPC manager for external macro app communication
+    private(set) var macroXPCManager: MacroXPCManager?
+
+    /// Window event queue for waitevent command
+    /// Event types: 1=resize, 2=move, 3=close, 4=focus, 5=unfocus
+    private(set) var pendingWindowEvents: [Int] = []
+    private let windowEventLock = NSLock()
 
     // Macro file transfer state
     var macroTransferCompletion: ((Bool) -> Void)?
@@ -129,6 +140,8 @@ class TerminalWindowController: NSWindowController {
         resizeHideTimer = nil
         macroRecvTimer?.invalidate()
         macroRecvTimer = nil
+        macroXPCManager?.disconnect()
+        macroXPCManager = nil
     }
 
     // MARK: - Component Setup
@@ -516,6 +529,29 @@ class TerminalWindowController: NSWindowController {
         updateWindowTitle()
     }
 
+    // MARK: - XPC Macro Management
+
+    /// Launch TTLMacro.app and establish XPC connection for external macro execution.
+    func connectMacroXPC(completion: @escaping (Bool) -> Void) {
+        let manager = MacroXPCManager()
+        manager.terminalController = self
+        manager.fileTransferManager = fileTransferManager
+        macroXPCManager = manager
+
+        manager.connect { success in
+            if !success {
+                self.macroXPCManager = nil
+            }
+            completion(success)
+        }
+    }
+
+    /// Disconnect from TTLMacro.app XPC service.
+    func disconnectMacroXPC() {
+        macroXPCManager?.disconnect()
+        macroXPCManager = nil
+    }
+
     // MARK: - Macro Actions
 
     private(set) var macroInterpreter: TTLInterpreter?
@@ -629,6 +665,7 @@ extension TerminalWindowController: NSWindowDelegate {
         if window?.inLiveResize == true {
             showResizeTooltip()
         }
+        enqueueWindowEvent(1) // resize
     }
 
     func windowDidEndLiveResize(_ notification: Notification) {
@@ -645,6 +682,7 @@ extension TerminalWindowController: NSWindowDelegate {
         resizeHideTimer = nil
         macroRecvTimer?.invalidate()
         macroRecvTimer = nil
+        enqueueWindowEvent(3) // close
         disconnect()
         logger.stopLogging()
     }
@@ -656,6 +694,7 @@ extension TerminalWindowController: NSWindowDelegate {
                 self?.connectionManager.send(data)
             }
         }
+        enqueueWindowEvent(4) // focus
     }
 
     func windowDidResignKey(_ notification: Notification) {
@@ -665,6 +704,34 @@ extension TerminalWindowController: NSWindowDelegate {
                 self?.connectionManager.send(data)
             }
         }
+        enqueueWindowEvent(5) // unfocus
+    }
+
+    /// Add windowDidMove delegate to track move events
+    func windowDidMove(_ notification: Notification) {
+        enqueueWindowEvent(2) // move
+    }
+
+    /// Enqueue a window event for the waitevent command
+    private func enqueueWindowEvent(_ eventType: Int) {
+        windowEventLock.lock()
+        pendingWindowEvents.append(eventType)
+        // Keep only last 32 events to prevent unbounded growth
+        if pendingWindowEvents.count > 32 {
+            pendingWindowEvents.removeFirst(pendingWindowEvents.count - 32)
+        }
+        windowEventLock.unlock()
+
+        // Push event to TTLMacro via XPC (non-blocking, fire-and-forget)
+        macroXPCManager?.macroService?.notifyTerminalEvent(eventType: eventType, reply: {})
+    }
+
+    /// Dequeue the oldest window event, returns 0 if none
+    func dequeueWindowEvent() -> Int {
+        windowEventLock.lock()
+        defer { windowEventLock.unlock() }
+        if pendingWindowEvents.isEmpty { return 0 }
+        return pendingWindowEvents.removeFirst()
     }
 
     // MARK: - Resize Tooltip
@@ -1251,15 +1318,22 @@ extension TerminalWindowController: TTLInterpreterDelegate {
     }
 
     func ttlSetFlowCtrl(_ mode: Int) {
-        // Flow control setting
+        if let serial = connectionManager.currentConnection as? SerialConnection {
+            let fc = FlowControl(rawValue: mode) ?? .none
+            serial.setFlowControl(fc)
+        }
     }
 
     func ttlSetDtr(_ on: Int) {
-        // DTR signal
+        if let serial = connectionManager.currentConnection as? SerialConnection {
+            serial.setDtr(on != 0)
+        }
     }
 
     func ttlSetRts(_ on: Int) {
-        // RTS signal
+        if let serial = connectionManager.currentConnection as? SerialConnection {
+            serial.setRts(on != 0)
+        }
     }
 
     func ttlStartFileTransfer(protocol type: TransferProtocolType, direction: TransferDirection, filePath: String, completion: @escaping (Bool) -> Void) {

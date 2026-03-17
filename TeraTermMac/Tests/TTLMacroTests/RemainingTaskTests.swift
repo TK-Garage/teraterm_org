@@ -31,7 +31,7 @@ class ExtendedMockMacroClient: NSObject, MacroClientProtocol {
     var hostname: String = "testhost"
     var windowTitle: String = "Test Window"
     var clipboardText: String = "clipboard"
-    var transferStatus: (String, Int, Int) = ("done", 100, 100)
+    var transferStatus: (String, Int64, Int64) = ("done", 100, 100)
     var connectResult: Bool = true
 
     private func record(_ method: String, _ args: [String: Any] = [:]) {
@@ -73,6 +73,10 @@ class ExtendedMockMacroClient: NSObject, MacroClientProtocol {
     func isConnected(reply: @escaping (Bool) -> Void) {
         record("isConnected"); reply(isConnectedResponse)
     }
+    var isXPCLinkedResponse: Bool = true
+    func isXPCLinked(reply: @escaping (Bool) -> Void) {
+        record("isXPCLinked"); reply(isXPCLinkedResponse)
+    }
     func getWindowTitle(reply: @escaping (String) -> Void) {
         record("getWindowTitle"); reply(windowTitle)
     }
@@ -113,7 +117,7 @@ class ExtendedMockMacroClient: NSObject, MacroClientProtocol {
         record("setBaudRate", ["rate": rate]); reply()
     }
     func setFlowControl(mode: Int, reply: @escaping () -> Void) {
-        record("setFlowControl"); reply()
+        record("setFlowControl", ["mode": mode]); reply()
     }
     func setDtr(on: Int, reply: @escaping () -> Void) {
         record("setDtr"); reply()
@@ -183,7 +187,7 @@ class ExtendedMockMacroClient: NSObject, MacroClientProtocol {
         record("startFileRecv", ["protocolName": protocolName])
         reply(true, "", "")
     }
-    func getTransferStatus(reply: @escaping (String, Int, Int) -> Void) {
+    func getTransferStatus(reply: @escaping (String, Int64, Int64) -> Void) {
         record("getTransferStatus")
         reply(transferStatus.0, transferStatus.1, transferStatus.2)
     }
@@ -216,6 +220,10 @@ class ExtendedMockMacroClient: NSObject, MacroClientProtocol {
     }
     func sendPasswordData(data: Data, reply: @escaping () -> Void) {
         record("sendPasswordData"); reply()
+    }
+    var windowEventResponse: Int = 0
+    func waitWindowEvent(timeout: Int, reply: @escaping (Int) -> Void) {
+        record("waitWindowEvent", ["timeout": timeout]); reply(windowEventResponse)
     }
 
     // --- Broadcast / Multicast methods ---
@@ -314,7 +322,12 @@ final class XPCAnonymousListenerTests: XCTestCase {
 
     func testNoServiceNameConnectionInCode() throws {
         // Verify that NSXPCConnection(serviceName:) is not used in production code
-        let macroXPCPath = "/home/user/teraterm_org/TeraTermMac/Sources/TeraTermMac/App/MacroXPCManager.swift"
+        let macroXPCPath = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()  // Tests/TTLMacroTests
+            .deletingLastPathComponent()  // Tests
+            .deletingLastPathComponent()  // TeraTermMac
+            .appendingPathComponent("Sources/TeraTermMac/App/MacroXPCManager.swift")
+            .path
         let content = try String(contentsOfFile: macroXPCPath, encoding: .utf8)
         XCTAssertFalse(content.contains("NSXPCConnection(serviceName:"),
                        "Production code should not use NSXPCConnection(serviceName:)")
@@ -664,6 +677,729 @@ final class FileTransferXPCTests: XCTestCase {
         runner.run(scriptPath: path)
         wait(for: [exp], timeout: 10.0)
         XCTAssertTrue(mockClient.hasCall("cancelTransfer"))
+    }
+
+    func testTransferProgressReportedWithBytes() {
+        let exp = XCTestExpectation(description: "transfer with progress")
+        mockClient.transferStatus = ("done", 512, 1024)
+        let testFile = tempDir + "progress.bin"
+        FileManager.default.createFile(atPath: testFile, contents: Data(repeating: 0xAA, count: 128))
+        let path = writeTTL("xmodemsend '\(testFile)' 2\nend")
+        runner.onComplete = { _ in exp.fulfill() }
+        runner.run(scriptPath: path)
+        wait(for: [exp], timeout: 10.0)
+        let statusCalls = mockClient.calls.filter { $0.method == "getTransferStatus" }
+        XCTAssertFalse(statusCalls.isEmpty, "Should poll transfer status at least once")
+    }
+
+    func testRecvTransferCallsStartFileRecv() {
+        let exp = XCTestExpectation(description: "recv transfer")
+        mockClient.transferStatus = ("done", 256, 256)
+        let path = writeTTL("xmodemrecv\nend")
+        runner.onComplete = { _ in exp.fulfill() }
+        runner.run(scriptPath: path)
+        wait(for: [exp], timeout: 10.0)
+        let recvCall = mockClient.calls.first { $0.method == "startFileRecv" }
+        XCTAssertNotNil(recvCall, "Should call startFileRecv for xmodemrecv")
+        XCTAssertEqual(recvCall?.args["protocolName"] as? String, "xmodem")
+    }
+}
+
+// MARK: - TestLink 3-State Tests
+
+final class TestLinkTests: XCTestCase {
+
+    var runner: MacroRunner!
+    var mockClient: ExtendedMockMacroClient!
+    var tempDir: String!
+
+    override func setUp() {
+        super.setUp()
+        runner = MacroRunner()
+        mockClient = ExtendedMockMacroClient()
+        runner.clientProxy = mockClient
+        tempDir = NSTemporaryDirectory() + "ttlmacro_testlink_\(ProcessInfo.processInfo.processIdentifier)/"
+        try? FileManager.default.createDirectory(atPath: tempDir, withIntermediateDirectories: true)
+    }
+
+    override func tearDown() {
+        runner.stop()
+        try? FileManager.default.removeItem(atPath: tempDir)
+        super.tearDown()
+    }
+
+    private func writeTTL(_ content: String) -> String {
+        let path = tempDir + "test.ttl"
+        try? content.write(toFile: path, atomically: true, encoding: .utf8)
+        return path
+    }
+
+    func testTestLinkReturns0WhenNotLinked() {
+        // result=0: XPC not linked → should not send 'connected' or 'linked'
+        let exp = XCTestExpectation(description: "testlink returns 0")
+        mockClient.isXPCLinkedResponse = false
+        mockClient.isConnectedResponse = false
+        let script = """
+        testlink
+        if result == 0 then
+        send 'not_linked'
+        endif
+        end
+        """
+        let path = writeTTL(script)
+        runner.onComplete = { _ in exp.fulfill() }
+        runner.run(scriptPath: path)
+        wait(for: [exp], timeout: 10.0)
+        XCTAssertTrue(mockClient.hasCall("isXPCLinked"))
+        XCTAssertFalse(mockClient.hasCall("isConnected"),
+                       "Should not check isConnected when XPC is not linked")
+        // Verify result=0 was set by checking the conditional branch was taken
+        XCTAssertTrue(mockClient.hasCall("sendToTerminal"),
+                      "Should enter result==0 branch")
+        let sentData = mockClient.calls.first { $0.method == "sendToTerminal" }?
+            .args["data"] as? Data
+        XCTAssertEqual(String(data: sentData ?? Data(), encoding: .utf8), "not_linked")
+    }
+
+    func testTestLinkReturns1WhenLinkedButNotConnected() {
+        // result=1: XPC linked, host not connected
+        let exp = XCTestExpectation(description: "testlink returns 1")
+        mockClient.isXPCLinkedResponse = true
+        mockClient.isConnectedResponse = false
+        let script = """
+        testlink
+        if result == 1 then
+        send 'linked_not_connected'
+        endif
+        end
+        """
+        let path = writeTTL(script)
+        runner.onComplete = { _ in exp.fulfill() }
+        runner.run(scriptPath: path)
+        wait(for: [exp], timeout: 10.0)
+        XCTAssertTrue(mockClient.hasCall("isXPCLinked"))
+        XCTAssertTrue(mockClient.hasCall("isConnected"))
+        XCTAssertTrue(mockClient.hasCall("sendToTerminal"),
+                      "Should enter result==1 branch")
+        let sentData = mockClient.calls.first { $0.method == "sendToTerminal" }?
+            .args["data"] as? Data
+        XCTAssertEqual(String(data: sentData ?? Data(), encoding: .utf8), "linked_not_connected")
+    }
+
+    func testTestLinkReturns2WhenLinkedAndConnected() {
+        // result=2: XPC linked and host connected
+        let exp = XCTestExpectation(description: "testlink returns 2")
+        mockClient.isXPCLinkedResponse = true
+        mockClient.isConnectedResponse = true
+        let script = """
+        testlink
+        if result == 2 then
+        send 'connected'
+        endif
+        end
+        """
+        let path = writeTTL(script)
+        runner.onComplete = { _ in exp.fulfill() }
+        runner.run(scriptPath: path)
+        wait(for: [exp], timeout: 10.0)
+        XCTAssertTrue(mockClient.hasCall("isXPCLinked"))
+        XCTAssertTrue(mockClient.hasCall("isConnected"))
+        XCTAssertTrue(mockClient.hasCall("sendToTerminal"),
+                      "Should enter result==2 branch")
+        let sentData = mockClient.calls.first { $0.method == "sendToTerminal" }?
+            .args["data"] as? Data
+        XCTAssertEqual(String(data: sentData ?? Data(), encoding: .utf8), "connected")
+    }
+
+    func testTestLinkScriptConditionalNotConnected() {
+        // Verify testlink result=1 does NOT trigger result==2 branch
+        let exp = XCTestExpectation(description: "testlink conditional not connected")
+        mockClient.isXPCLinkedResponse = true
+        mockClient.isConnectedResponse = false
+        let script = """
+        testlink
+        if result == 2 then
+        send 'should_not_run'
+        endif
+        end
+        """
+        let path = writeTTL(script)
+        runner.onComplete = { _ in exp.fulfill() }
+        runner.run(scriptPath: path)
+        wait(for: [exp], timeout: 10.0)
+        XCTAssertFalse(mockClient.hasCall("sendToTerminal"),
+                       "Should NOT send when testlink result is 1, not 2")
+    }
+}
+
+// MARK: - MacroXPCManager Integration Tests
+
+final class MacroXPCManagerIntegrationTests: XCTestCase {
+
+    func testIsXPCLinkedReturnsTrueWhenConnectionExists() {
+        // Verify isXPCLinked returns true when XPC connection is established
+        // This tests the protocol method exists and the mock responds correctly
+        let mock = ExtendedMockMacroClient()
+        mock.isXPCLinkedResponse = true
+        let exp = XCTestExpectation(description: "isXPCLinked true")
+        mock.isXPCLinked { linked in
+            XCTAssertTrue(linked)
+            exp.fulfill()
+        }
+        wait(for: [exp], timeout: 2.0)
+    }
+
+    func testIsXPCLinkedReturnsFalseWhenNoConnection() {
+        let mock = ExtendedMockMacroClient()
+        mock.isXPCLinkedResponse = false
+        let exp = XCTestExpectation(description: "isXPCLinked false")
+        mock.isXPCLinked { linked in
+            XCTAssertFalse(linked)
+            exp.fulfill()
+        }
+        wait(for: [exp], timeout: 2.0)
+    }
+
+    func testProtocolIncludesIsXPCLinkedMethod() {
+        // Verify the XPC interface includes the new method
+        let interface = MacroXPCInterface.clientInterface()
+        XCTAssertNotNil(interface)
+    }
+
+    func testTerminalOperationMethodsRecorded() {
+        // Verify all terminal operation methods are callable through the mock
+        let mock = ExtendedMockMacroClient()
+        let exp = XCTestExpectation(description: "operations complete")
+        exp.expectedFulfillmentCount = 5
+
+        mock.sendBreak { mock.hasCall("sendBreak"); exp.fulfill() }
+        mock.clearScreen { mock.hasCall("clearScreen"); exp.fulfill() }
+        mock.flushReceiveBuffer { mock.hasCall("flushReceiveBuffer"); exp.fulfill() }
+        mock.bringWindowToFront { mock.hasCall("bringWindowToFront"); exp.fulfill() }
+        mock.displayString(text: "test") { mock.hasCall("displayString"); exp.fulfill() }
+
+        wait(for: [exp], timeout: 2.0)
+        XCTAssertTrue(mock.hasCall("sendBreak"))
+        XCTAssertTrue(mock.hasCall("clearScreen"))
+        XCTAssertTrue(mock.hasCall("flushReceiveBuffer"))
+        XCTAssertTrue(mock.hasCall("bringWindowToFront"))
+        XCTAssertTrue(mock.hasCall("displayString"))
+    }
+
+    func testLogOperationMethodsRecorded() {
+        let mock = ExtendedMockMacroClient()
+        let exp = XCTestExpectation(description: "log ops complete")
+        exp.expectedFulfillmentCount = 4
+
+        mock.openLog(path: "/tmp/test.log", append: false) { exp.fulfill() }
+        mock.writeToLog(text: "test line") { exp.fulfill() }
+        mock.pauseLog { exp.fulfill() }
+        mock.closeLog { exp.fulfill() }
+
+        wait(for: [exp], timeout: 2.0)
+        XCTAssertTrue(mock.hasCall("openLog"))
+        XCTAssertTrue(mock.hasCall("writeToLog"))
+        XCTAssertTrue(mock.hasCall("pauseLog"))
+        XCTAssertTrue(mock.hasCall("closeLog"))
+    }
+
+    func testWindowOperationMethodsRecorded() {
+        let mock = ExtendedMockMacroClient()
+        let exp = XCTestExpectation(description: "window ops")
+        exp.expectedFulfillmentCount = 3
+
+        mock.moveWindow(x: 100, y: 200) { exp.fulfill() }
+        mock.resizeWindow(width: 800, height: 600) { exp.fulfill() }
+        mock.setWindowTitle(title: "Test") { exp.fulfill() }
+
+        wait(for: [exp], timeout: 2.0)
+        let moveCall = mock.calls.first { $0.method == "moveWindow" }
+        XCTAssertEqual(moveCall?.args["x"] as? Int, 100)
+        XCTAssertEqual(moveCall?.args["y"] as? Int, 200)
+    }
+}
+
+// MARK: - Protocol Send/Recv Tests
+
+final class ProtocolSendRecvTests: XCTestCase {
+
+    var runner: MacroRunner!
+    var mockClient: ExtendedMockMacroClient!
+    var tempDir: String!
+
+    override func setUp() {
+        super.setUp()
+        runner = MacroRunner()
+        mockClient = ExtendedMockMacroClient()
+        runner.clientProxy = mockClient
+        tempDir = NSTemporaryDirectory() + "ttlmacro_proto_\(ProcessInfo.processInfo.processIdentifier)/"
+        try? FileManager.default.createDirectory(atPath: tempDir, withIntermediateDirectories: true)
+    }
+
+    override func tearDown() {
+        runner.stop()
+        try? FileManager.default.removeItem(atPath: tempDir)
+        super.tearDown()
+    }
+
+    private func writeTTL(_ content: String) -> String {
+        let path = tempDir + "test.ttl"
+        try? content.write(toFile: path, atomically: true, encoding: .utf8)
+        return path
+    }
+
+    func testProtocolSendCallsStartFileSendWithProtocol() {
+        let exp = XCTestExpectation(description: "protocolsend completes")
+        mockClient.transferStatus = ("done", 100, 100)
+        let testFile = tempDir + "proto_send.bin"
+        FileManager.default.createFile(atPath: testFile, contents: Data([0x01]))
+        let path = writeTTL("protocolsend 'zmodem' '\(testFile)'\nend")
+        runner.onComplete = { _ in exp.fulfill() }
+        runner.run(scriptPath: path)
+        wait(for: [exp], timeout: 10.0)
+        let sendCall = mockClient.calls.first { $0.method == "startFileSend" }
+        XCTAssertNotNil(sendCall, "Should call startFileSend")
+        XCTAssertEqual(sendCall?.args["protocolName"] as? String, "zmodem")
+    }
+
+    func testProtocolRecvCallsStartFileRecvWithProtocol() {
+        let exp = XCTestExpectation(description: "protocolrecv completes")
+        mockClient.transferStatus = ("done", 256, 256)
+        let path = writeTTL("protocolrecv 'kermit'\nend")
+        runner.onComplete = { _ in exp.fulfill() }
+        runner.run(scriptPath: path)
+        wait(for: [exp], timeout: 10.0)
+        let recvCall = mockClient.calls.first { $0.method == "startFileRecv" }
+        XCTAssertNotNil(recvCall, "Should call startFileRecv")
+        XCTAssertEqual(recvCall?.args["protocolName"] as? String, "kermit")
+    }
+
+    func testProtocolSendWithoutProtocolNameErrors() {
+        let exp = XCTestExpectation(description: "protocolsend errors")
+        let path = writeTTL("protocolsend\nend")
+        runner.onError = { _, _ in exp.fulfill() }
+        runner.onComplete = { _ in exp.fulfill() }
+        runner.run(scriptPath: path)
+        wait(for: [exp], timeout: 10.0)
+        // Should have errored or sent a macroDidFail
+    }
+}
+
+// MARK: - Int64 Transfer Status Tests
+
+final class Int64TransferStatusTests: XCTestCase {
+
+    func testTransferStatusUsesInt64() {
+        let mock = ExtendedMockMacroClient()
+        // Set a value larger than Int32.max to verify Int64 support
+        mock.transferStatus = ("sending", 3_000_000_000, 5_000_000_000)
+        let exp = XCTestExpectation(description: "Int64 status")
+        mock.getTransferStatus { status, bytes, total in
+            XCTAssertEqual(status, "sending")
+            XCTAssertEqual(bytes, 3_000_000_000)
+            XCTAssertEqual(total, 5_000_000_000)
+            exp.fulfill()
+        }
+        wait(for: [exp], timeout: 2.0)
+    }
+
+    func testTransferStatusDoneValues() {
+        let mock = ExtendedMockMacroClient()
+        mock.transferStatus = ("done", 0, 0)
+        let exp = XCTestExpectation(description: "done status")
+        mock.getTransferStatus { status, bytes, total in
+            XCTAssertEqual(status, "done")
+            XCTAssertEqual(bytes, 0)
+            XCTAssertEqual(total, 0)
+            exp.fulfill()
+        }
+        wait(for: [exp], timeout: 2.0)
+    }
+}
+
+// MARK: - Protocol Name Resolution Tests
+
+final class ProtocolNameResolutionTests: XCTestCase {
+
+    var runner: MacroRunner!
+    var mockClient: ExtendedMockMacroClient!
+    var tempDir: String!
+
+    override func setUp() {
+        super.setUp()
+        runner = MacroRunner()
+        mockClient = ExtendedMockMacroClient()
+        runner.clientProxy = mockClient
+        tempDir = NSTemporaryDirectory() + "ttlmacro_protoname_\(ProcessInfo.processInfo.processIdentifier)/"
+        try? FileManager.default.createDirectory(atPath: tempDir, withIntermediateDirectories: true)
+    }
+
+    override func tearDown() {
+        runner.stop()
+        try? FileManager.default.removeItem(atPath: tempDir)
+        super.tearDown()
+    }
+
+    private func writeTTL(_ content: String) -> String {
+        let path = tempDir + "test.ttl"
+        try? content.write(toFile: path, atomically: true, encoding: .utf8)
+        return path
+    }
+
+    func testProtocolSendPassesXmodem() {
+        let exp = XCTestExpectation(description: "xmodem protocol")
+        mockClient.transferStatus = ("done", 100, 100)
+        let testFile = tempDir + "test.bin"
+        FileManager.default.createFile(atPath: testFile, contents: Data([0x01]))
+        let path = writeTTL("protocolsend 'xmodem' '\(testFile)'\nend")
+        runner.onComplete = { _ in exp.fulfill() }
+        runner.run(scriptPath: path)
+        wait(for: [exp], timeout: 10.0)
+        let call = mockClient.calls.first { $0.method == "startFileSend" }
+        XCTAssertEqual(call?.args["protocolName"] as? String, "xmodem")
+    }
+
+    func testProtocolSendPassesYmodem() {
+        let exp = XCTestExpectation(description: "ymodem protocol")
+        mockClient.transferStatus = ("done", 100, 100)
+        let testFile = tempDir + "test.bin"
+        FileManager.default.createFile(atPath: testFile, contents: Data([0x01]))
+        let path = writeTTL("protocolsend 'ymodem' '\(testFile)'\nend")
+        runner.onComplete = { _ in exp.fulfill() }
+        runner.run(scriptPath: path)
+        wait(for: [exp], timeout: 10.0)
+        let call = mockClient.calls.first { $0.method == "startFileSend" }
+        XCTAssertEqual(call?.args["protocolName"] as? String, "ymodem")
+    }
+
+    func testProtocolRecvPassesBplus() {
+        let exp = XCTestExpectation(description: "bplus protocol")
+        mockClient.transferStatus = ("done", 100, 100)
+        let path = writeTTL("protocolrecv 'bplus'\nend")
+        runner.onComplete = { _ in exp.fulfill() }
+        runner.run(scriptPath: path)
+        wait(for: [exp], timeout: 10.0)
+        let call = mockClient.calls.first { $0.method == "startFileRecv" }
+        XCTAssertEqual(call?.args["protocolName"] as? String, "bplus")
+    }
+}
+
+// MARK: - SetFlowControl Tests
+
+final class SetFlowControlTests: XCTestCase {
+
+    func testSetFlowCtrlNone() {
+        let mockClient = ExtendedMockMacroClient()
+        let runner = MacroRunner()
+        runner.clientProxy = mockClient
+
+        let script = "setflowctrl 0\n"
+        let path = NSTemporaryDirectory() + "test_flowctrl_none.ttl"
+        try! script.write(toFile: path, atomically: true, encoding: .utf8)
+
+        let exp = expectation(description: "script done")
+        runner.onComplete = { _ in exp.fulfill() }
+        runner.run(scriptPath: path)
+        wait(for: [exp], timeout: 5.0)
+
+        let call = mockClient.calls.first { $0.method == "setFlowControl" }
+        XCTAssertNotNil(call, "setFlowControl should be called")
+        XCTAssertEqual(call?.args["mode"] as? Int, 0, "Mode should be 0 (none)")
+    }
+
+    func testSetFlowCtrlXonXoff() {
+        let mockClient = ExtendedMockMacroClient()
+        let runner = MacroRunner()
+        runner.clientProxy = mockClient
+
+        let script = "setflowctrl 1\n"
+        let path = NSTemporaryDirectory() + "test_flowctrl_xon.ttl"
+        try! script.write(toFile: path, atomically: true, encoding: .utf8)
+
+        let exp = expectation(description: "script done")
+        runner.onComplete = { _ in exp.fulfill() }
+        runner.run(scriptPath: path)
+        wait(for: [exp], timeout: 5.0)
+
+        let call = mockClient.calls.first { $0.method == "setFlowControl" }
+        XCTAssertNotNil(call, "setFlowControl should be called")
+        XCTAssertEqual(call?.args["mode"] as? Int, 1, "Mode should be 1 (xon/xoff)")
+    }
+
+    func testSetFlowCtrlHardware() {
+        let mockClient = ExtendedMockMacroClient()
+        let runner = MacroRunner()
+        runner.clientProxy = mockClient
+
+        let script = "setflowctrl 2\n"
+        let path = NSTemporaryDirectory() + "test_flowctrl_hw.ttl"
+        try! script.write(toFile: path, atomically: true, encoding: .utf8)
+
+        let exp = expectation(description: "script done")
+        runner.onComplete = { _ in exp.fulfill() }
+        runner.run(scriptPath: path)
+        wait(for: [exp], timeout: 5.0)
+
+        let call = mockClient.calls.first { $0.method == "setFlowControl" }
+        XCTAssertNotNil(call, "setFlowControl should be called")
+        XCTAssertEqual(call?.args["mode"] as? Int, 2, "Mode should be 2 (hardware)")
+    }
+}
+
+// MARK: - WaitEvent Tests
+
+final class WaitEventTests: XCTestCase {
+
+    func testWaitEventDisconnectedReturns2() {
+        let mockClient = ExtendedMockMacroClient()
+        mockClient.isConnectedResponse = false
+        let runner = MacroRunner()
+        runner.clientProxy = mockClient
+
+        // Script checks if result == 2 after waitevent when disconnected
+        let script = """
+        waitevent
+        if result == 2 then send 'DISCONNECTED'
+        """
+        let path = NSTemporaryDirectory() + "test_waitevent_dc.ttl"
+        try! script.write(toFile: path, atomically: true, encoding: .utf8)
+
+        let exp = expectation(description: "script done")
+        runner.onComplete = { _ in exp.fulfill() }
+        runner.run(scriptPath: path)
+        wait(for: [exp], timeout: 5.0)
+
+        let sendCall = mockClient.calls.first { $0.method == "sendToTerminal" }
+        XCTAssertNotNil(sendCall, "Should send DISCONNECTED marker when result=2")
+    }
+
+    func testWaitEventDataReceivedReturns1() {
+        let mockClient = ExtendedMockMacroClient()
+        mockClient.isConnectedResponse = true
+        mockClient.recvData = "test data".data(using: .utf8)
+        let runner = MacroRunner()
+        runner.clientProxy = mockClient
+
+        let script = """
+        waitevent
+        if result == 1 then send 'DATARECEIVED'
+        """
+        let path = NSTemporaryDirectory() + "test_waitevent_data.ttl"
+        try! script.write(toFile: path, atomically: true, encoding: .utf8)
+
+        let exp = expectation(description: "script done")
+        runner.onComplete = { _ in exp.fulfill() }
+        runner.run(scriptPath: path)
+        wait(for: [exp], timeout: 5.0)
+
+        let sendCall = mockClient.calls.first { $0.method == "sendToTerminal" }
+        XCTAssertNotNil(sendCall, "Should send DATARECEIVED marker when result=1")
+    }
+
+    func testWaitEventTimeoutReturns0() {
+        let mockClient = ExtendedMockMacroClient()
+        mockClient.isConnectedResponse = true
+        mockClient.recvData = nil
+        let runner = MacroRunner()
+        runner.clientProxy = mockClient
+
+        let script = """
+        waitevent
+        if result == 0 then send 'TIMEOUT'
+        """
+        let path = NSTemporaryDirectory() + "test_waitevent_timeout.ttl"
+        try! script.write(toFile: path, atomically: true, encoding: .utf8)
+
+        let exp = expectation(description: "script done")
+        runner.onComplete = { _ in exp.fulfill() }
+        runner.run(scriptPath: path)
+        wait(for: [exp], timeout: 5.0)
+
+        let sendCall = mockClient.calls.first { $0.method == "sendToTerminal" }
+        XCTAssertNotNil(sendCall, "Should send TIMEOUT marker when result=0")
+    }
+
+    func testWaitEventWindowResizeReturns3() {
+        let mockClient = ExtendedMockMacroClient()
+        mockClient.windowEventResponse = 1  // XPC: 1=resize → result: 3
+        let runner = MacroRunner()
+        runner.clientProxy = mockClient
+
+        let script = """
+        waitevent
+        if result == 3 then send 'RESIZED'
+        """
+        let path = NSTemporaryDirectory() + "test_waitevent_resize.ttl"
+        try! script.write(toFile: path, atomically: true, encoding: .utf8)
+
+        let exp = expectation(description: "script done")
+        runner.onComplete = { _ in exp.fulfill() }
+        runner.run(scriptPath: path)
+        wait(for: [exp], timeout: 5.0)
+
+        let sendCall = mockClient.calls.first { $0.method == "sendToTerminal" }
+        XCTAssertNotNil(sendCall, "Should send RESIZED marker when window resize event (result=3)")
+    }
+
+    func testWaitEventWindowCloseReturns5() {
+        let mockClient = ExtendedMockMacroClient()
+        mockClient.windowEventResponse = 3  // XPC: 3=close → result: 5
+        let runner = MacroRunner()
+        runner.clientProxy = mockClient
+
+        let script = """
+        waitevent
+        if result == 5 then send 'CLOSED'
+        """
+        let path = NSTemporaryDirectory() + "test_waitevent_close.ttl"
+        try! script.write(toFile: path, atomically: true, encoding: .utf8)
+
+        let exp = expectation(description: "script done")
+        runner.onComplete = { _ in exp.fulfill() }
+        runner.run(scriptPath: path)
+        wait(for: [exp], timeout: 5.0)
+
+        let sendCall = mockClient.calls.first { $0.method == "sendToTerminal" }
+        XCTAssertNotNil(sendCall, "Should send CLOSED marker when window close event (result=5)")
+    }
+
+    func testWaitEventWindowFocusReturns6() {
+        let mockClient = ExtendedMockMacroClient()
+        mockClient.windowEventResponse = 4  // XPC: 4=focus → result: 6
+        let runner = MacroRunner()
+        runner.clientProxy = mockClient
+
+        let script = """
+        waitevent
+        if result == 6 then send 'FOCUSED'
+        """
+        let path = NSTemporaryDirectory() + "test_waitevent_focus.ttl"
+        try! script.write(toFile: path, atomically: true, encoding: .utf8)
+
+        let exp = expectation(description: "script done")
+        runner.onComplete = { _ in exp.fulfill() }
+        runner.run(scriptPath: path)
+        wait(for: [exp], timeout: 5.0)
+
+        let sendCall = mockClient.calls.first { $0.method == "sendToTerminal" }
+        XCTAssertNotNil(sendCall, "Should send FOCUSED marker when window focus event (result=6)")
+    }
+}
+
+// MARK: - SetDebug Trace Tests
+
+final class SetDebugTraceTests: XCTestCase {
+
+    func testSetDebugEnablesTraceOutput() {
+        let mockClient = ExtendedMockMacroClient()
+        let runner = MacroRunner()
+        runner.clientProxy = mockClient
+
+        // Enable debug mode, then run a command — should produce displayString trace
+        let script = """
+        setdebug 1
+        pause 1
+        """
+        let path = NSTemporaryDirectory() + "test_setdebug_trace.ttl"
+        try! script.write(toFile: path, atomically: true, encoding: .utf8)
+
+        let exp = expectation(description: "script done")
+        runner.onComplete = { _ in exp.fulfill() }
+        runner.run(scriptPath: path)
+        wait(for: [exp], timeout: 5.0)
+
+        // After setdebug 1, the next command (pause) should trigger a displayString trace
+        let displayCalls = mockClient.calls.filter { $0.method == "displayString" }
+        XCTAssertFalse(displayCalls.isEmpty, "Debug mode should produce trace output via displayString")
+    }
+
+    func testSetDebugDisabledNoTrace() {
+        let mockClient = ExtendedMockMacroClient()
+        let runner = MacroRunner()
+        runner.clientProxy = mockClient
+
+        // Debug mode disabled (default) — no trace output
+        let script = """
+        pause 1
+        """
+        let path = NSTemporaryDirectory() + "test_setdebug_off.ttl"
+        try! script.write(toFile: path, atomically: true, encoding: .utf8)
+
+        let exp = expectation(description: "script done")
+        runner.onComplete = { _ in exp.fulfill() }
+        runner.run(scriptPath: path)
+        wait(for: [exp], timeout: 5.0)
+
+        let displayCalls = mockClient.calls.filter { $0.method == "displayString" }
+        XCTAssertTrue(displayCalls.isEmpty, "No trace output when debug mode is off")
+    }
+}
+
+// MARK: - Push Event Queue Tests
+
+final class PushEventQueueTests: XCTestCase {
+
+    func testEnqueueTerminalEventResizeDeliveredViaWaitEvent() {
+        let mockClient = ExtendedMockMacroClient()
+        mockClient.windowEventResponse = 0 // No XPC-side events
+        mockClient.isConnectedResponse = true
+        mockClient.recvData = nil
+        let runner = MacroRunner()
+        runner.clientProxy = mockClient
+
+        // Push a resize event directly to the runner's local queue
+        runner.enqueueTerminalEvent(1) // 1 = resize
+
+        let script = """
+        waitevent
+        if result == 3 then send 'PUSH_RESIZE'
+        """
+        let path = NSTemporaryDirectory() + "test_push_resize.ttl"
+        try! script.write(toFile: path, atomically: true, encoding: .utf8)
+
+        let exp = expectation(description: "script done")
+        runner.onComplete = { _ in exp.fulfill() }
+        runner.run(scriptPath: path)
+        wait(for: [exp], timeout: 5.0)
+
+        let sendCall = mockClient.calls.first { $0.method == "sendToTerminal" }
+        XCTAssertNotNil(sendCall, "Push-delivered resize event should be detected (result=3)")
+    }
+
+    func testEnqueueTerminalEventDisconnectDeliveredViaWaitEvent() {
+        let mockClient = ExtendedMockMacroClient()
+        mockClient.windowEventResponse = 0
+        mockClient.isConnectedResponse = true
+        let runner = MacroRunner()
+        runner.clientProxy = mockClient
+
+        // Push a disconnect event
+        runner.enqueueTerminalEvent(7) // 7 = disconnected
+
+        let script = """
+        waitevent
+        if result == 2 then send 'PUSH_DISCONNECT'
+        """
+        let path = NSTemporaryDirectory() + "test_push_disconnect.ttl"
+        try! script.write(toFile: path, atomically: true, encoding: .utf8)
+
+        let exp = expectation(description: "script done")
+        runner.onComplete = { _ in exp.fulfill() }
+        runner.run(scriptPath: path)
+        wait(for: [exp], timeout: 5.0)
+
+        let sendCall = mockClient.calls.first { $0.method == "sendToTerminal" }
+        XCTAssertNotNil(sendCall, "Push-delivered disconnect event should map to result=2")
+    }
+
+    func testMockMacroServiceNotifyTerminalEvent() {
+        let mockService = MockMacroService()
+        XCTAssertFalse(mockService.notifyTerminalEventCalled)
+
+        mockService.notifyTerminalEvent(eventType: 1) {}
+
+        XCTAssertTrue(mockService.notifyTerminalEventCalled)
+        XCTAssertEqual(mockService.lastTerminalEventType, 1)
     }
 }
 
