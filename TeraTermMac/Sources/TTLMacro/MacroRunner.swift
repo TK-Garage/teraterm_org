@@ -5,16 +5,14 @@
  *
  * Macro execution engine for TTLMacro.app.
  * Full TTL command interpreter with XPC-based terminal operations.
- *
- * [REMAINING-TASK-AUDIT]
- * TTLInterpreterDelegate メソッド数: 41 (all mapped to XPC)
- * MacroRunner 実装コマンド数: 120+
- * ファイル転送プロトコル: 6 types via XPC
- * パスワード系コマンド: 8 (Keychain integrated)
+ * 176 command handlers, 56 XPC methods, Keychain-integrated password management.
  */
 
 import Foundation
 import TTLMacroShared
+#if canImport(AudioToolbox)
+import AudioToolbox
+#endif
 
 // MARK: - TTL Value Type
 
@@ -75,6 +73,8 @@ class MacroRunner {
     var onLineExecuted: ((Int, String) -> Void)?
     var onComplete: ((Int) -> Void)?
     var onError: ((String, Int) -> Void)?
+    var onTransferProgress: ((String, Int, Int) -> Void)?
+    var onTransferError: ((TransferErrorDetail) -> Void)?
 
     // MARK: - State
 
@@ -86,6 +86,9 @@ class MacroRunner {
 
     /// The XPC client proxy for communicating with TeraTermMac.app
     var clientProxy: MacroClientProtocol?
+
+    /// Multicast group name for the current session (set by setmulticastname)
+    var multicastGroupName: String = ""
 
     // MARK: - Script Data
 
@@ -134,6 +137,24 @@ class MacroRunner {
     // MARK: - Debug / Options
 
     private var debugMode: Bool = false
+
+    // MARK: - Debugger
+
+    /// Set of line numbers where breakpoints are set (0-based).
+    private(set) var breakpoints: Set<Int> = []
+
+    /// Step execution mode.
+    enum StepMode {
+        case none       // Normal execution
+        case stepLine   // Execute one line then pause
+        case stepOver   // Execute until call stack returns to same depth
+        case stepOut    // Execute until call stack is shallower
+    }
+    private var stepMode: StepMode = .none
+    private var stepTargetDepth: Int = 0
+
+    /// Callback invoked when debugger hits a breakpoint or step pause.
+    var onDebugPause: ((Int, String) -> Void)?
     private var regexCaseInsensitive: Bool = false
     private var dlgPosX: Int = -1
     private var dlgPosY: Int = -1
@@ -141,10 +162,20 @@ class MacroRunner {
     // MARK: - Transfer State
 
     private var isTransferWaiting: Bool = false
+    private var currentTransferProtocol: String = ""
+    private var currentTransferDirection: String = ""
+    private var currentTransferPath: String = ""
+    private var transferStartTime: Date?
 
     // MARK: - Keychain
 
     private let keychainManager = TTLKeychainManager.shared
+
+    // MARK: - Full TTLParser (shared module)
+
+    /// Full expression parser from TTLMacroShared for complete TTL expression evaluation.
+    /// Supports all operators: arithmetic, comparison, logical, bitwise, shifts.
+    private let parser = TTLParser()
 
     // MARK: - Execution
 
@@ -164,6 +195,13 @@ class MacroRunner {
         isPaused = false
         isCancelled = false
         resetState()
+
+        // Load persisted breakpoints for this script
+        let saved = BreakpointStore.load(for: scriptPath)
+        if !saved.isEmpty {
+            breakpoints = saved
+        }
+
         prescanLabels()
         scheduleNextLine()
     }
@@ -200,6 +238,75 @@ class MacroRunner {
         if isPaused { return .paused }
         return .running
     }
+
+    // MARK: - Debugger Public API
+
+    /// Add a breakpoint at the given line number (1-based, converted to 0-based internally).
+    func addBreakpoint(at line: Int) {
+        breakpoints.insert(max(0, line - 1))
+        persistBreakpoints()
+    }
+
+    /// Remove a breakpoint at the given line number (1-based).
+    func removeBreakpoint(at line: Int) {
+        breakpoints.remove(max(0, line - 1))
+        persistBreakpoints()
+    }
+
+    /// Remove all breakpoints.
+    func clearBreakpoints() {
+        breakpoints.removeAll()
+        persistBreakpoints()
+    }
+
+    /// Save current breakpoints to the config file.
+    private func persistBreakpoints() {
+        guard let path = currentScriptPath else { return }
+        BreakpointStore.save(breakpoints: breakpoints, for: path)
+    }
+
+    /// Execute one line then pause (step line / step into).
+    func stepLine() {
+        guard isRunning, isPaused else { return }
+        stepMode = .stepLine
+        isPaused = false
+        scheduleNextLine()
+    }
+
+    /// Execute until the call stack returns to the current depth or shallower (step over).
+    func stepOver() {
+        guard isRunning, isPaused else { return }
+        stepMode = .stepOver
+        stepTargetDepth = callStack.count
+        isPaused = false
+        scheduleNextLine()
+    }
+
+    /// Execute until the call stack becomes shallower than current (step out).
+    func stepOut() {
+        guard isRunning, isPaused else { return }
+        stepMode = .stepOut
+        stepTargetDepth = callStack.count
+        isPaused = false
+        scheduleNextLine()
+    }
+
+    /// Get current variable values for debugger inspection.
+    func getVariables() -> [String: String] {
+        var result: [String: String] = [:]
+        for (key, val) in variables {
+            switch val {
+            case .integer(let i): result[key] = String(i)
+            case .string(let s): result[key] = s
+            case .intArray(let arr): result[key] = arr.map(String.init).joined(separator: ", ")
+            case .strArray(let arr): result[key] = arr.joined(separator: ", ")
+            }
+        }
+        return result
+    }
+
+    /// Get call stack depth for debugger display.
+    var callStackDepth: Int { callStack.count }
 
     func setVariable(name: String, value: String) {
         variables[name.lowercased()] = .string(value)
@@ -263,6 +370,10 @@ class MacroRunner {
     private func executeNextLine() {
         guard isRunning, !isPaused, !isCancelled else { return }
 
+        // Clear the fired timer reference so sync commands can advance
+        // via the fallthrough check in executeCommand
+        execTimer = nil
+
         if currentLineNumber >= scriptLines.count {
             // Check if we have include files on the file stack
             if let frame = fileStack.popLast() {
@@ -278,8 +389,31 @@ class MacroRunner {
             return
         }
 
+        let lineIndex = currentLineNumber
         let line = scriptLines[currentLineNumber]
         currentLineNumber += 1
+
+        // Debugger: check breakpoints and step modes
+        let shouldBreak: Bool
+        switch stepMode {
+        case .none:
+            shouldBreak = breakpoints.contains(lineIndex)
+        case .stepLine:
+            shouldBreak = true
+        case .stepOver:
+            shouldBreak = callStack.count <= stepTargetDepth
+        case .stepOut:
+            shouldBreak = callStack.count < stepTargetDepth
+        }
+
+        if shouldBreak {
+            stepMode = .none
+            isPaused = true
+            onDebugPause?(currentLineNumber, line)
+            onLineExecuted?(currentLineNumber, line)
+            clientProxy?.didExecuteLine(lineNumber: currentLineNumber, lineText: line, reply: {})
+            return
+        }
 
         onLineExecuted?(currentLineNumber, line)
         clientProxy?.didExecuteLine(lineNumber: currentLineNumber, lineText: line, reply: {})
@@ -405,90 +539,117 @@ class MacroRunner {
         return resolveInt(args[index])
     }
 
-    /// Evaluate an integer expression with basic arithmetic
+    /// Evaluate an expression using the full TTLParser with all operator precedence.
+    /// Supports: +, -, *, /, mod, ==, !=, <, >, <=, >=, &&, ||, &, |, ^, ~, !, <<, >>, >>>
+    /// Also supports string comparison and parenthesized expressions.
     private func evalIntExpr(_ expr: String) -> Int {
-        let tokens = tokenizeExpr(expr)
-        var pos = 0
-        return parseAddSub(tokens, &pos)
+        // Sync MacroRunner variables into TTLParser for expression evaluation
+        syncVariablesToParser()
+        parser.lineBuffer = expr
+        parser.linePtr = 0
+        parser.lineParsePtr = 0
+        do {
+            let result = try parser.getExpression()
+            syncVariablesFromParser()
+            switch result {
+            case .integer(let v): return v
+            case .string(let id): return Int(parser.getStrVal(id: id)) ?? 0
+            case .stringLiteral(let s): return Int(s) ?? 0
+            default: return 0
+            }
+        } catch {
+            // Fallback to simple integer parsing
+            return resolveInt(expr)
+        }
     }
 
-    private func tokenizeExpr(_ expr: String) -> [String] {
-        var tokens: [String] = []
-        var current = ""
-        for ch in expr {
-            if "+-*/%()".contains(ch) {
-                if !current.isEmpty {
-                    tokens.append(current)
-                    current = ""
+    /// Evaluate an expression that may return a string value
+    private func evalStrExpr(_ expr: String) -> String {
+        syncVariablesToParser()
+        parser.lineBuffer = expr
+        parser.linePtr = 0
+        parser.lineParsePtr = 0
+        do {
+            let result = try parser.getStrExpression(autoConvert: true)
+            syncVariablesFromParser()
+            return result
+        } catch {
+            return resolveString(expr)
+        }
+    }
+
+    /// Sync MacroRunner variables to the shared TTLParser
+    private func syncVariablesToParser() {
+        // Clear parser variables and rebuild from MacroRunner state
+        parser.variables.removeAll()
+        parser.initSystemVariables()
+        parser.setResult(resultValue)
+        parser.setInputStr(inputStr)
+        parser.setMatchStr(matchStr)
+        if parser.timeoutVarId >= 0 {
+            parser.setIntVal(id: parser.timeoutVarId, value: timeoutValue)
+        }
+
+        for (name, value) in variables {
+            switch value {
+            case .integer(let v):
+                if parser.checkVar(name) == nil {
+                    parser.newIntVar(name, value: v)
                 }
-                tokens.append(String(ch))
-            } else if ch.isWhitespace {
-                if !current.isEmpty {
-                    tokens.append(current)
-                    current = ""
+            case .string(let v):
+                if parser.checkVar(name) == nil {
+                    parser.newStrVar(name, value: v)
                 }
-            } else {
-                current.append(ch)
+            case .intArray(let arr):
+                if parser.checkVar(name) == nil {
+                    let id = parser.newIntArrayVar(name, size: arr.count)
+                    for (i, v) in arr.enumerated() {
+                        parser.variables[id].intArray[i] = v
+                    }
+                }
+            case .strArray(let arr):
+                if parser.checkVar(name) == nil {
+                    let id = parser.newStrArrayVar(name, size: arr.count)
+                    for (i, v) in arr.enumerated() {
+                        parser.variables[id].strArray[i] = v
+                    }
+                }
             }
         }
-        if !current.isEmpty { tokens.append(current) }
-        return tokens
     }
 
-    private func parseAddSub(_ tokens: [String], _ pos: inout Int) -> Int {
-        var left = parseMulDiv(tokens, &pos)
-        while pos < tokens.count {
-            let op = tokens[pos]
-            if op == "+" || op == "-" {
-                pos += 1
-                let right = parseMulDiv(tokens, &pos)
-                left = op == "+" ? left + right : left - right
-            } else {
+    /// Sync parser variables back to MacroRunner after expression evaluation
+    private func syncVariablesFromParser() {
+        for v in parser.variables {
+            switch v.type {
+            case .integer:
+                variables[v.name.lowercased()] = .integer(v.intValue)
+            case .string:
+                variables[v.name.lowercased()] = .string(v.strValue)
+            case .intArray:
+                variables[v.name.lowercased()] = .intArray(v.intArray)
+            case .strArray:
+                variables[v.name.lowercased()] = .strArray(v.strArray)
+            default:
                 break
             }
         }
-        return left
+        // Sync back system variables
+        if parser.resultVarId >= 0 {
+            resultValue = parser.getIntVal(id: parser.resultVarId)
+        }
     }
 
-    private func parseMulDiv(_ tokens: [String], _ pos: inout Int) -> Int {
-        var left = parsePrimary(tokens, &pos)
-        while pos < tokens.count {
-            let op = tokens[pos]
-            if op == "*" || op == "/" || op == "%" {
-                pos += 1
-                let right = parsePrimary(tokens, &pos)
-                if op == "*" { left = left * right }
-                else if op == "/" { left = right != 0 ? left / right : 0 }
-                else { left = right != 0 ? left % right : 0 }
-            } else {
-                break
-            }
-        }
-        return left
-    }
-
-    private func parsePrimary(_ tokens: [String], _ pos: inout Int) -> Int {
-        guard pos < tokens.count else { return 0 }
-        let tok = tokens[pos]
-        if tok == "(" {
-            pos += 1
-            let val = parseAddSub(tokens, &pos)
-            if pos < tokens.count && tokens[pos] == ")" { pos += 1 }
-            return val
-        }
-        if tok == "-" {
-            pos += 1
-            return -parsePrimary(tokens, &pos)
-        }
-        pos += 1
-        return resolveInt(tok)
-    }
+    // [DEPRECATED: replaced by TTLParser] - Simple expression parser removed.
+    // The full recursive descent parser from TTLMacroShared now handles
+    // all expression evaluation with 11 precedence levels.
 
     // MARK: - Assignment
 
     private func handleAssignment(_ parts: [String]) {
         let varName = parts[0].lowercased()
         let exprStr = parts.dropFirst(2).joined(separator: " ")
+<<<<<<< HEAD
         // Check if expression contains operators, indicating an arithmetic expression
         let hasOperators = exprStr.contains("+") || exprStr.contains("-") || exprStr.contains("*")
             || exprStr.contains("/") || exprStr.contains("%") || exprStr.contains("&")
@@ -505,6 +666,32 @@ class MacroRunner {
             default:
                 variables[varName] = resolved
             }
+=======
+
+        // Use full TTLParser for expression evaluation
+        syncVariablesToParser()
+        parser.lineBuffer = exprStr
+        parser.linePtr = 0
+        parser.lineParsePtr = 0
+        do {
+            let result = try parser.getExpression()
+            syncVariablesFromParser()
+            switch result {
+            case .integer(let v):
+                variables[varName] = .integer(v)
+            case .string(let id):
+                variables[varName] = .string(parser.getStrVal(id: id))
+            case .stringLiteral(let s):
+                variables[varName] = .string(s)
+            case .intArray(let id):
+                variables[varName] = .intArray(parser.variables[id].intArray)
+            case .strArray(let id):
+                variables[varName] = .strArray(parser.variables[id].strArray)
+            }
+        } catch {
+            // Fallback to simple value resolution
+            variables[varName] = resolveValue(exprStr)
+>>>>>>> 14ace800810249512edfe0279d0f325844bf0b8e
         }
     }
 
@@ -694,8 +881,13 @@ class MacroRunner {
         // Directory - [IMPLEMENTED]
         case "findfirst":   cmdFindFirst(args) // [IMPLEMENTED]
         case "findnext":    cmdFindNext(args) // [IMPLEMENTED]
+<<<<<<< HEAD
         case "findclose":   cmdFindClose(args) // [IMPLEMENTED]
         case "foldercreate": cmdFolderCreate(args) // [IMPLEMENTED]
+=======
+        case "findclose":   cmdFindClose() // [IMPLEMENTED]
+        case "foldercreate", "makedir": cmdFolderCreate(args) // [IMPLEMENTED]
+>>>>>>> 14ace800810249512edfe0279d0f325844bf0b8e
         case "folderdelete": cmdFolderDelete(args) // [IMPLEMENTED]
         case "foldersearch": cmdFolderSearch(args) // [IMPLEMENTED]
         case "changedir":   cmdChangeDir(args) // [IMPLEMENTED]
@@ -721,7 +913,7 @@ class MacroRunner {
         case "random":      cmdRandom(args) // [IMPLEMENTED]
         case "uptime":      cmdUptime(args) // [IMPLEMENTED]
         case "gethostname": cmdGetHostname(args) // [IMPLEMENTED]
-        case "getver":      cmdGetVer(args) // [IMPLEMENTED]
+        case "getver", "getttver": cmdGetVer(args) // [IMPLEMENTED]
         case "getttdir":    cmdGetTTDir(args) // [IMPLEMENTED]
         case "getttpos":    cmdGetTTPos(args) // [IMPLEMENTED]
         case "getspecialfolder": cmdGetSpecialFolder(args) // [IMPLEMENTED]
@@ -749,7 +941,7 @@ class MacroRunner {
 
         // Clipboard - [IMPLEMENTED]
         case "clipb2var":   cmdClipb2Var(args) // [IMPLEMENTED]
-        case "var2clipb":   cmdVar2Clipb(args) // [IMPLEMENTED]
+        case "var2clipb", "setclipboard": cmdVar2Clipb(args) // [IMPLEMENTED]
 
         // Log - [IMPLEMENTED]
         case "logopen":     cmdLogOpen(args) // [IMPLEMENTED]
@@ -799,12 +991,12 @@ class MacroRunner {
         case "delpassword2": cmdDelPassword(args) // [IMPLEMENTED]
         case "ispassword2":  cmdIsPassword(args) // [IMPLEMENTED]
 
-        // Broadcast (stub) - [IMPLEMENTED]
-        case "sendbroadcast":   cmdSend(args, addCR: false) // [IMPLEMENTED]
-        case "sendlnbroadcast": cmdSend(args, addCR: true) // [IMPLEMENTED]
-        case "sendmulticast":   cmdSend(args, addCR: false) // [IMPLEMENTED]
-        case "sendlnmulticast": cmdSend(args, addCR: true) // [IMPLEMENTED]
-        case "setmulticastname": break // [IMPLEMENTED] no-op
+        // Broadcast / Multicast - [IMPLEMENTED]
+        case "broadcast", "sendbroadcast": cmdSendBroadcast(args, addCR: false) // [IMPLEMENTED]
+        case "sendlnbroadcast": cmdSendBroadcast(args, addCR: true) // [IMPLEMENTED]
+        case "sendmulticast":   cmdSendMulticast(args, addCR: false) // [IMPLEMENTED]
+        case "sendlnmulticast": cmdSendMulticast(args, addCR: true) // [IMPLEMENTED]
+        case "setmulticastname": cmdSetMulticastName(args) // [IMPLEMENTED]
 
         // File transfer - [IMPLEMENTED]
         case "xmodemrecv":  cmdFileTransferRecv(args, proto: "xmodem") // [IMPLEMENTED]
@@ -1322,6 +1514,42 @@ extension MacroRunner {
         cancelExecTimer()
     }
 
+    // MARK: sendbroadcast / sendlnbroadcast - [IMPLEMENTED]
+
+    func cmdSendBroadcast(_ args: [String], addCR: Bool) { // [IMPLEMENTED]
+        var text = args.map { resolveString($0) }.joined()
+        if addCR { text += "\r\n" }
+        guard let data = text.data(using: .utf8) else { return }
+        clientProxy?.broadcastData(data: data, reply: { [weak self] _ in
+            self?.scheduleNextLine()
+        })
+        cancelExecTimer()
+    }
+
+    // MARK: sendmulticast / sendlnmulticast - [IMPLEMENTED]
+
+    func cmdSendMulticast(_ args: [String], addCR: Bool) { // [IMPLEMENTED]
+        var text = args.map { resolveString($0) }.joined()
+        if addCR { text += "\r\n" }
+        guard let data = text.data(using: .utf8) else { return }
+        let groupName = multicastGroupName
+        clientProxy?.multicastData(groupName: groupName, data: data, reply: { [weak self] _ in
+            self?.scheduleNextLine()
+        })
+        cancelExecTimer()
+    }
+
+    // MARK: setmulticastname - [IMPLEMENTED]
+
+    func cmdSetMulticastName(_ args: [String]) { // [IMPLEMENTED]
+        let name = args.isEmpty ? "" : resolveString(args[0])
+        multicastGroupName = name
+        clientProxy?.setMulticastName(name: name, reply: { [weak self] in
+            self?.scheduleNextLine()
+        })
+        cancelExecTimer()
+    }
+
     // MARK: recv - [IMPLEMENTED]
 
     func cmdRecv(_ args: [String]) { // [IMPLEMENTED]
@@ -1391,20 +1619,21 @@ extension MacroRunner {
 
         cancelExecTimer()
         var accumulated = ""
-        let startTime = Date()
         let timeout = timeoutValue
 
-        func poll() {
-            guard self.isRunning, !self.isCancelled else { return }
-
-            if timeout > 0 && Date().timeIntervalSince(startTime) > Double(timeout) {
+        // Set timeout timer (event-driven, no polling)
+        var timeoutTimer: Timer?
+        if timeout > 0 {
+            timeoutTimer = Timer.scheduledTimer(withTimeInterval: Double(timeout), repeats: false) { [weak self] _ in
+                guard let self = self, self.isRunning else { return }
                 self.resultValue = 0
                 self.variables["result"] = .integer(0)
+                self.variables["timeout"] = .integer(1)
                 self.matchStr = ""
                 self.variables["matchstr"] = .string("")
                 self.scheduleNextLine()
-                return
             }
+<<<<<<< HEAD
 
             self.clientProxy?.recvFromTerminal(timeout: 1, reply: { [weak self] data in
                 guard let self = self else { return }
@@ -1445,9 +1674,45 @@ extension MacroRunner {
                     poll()
                 }
             })
+=======
+>>>>>>> 14ace800810249512edfe0279d0f325844bf0b8e
         }
 
-        poll()
+        // Event-driven: subscribe to terminal data stream
+        clientProxy?.subscribeToTerminalData(reply: { [weak self] data in
+            guard let self = self, self.isRunning, !self.isCancelled else { return }
+            if let str = String(data: data, encoding: .utf8) {
+                accumulated += str
+                // Trim buffer if exceeding max size, keeping the tail
+                if accumulated.count > MacroConstants.waitBufferMaxSize {
+                    accumulated = String(accumulated.suffix(MacroConstants.waitBufferMaxSize))
+                }
+            }
+
+            for (idx, pattern) in patterns.enumerated() {
+                if accumulated.contains(pattern) {
+                    timeoutTimer?.invalidate()
+                    self.resultValue = idx + 1
+                    self.variables["result"] = .integer(idx + 1)
+                    self.variables["timeout"] = .integer(0)
+                    self.matchStr = pattern
+                    self.variables["matchstr"] = .string(pattern)
+                    if ln {
+                        let lines = accumulated.components(separatedBy: .newlines)
+                        for line in lines {
+                            if line.contains(pattern) {
+                                self.inputStr = line
+                                self.variables["inputstr"] = .string(line)
+                                break
+                            }
+                        }
+                    }
+                    self.scheduleNextLine()
+                    return
+                }
+            }
+            // Data received but no match yet — wait for next data event
+        })
     }
 
     // MARK: waitmatch - [IMPLEMENTED]
@@ -1485,63 +1750,70 @@ extension MacroRunner {
             return
         }
 
-        cancelExecTimer()
-        var accumulated = ""
-        let startTime = Date()
-        let timeout = timeoutValue
-
-        func poll() {
-            guard self.isRunning, !self.isCancelled else { return }
-
-            if timeout > 0 && Date().timeIntervalSince(startTime) > Double(timeout) {
-                self.resultValue = 0
-                self.variables["result"] = .integer(0)
-                self.scheduleNextLine()
+        // Validate regex patterns upfront
+        var options: NSRegularExpression.Options = []
+        if regexCaseInsensitive { options.insert(.caseInsensitive) }
+        for pattern in patterns {
+            if (try? NSRegularExpression(pattern: pattern, options: options)) == nil {
+                reportError("waitregex: invalid regex: \(pattern)")
                 return
             }
-
-            self.clientProxy?.recvFromTerminal(timeout: 1, reply: { [weak self] data in
-                guard let self = self else { return }
-                if let data = data, let str = String(data: data, encoding: .utf8) {
-                    accumulated += str
-                }
-
-                var options: NSRegularExpression.Options = []
-                if self.regexCaseInsensitive {
-                    options.insert(.caseInsensitive)
-                }
-
-                for (idx, pattern) in patterns.enumerated() {
-                    if let regex = try? NSRegularExpression(pattern: pattern, options: options),
-                       let match = regex.firstMatch(in: accumulated,
-                                                     range: NSRange(accumulated.startIndex..., in: accumulated)) {
-                        self.resultValue = idx + 1
-                        self.variables["result"] = .integer(idx + 1)
-
-                        let matchRange = Range(match.range, in: accumulated)!
-                        self.matchStr = String(accumulated[matchRange])
-                        self.variables["matchstr"] = .string(self.matchStr)
-
-                        // Extract group matches
-                        for g in 1...min(9, match.numberOfRanges - 1) {
-                            if let gRange = Range(match.range(at: g), in: accumulated) {
-                                self.groupMatchStrs[g] = String(accumulated[gRange])
-                                self.variables["groupmatchstr\(g)"] = .string(self.groupMatchStrs[g])
-                            }
-                        }
-
-                        self.scheduleNextLine()
-                        return
-                    }
-                }
-
-                self.execTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: false) { _ in
-                    poll()
-                }
-            })
         }
 
-        poll()
+        cancelExecTimer()
+        var accumulated = ""
+        let timeout = timeoutValue
+
+        // Set timeout timer (event-driven, no polling)
+        var timeoutTimer: Timer?
+        if timeout > 0 {
+            timeoutTimer = Timer.scheduledTimer(withTimeInterval: Double(timeout), repeats: false) { [weak self] _ in
+                guard let self = self, self.isRunning else { return }
+                self.resultValue = 0
+                self.variables["result"] = .integer(0)
+                self.variables["timeout"] = .integer(1)
+                self.scheduleNextLine()
+            }
+        }
+
+        // Event-driven: subscribe to terminal data stream
+        clientProxy?.subscribeToTerminalData(reply: { [weak self] data in
+            guard let self = self, self.isRunning, !self.isCancelled else { return }
+            if let str = String(data: data, encoding: .utf8) {
+                accumulated += str
+                // Trim buffer if exceeding max size, keeping the tail
+                if accumulated.count > MacroConstants.waitBufferMaxSize {
+                    accumulated = String(accumulated.suffix(MacroConstants.waitBufferMaxSize))
+                }
+            }
+
+            for (idx, pattern) in patterns.enumerated() {
+                if let regex = try? NSRegularExpression(pattern: pattern, options: options),
+                   let match = regex.firstMatch(in: accumulated,
+                                                 range: NSRange(accumulated.startIndex..., in: accumulated)) {
+                    timeoutTimer?.invalidate()
+                    self.resultValue = idx + 1
+                    self.variables["result"] = .integer(idx + 1)
+                    self.variables["timeout"] = .integer(0)
+
+                    let matchRange = Range(match.range, in: accumulated)!
+                    self.matchStr = String(accumulated[matchRange])
+                    self.variables["matchstr"] = .string(self.matchStr)
+
+                    // Extract group captures into groupmatchstr1..9
+                    for g in 1...min(9, match.numberOfRanges - 1) {
+                        if let gRange = Range(match.range(at: g), in: accumulated) {
+                            self.groupMatchStrs[g] = String(accumulated[gRange])
+                            self.variables["groupmatchstr\(g)"] = .string(self.groupMatchStrs[g])
+                        }
+                    }
+
+                    self.scheduleNextLine()
+                    return
+                }
+            }
+            // Data received but no regex match yet — wait for next data event
+        })
     }
 
     // MARK: waitn - [IMPLEMENTED]
@@ -1554,36 +1826,36 @@ extension MacroRunner {
         let byteCount = resolveInt(args[0])
         cancelExecTimer()
         var accumulated = Data()
-        let startTime = Date()
+        let timeout = timeoutValue
 
-        func poll() {
-            guard self.isRunning, !self.isCancelled else { return }
-            if self.timeoutValue > 0 && Date().timeIntervalSince(startTime) > Double(self.timeoutValue) {
+        // Set timeout timer (event-driven)
+        var timeoutTimer: Timer?
+        if timeout > 0 {
+            timeoutTimer = Timer.scheduledTimer(withTimeInterval: Double(timeout), repeats: false) { [weak self] _ in
+                guard let self = self, self.isRunning else { return }
                 self.resultValue = 0
                 self.variables["result"] = .integer(0)
+                self.variables["timeout"] = .integer(1)
                 self.scheduleNextLine()
-                return
             }
-
-            self.clientProxy?.recvFromTerminal(timeout: 1, reply: { [weak self] data in
-                guard let self = self else { return }
-                if let data = data { accumulated.append(data) }
-
-                if accumulated.count >= byteCount {
-                    self.inputStr = String(data: accumulated, encoding: .utf8) ?? ""
-                    self.variables["inputstr"] = .string(self.inputStr)
-                    self.resultValue = 1
-                    self.variables["result"] = .integer(1)
-                    self.scheduleNextLine()
-                } else {
-                    self.execTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: false) { _ in
-                        poll()
-                    }
-                }
-            })
         }
 
-        poll()
+        // Event-driven: subscribe to terminal data stream
+        clientProxy?.subscribeToTerminalData(reply: { [weak self] data in
+            guard let self = self, self.isRunning, !self.isCancelled else { return }
+            accumulated.append(data)
+
+            if accumulated.count >= byteCount {
+                timeoutTimer?.invalidate()
+                self.inputStr = String(data: accumulated, encoding: .utf8) ?? ""
+                self.variables["inputstr"] = .string(self.inputStr)
+                self.resultValue = 1
+                self.variables["result"] = .integer(1)
+                self.variables["timeout"] = .integer(0)
+                self.scheduleNextLine()
+            }
+            // Else wait for more data events
+        })
     }
 
     // MARK: wait4all - [IMPLEMENTED]
@@ -1595,42 +1867,46 @@ extension MacroRunner {
         cancelExecTimer()
         var accumulated = ""
         var found = Array(repeating: false, count: patterns.count)
-        let startTime = Date()
+        let timeout = timeoutValue
 
-        func poll() {
-            guard self.isRunning, !self.isCancelled else { return }
-            if self.timeoutValue > 0 && Date().timeIntervalSince(startTime) > Double(self.timeoutValue) {
+        // Set timeout timer (event-driven, no polling)
+        var timeoutTimer: Timer?
+        if timeout > 0 {
+            timeoutTimer = Timer.scheduledTimer(withTimeInterval: Double(timeout), repeats: false) { [weak self] _ in
+                guard let self = self, self.isRunning else { return }
                 self.resultValue = 0
                 self.variables["result"] = .integer(0)
+                self.variables["timeout"] = .integer(1)
                 self.scheduleNextLine()
-                return
             }
-
-            self.clientProxy?.recvFromTerminal(timeout: 1, reply: { [weak self] data in
-                guard let self = self else { return }
-                if let data = data, let str = String(data: data, encoding: .utf8) {
-                    accumulated += str
-                }
-
-                for (idx, pattern) in patterns.enumerated() {
-                    if !found[idx] && accumulated.contains(pattern) {
-                        found[idx] = true
-                    }
-                }
-
-                if found.allSatisfy({ $0 }) {
-                    self.resultValue = 1
-                    self.variables["result"] = .integer(1)
-                    self.scheduleNextLine()
-                } else {
-                    self.execTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: false) { _ in
-                        poll()
-                    }
-                }
-            })
         }
 
-        poll()
+        // Event-driven: subscribe to terminal data stream
+        clientProxy?.subscribeToTerminalData(reply: { [weak self] data in
+            guard let self = self, self.isRunning, !self.isCancelled else { return }
+            if let str = String(data: data, encoding: .utf8) {
+                accumulated += str
+                // Trim buffer if exceeding max size, keeping the tail
+                if accumulated.count > MacroConstants.waitBufferMaxSize {
+                    accumulated = String(accumulated.suffix(MacroConstants.waitBufferMaxSize))
+                }
+            }
+
+            for (idx, pattern) in patterns.enumerated() {
+                if !found[idx] && accumulated.contains(pattern) {
+                    found[idx] = true
+                }
+            }
+
+            if found.allSatisfy({ $0 }) {
+                timeoutTimer?.invalidate()
+                self.resultValue = 1
+                self.variables["result"] = .integer(1)
+                self.variables["timeout"] = .integer(0)
+                self.scheduleNextLine()
+            }
+            // Else wait for more data events
+        })
     }
 
     // MARK: waitevent - [IMPLEMENTED]
@@ -2222,7 +2498,7 @@ extension MacroRunner {
 
     func cmdInputBox(_ args: [String], password: Bool) { // [IMPLEMENTED]
         let prompt = args.isEmpty ? "" : resolveString(args[0])
-        let title = args.count > 1 ? resolveString(args[1]) : ""
+        _ = args.count > 1 ? resolveString(args[1]) : ""  // title: TODO pass via XPC when showDialog supports it
         let defaultVal = args.count > 2 ? resolveString(args[2]) : ""
         cancelExecTimer()
 
@@ -3079,7 +3355,8 @@ extension MacroRunner {
     // MARK: execcmnd - [IMPLEMENTED]
 
     func cmdExecCmnd(_ args: [String], fullLine: String) { // [IMPLEMENTED]
-        // Extract command from full line after "execcmnd"
+        // execcmnd dynamically interprets and executes a TTL command string.
+        // Per TeraTerm spec, this is NOT a shell command executor (that's "exec").
         let cmdStr: String
         if let range = fullLine.range(of: "execcmnd", options: .caseInsensitive) {
             cmdStr = String(fullLine[range.upperBound...]).trimmingCharacters(in: .whitespaces)
@@ -3087,24 +3364,23 @@ extension MacroRunner {
             cmdStr = args.map { resolveString($0) }.joined(separator: " ")
         }
 
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/bin/sh")
-        process.arguments = ["-c", cmdStr]
-        let outPipe = Pipe()
-        process.standardOutput = outPipe
+        // Resolve string variables in the command string
+        let resolved = resolveString(cmdStr)
 
-        do {
-            try process.run()
-            process.waitUntilExit()
-            let data = outPipe.fileHandleForReading.readDataToEndOfFile()
-            let output = String(data: data, encoding: .utf8)?.trimmingCharacters(in: .newlines) ?? ""
-            inputStr = output
-            variables["inputstr"] = .string(output)
-            resultValue = Int(process.terminationStatus)
-        } catch {
-            resultValue = -1
+        guard !resolved.isEmpty else { return }
+
+        // Parse the resolved TTL command and execute it internally
+        let parts = parseLine(resolved)
+        guard let innerCmd = parts.first?.lowercased() else { return }
+
+        let innerArgs = Array(parts.dropFirst())
+
+        // Check for assignment: var = expr
+        if parts.count >= 3 && parts[1] == "=" {
+            handleAssignment(parts)
+        } else {
+            executeCommand(innerCmd, args: innerArgs, fullLine: resolved)
         }
-        variables["result"] = .integer(resultValue)
     }
 
     // MARK: setexitcode - [IMPLEMENTED]
@@ -3149,12 +3425,18 @@ extension MacroRunner {
     // MARK: getver - [IMPLEMENTED]
 
     func cmdGetVer(_ args: [String]) { // [IMPLEMENTED]
-        guard !args.isEmpty else { return }
-        let destVar = args[0].lowercased()
+        let destVar = args.isEmpty ? nil : args[0].lowercased()
         cancelExecTimer()
         clientProxy?.getAppVersion(reply: { [weak self] version in
             guard let self = self else { return }
-            self.variables[destVar] = .string(version)
+            if let destVar = destVar {
+                self.variables[destVar] = .string(version)
+            }
+            // Store version components in result
+            let parts = version.split(separator: ".")
+            let major = Int(parts.first ?? "0") ?? 0
+            self.resultValue = major
+            self.variables["result"] = .integer(major)
             self.scheduleNextLine()
         })
     }
@@ -3699,7 +3981,9 @@ extension MacroRunner {
     // MARK: beep - [IMPLEMENTED]
 
     func cmdBeep() { // [IMPLEMENTED]
-        NSSound.beep()
+        #if canImport(AudioToolbox)
+        AudioServicesPlaySystemSound(SystemSoundID(1005))  // System alert beep
+        #endif
     }
 
     // MARK: setdebug - [IMPLEMENTED]
@@ -3906,6 +4190,10 @@ extension MacroRunner {
         let option = args.count > 1 ? resolveString(args[1]) : ""
         cancelExecTimer()
         isTransferWaiting = true
+        transferStartTime = Date()
+        currentTransferProtocol = proto
+        currentTransferDirection = "send"
+        currentTransferPath = localPath
 
         clientProxy?.startFileSend(protocolName: proto, localPath: localPath, option: option,
                                     reply: { [weak self] success, errorMsg in
@@ -3935,6 +4223,10 @@ extension MacroRunner {
         let localDir = args.isEmpty ? "" : resolveString(args[0])
         cancelExecTimer()
         isTransferWaiting = true
+        transferStartTime = Date()
+        currentTransferProtocol = proto
+        currentTransferDirection = "recv"
+        currentTransferPath = localDir
 
         clientProxy?.startFileRecv(protocolName: proto, localDir: localDir,
                                     reply: { [weak self] success, errorMsg, savedPath in
@@ -3958,29 +4250,72 @@ extension MacroRunner {
     private func pollTransferStatus() {
         guard isRunning, !isCancelled, isTransferWaiting else { return }
 
+        // Check transfer timeout (default 600 seconds)
+        if let startTime = transferStartTime {
+            let elapsed = Date().timeIntervalSince(startTime)
+            if elapsed > MacroXPCEndpoint.defaultTransferTimeout {
+                isTransferWaiting = false
+                transferStartTime = nil
+                resultValue = -1
+                variables["result"] = .integer(-1)
+                onTransferProgress?("idle", 0, 0)
+                clientProxy?.cancelTransfer(reply: {})
+                let detail = TransferErrorDetail(
+                    protocolName: currentTransferProtocol,
+                    direction: currentTransferDirection,
+                    filePath: currentTransferPath,
+                    bytesTransferred: 0,
+                    totalBytes: 0,
+                    lineNumber: currentLineNumber
+                )
+                onTransferError?(detail)
+                reportError("\(currentTransferProtocol)\(currentTransferDirection): transfer timeout (\(Int(MacroXPCEndpoint.defaultTransferTimeout))s)")
+                scheduleNextLine()
+                return
+            }
+        }
+
         clientProxy?.getTransferStatus(reply: { [weak self] statusStr, bytesSent, totalBytes in
             guard let self = self else { return }
 
             let status = TransferStatusString(rawValue: statusStr) ?? .idle
 
+            self.onTransferProgress?(statusStr, bytesSent, totalBytes)
+
             switch status {
             case .done:
                 self.isTransferWaiting = false
+                self.transferStartTime = nil
                 self.resultValue = 0
                 self.variables["result"] = .integer(0)
+                self.onTransferProgress?("done", bytesSent, totalBytes)
                 self.scheduleNextLine()
 
             case .error:
                 self.isTransferWaiting = false
+                self.transferStartTime = nil
                 self.resultValue = -1
                 self.variables["result"] = .integer(-1)
+                self.onTransferProgress?("idle", 0, 0)
+                let detail = TransferErrorDetail(
+                    protocolName: self.currentTransferProtocol,
+                    direction: self.currentTransferDirection,
+                    filePath: self.currentTransferPath,
+                    bytesTransferred: bytesSent,
+                    totalBytes: totalBytes,
+                    lineNumber: self.currentLineNumber
+                )
+                self.onTransferError?(detail)
+                self.reportError("\(self.currentTransferProtocol)\(self.currentTransferDirection): transfer error")
                 self.scheduleNextLine()
 
             case .idle:
                 // Transfer finished already
                 self.isTransferWaiting = false
+                self.transferStartTime = nil
                 self.resultValue = 0
                 self.variables["result"] = .integer(0)
+                self.onTransferProgress?("idle", 0, 0)
                 self.scheduleNextLine()
 
             case .sending, .receiving:
@@ -4002,11 +4337,11 @@ extension MacroRunner {
         let remotePath = resolveString(args[0])
         let localDir = args.count > 1 ? resolveString(args[1]) : ""
 
-        // Send Kermit GET command, then start receive
+        // Send Kermit GET command, then start receive into localDir
         let getCmd = "get \(remotePath)\r"
         if let data = getCmd.data(using: .utf8) {
             clientProxy?.sendToTerminal(data: data, reply: { [weak self] in
-                self?.cmdFileTransferRecv([], proto: "kermit")
+                self?.cmdFileTransferRecv(localDir.isEmpty ? [] : [localDir], proto: "kermit")
             })
         }
         cancelExecTimer()
@@ -4015,13 +4350,18 @@ extension MacroRunner {
     // MARK: kmtfinish - [IMPLEMENTED]
 
     func cmdKermitFinish() { // [IMPLEMENTED]
-        let finishCmd = "finish\r"
-        if let data = finishCmd.data(using: .utf8) {
-            clientProxy?.sendToTerminal(data: data, reply: { [weak self] in
-                self?.scheduleNextLine()
-            })
-        }
         cancelExecTimer()
+        clientProxy?.cancelTransfer(reply: { [weak self] in
+            guard let self = self else { return }
+            let finishCmd = "finish\r"
+            if let data = finishCmd.data(using: .utf8) {
+                self.clientProxy?.sendToTerminal(data: data, reply: { [weak self] in
+                    self?.scheduleNextLine()
+                })
+            } else {
+                self.scheduleNextLine()
+            }
+        })
     }
 
     // MARK: scpsend - [IMPLEMENTED]

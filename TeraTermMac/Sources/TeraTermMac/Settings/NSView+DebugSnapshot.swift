@@ -12,6 +12,7 @@
 
 #if canImport(AppKit)
 import AppKit
+import os
 
 extension NSView {
 
@@ -35,7 +36,7 @@ extension NSView {
 
         let bounds = self.bounds
         guard bounds.width > 0 && bounds.height > 0 else {
-            NSLog("[DebugSnapshot] %@", TTL("debug.snapshot.zeroSize", name))
+            TTLog.snapshot.warning("Zero size for view: \(name, privacy: .public)")
             return
         }
 
@@ -54,7 +55,7 @@ extension NSView {
             bytesPerRow: 0,
             bitsPerPixel: 0
         ) else {
-            NSLog("[DebugSnapshot] %@", TTL("debug.snapshot.bitmapFailed", name))
+            TTLog.snapshot.error("Failed to create bitmap for: \(name, privacy: .public)")
             return
         }
 
@@ -110,7 +111,7 @@ extension NSView {
             try FileManager.default.createDirectory(
                 at: desktopURL, withIntermediateDirectories: true)
         } catch {
-            NSLog("[DebugSnapshot] %@", TTL("debug.snapshot.dirFailed", "\(error)"))
+            TTLog.snapshot.error("Failed to create directory: \(error.localizedDescription, privacy: .public)")
             return
         }
 
@@ -118,15 +119,15 @@ extension NSView {
             .appendingPathComponent("\(name)_\(dateStr).png")
 
         guard let pngData = bitmapRep.representation(using: .png, properties: [:]) else {
-            NSLog("[DebugSnapshot] %@", TTL("debug.snapshot.pngFailed", name))
+            TTLog.snapshot.error("Failed to generate PNG data for: \(name, privacy: .public)")
             return
         }
 
         do {
             try pngData.write(to: fileURL, options: .atomic)
-            NSLog("[DebugSnapshot] %@", TTL("debug.snapshot.saved", fileURL.path))
+            TTLog.snapshot.info("Saved snapshot: \(fileURL.path, privacy: .public)")
         } catch {
-            NSLog("[DebugSnapshot] %@", TTL("debug.snapshot.writeFailed", "\(error)"))
+            TTLog.snapshot.error("Failed to write snapshot: \(error.localizedDescription, privacy: .public)")
         }
     }
 

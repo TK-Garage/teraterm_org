@@ -34,7 +34,9 @@ TTLMacro.app is a standalone macOS application that serves as the macro executio
          +------------------------------+
 
    MacroServiceProtocol: TeraTermMac.app --> TTLMacro.app
-     (runMacro, stopMacro, pauseMacro, resumeMacro, macroStatus, sendVariable)
+     (runMacro, stopMacro, pauseMacro, resumeMacro, macroStatus, sendVariable,
+      stepLine, stepOver, stepOut, addBreakpoint, removeBreakpoint,
+      clearBreakpoints, getVariables)
 
    MacroClientProtocol:  TTLMacro.app --> TeraTermMac.app
      (sendToTerminal, recvFromTerminal, showDialog, setWindowTitle,
@@ -127,7 +129,7 @@ All commands are case-insensitive (`Send` = `send` = `SEND`).
 | `strcompare` | `<str1> <str2>` | `result`: -1, 0, or 1 | Compare two strings. | Yes |
 | `strscan` | `<string> <pattern>` | `result`: position (1-based), 0=not found | Search for substring. | Yes |
 | `strmatch` | `<string> <regex>` | `result`: match position (1-based), 0=no match; `matchstr`: matched string | Regex match. | Yes |
-| `str2int` | `<string> <intvar>` | `result`: 1=success, 0=failure | Convert string to integer. Supports `$FF` hex. | Yes |
+| `str2int` | `<intvar> <string>` | `result`: 1=success, 0=failure | Convert string to integer. Supports `$FF` hex. | Yes |
 | `int2str` | `<strvar> <int>` | -- | Convert integer to string. | Yes |
 | `str2code` | `<string> <intvar>` | -- | Convert first character to code. | Yes |
 | `code2str` | `<intcode> <strvar>` | -- | Convert character code to string. | Yes |
@@ -140,8 +142,8 @@ All commands are case-insensitive (`Send` = `send` = `SEND`).
 | `strjoin` | `<strvar> <delimiter> <str1> [<str2>...]` | -- | Join strings with delimiter. | Yes |
 | `tolower` | `<strvar>` | -- | Convert to lowercase. | Yes |
 | `toupper` | `<strvar>` | -- | Convert to uppercase. | Yes |
-| `sprintf` | `<format> [<args>...]` | `inputstr`: formatted string | Format string (`%d`, `%s`, `%x`, `%o`, `%c`, `%%`). | Yes |
-| `sprintf2` | `<strvar> <format> [<args>...]` | -- | Format string into named variable. | Yes |
+| `sprintf` | `<strvar> <format> [<args>...]` | -- | Format string into named variable (`%d`, `%s`, `%x`, `%o`, `%c`, `%%`). | Yes |
+| `sprintf2` | `<strvar> <format> [<args>...]` | `inputstr`: formatted string | Format string, store result in `inputstr` (strvar is format destination for compat). | Yes |
 
 ### Control Flow
 
@@ -177,7 +179,7 @@ All commands are case-insensitive (`Send` = `send` = `SEND`).
 | `intdim` | `<arrayname> <size>` | -- | Declare integer array. | Yes |
 | `strdim` | `<arrayname> <size>` | -- | Declare string array. | Yes |
 | `int2str` | `<strvar> <int>` | -- | Convert integer to string. | Yes |
-| `str2int` | `<string> <intvar>` | `result`: 1=success, 0=failure | Convert string to integer. | Yes |
+| `str2int` | `<intvar> <string>` | `result`: 1=success, 0=failure | Convert string to integer. | Yes |
 | `str2code` | `<string> <intvar>` | -- | Convert first char to code. | Yes |
 | `code2str` | `<intcode> <strvar>` | -- | Convert code to char string. | Yes |
 | `random` | `<intvar> <max>` | -- | Generate random number 0 to max-1. | Yes |
@@ -276,7 +278,7 @@ All commands are case-insensitive (`Send` = `send` = `SEND`).
 | `getver` | `<intvar>` | -- | Get version number (major*10000 + minor*100 + patch). | Yes |
 | `getttdir` | `<strvar>` | -- | Get application directory. | Yes |
 | `getttpos` | `<xvar> <yvar>` | -- | Get terminal window position. | Yes |
-| `enablekeyb` | `<flag>` (int) | -- | Enable (1) or disable (0) keyboard. | Yes |
+| `enablekeyb` | `<flag>` (int) | -- | Enable (1) or disable (0) keyboard. Uses `KeyboardHandler.inputEnabled` property. | Yes |
 | `settitle` | `<title>` (string) | -- | Set terminal window title. | Yes |
 | `gettitle` | `<strvar>` | -- | Get terminal window title. | Yes |
 | `clearscreen` | -- | -- | Clear terminal screen. | Yes |
@@ -352,21 +354,23 @@ All commands are case-insensitive (`Send` = `send` = `SEND`).
 | `scprecv` | `<remotepath> [<localpath>]` | `result`: 0=success, 1=failure | SCP receive (requires SSH). | Yes |
 | `scpsend` | `<localpath> [<remotepath>]` | `result`: 0=success, 1=failure | SCP send (requires SSH). | Yes |
 | `recvfile` | `<filepath> <binary> <autostop_sec>` | `result`: 0=success, 1=failure | Receive data to file. autostop: 0=infinite. | Yes |
-| `protocolrecv` | `<protocol> [<args>...]` | -- | Generic protocol receive. | Yes |
-| `protocolsend` | `<protocol> [<args>...]` | -- | Generic protocol send. | Yes |
+| `protocolrecv` | `<protocol> [<args>...]` | -- | Generic protocol receive. **未実装** — 個別プロトコルコマンドを使用。 | No (未実装) |
+| `protocolsend` | `<protocol> [<args>...]` | -- | Generic protocol send. **未実装** — 個別プロトコルコマンドを使用。 | No (未実装) |
 
 ### Security
 
+macOS Keychain (`Security.framework`) を使用してパスワードを安全に保存・取得する。`TTLKeychainManager` シングルトンが Keychain API をラップ。service 名は `com.teraterm.mac.ttl` 固定、account 名は `<host>:<username>` 形式。
+
 | Command | Args | Return | Description | TeraTerm Compatible |
 |---------|------|--------|-------------|---------------------|
-| `getpassword` | `<strvar> <prompt>` | -- | Get password (stub on macOS). | Yes (stub) |
-| `setpassword` | `<name> <password>` | -- | Store password (stub on macOS). | Yes (stub) |
-| `delpassword` | `<name>` | -- | Delete password (stub on macOS). | Yes (stub) |
-| `ispassword` | `<name>` | `result`: 1=exists, 0=not exists | Check password exists (stub on macOS). | Yes (stub) |
-| `getpassword2` | `<strvar> <prompt>` | -- | Get password variant 2 (stub on macOS). | Yes (stub) |
-| `setpassword2` | `<name> <password>` | -- | Store password variant 2 (stub on macOS). | Yes (stub) |
-| `delpassword2` | `<name>` | -- | Delete password variant 2 (stub on macOS). | Yes (stub) |
-| `ispassword2` | `<name>` | `result`: 1=exists, 0=not exists | Check password variant 2 (stub on macOS). | Yes (stub) |
+| `getpassword` | `<strvar> <account>` | -- | Keychain からパスワード取得。未保存時はダイアログ表示後に保存。 | Yes (Keychain) |
+| `setpassword` | `<account> <password>` | -- | Keychain にパスワード保存 (上書き)。 | Yes (Keychain) |
+| `delpassword` | `<account>` | -- | Keychain からパスワード削除。 | Yes (Keychain) |
+| `ispassword` | `<account>` | `result`: 1=exists, 0=not exists | Keychain にパスワードが存在するか確認。 | Yes (Keychain) |
+| `getpassword2` | `<strvar> <account>` | -- | `getpassword` と同一実装 (互換性エイリアス)。 | Yes (Keychain) |
+| `setpassword2` | `<account> <password>` | -- | `setpassword` と同一実装 (互換性エイリアス)。 | Yes (Keychain) |
+| `delpassword2` | `<account>` | -- | `delpassword` と同一実装 (互換性エイリアス)。 | Yes (Keychain) |
+| `ispassword2` | `<account>` | `result`: 1=exists, 0=not exists | `ispassword` と同一実装 (互換性エイリアス)。 | Yes (Keychain) |
 
 ### Misc
 
@@ -403,11 +407,11 @@ All commands are case-insensitive (`Send` = `send` = `SEND`).
 
 ## XPC Protocol Definition
 
-XPC service name: `com.yourapp.TeraTermMac.TTLMacro.xpc`
+XPC service name: `com.teraterm.mac.TTLMacro`
 
 ### MacroServiceProtocol (TeraTermMac --> TTLMacro)
 
-Controls the macro execution engine. Defined in `MacroServiceProtocol.swift`.
+Controls the macro execution engine. Defined in `MacroXPCProtocols.swift`. 13 methods total (6 macro control + 7 debugger).
 
 | Method | Args | Reply | Description |
 |--------|------|-------|-------------|
@@ -417,20 +421,27 @@ Controls the macro execution engine. Defined in `MacroServiceProtocol.swift`.
 | `resumeMacro` | -- | `() -> Void` | Resume a paused macro |
 | `macroStatus` | -- | `(String) -> Void` | Get current macro execution status |
 | `sendVariable` | `name: String, value: String` | `() -> Void` | Pass a variable to the macro environment |
+| `stepLine` | -- | `() -> Void` | Execute one line then pause (step into) |
+| `stepOver` | -- | `() -> Void` | Step over (maintain call stack depth) |
+| `stepOut` | -- | `() -> Void` | Step out (run until call stack becomes shallower) |
+| `addBreakpoint` | `line: Int` | `() -> Void` | Add breakpoint at line (1-based) |
+| `removeBreakpoint` | `line: Int` | `() -> Void` | Remove breakpoint at line |
+| `clearBreakpoints` | -- | `() -> Void` | Remove all breakpoints |
+| `getVariables` | -- | `([String: String]) -> Void` | Get all variable values for debugger |
 
 ### MacroClientProtocol (TTLMacro --> TeraTermMac)
 
-Callbacks from the macro engine to the terminal. Defined in `MacroClientProtocol.swift`.
+Callbacks from the macro engine to the terminal. Defined in `MacroXPCProtocols.swift`. 64 methods total.
 
 | Method | Args | Reply | Description |
 |--------|------|-------|-------------|
-| `sendToTerminal` | `data: Data` | -- (oneway) | Send data to the terminal |
+| `sendToTerminal` | `data: Data` | `() -> Void` | Send data to the terminal |
 | `recvFromTerminal` | `timeout: Int` | `(Data?) -> Void` | Receive data from the terminal with timeout |
 | `showDialog` | `type: String, message: String, defaultValue: String` | `(Int, String) -> Void` | Show a dialog and get user response |
-| `setWindowTitle` | `title: String` | -- (oneway) | Set the terminal window title |
-| `macroDidFinish` | `exitCode: Int` | -- (oneway) | Notify normal macro completion |
-| `macroDidFail` | `error: String, line: Int` | -- (oneway) | Notify macro failure with error info |
-| `logMessage` | `level: String, text: String` | -- (oneway) | Log a message to the terminal |
+| `setWindowTitle` | `title: String` | `() -> Void` | Set the terminal window title |
+| `macroDidFinish` | `exitCode: Int` | `() -> Void` | Notify normal macro completion |
+| `macroDidFail` | `error: String, line: Int` | `() -> Void` | Notify macro failure with error info |
+| `logMessage` | `level: String, text: String` | `() -> Void` | Log a message to the terminal |
 | `terminateApp` | -- | `() -> Void` | Request the terminal app to terminate |
 | `getAppVersion` | -- | `(String) -> Void` | Get the terminal app version string |
 | `didExecuteLine` | `lineNumber: Int, lineText: String` | `() -> Void` | Notify line execution for status bar updates |
@@ -451,14 +462,15 @@ Only the following types are permitted over XPC connections:
 
 ### Reply Closures
 
-All protocol methods use reply closures for asynchronous communication. Oneway methods (`sendToTerminal`, `setWindowTitle`, `macroDidFinish`, `macroDidFail`, `logMessage`) do not require a reply.
+All protocol methods use reply closures (`reply: @escaping (...) -> Void`) for asynchronous communication. No oneway methods are used; all methods require a reply closure to be called on completion.
 
 ### Reconnection Policy
 
-- Maximum reconnection attempts: **3**
-- Interval between attempts: **2 seconds**
-- On reconnection failure: call `macroDidFail(error:line:)` with an appropriate error message
+- Maximum reconnection attempts: **3** (`MacroConstants.maxReconnectAttempts`)
+- Interval between attempts: **2秒 × attempt数** (指数バックオフ)
+- On reconnection failure: `onConnectionLost` コールバックで通知
 - The XPC connection uses `interruptionHandler` and `invalidationHandler` to detect disconnects
+- **制限事項**: anonymous listener は再利用不可のため、再接続時は TTLMacro.app を再起動して新しい listener endpoint を取得する。再接続成功時は `lastMacroScriptPath` を使ってマクロを自動再実行する
 
 ### Execution States
 
@@ -557,21 +569,32 @@ TeraTermMac/
 ├── Sources/
 │   ├── TeraTermMac/ (existing, add XPC client)
 │   │   ├── App/
-│   │   │   └── MacroXPCManager.swift (new)
+│   │   │   ├── MacroXPCManager.swift       ← XPC接続管理 (MacroClientProtocol実装)
+│   │   │   ├── MacroXPCExtensions.swift
+│   │   │   └── TTLogger.swift              ← os.Logger 統一定義
+│   │   ├── Keyboard/
+│   │   │   └── KeyboardHandler.swift       ← inputEnabled プロパティ追加
+│   │   ├── Communication/
+│   │   │   └── ConnectionManager.swift     ← fileDescriptor を private(set) に変更
 │   │   └── Macro/ (existing)
-│   ├── TTLMacroShared/ (new - shared module)
-│   │   ├── MacroServiceProtocol.swift
-│   │   ├── MacroClientProtocol.swift
+│   ├── TTLMacroShared/ (shared module)
+│   │   ├── MacroXPCProtocols.swift         ← MacroServiceProtocol + MacroClientProtocol 定義
+│   │   ├── MacroConstants.swift            ← 共有定数 (タイムアウト、バッファサイズ等)
 │   │   ├── MacroLocalizable.swift
 │   │   ├── MacroDialogHelper.swift
+│   │   ├── TransferErrorDetail.swift       ← 転送エラー詳細モデル＋ダイアログ
 │   │   └── Resources/
 │   │       ├── en.lproj/Localizable.strings
 │   │       └── ja.lproj/Localizable.strings
-│   └── TTLMacro/ (new - macro app)
+│   └── TTLMacro/ (macro app)
 │       ├── main.swift
 │       ├── TTLMacroApp.swift
-│       ├── XPCServiceDelegate.swift
-│       ├── StatusBarController.swift
+│       ├── MacroRunner.swift               ← マクロ実行エンジン (176+コマンド統合)
+│       ├── XPCServiceHandler.swift         ← XPCリスナー側ハンドラ
+│       ├── StatusBarManager.swift          ← ステータスバー UI
+│       ├── VariableWatchPanel.swift        ← デバッガ変数ウォッチパネル
+│       ├── BreakpointStore.swift           ← ブレークポイント永続化
+│       ├── TTLKeychainManager.swift        ← Keychain連携 (Security.framework)
 │       ├── Info.plist
 │       ├── TTLMacro.entitlements
 │       └── Resources/
@@ -583,6 +606,7 @@ TeraTermMac/
 │       ├── LaunchFlowTests.swift
 │       ├── MacroCommandTests.swift
 │       ├── StatusBarTests.swift
+│       ├── RemainingTaskTests.swift
 │       └── ...
 └── TestMacros/
     ├── test_string.ttl
@@ -671,6 +695,13 @@ Processing locations:
 | 61 | `setEcho(flag:reply:)` | TeraTermMac側 | ローカルエコー設定 |
 | 62 | `displayString(text:reply:)` | TeraTermMac側 | 端末表示(非送信) |
 | 63 | `sendPasswordData(data:reply:)` | TeraTermMac側 | パスワード安全送信 |
+| 64 | `broadcastData(data:reply:)` | TeraTermMac側 | ブロードキャストデータ送信 |
+| 65 | `setMulticastName(name:reply:)` | TeraTermMac側 | マルチキャストグループ名設定 |
+| 66 | `multicastData(groupName:data:reply:)` | TeraTermMac側 | マルチキャストデータ送信 |
+| 67 | `getSessionList(reply:)` | TeraTermMac側 | セッション一覧取得 |
+| 68 | `sendToSession(sessionId:data:reply:)` | TeraTermMac側 | 指定セッションへデータ送信 |
+| 69 | `subscribeToTerminalData(reply:)` | TeraTermMac側 | ターミナルデータ購読 (wait系コマンド用) |
+| 70 | `setTerminalSize(cols:rows:reply:)` | TeraTermMac側 | ターミナルサイズ設定 |
 
 ### TTLMacro側で完結するコマンド (XPC不要)
 
@@ -748,14 +779,14 @@ Processing locations:
 | 項目 | 値 |
 |---|---|
 | kSecClass | kSecClassGenericPassword |
-| kSecAttrService | `com.yourapp.TeraTermMac.TTLMacro` |
+| kSecAttrService | `com.teraterm.mac.ttl` |
 | kSecAttrAccount | `<host>:<username>` (例: `192.168.1.1:admin`) |
 | kSecAttrAccessible | kSecAttrAccessibleWhenUnlockedThisDeviceOnly |
 
 ### service 名・account 名の命名規則
 
 ```
-service: "com.yourapp.TeraTermMac.TTLMacro" (固定)
+service: "com.teraterm.mac.ttl" (固定)
 account: "<接続先ホスト>:<ユーザー名>"
   例: "192.168.1.1:admin"
   例: "server.example.com:root"
@@ -865,8 +896,192 @@ TTLMacro.app                          TeraTermMac.app
 
 ### タイムアウトと排他制御
 
-- ポーリング間隔: 0.5秒
-- デフォルトタイムアウト: 600秒 (`settimeout` の値を参照)
+- ポーリング間隔: 0.5秒 (`MacroXPCEndpoint.transferPollInterval`)
+- デフォルトタイムアウト: 600秒 (`MacroXPCEndpoint.defaultTransferTimeout`)
+- タイムアウト処理: `pollTransferStatus()` 内で `transferStartTime` からの経過時間を監視。タイムアウト時は `cancelTransfer` を呼び出し、`TransferErrorDetail` 経由でエラー通知
 - 待機中も `pause` / `stop` を受付 (DispatchQueue非同期ポーリング + キャンセルフラグ)
 - 転送中に別の転送コマンド実行時: `macroDidFail(error: "Transfer already in progress", line: N)`
 - TeraTermMac.app側で `isTransferInProgress` フラグを管理
+
+---
+
+## 実装ノート (2026-03-15 更新 / #5-#7 追記)
+
+### ログ基盤: os.Logger への統一
+
+全ての `NSLog` 呼び出しを Apple の統一ログシステム (`os.Logger`) に移行済み。
+
+| Logger インスタンス | サブシステム | カテゴリ | 用途 |
+|---|---|---|---|
+| `TTLog.config` | `com.teraterm.mac` | `ConfigPersistence` | TERATERM.INI の読み書き |
+| `TTLog.snapshot` | `com.teraterm.mac` | `DebugSnapshot` | デバッグ用 PNG スナップショット生成 |
+| `TTLog.settings` | `com.teraterm.mac` | `TerminalSettings` | 端末設定の保存/読み込み |
+| `TTLog.keymap` | `com.teraterm.mac` | `KeyMap` | キーマップファイルの読み込み |
+| `TTLog.tcp` | `com.teraterm.mac` | `TCPConnection` | TCP 接続のエラー/リトライ |
+| `TTLog.localization` | `com.teraterm.mac` | `TTL` | ローカライズリソース解決 |
+| `TTLog.snapshotGen` | `com.teraterm.mac` | `SnapshotGenerator` | ダイアログ検証用スナップショット |
+| `TTLog.snapshotTest` | `com.teraterm.mac` | `MultilingualSnapshot` | 多言語スナップショットテスト |
+| `TTLog.xpc` | `com.teraterm.mac` | `XPC` | XPC サービス通信 |
+
+TTLMacro.app 側は独自の `Logger(subsystem: "com.teraterm.ttlmacro", category: "XPC")` を使用。
+
+定義ファイル: `Sources/TeraTermMac/App/TTLogger.swift`
+
+### SerialConnection.fileDescriptor アクセス
+
+`SerialConnection.fileDescriptor` を `private` → `private(set)` に変更。
+`MacroXPCExtensions.swift` の `getFileDescriptor()` から Mirror リフレクションを除去し、
+直接プロパティアクセスに置き換え済み。
+
+### KeyboardHandler.inputEnabled
+
+`KeyboardHandler` に `inputEnabled: Bool` プロパティ (`private(set)`) を追加。
+`processKeyEvent()` の先頭で `guard inputEnabled` チェックを実行。
+`MacroXPCExtensions.swift` の `keyboardEnabled` 計算プロパティは
+`inputEnabled` プロパティに委譲する形に変更。
+従来の `userDefinedKeys["__disabled__"]` センチネル方式と Mirror リフレクションを完全除去。
+
+### XPC 再接続ハンドリング (#5)
+
+`MacroXPCManager.handleConnectionError()` を実装。TTLMacro.app がクラッシュした場合:
+
+1. 既存の XPC 接続を invalidate
+2. 指数バックオフ (2s × attempt数) で TTLMacro.app を再起動
+3. endpoint ファイルのポーリングで新しい接続を確立
+4. `lastMacroScriptPath` を使って実行中だったマクロを自動再実行
+5. 最大3回リトライ、失敗時は `onConnectionLost` コールバックで通知
+
+```
+XPC Connection Lost
+    ↓
+handleConnectionError() [main thread]
+    ↓ (delay: 2s × attempt)
+findTTLMacroApp() → launchTTLMacro()
+    ↓
+pollForEndpoint() → establishXPCConnection()
+    ↓ (成功時)
+runMacro(lastMacroScriptPath) [自動再実行]
+```
+
+### ファイル転送の進捗 UI (#6)
+
+`StatusBarManager` にファイル転送進捗表示を追加。
+
+- `updateTransferProgress(status:bytes:total:)` メソッドを追加
+- Running/Paused メニューに `transferItem` (NSMenuItem) を追加
+- 転送中: `"Transfer: 1.2 KB/3.4 MB (35%)"` 形式で表示
+- 転送完了/アイドル: アイテムを非表示
+- `MacroRunner.onTransferProgress` コールバック経由で `pollTransferStatus()` の結果を通知
+
+### マクロデバッガ (#7)
+
+ブレークポイント・ステップ実行を `MacroRunner` + `MacroServiceProtocol` に実装。
+
+**MacroRunner 追加 API:**
+
+| メソッド | 動作 |
+|---|---|
+| `addBreakpoint(at:)` | 指定行にブレークポイントを設定 (1-based) |
+| `removeBreakpoint(at:)` | 指定行のブレークポイントを除去 |
+| `clearBreakpoints()` | 全ブレークポイントを除去 |
+| `stepLine()` | 1行実行して停止 (Step Into) |
+| `stepOver()` | callStack 深度を維持してステップ |
+| `stepOut()` | callStack が浅くなるまで実行 |
+| `getVariables()` | 全変数の値を辞書で返す |
+
+**MacroServiceProtocol 追加メソッド (7個):**
+
+```swift
+func stepLine(reply:)
+func stepOver(reply:)
+func stepOut(reply:)
+func addBreakpoint(line:, reply:)
+func removeBreakpoint(line:, reply:)
+func clearBreakpoints(reply:)
+func getVariables(reply:)
+```
+
+**ブレークポイント判定:**
+`executeNextLine()` 内でブレークポイント Set と stepMode を確認。
+ヒット時に `isPaused = true` + `onDebugPause` コールバックを発火。
+
+**ステータスバー UI:**
+Paused メニューに `Step Line (F10)` / `Step Over (F11)` / `Step Out (Shift+F11)` を追加。
+
+### デバッガ変数ウォッチパネル (#8)
+
+`VariableWatchPanel` — ステップ実行中に変数値をリアルタイム表示する NSPanel。
+
+- **UI 構成:** NSPanel (floating, utility window) + NSSearchField (フィルタ) + NSTableView (Variable/Value 列)
+- **フォント:** `NSFont.monospacedSystemFont(ofSize: 12)`、交互行背景色
+- **フィルタ:** 変数名・値両方を対象にインクリメンタルサーチ
+- **起動:** ステータスバーの Paused メニューから「変数ウォッチ...」で表示
+- **更新:** `onDebugPause` コールバック時に `macroRunner.getVariables()` で取得して更新
+- **スレッド安全:** `updateVariables()` は任意スレッドから呼び出し可能 (main dispatch)
+
+### ブレークポイント永続化 (#9)
+
+`BreakpointStore` — `.ttl` ファイルに対応するブレークポイントを JSON ファイルに保存。
+
+- **保存先:** `myscript.ttl` → `myscript.ttl.breakpoints.json` (同一ディレクトリ)
+- **形式:** JSON (`{ "version": 1, "scriptPath": "...", "breakpoints": [1, 5, 12] }`)
+- **保存タイミング:** `addBreakpoint` / `removeBreakpoint` / `clearBreakpoints` 呼び出し時
+- **読み込み:** `MacroRunner.run()` 実行時に自動読み込み
+- **行番号:** ファイル内は 1-based、内部表現は 0-based
+
+### ファイル転送エラー詳細表示 (#10)
+
+`TransferErrorDetail` + `TransferErrorDialog` — 転送エラー時にプロトコル別の詳細ダイアログを表示。
+
+- **TransferErrorDetail:** プロトコル名、方向 (send/recv)、ファイルパス、転送バイト数、行番号を保持
+- **プロトコル別ヒント:** XMODEM/YMODEM/ZMODEM/Kermit/B-Plus/Quick-VAN それぞれに固有のトラブルシューティングヒントを表示
+- **表示内容:** ファイルパス、転送進捗、マクロ行番号、トラブルシューティングヒント
+- **発火:** `MacroRunner.pollTransferStatus()` の `.error` ケースで `onTransferError` コールバック経由
+
+### MacroRunner コマンド統合 (#11)
+
+`MacroRunnerCommands.swift` と `MacroRunnerCommands2.swift` を `MacroRunner.swift` に統合。
+全 176+ コマンドが単一ファイル内の `executeCommand()` switch 文でディスパッチされる。
+extension ブロックで機能カテゴリ別に分割 (String, Wait, Dialog, File I/O, Transfer 等)。
+
+### ファイル転送タイムアウト (#12)
+
+`pollTransferStatus()` にタイムアウト機構を実装。
+
+- `transferStartTime` で転送開始時刻を記録
+- ポーリング毎に `MacroXPCEndpoint.defaultTransferTimeout` (600秒) との経過時間を比較
+- タイムアウト時: `cancelTransfer()` → `TransferErrorDetail` 通知 → `reportError()` → 次行へ進む
+
+### wait 系コマンドのバッファサイズ制限 (#13)
+
+wait/waitln/waitregex/wait4all の蓄積バッファに上限を設定。
+
+- 最大サイズ: `MacroConstants.waitBufferMaxSize` (1 MB = 1,048,576 bytes)
+- 超過時: バッファ末尾を保持して先頭を切り捨て (`String.suffix()`)
+- パターンマッチは最新データに対して行われるため、実用上の影響は最小限
+
+### エラー処理方針 (#14)
+
+各コマンドの引数不足時の挙動:
+
+- `guard args.count >= N else { return }` パターンで引数不足時は**サイレントに無視**して次行へ進む
+- 一部コマンドは `reportError()` でエラーメッセージを出力 (wait, file transfer 等)
+- `result` 変数は変更されない (前回の値を保持)
+- この挙動は TeraTerm Windows 版と互換
+
+---
+
+## 残課題一覧
+
+| # | 課題 | 優先度 | 備考 |
+|---|---|---|---|
+| 1 | 実機ビルド検証 | High | Xcode 上での実機ビルド・動作確認が必要。CI 環境ではシミュレータ不可のため手動検証 |
+| 2 | ~~SerialConnection.fileDescriptor アクセス~~ | ~~Low~~ | **解決済み** — `private(set)` に変更、Mirror 除去 |
+| 3 | ~~KeyboardHandler.keyboardEnabled のセンチネル方式~~ | ~~Low~~ | **解決済み** — `inputEnabled` プロパティに変更 |
+| 4 | ~~NSLog 統一~~ | ~~Low~~ | **解決済み** — 全箇所 `os.Logger` (TTLog) に移行 |
+| 5 | ~~XPC 接続の再接続ハンドリング~~ | ~~Medium~~ | **解決済み** — 指数バックオフ再接続 + マクロ自動再実行 |
+| 6 | ~~ファイル転送の進捗 UI~~ | ~~Low~~ | **解決済み** — ステータスバーにバイト数/パーセント表示 |
+| 7 | ~~マクロデバッガ UI~~ | ~~Low~~ | **解決済み** — ブレークポイント・Step Line/Over/Out + 変数閲覧 |
+| 8 | ~~デバッガ変数ウォッチパネル~~ | ~~Low~~ | **解決済み** — VariableWatchPanel (NSPanel + NSTableView + フィルタ検索) を実装。ステータスバーの「変数ウォッチ...」メニューから起動。ステップ実行時に変数値をリアルタイム表示 |
+| 9 | ~~ブレークポイント永続化~~ | ~~Low~~ | **解決済み** — BreakpointStore が `.ttl.breakpoints.json` ファイルに保存・読み込み。MacroRunner が起動時に自動読み込み、変更時に自動保存 |
+| 10 | ~~ファイル転送エラー詳細表示~~ | ~~Low~~ | **解決済み** — TransferErrorDetail モデル + TransferErrorDialog でプロトコル別エラー詳細（トラブルシューティングヒント付き）を表示 |

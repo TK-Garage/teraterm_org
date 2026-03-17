@@ -3,21 +3,20 @@
  * (C) 2004- TeraTerm Project
  * All rights reserved.
  *
- * This file re-exports the shared TTLParser from TTLMacroShared.
- * The full implementation lives in Sources/TTLMacroShared/TTLParserShared.swift.
+ * Port of ttmparse.cpp / ttmparse.h to Swift/macOS
+ * TTL (Tera Term Language) parser - tokenizer, expression evaluator, variable management
  *
- * All types (TTLParser, TTLError, TTLCommand, TTLVariable, etc.) are provided
- * by the TTLMacroShared module via the TeraTermMac target's dependency.
- * No additional declarations are needed here.
+ * Shared version: Independent of AppKit, usable from both TeraTermMac and TTLMacro targets.
+ * The original file at TeraTermMac/Sources/TeraTermMac/Macro/TTLParser.swift is deprecated
+ * in favor of this shared version.
  */
 
-<<<<<<< HEAD
 import Foundation
 
 // MARK: - Macro File Encoding Detection (port of fileread.cpp LoadFileU8C)
 
 /// Detected encoding of a macro file.
-enum MacroFileEncoding {
+public enum MacroFileEncoding {
     case utf8
     case utf8BOM
     case utf16LEBOM
@@ -40,21 +39,21 @@ enum MacroFileEncoding {
 /// 6. Try EUC-JP
 /// 7. Try ISO-2022-JP (JIS)
 /// 8. Fall back to ISO Latin-1 (lossless byte→char)
-struct MacroFileLoader {
+public struct MacroFileLoader {
 
-    struct Result {
-        let content: String
-        let encoding: MacroFileEncoding
+    public struct Result {
+        public let content: String
+        public let encoding: MacroFileEncoding
     }
 
     /// Load a macro file with automatic encoding detection.
-    static func loadFile(from url: URL) throws -> Result {
+    public static func loadFile(from url: URL) throws -> Result {
         let data = try Data(contentsOf: url)
         return try decodeData(data)
     }
 
     /// Decode raw bytes with automatic encoding detection.
-    static func decodeData(_ data: Data) throws -> Result {
+    public static func decodeData(_ data: Data) throws -> Result {
         guard !data.isEmpty else {
             return Result(content: "", encoding: .ascii)
         }
@@ -119,7 +118,7 @@ struct MacroFileLoader {
     }
 
     /// Normalize line endings: CRLF and CR → LF, then split into lines.
-    static func splitIntoLines(_ source: String) -> [String] {
+    public static func splitIntoLines(_ source: String) -> [String] {
         let normalized = source.replacingOccurrences(of: "\r\n", with: "\n")
                                .replacingOccurrences(of: "\r", with: "\n")
         return normalized.components(separatedBy: "\n")
@@ -128,13 +127,13 @@ struct MacroFileLoader {
 
 // MARK: - Constants
 
-let MaxNameLen = 128
-let MaxStrLen = 512
-let MaxLineLen = 4096
+public let MaxNameLen = 128
+public let MaxStrLen = 512
+public let MaxLineLen = 4096
 
 // MARK: - TTL Execution Status
 
-enum TTLStatus: Int {
+public enum TTLStatus: Int {
     case run = 1
     case wait = 2
     case waitLn = 3
@@ -152,7 +151,7 @@ enum TTLStatus: Int {
 
 // MARK: - Error Codes
 
-enum TTLError: Int, Error {
+public enum TTLError: Int, Error {
     case closeParen = 1
     case cantCall = 2
     case cantConnect = 3
@@ -175,36 +174,36 @@ enum TTLError: Int, Error {
     case notSupported = 20
     case cantExec = 21
 
-    var message: String {
+    public var message: String {
         switch self {
-        case .closeParen:      return TTL("macro.error.closeParen")
-        case .cantCall:        return TTL("macro.error.cantCall")
-        case .cantConnect:     return TTL("macro.error.cantConnect")
-        case .cantOpen:        return TTL("macro.error.cantOpen")
-        case .divByZero:       return TTL("macro.error.divByZero")
-        case .invalidCtl:      return TTL("macro.error.invalidCtl")
-        case .labelAlreadyDef: return TTL("macro.error.labelAlreadyDef")
-        case .labelReq:        return TTL("macro.error.labelReq")
-        case .linkFirst:       return TTL("macro.error.linkFirst")
-        case .stackOver:       return TTL("macro.error.stackOver")
-        case .syntax:          return TTL("macro.error.syntax")
-        case .tooManyLabels:   return TTL("macro.error.tooManyLabels")
-        case .tooManyVar:      return TTL("macro.error.tooManyVar")
-        case .typeMismatch:    return TTL("macro.error.typeMismatch")
-        case .varNotInit:      return TTL("macro.error.varNotInit")
-        case .closeComment:    return TTL("macro.error.closeComment")
-        case .outOfRange:      return TTL("macro.error.outOfRange")
-        case .closeBracket:    return TTL("macro.error.closeBracket")
-        case .fewMemory:       return TTL("macro.error.fewMemory")
-        case .notSupported:    return TTL("macro.error.notSupported")
-        case .cantExec:        return TTL("macro.error.cantExec")
+        case .closeParen:      return "Close parenthesis expected"
+        case .cantCall:        return "Cannot call"
+        case .cantConnect:     return "Cannot connect"
+        case .cantOpen:        return "Cannot open file"
+        case .divByZero:       return "Division by zero"
+        case .invalidCtl:      return "Invalid control"
+        case .labelAlreadyDef: return "Label already defined"
+        case .labelReq:        return "Label required"
+        case .linkFirst:       return "Link first"
+        case .stackOver:       return "Stack overflow"
+        case .syntax:          return "Syntax error"
+        case .tooManyLabels:   return "Too many labels"
+        case .tooManyVar:      return "Too many variables"
+        case .typeMismatch:    return "Type mismatch"
+        case .varNotInit:      return "Variable not initialized"
+        case .closeComment:    return "Close comment expected"
+        case .outOfRange:      return "Out of range"
+        case .closeBracket:    return "Close bracket expected"
+        case .fewMemory:       return "Not enough memory"
+        case .notSupported:    return "Not supported"
+        case .cantExec:        return "Cannot execute"
         }
     }
 }
 
 // MARK: - Variable Types
 
-enum TTLVarType {
+public enum TTLVarType {
     case unknown
     case integer
     case string
@@ -215,7 +214,7 @@ enum TTLVarType {
 
 // MARK: - TTL Command IDs (port of ttmparse.h reserved word IDs)
 
-enum TTLCommand: Int {
+public enum TTLCommand: Int {
     // Basic commands 1-158
     case beep = 1, bplusRecv, bplusSend, call, changeDir
     case clearScreen, closeSBox, closeTT, code2Str, connect
@@ -267,7 +266,7 @@ enum TTLCommand: Int {
 
 // MARK: - Operator IDs
 
-enum TTLOperator: Int {
+public enum TTLOperator: Int {
     case base = 1000
     case bNot, bAnd, bOr, bXor
     case mul, plus, minus, div, mod
@@ -278,21 +277,26 @@ enum TTLOperator: Int {
 
 // MARK: - Variable Storage
 
-struct TTLLabel {
-    var position: Int   // File/line position
-    var level: Int      // Scope level
+public struct TTLLabel {
+    public var position: Int   // File/line position
+    public var level: Int      // Scope level
+
+    public init(position: Int, level: Int) {
+        self.position = position
+        self.level = level
+    }
 }
 
-class TTLVariable {
-    var name: String
-    var type: TTLVarType
-    var intValue: Int = 0
-    var strValue: String = ""
-    var label: TTLLabel = TTLLabel(position: 0, level: 0)
-    var intArray: [Int] = []
-    var strArray: [String] = []
+public class TTLVariable {
+    public var name: String
+    public var type: TTLVarType
+    public var intValue: Int = 0
+    public var strValue: String = ""
+    public var label: TTLLabel = TTLLabel(position: 0, level: 0)
+    public var intArray: [Int] = []
+    public var strArray: [String] = []
 
-    init(name: String, type: TTLVarType) {
+    public init(name: String, type: TTLVarType) {
         self.name = name
         self.type = type
     }
@@ -300,74 +304,91 @@ class TTLVariable {
 
 // MARK: - Call Stack Entry
 
-struct TTLCallFrame {
-    var lineIndex: Int      // Return line index
-    var level: Int          // Scope level
-    var fileIndex: Int      // File index for include
+public struct TTLCallFrame {
+    public var lineIndex: Int      // Return line index
+    public var level: Int          // Scope level
+    public var fileIndex: Int      // File index for include
+
+    public init(lineIndex: Int, level: Int, fileIndex: Int) {
+        self.lineIndex = lineIndex
+        self.level = level
+        self.fileIndex = fileIndex
+    }
 }
 
 // MARK: - Loop Stack Entry
 
-enum TTLLoopType {
+public enum TTLLoopType {
     case while_
     case until
     case do_
     case for_
 }
 
-struct TTLLoopFrame {
-    var type: TTLLoopType
-    var lineIndex: Int      // Top of loop line index
-    var varId: Int          // For-loop variable
-    var limit: Int          // For-loop limit
-    var step: Int           // For-loop step
-    var ifNest: Int = 0     // Saved ifNest for restoring on loop iteration
+public struct TTLLoopFrame {
+    public var type: TTLLoopType
+    public var lineIndex: Int      // Top of loop line index
+    public var varId: Int          // For-loop variable
+    public var limit: Int          // For-loop limit
+    public var step: Int           // For-loop step
+    public var ifNest: Int = 0     // Saved ifNest for restoring on loop iteration
+
+    public init(type: TTLLoopType, lineIndex: Int, varId: Int, limit: Int, step: Int, ifNest: Int = 0) {
+        self.type = type
+        self.lineIndex = lineIndex
+        self.varId = varId
+        self.limit = limit
+        self.step = step
+        self.ifNest = ifNest
+    }
 }
 
 // MARK: - TTL Parser
 
-class TTLParser {
+public class TTLParser {
     // Source
-    var lines: [String] = []
-    var currentLine: Int = 0    // Current line index
-    var lineBuffer: String = "" // Current line content
-    var linePtr: Int = 0        // Current parse position in line
-    var lineParsePtr: Int = 0   // Token parse start position
+    public var lines: [String] = []
+    public var currentLine: Int = 0    // Current line index
+    public var lineBuffer: String = "" // Current line content
+    public var linePtr: Int = 0        // Current parse position in line
+    public var lineParsePtr: Int = 0   // Token parse start position
 
     // Variables
-    var variables: [TTLVariable] = []
+    public var variables: [TTLVariable] = []
 
     // System variables (auto-created)
-    private(set) var resultVarId: Int = -1
-    private(set) var inputStrVarId: Int = -1
-    private(set) var matchStrVarId: Int = -1
-    private(set) var paramCntVarId: Int = -1
-    private(set) var paramVarIds: [Int] = []    // param1..param9 + param(N) expansion
-    private(set) var timeoutVarId: Int = -1
-    private(set) var mtimeoutVarId: Int = -1
+    public private(set) var resultVarId: Int = -1
+    public private(set) var inputStrVarId: Int = -1
+    public private(set) var matchStrVarId: Int = -1
+    public private(set) var paramCntVarId: Int = -1
+    public private(set) var paramVarIds: [Int] = []    // param1..param9 + param(N) expansion
+    public private(set) var timeoutVarId: Int = -1
+    public private(set) var mtimeoutVarId: Int = -1
 
     // State
-    var commenting: Bool = false
-    var status: TTLStatus = .run
+    public var commenting: Bool = false
+    public var status: TTLStatus = .run
 
     // Call stack
-    var callStack: [TTLCallFrame] = []
-    var scopeLevel: Int = 0
+    public var callStack: [TTLCallFrame] = []
+    public var scopeLevel: Int = 0
 
     // Loop stack
-    var loopStack: [TTLLoopFrame] = []
+    public var loopStack: [TTLLoopFrame] = []
 
     // Include file stack
-    var fileStack: [(lines: [String], lineIndex: Int)] = []
+    public var fileStack: [(lines: [String], lineIndex: Int)] = []
 
     // Wait state
-    var waitStrings: [String] = []
-    var waitTimeout: Double = 0
-    var waitStartTime: Date?
+    public var waitStrings: [String] = []
+    public var waitTimeout: Double = 0
+    public var waitStartTime: Date?
+
+    public init() {}
 
     // MARK: - Initialization
 
-    func loadScript(_ source: String) {
+    public func loadScript(_ source: String) {
         // Normalize CRLF (Windows) and CR (old Mac) to LF before splitting
         let normalized = source.replacingOccurrences(of: "\r\n", with: "\n")
                                .replacingOccurrences(of: "\r", with: "\n")
@@ -385,12 +406,12 @@ class TTLParser {
         initSystemVariables()
     }
 
-    func loadScript(from url: URL) throws {
+    public func loadScript(from url: URL) throws {
         let result = try MacroFileLoader.loadFile(from: url)
         loadScript(result.content)
     }
 
-    private func initSystemVariables() {
+    public func initSystemVariables() {
         // Create system variables matching original TTL
         resultVarId = newIntVar("result", value: 0)
         inputStrVarId = newStrVar("inputstr", value: "")
@@ -409,7 +430,7 @@ class TTLParser {
 
     // MARK: - Line Management
 
-    func getNewLine() -> Bool {
+    public func getNewLine() -> Bool {
         guard currentLine < lines.count else { return false }
         lineBuffer = lines[currentLine]
         currentLine += 1
@@ -421,7 +442,7 @@ class TTLParser {
     // MARK: - Variable Management
 
     @discardableResult
-    func newIntVar(_ name: String, value: Int) -> Int {
+    public func newIntVar(_ name: String, value: Int) -> Int {
         let v = TTLVariable(name: name, type: .integer)
         v.intValue = value
         variables.append(v)
@@ -429,7 +450,7 @@ class TTLParser {
     }
 
     @discardableResult
-    func newStrVar(_ name: String, value: String) -> Int {
+    public func newStrVar(_ name: String, value: String) -> Int {
         let v = TTLVariable(name: name, type: .string)
         v.strValue = value
         variables.append(v)
@@ -437,7 +458,7 @@ class TTLParser {
     }
 
     @discardableResult
-    func newLabVar(_ name: String, position: Int, level: Int) -> Int {
+    public func newLabVar(_ name: String, position: Int, level: Int) -> Int {
         let v = TTLVariable(name: name, type: .label)
         v.label = TTLLabel(position: position, level: level)
         variables.append(v)
@@ -445,7 +466,7 @@ class TTLParser {
     }
 
     @discardableResult
-    func newIntArrayVar(_ name: String, size: Int) -> Int {
+    public func newIntArrayVar(_ name: String, size: Int) -> Int {
         let v = TTLVariable(name: name, type: .intArray)
         v.intArray = [Int](repeating: 0, count: size)
         variables.append(v)
@@ -453,14 +474,14 @@ class TTLParser {
     }
 
     @discardableResult
-    func newStrArrayVar(_ name: String, size: Int) -> Int {
+    public func newStrArrayVar(_ name: String, size: Int) -> Int {
         let v = TTLVariable(name: name, type: .strArray)
         v.strArray = [String](repeating: "", count: size)
         variables.append(v)
         return variables.count - 1
     }
 
-    func checkVar(_ name: String) -> (type: TTLVarType, id: Int)? {
+    public func checkVar(_ name: String) -> (type: TTLVarType, id: Int)? {
         for (i, v) in variables.enumerated() {
             if v.name.caseInsensitiveCompare(name) == .orderedSame {
                 return (v.type, i)
@@ -469,13 +490,13 @@ class TTLParser {
         return nil
     }
 
-    func delLabVar(level: Int) {
+    public func delLabVar(level: Int) {
         variables.removeAll { v in
             v.type == .label && v.label.level >= level
         }
     }
 
-    func setIntVal(id: Int, value: Int) {
+    public func setIntVal(id: Int, value: Int) {
         let arrayId = id >> 16
         if arrayId > 0 {
             let varIdx = arrayId - 1
@@ -488,7 +509,7 @@ class TTLParser {
         }
     }
 
-    func getIntVal(id: Int) -> Int {
+    public func getIntVal(id: Int) -> Int {
         let arrayId = id >> 16
         if arrayId > 0 {
             let varIdx = arrayId - 1
@@ -501,7 +522,7 @@ class TTLParser {
         }
     }
 
-    func setStrVal(id: Int, value: String) {
+    public func setStrVal(id: Int, value: String) {
         let arrayId = id >> 16
         if arrayId > 0 {
             let varIdx = arrayId - 1
@@ -514,7 +535,7 @@ class TTLParser {
         }
     }
 
-    func getStrVal(id: Int) -> String {
+    public func getStrVal(id: Int) -> String {
         let arrayId = id >> 16
         if arrayId > 0 {
             let varIdx = arrayId - 1
@@ -527,17 +548,17 @@ class TTLParser {
         }
     }
 
-    func setResult(_ value: Int) {
+    public func setResult(_ value: Int) {
         guard resultVarId >= 0 else { return }
         setIntVal(id: resultVarId, value: value)
     }
 
-    func setInputStr(_ value: String) {
+    public func setInputStr(_ value: String) {
         guard inputStrVarId >= 0 else { return }
         setStrVal(id: inputStrVarId, value: value)
     }
 
-    func setMatchStr(_ value: String) {
+    public func setMatchStr(_ value: String) {
         guard matchStrVarId >= 0 else { return }
         setStrVal(id: matchStrVarId, value: value)
     }
@@ -545,7 +566,7 @@ class TTLParser {
     // MARK: - Tokenizer
 
     /// Skip whitespace and handle C-style comments. Returns next non-whitespace char or nil.
-    func getFirstChar() -> Character? {
+    public func getFirstChar() -> Character? {
         // Skip whitespace
         while linePtr < lineBuffer.count {
             let ch = charAtPtr()
@@ -611,7 +632,7 @@ class TTLParser {
         return nil
     }
 
-    func checkParameterGiven() -> Bool {
+    public func checkParameterGiven() -> Bool {
         let saved = linePtr
         let result = getFirstChar() != nil
         linePtr = saved
@@ -619,7 +640,7 @@ class TTLParser {
     }
 
     /// Read an identifier [A-Za-z_][0-9A-Za-z_]*
-    func getIdentifier() -> String? {
+    public func getIdentifier() -> String? {
         let saved = linePtr
         guard let first = getFirstChar() else { return nil }
 
@@ -642,7 +663,7 @@ class TTLParser {
     }
 
     /// Read a label name (same as identifier but allows any starting char)
-    func getLabelName() -> String? {
+    public func getLabelName() -> String? {
         _ = linePtr
         guard let first = getFirstChar() else { return nil }
 
@@ -656,11 +677,11 @@ class TTLParser {
                 break
             }
         }
-        return name.isEmpty ? nil : name
+        return name.isEmpty ? nil : name.lowercased()
     }
 
     /// Read a quoted string "..." or '...' or #NNN character codes
-    func getString() -> Result<String, TTLError>? {
+    public func getString() -> Result<String, TTLError>? {
         let saved = linePtr
         guard let q = getFirstChar() else { return nil }
 
@@ -739,12 +760,32 @@ class TTLParser {
         return UInt8(n)
     }
 
-    /// Read a number: decimal or $hex
-    func getNumber() -> Int? {
+    /// Read a number: decimal, $hex, or 0xHex
+    public func getNumber() -> Int? {
         let saved = linePtr
         guard let first = getFirstChar() else { return nil }
 
         if first.isNumber {
+            // Check for 0x hex prefix
+            if first == "0" && linePtr < lineBuffer.count {
+                let nextCh = charAtPtr()
+                if nextCh == "x" || nextCh == "X" {
+                    linePtr += 1 // skip 'x'
+                    var num = 0
+                    var hasDigits = false
+                    while linePtr < lineBuffer.count {
+                        let ch = charAtPtr()
+                        if ch.isHexDigit, let digit = ch.hexDigitValue {
+                            num = num * 16 + digit
+                            linePtr += 1
+                            hasDigits = true
+                        } else {
+                            break
+                        }
+                    }
+                    return hasDigits ? num : 0
+                }
+            }
             var num = Int(first.asciiValue! - Character("0").asciiValue!)
             while linePtr < lineBuffer.count {
                 let ch = charAtPtr()
@@ -778,13 +819,13 @@ class TTLParser {
     // MARK: - Reserved Word Lookup
 
     /// Check if identifier is a reserved command word
-    func checkReservedWord(_ name: String) -> TTLCommand? {
+    public func checkReservedWord(_ name: String) -> TTLCommand? {
         let lower = name.lowercased()
         return reservedWords[lower]
     }
 
     /// Check if identifier is a reserved operator word
-    func checkReservedOperator(_ name: String) -> TTLOperator? {
+    public func checkReservedOperator(_ name: String) -> TTLOperator? {
         switch name.lowercased() {
         case "and": return .bAnd
         case "or":  return .bOr
@@ -795,7 +836,7 @@ class TTLParser {
     }
 
     /// Get a reserved word from current position
-    func getReservedWord() -> TTLCommand? {
+    public func getReservedWord() -> TTLCommand? {
         let saved = linePtr
         guard let name = getIdentifier() else { return nil }
         if let cmd = checkReservedWord(name) {
@@ -806,7 +847,7 @@ class TTLParser {
     }
 
     /// Get an operator from current position
-    func getOperator() -> TTLOperator? {
+    public func getOperator() -> TTLOperator? {
         let saved = linePtr
         guard let ch = getFirstChar() else { return nil }
 
@@ -873,7 +914,7 @@ class TTLParser {
 
     // MARK: - Expression Parser (recursive descent with operator precedence)
 
-    enum ExprResult {
+    public enum ExprResult {
         case integer(Int)
         case string(Int)       // Variable ID for string
         case stringLiteral(String) // Inline string literal (for comparisons)
@@ -882,7 +923,7 @@ class TTLParser {
     }
 
     /// Resolve a string ExprResult to an actual String value
-    func resolveString(_ result: ExprResult) -> String? {
+    public func resolveString(_ result: ExprResult) -> String? {
         switch result {
         case .string(let id): return getStrVal(id: id)
         case .stringLiteral(let s): return s
@@ -891,7 +932,7 @@ class TTLParser {
     }
 
     /// Parse a full expression (top-level: ||, ^^)
-    func getExpression() throws -> ExprResult {
+    public func getExpression() throws -> ExprResult {
         lineParsePtr = linePtr
 
         let result = try evalLogicalOr()
@@ -900,7 +941,7 @@ class TTLParser {
 
     /// Get a single integer value (variable, number, or unary op) without binary operators.
     /// Equivalent to original TTL's GetIntVal - used for multi-argument commands.
-    func getIntValue() throws -> Int {
+    public func getIntValue() throws -> Int {
         let result = try getFactor()
         switch result {
         case .integer(let v): return v
@@ -909,7 +950,7 @@ class TTLParser {
     }
 
     /// Get an integer value from expression
-    func getIntExpression() throws -> Int {
+    public func getIntExpression() throws -> Int {
         let result = try getExpression()
         switch result {
         case .integer(let v): return v
@@ -918,7 +959,7 @@ class TTLParser {
     }
 
     /// Get a string value from expression or string literal
-    func getStrExpression() throws -> String {
+    public func getStrExpression() throws -> String {
         lineParsePtr = linePtr
 
         // Try string literal first
@@ -940,7 +981,7 @@ class TTLParser {
     }
 
     /// Get a string value, with optional auto-conversion from int
-    func getStrExpression(autoConvert: Bool) throws -> String {
+    public func getStrExpression(autoConvert: Bool) throws -> String {
         lineParsePtr = linePtr
 
         // Try string literal first
@@ -964,7 +1005,7 @@ class TTLParser {
     }
 
     /// Get an integer variable reference (creates if not exists)
-    func getIntVar() throws -> Int {
+    public func getIntVar() throws -> Int {
         guard let name = getIdentifier() else { throw TTLError.syntax }
         if let (type, id) = checkVar(name) {
             switch type {
@@ -981,7 +1022,7 @@ class TTLParser {
     }
 
     /// Get a string variable reference (creates if not exists)
-    func getStrVar() throws -> Int {
+    public func getStrVar() throws -> Int {
         guard let name = getIdentifier() else { throw TTLError.syntax }
         if let (type, id) = checkVar(name) {
             switch type {
@@ -998,7 +1039,7 @@ class TTLParser {
     }
 
     /// Parse array index [expr]
-    func getIndex() throws -> Int {
+    public func getIndex() throws -> Int {
         let saved = linePtr
         guard getFirstChar() == "[" else {
             linePtr = saved
@@ -1011,22 +1052,13 @@ class TTLParser {
         return index
     }
 
-    func getIntVarFromArray(varId: Int, index: Int) -> Int {
+    public func getIntVarFromArray(varId: Int, index: Int) -> Int {
         guard varId < variables.count else { return 0 }
         guard index >= 0 && index < variables[varId].intArray.count else { return 0 }
         return ((varId + 1) << 16) | index
     }
 
-    /// Get a string array variable's contents by name
-    func getStrArrayItems() throws -> [String] {
-        guard let name = getIdentifier() else { throw TTLError.syntax }
-        guard let (type, id) = checkVar(name), type == .strArray else {
-            throw TTLError.typeMismatch
-        }
-        return variables[id].strArray
-    }
-
-    func getStrVarFromArray(varId: Int, index: Int) -> Int {
+    public func getStrVarFromArray(varId: Int, index: Int) -> Int {
         guard varId < variables.count else { return 0 }
         guard index >= 0 && index < variables[varId].strArray.count else { return 0 }
         return ((varId + 1) << 16) | index
@@ -1035,7 +1067,7 @@ class TTLParser {
     // MARK: - Expression Evaluation (Precedence Climbing)
 
     // Precedence 1: Factor (variables, numbers, unary ops, parens)
-    private func getFactor() throws -> ExprResult {
+    public func getFactor() throws -> ExprResult {
         let saved = linePtr
 
         // Try identifier (variable or unary operator keyword)
@@ -1121,7 +1153,7 @@ class TTLParser {
     }
 
     // Precedence 2: *, /, %
-    private func evalMultiplication() throws -> ExprResult {
+    public func evalMultiplication() throws -> ExprResult {
         let result = try getFactor()
         guard case .integer(var val1) = result else { return result }
 
@@ -1150,7 +1182,7 @@ class TTLParser {
     }
 
     // Precedence 3: +, -
-    private func evalAddition() throws -> ExprResult {
+    public func evalAddition() throws -> ExprResult {
         let result = try evalMultiplication()
         guard case .integer(var val1) = result else { return result }
 
@@ -1174,7 +1206,7 @@ class TTLParser {
     }
 
     // Precedence 4: <<, >>, >>>
-    private func evalBitShift() throws -> ExprResult {
+    public func evalBitShift() throws -> ExprResult {
         let result = try evalAddition()
         guard case .integer(var val1) = result else { return result }
 
@@ -1199,7 +1231,7 @@ class TTLParser {
     }
 
     // Precedence 5: &
-    private func evalBitAnd() throws -> ExprResult {
+    public func evalBitAnd() throws -> ExprResult {
         let result = try evalBitShift()
         guard case .integer(var val1) = result else { return result }
 
@@ -1215,7 +1247,7 @@ class TTLParser {
     }
 
     // Precedence 6: ^
-    private func evalBitXor() throws -> ExprResult {
+    public func evalBitXor() throws -> ExprResult {
         let result = try evalBitAnd()
         guard case .integer(var val1) = result else { return result }
 
@@ -1231,7 +1263,7 @@ class TTLParser {
     }
 
     // Precedence 7: |
-    private func evalBitOr() throws -> ExprResult {
+    public func evalBitOr() throws -> ExprResult {
         let result = try evalBitXor()
         guard case .integer(var val1) = result else { return result }
 
@@ -1247,10 +1279,10 @@ class TTLParser {
     }
 
     // Precedence 8: <, >, <=, >=
-    private func evalComparison() throws -> ExprResult {
+    public func evalComparison() throws -> ExprResult {
         let result = try evalBitOr()
 
-        // 文字列の比較にも対応
+        // String comparison support
         if let str1 = resolveString(result) {
             let saved = linePtr
             guard let op = getOperator() else { return result }
@@ -1292,10 +1324,10 @@ class TTLParser {
     }
 
     // Precedence 9: ==, !=
-    private func evalEquality() throws -> ExprResult {
+    public func evalEquality() throws -> ExprResult {
         let result = try evalComparison()
 
-        // 文字列の等値比較にも対応
+        // String equality comparison support
         if let str1 = resolveString(result) {
             let saved = linePtr
             guard let op = getOperator() else { return result }
@@ -1332,7 +1364,7 @@ class TTLParser {
     }
 
     // Precedence 10: &&
-    private func evalLogicalAnd() throws -> ExprResult {
+    public func evalLogicalAnd() throws -> ExprResult {
         let result = try evalEquality()
         guard case .integer(var val1) = result else { return result }
 
@@ -1348,7 +1380,7 @@ class TTLParser {
     }
 
     // Precedence 11: ||, xor
-    private func evalLogicalOr() throws -> ExprResult {
+    public func evalLogicalOr() throws -> ExprResult {
         let result = try evalLogicalAnd()
         guard case .integer(var val1) = result else { return result }
 
@@ -1372,19 +1404,19 @@ class TTLParser {
 
     // MARK: - Character Access Helpers
 
-    private func charAtPtr() -> Character {
+    public func charAtPtr() -> Character {
         let idx = lineBuffer.index(lineBuffer.startIndex, offsetBy: linePtr)
         return lineBuffer[idx]
     }
 
-    private func charAt(_ pos: Int) -> Character {
+    public func charAt(_ pos: Int) -> Character {
         let idx = lineBuffer.index(lineBuffer.startIndex, offsetBy: pos)
         return lineBuffer[idx]
     }
 
     // MARK: - Reserved Word Dictionary
 
-    static let sharedReservedWords: [String: TTLCommand] = {
+    public static let sharedReservedWords: [String: TTLCommand] = {
         var dict: [String: TTLCommand] = [:]
         // Basic commands
         dict["beep"] = .beep;       dict["bplusrecv"] = .bplusRecv; dict["bplussend"] = .bplusSend
@@ -1490,8 +1522,5 @@ class TTLParser {
         return dict
     }()
 
-    var reservedWords: [String: TTLCommand] { TTLParser.sharedReservedWords }
+    public var reservedWords: [String: TTLCommand] { TTLParser.sharedReservedWords }
 }
-=======
-@_exported import TTLMacroShared
->>>>>>> 14ace800810249512edfe0279d0f325844bf0b8e

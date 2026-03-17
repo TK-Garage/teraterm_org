@@ -212,7 +212,7 @@ final class XPCConnectionTests: XCTestCase {
     }
 
     func testXPCServiceName() {
-        XCTAssertEqual(kTTLMacroXPCServiceName, "com.yourapp.TeraTermMac.TTLMacro")
+        XCTAssertEqual(kTTLMacroXPCServiceName, "com.teraterm.mac.TTLMacro")
     }
 
     // MARK: - Reset Tests

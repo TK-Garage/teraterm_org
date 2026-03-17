@@ -8,6 +8,7 @@
  */
 
 import Foundation
+import os
 
 // MARK: - Connection State
 
@@ -402,7 +403,7 @@ class TCPConnection: Connection {
         guard running, let output = output else { return }
         writeQueue.async { [weak self] in
             // 全バイト送信完了までループ（部分書き込み対応）
-            data.withUnsafeBytes { buffer in
+            data.withUnsafeBytes { (buffer: UnsafeRawBufferPointer) in
                 guard let basePtr = buffer.baseAddress?.assumingMemoryBound(to: UInt8.self) else { return }
                 var offset = 0
                 let total = data.count
@@ -417,8 +418,7 @@ class TCPConnection: Connection {
                         retries += 1
                         if retries > TCPConnection.sendMaxRetries {
                             // リトライ上限到達 → 送信失敗として切断・通知
-                            NSLog("[TCPConnection] %@",
-                                  TTL("debug.tcp.writeRetryExceeded", retries, offset, total))
+                            TTLog.tcp.error("Write retry exceeded: retries=\(retries) offset=\(offset) total=\(total)")
                             DispatchQueue.main.async { [weak self] in
                                 self?.delegate?.connectionDidFail(error: ConnectionError.sendFailed)
                                 self?.disconnect()
@@ -529,7 +529,7 @@ class SerialConnection: Connection {
     let flowControl: FlowControl
 
     private(set) var state: ConnectionState = .disconnected
-    private var fileDescriptor: Int32 = -1
+    private(set) var fileDescriptor: Int32 = -1
     private let readQueue = DispatchQueue(label: "com.teraterm.serial.read")
     private let writeQueue = DispatchQueue(label: "com.teraterm.serial.write")
 
@@ -695,7 +695,7 @@ class SerialConnection: Connection {
 
         guard running, fd >= 0 else { return }
         writeQueue.async { [weak self] in
-            data.withUnsafeBytes { buffer in
+            data.withUnsafeBytes { (buffer: UnsafeRawBufferPointer) in
                 guard let basePtr = buffer.baseAddress else { return }
                 var offset = 0
                 let total = data.count
@@ -960,7 +960,7 @@ class LocalShellConnection: Connection {
 
         guard running, fd >= 0 else { return }
         writeQueue.async { [weak self] in
-            data.withUnsafeBytes { buffer in
+            data.withUnsafeBytes { (buffer: UnsafeRawBufferPointer) in
                 guard let basePtr = buffer.baseAddress else { return }
                 var offset = 0
                 let total = data.count

@@ -23,6 +23,7 @@
 "macro.menu.stop" = "Stop";
 "macro.menu.open" = "Open Macro...";
 "macro.menu.quit" = "Quit TTLMacro";
+"macro.menu.watchVariables" = "Watch Variables...";
 
 /* Stop Confirmation */
 "macro.stop.confirm.title" = "Stop macro?";

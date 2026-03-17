@@ -61,6 +61,15 @@ class MockMacroService: NSObject, MacroServiceProtocol {
         reply()
     }
 
+    // --- Debugger stubs ---
+    func stepLine(reply: @escaping () -> Void) { reply() }
+    func stepOver(reply: @escaping () -> Void) { reply() }
+    func stepOut(reply: @escaping () -> Void) { reply() }
+    func addBreakpoint(line: Int, reply: @escaping () -> Void) { reply() }
+    func removeBreakpoint(line: Int, reply: @escaping () -> Void) { reply() }
+    func clearBreakpoints(reply: @escaping () -> Void) { reply() }
+    func getVariables(reply: @escaping ([String: String]) -> Void) { reply([:]) }
+
     func reset() {
         runMacroCalled = false
         lastScriptPath = nil
@@ -166,6 +175,87 @@ class MockMacroClient: NSObject, MacroClientProtocol {
         executedLineNumbers.append(lineNumber)
         reply()
     }
+
+    // --- Terminal operation stubs ---
+    func isConnected(reply: @escaping (Bool) -> Void) { reply(true) }
+    func getWindowTitle(reply: @escaping (String) -> Void) { reply("Mock") }
+    func showWindow(visible: Bool, reply: @escaping () -> Void) { reply() }
+    func clearScreen(reply: @escaping () -> Void) { reply() }
+    func sendBreak(reply: @escaping () -> Void) { reply() }
+    func disconnectFromHost(reply: @escaping () -> Void) { reply() }
+    func connectToHost(param: String, reply: @escaping (Bool) -> Void) { reply(true) }
+    func connectLocalShell(reply: @escaping (Bool) -> Void) { reply(true) }
+    func flushReceiveBuffer(reply: @escaping () -> Void) { reply() }
+
+    // --- Window operation stubs ---
+    func moveWindow(x: Int, y: Int, reply: @escaping () -> Void) { reply() }
+    func resizeWindow(width: Int, height: Int, reply: @escaping () -> Void) { reply() }
+    func bringWindowToFront(reply: @escaping () -> Void) { reply() }
+    func getWindowPosition(reply: @escaping (Int, Int) -> Void) { reply(0, 0) }
+
+    // --- Serial stubs ---
+    func setBaudRate(rate: Int, reply: @escaping () -> Void) { reply() }
+    func setFlowControl(mode: Int, reply: @escaping () -> Void) { reply() }
+    func setDtr(on: Int, reply: @escaping () -> Void) { reply() }
+    func setRts(on: Int, reply: @escaping () -> Void) { reply() }
+    func getModemStatus(reply: @escaping (Int) -> Void) { reply(0) }
+    func setSerialDelayChar(ms: Int, reply: @escaping () -> Void) { reply() }
+    func setSerialDelayLine(ms: Int, reply: @escaping () -> Void) { reply() }
+
+    // --- Log stubs ---
+    func openLog(path: String, append: Bool, reply: @escaping () -> Void) { reply() }
+    func closeLog(reply: @escaping () -> Void) { reply() }
+    func pauseLog(reply: @escaping () -> Void) { reply() }
+    func resumeLog(reply: @escaping () -> Void) { reply() }
+    func writeToLog(text: String, reply: @escaping () -> Void) { reply() }
+    func getLogInfo(reply: @escaping (Int, String) -> Void) { reply(0, "") }
+    func setLogRotation(mode: String, value: Int, reply: @escaping () -> Void) { reply() }
+
+    // --- Clipboard stubs ---
+    func getClipboard(reply: @escaping (String) -> Void) { reply("") }
+    func setClipboard(text: String, reply: @escaping () -> Void) { reply() }
+
+    // --- System info stubs ---
+    func getHostname(reply: @escaping (String) -> Void) { reply("localhost") }
+    func getAppDirectory(reply: @escaping (String) -> Void) { reply("/tmp") }
+
+    // --- Display stubs ---
+    func showError(message: String, line: Int, lineText: String, fileName: String,
+                   reply: @escaping (Bool) -> Void) { reply(true) }
+    func showStatusBox(message: String, title: String, reply: @escaping () -> Void) { reply() }
+    func closeStatusBox(reply: @escaping () -> Void) { reply() }
+
+    // --- File transfer stubs ---
+    func startFileSend(protocolName: String, localPath: String, option: String,
+                       reply: @escaping (Bool, String) -> Void) { reply(true, "") }
+    func startFileRecv(protocolName: String, localDir: String,
+                       reply: @escaping (Bool, String, String) -> Void) { reply(true, "", "") }
+    func getTransferStatus(reply: @escaping (String, Int, Int) -> Void) { reply("done", 100, 100) }
+    func cancelTransfer(reply: @escaping () -> Void) { reply() }
+
+    // --- SCP stubs ---
+    func scpSend(localPath: String, remotePath: String, reply: @escaping (Bool) -> Void) { reply(true) }
+    func scpRecv(remotePath: String, localPath: String, reply: @escaping (Bool) -> Void) { reply(true) }
+
+    // --- Settings stubs ---
+    func restoreSetup(path: String, reply: @escaping () -> Void) { reply() }
+    func callMenu(menuId: Int, reply: @escaping () -> Void) { reply() }
+    func loadKeyMap(path: String, reply: @escaping () -> Void) { reply() }
+    func enableKeyboard(flag: Int, reply: @escaping () -> Void) { reply() }
+    func setEcho(flag: Int, reply: @escaping () -> Void) { reply() }
+    func displayString(text: String, reply: @escaping () -> Void) { reply() }
+
+    // --- Password stubs ---
+    func sendPasswordData(data: Data, reply: @escaping () -> Void) { reply() }
+
+    // --- Broadcast / Multicast stubs ---
+    func broadcastData(data: Data, reply: @escaping (Int) -> Void) { reply(0) }
+    func setMulticastName(name: String, reply: @escaping () -> Void) { reply() }
+    func multicastData(groupName: String, data: Data, reply: @escaping (Int) -> Void) { reply(0) }
+    func getSessionList(reply: @escaping ([String]) -> Void) { reply([]) }
+    func sendToSession(sessionId: String, data: Data, reply: @escaping (Bool) -> Void) { reply(true) }
+    func subscribeToTerminalData(reply: @escaping (Data) -> Void) { /* event callback */ }
+    func setTerminalSize(cols: Int, rows: Int, reply: @escaping () -> Void) { reply() }
 
     func reset() {
         sendToTerminalCalled = false

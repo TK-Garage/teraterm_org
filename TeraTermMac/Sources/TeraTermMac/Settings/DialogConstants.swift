@@ -12,6 +12,7 @@
 
 #if canImport(AppKit)
 import AppKit
+import os
 
 // MARK: - Dialog Layout Constants
 
@@ -126,12 +127,12 @@ private let _localizedSource: LocalizedSource = {
     let dict = _loadStringsFile(langCode: langCode, module: module)
         ?? _loadStringsFile(langCode: "ja", module: module)
     if let dict = dict, !dict.isEmpty {
-        NSLog("[TTL] .lproj bundle not found; using parsed .strings dictionary for '%@'", langCode)
+        TTLog.localization.info(".lproj bundle not found; using parsed .strings dictionary for '\(langCode, privacy: .public)'")
         return .dictionary(dict)
     }
 
     // 全戦略失敗 — ここに到達すべきではない
-    NSLog("[TTL] WARNING: No localization found for '%@'; keys will be returned as-is", langCode)
+    TTLog.localization.warning("No localization found for '\(langCode, privacy: .public)'; keys will be returned as-is")
     return .dictionary([:])
 }()
 

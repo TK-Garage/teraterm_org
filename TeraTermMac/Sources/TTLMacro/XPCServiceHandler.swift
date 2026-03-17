@@ -9,7 +9,10 @@
  */
 
 import Foundation
+import os
 import TTLMacroShared
+
+private let logger = Logger(subsystem: "com.teraterm.ttlmacro", category: "XPC")
 
 // MARK: - XPC Service Handler
 
@@ -65,7 +68,7 @@ class XPCServiceHandler: NSObject {
             try data.write(to: URL(fileURLWithPath: filePath))
         } catch {
             // Log error but continue - connection may still work via other means
-            NSLog("Failed to write XPC endpoint file: \(error)")
+            logger.error("Failed to write XPC endpoint file: \(error.localizedDescription, privacy: .public)")
         }
     }
 
@@ -159,5 +162,42 @@ extension XPCServiceHandler: MacroServiceProtocol {
     func sendVariable(name: String, value: String, reply: @escaping () -> Void) {
         macroRunner?.setVariable(name: name, value: value)
         reply()
+    }
+
+    // MARK: - Debugger
+
+    func stepLine(reply: @escaping () -> Void) {
+        macroRunner?.stepLine()
+        reply()
+    }
+
+    func stepOver(reply: @escaping () -> Void) {
+        macroRunner?.stepOver()
+        reply()
+    }
+
+    func stepOut(reply: @escaping () -> Void) {
+        macroRunner?.stepOut()
+        reply()
+    }
+
+    func addBreakpoint(line: Int, reply: @escaping () -> Void) {
+        macroRunner?.addBreakpoint(at: line)
+        reply()
+    }
+
+    func removeBreakpoint(line: Int, reply: @escaping () -> Void) {
+        macroRunner?.removeBreakpoint(at: line)
+        reply()
+    }
+
+    func clearBreakpoints(reply: @escaping () -> Void) {
+        macroRunner?.clearBreakpoints()
+        reply()
+    }
+
+    func getVariables(reply: @escaping ([String: String]) -> Void) {
+        let vars = macroRunner?.getVariables() ?? [:]
+        reply(vars)
     }
 }

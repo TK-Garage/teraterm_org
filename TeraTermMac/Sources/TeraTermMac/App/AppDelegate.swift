@@ -11,6 +11,11 @@
 import AppKit
 import UniformTypeIdentifiers
 
+/// Wrapper to allow capturing a notification observer token without mutating a captured variable.
+private final class ObserverTokenHolder: @unchecked Sendable {
+    var token: NSObjectProtocol?
+}
+
 // MARK: - Connection Dialog Helper (radio button group controller)
 
 private class ConnectionDialogHelper: NSObject {
@@ -152,20 +157,20 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         wc.showWindow(self)
 
         // Clean up when window closes — store token for explicit removal
-        var token: NSObjectProtocol?
-        token = NotificationCenter.default.addObserver(
+        let tokenHolder = ObserverTokenHolder()
+        tokenHolder.token = NotificationCenter.default.addObserver(
             forName: NSWindow.willCloseNotification,
             object: wc.window,
             queue: .main
         ) { [weak self] notification in
             self?.windowControllers.removeAll { $0.window == notification.object as? NSWindow }
             // Remove this observer itself to prevent accumulation
-            if let token = token {
+            if let token = tokenHolder.token {
                 NotificationCenter.default.removeObserver(token)
                 self?.windowCloseObservers.removeAll { $0 === token }
             }
         }
-        if let token = token {
+        if let token = tokenHolder.token {
             windowCloseObservers.append(token)
         }
 
@@ -175,6 +180,16 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
     private var activeWindowController: TerminalWindowController? {
         guard let keyWindow = NSApp.keyWindow else { return windowControllers.first }
         return windowControllers.first { $0.window == keyWindow }
+    }
+
+    /// Public accessor for MacroXPCManager to get the active terminal window.
+    var activeTerminalWindowController: TerminalWindowController? {
+        return activeWindowController
+    }
+
+    /// All open window controllers (for broadcast operations).
+    var allTerminalWindowControllers: [TerminalWindowController] {
+        return windowControllers
     }
 
     // MARK: - Main Menu (port of vtwin.cpp InitMenu)

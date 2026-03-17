@@ -104,8 +104,8 @@ final class SharedComponentTests: XCTestCase {
     }
 
     func testBundleIdentifiers() {
-        XCTAssertEqual(MacroConstants.ttlMacroBundleId, "com.yourapp.TeraTermMac.TTLMacro")
-        XCTAssertEqual(MacroConstants.teraTermMacBundleId, "com.yourapp.TeraTermMac")
+        XCTAssertEqual(MacroConstants.ttlMacroBundleId, "com.teraterm.mac.TTLMacro")
+        XCTAssertEqual(MacroConstants.teraTermMacBundleId, "com.teraterm.mac")
     }
 
     // MARK: - XPC Interface Tests

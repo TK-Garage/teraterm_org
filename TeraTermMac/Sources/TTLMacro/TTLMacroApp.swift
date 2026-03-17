@@ -19,6 +19,7 @@ class TTLMacroAppDelegate: NSObject, NSApplicationDelegate {
     private(set) var statusBarManager: StatusBarManager?
     private(set) var macroRunner: MacroRunner?
     private var xpcServiceHandler: XPCServiceHandler?
+    private(set) var variableWatchPanel: VariableWatchPanel?
 
     /// Whether launched in XPC mode (pattern B)
     var isXPCMode: Bool {
@@ -32,6 +33,7 @@ class TTLMacroAppDelegate: NSObject, NSApplicationDelegate {
         macroRunner = MacroRunner()
         statusBarManager = StatusBarManager()
         statusBarManager?.delegate = self
+        variableWatchPanel = VariableWatchPanel()
 
         if isXPCMode {
             // Pattern B: XPC mode - start listener and wait for commands
@@ -96,6 +98,24 @@ class TTLMacroAppDelegate: NSObject, NSApplicationDelegate {
             self?.statusBarManager?.updateLineNumber(lineNumber)
         }
 
+        macroRunner?.onTransferProgress = { [weak self] status, bytes, total in
+            self?.statusBarManager?.updateTransferProgress(status: status, bytes: bytes, total: total)
+        }
+
+        macroRunner?.onTransferError = { detail in
+            TransferErrorDialog.show(detail)
+        }
+
+        macroRunner?.onDebugPause = { [weak self] lineNumber, lineText in
+            DispatchQueue.main.async {
+                self?.statusBarManager?.showPausedMenu()
+                // Refresh variable watch panel if visible
+                if let vars = self?.macroRunner?.getVariables() {
+                    self?.variableWatchPanel?.updateVariables(vars)
+                }
+            }
+        }
+
         macroRunner?.onComplete = { [weak self] exitCode in
             DispatchQueue.main.async {
                 self?.statusBarManager?.cleanup()
@@ -147,8 +167,27 @@ extension TTLMacroAppDelegate: StatusBarManagerDelegate {
         }
     }
 
+    func statusBarDidRequestStepLine() {
+        macroRunner?.stepLine()
+    }
+
+    func statusBarDidRequestStepOver() {
+        macroRunner?.stepOver()
+    }
+
+    func statusBarDidRequestStepOut() {
+        macroRunner?.stepOut()
+    }
+
     func statusBarDidRequestQuit() {
         NSApp.terminate(nil)
+    }
+
+    func statusBarDidRequestShowVariables() {
+        variableWatchPanel?.show()
+        if let vars = macroRunner?.getVariables() {
+            variableWatchPanel?.updateVariables(vars)
+        }
     }
 }
 
