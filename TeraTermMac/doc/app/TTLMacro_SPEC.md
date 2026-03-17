@@ -1382,7 +1382,7 @@ MacroRunner には **120 以上のコマンド**が登録されており、全�
 | m-8 | MacroClientProtocol メソッド数の確認 | SPEC line 1179 に「57 メソッド」と記載。XPC テーブルの実数と照合要 |
 | m-9 | アーキテクチャ図のメソッドリスト不完全 | 10 メソッドのみ列挙、「等」の注記なし |
 | m-10 | sendtext の send との違い未説明 | 特殊コード解釈（`#13` 等）の有無の違いが説明されていない |
-| m-11 | sendbinary の実装乖離の可能性 | 仕様は16進パースだが実装が UTF-8 バイト直送の可能性。要確認 |
+| m-11 | **sendbinary の実装乖離（確認済み）** | 仕様は16進文字列パースだが、実装は `resolveInt` で引数ごとに1バイト抽出。仕様と実装が乖離 |
 | ~~m-12~~ | ~~for ループ例の sprintf 矛盾~~ | ~~INVALID: C-1 が解消済みのため矛盾なし~~ |
 
 ##### Info（構成上の欠落）— 5件
@@ -1393,7 +1393,7 @@ MacroRunner には **120 以上のコマンド**が登録されており、全�
 | I-2 | strsplit / strjoin の例が欠落 | CommandReference にはサンプルコードあり、SPEC はテーブル1行のみ |
 | I-3 | waitrecv / waitevent の仕様不明確 | return 値、タイムアウト動作、wait/waitln との使い分けが不明 |
 | I-4 | XPC Mapping Table が SPEC 独自仕様 | CommandReference のスコープ外であることを明記すべき |
-| I-5 | SPEC にのみ存在するコマンド・概念 | `makedir`, Pattern A/B, Keychain 完全仕様, デバッガ仕様等が SPEC 独自拡張 |
+| I-5 | SPEC にのみ存在するコマンド・概念 | `makedir`, Pattern A/B が SPEC 独自。`protocolrecv/send` と Keychain は CommandRef にも存在。`VariableWatchPanel`/`BreakpointStore` はどちらにも不在 |
 
 ##### 将来的な改善候補（優先度なし・任意）
 

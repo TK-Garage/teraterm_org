@@ -369,7 +369,7 @@ sendtext 'raw text data'
 
 ---
 
-### m-11. `sendbinary` のデータ形式の説明不足
+### m-11. `sendbinary` のデータ形式の実装乖離 — **CONFIRMED（検証で実装確認済み）**
 
 **CommandReference (line 236-242):**
 ```ttl
@@ -378,12 +378,25 @@ sendbinary '0D0A'          ; CR LF
 ```
 16進文字列でバイナリデータを送信。
 
-**SPEC (line 120):**
+**SPEC (line 118):**
 ```
-| `sendbinary` | `<hexstring>` | -- | Send binary data as hex string (e.g., '48656C6C6F'). |
+| `sendbinary` | `<hexstring>` | -- | 16 進文字列としてバイナリデータを送信 |
 ```
 
-**問題:** コードレビュー（TTLMacro_CodeReview_CmdRef.md）で、実装が16進文字列のパースをせず UTF-8 バイトをそのまま送信している可能性が指摘されている。SPEC は仕様（16進パース）と実装の乖離を認識していない。
+**実装（MacroRunner.swift line 1266-1277）:**
+```swift
+func cmdSendBinary(_ args: [String]) {
+    var bytes: [UInt8] = []
+    for arg in args {
+        let val = resolveInt(arg)
+        bytes.append(UInt8(val & 0xFF))
+    }
+    ...
+}
+```
+各引数を `resolveInt` で整数として解釈し、下位1バイトを抽出。**16進文字列のパースは行っていない**。
+
+**問題:** 両ドキュメントは16進文字列形式（`'48656C6C6F'`）を記載しているが、実装は引数ごとに1整数→1バイトの変換。仕様と実装が完全に乖離している。
 
 ---
 
@@ -444,21 +457,19 @@ SPEC (line 619-720) に 70 メソッドの XPC マッピングテーブルがあ
 
 ### I-5. SPEC にのみ存在するコマンド・概念
 
-以下は SPEC に記載があるが CommandReference には記載がない:
+以下は SPEC に記載があるが CommandReference には記載がない（2026-03-17 検証済み）:
 
-| 項目 | SPEC の記述 |
-|---|---|
-| `makedir` | `foldercreate` のエイリアス (line 240) |
-| `protocolrecv` / `protocolsend` | 未実装として記載 (line 357-358) |
-| Pattern A / Pattern B 起動フロー | SPEC 独自仕様 (line 49-105) |
-| Keychain 完全仕様 | SPEC 独自仕様 (line 775-815) |
-| ファイル転送 XPC フロー | SPEC 独自仕様 (line 818-905) |
-| デバッガ仕様 | SPEC 独自仕様 (line 976-1030) |
-| VariableWatchPanel | SPEC 独自仕様 (line 1011-1020) |
-| BreakpointStore | SPEC 独自仕様 (line 1022-1030) |
-| TransferErrorDetail | SPEC 独自仕様 (line 1032-1039) |
+| 項目 | SPEC の記述 | 検証結果 |
+|---|---|---|
+| `makedir` | `foldercreate` のエイリアス (line 238) | **SPEC 独自**（CommandRef に未記載） |
+| Pattern A / Pattern B 起動フロー | SPEC 独自仕様 (line 49-105) | **SPEC 独自**（CommandRef に未記載） |
+| ファイル転送 XPC フロー | SPEC 独自仕様 (line 818-905) | **SPEC 独自**（実装アーキテクチャ仕様） |
+| `protocolrecv` / `protocolsend` | 未実装として記載 (line 355-356) | ~~SPEC独自ではない~~ — CommandRef にも記載あり |
+| Keychain 仕様 | SPEC 独自仕様 | ~~SPEC独自ではない~~ — CommandRef section 20 に詳細記載あり |
+| ~~VariableWatchPanel~~ | ~~SPEC 独自仕様~~ | **該当なし** — SPEC にも存在しない |
+| ~~BreakpointStore~~ | ~~SPEC 独自仕様~~ | **該当なし** — SPEC にも存在しない |
 
-これらは SPEC の独自拡張であり、CommandReference にフィードバックすべきか、SPEC 固有の実装仕様として分離すべき。
+SPEC 独自の実装仕様（Pattern A/B、XPC フロー等）はその旨を明記すべき。
 
 ---
 
