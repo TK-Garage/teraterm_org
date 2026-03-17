@@ -114,7 +114,7 @@ runMacro(scriptPath:) 受信 --> MacroParser が実行開始
 |---------|------|--------|------|:------------------:|
 | `send` | `<arg1> [<arg2>...]`（文字列または整数） | -- | ターミナルに文字列を送信。複数引数は連結。`#13` = CR | Yes |
 | `sendln` | `<string>` | -- | 文字列 + CR をターミナルに送信 | Yes |
-| `sendtext` | `<string>` | -- | 文字列式をターミナルに送信 | Yes |
+| `sendtext` | `<string>` | -- | 文字列式をそのまま送信（`send` と異なり `#13` 等の文字コード解釈なし、単一文字列引数） | Yes |
 | `sendbinary` | `<byte1> [<byte2>...]`（整数） | -- | 各引数を整数として解釈し下位1バイトを送信（例: `sendbinary 72 101 108`→`"Hel"`）。※オリジナル TT は16進文字列パース | Yes（※macOS 版は整数引数方式） |
 | `sendbreak` | -- | -- | ブレーク信号を送信 | Yes |
 | `sendkcode` | `<charcode>`（整数） | -- | 文字コードで 1 文字送信 | Yes |
@@ -351,7 +351,7 @@ runMacro(scriptPath:) 受信 --> MacroParser が実行開始
 | `quickvansend` | `<filepath>` | `result`: 0=成功, 1=失敗 | Quick VAN 送信 | Yes |
 | `scprecv` | `<remotepath> [<localpath>]` | `result`: 0=成功, 1=失敗 | SCP 受信（SSH 接続が必要） | Yes |
 | `scpsend` | `<localpath> [<remotepath>]` | `result`: 0=成功, 1=失敗 | SCP 送信（SSH 接続が必要） | Yes |
-| `recvfile` | `<filepath> <binary> <autostop_sec>` | `result`: 0=成功, 1=失敗 | データをファイルに受信。autostop: 0=無制限 | Yes |
+| `recvfile` | `<filepath> <binary> <autostop_sec>` | `result`: 0=成功, 1=タイムアウト | データをファイルに受信。`binary`: 無視（常にバイナリモード）。`autostop_sec`: 指定秒間無通信で停止（0=無制限） | Yes（※macOS 版は常にバイナリ） |
 | `protocolrecv` | `<protocol> [<args>...]` | -- | 汎用プロトコル受信 | Yes |
 | `protocolsend` | `<protocol> [<args>...]` | -- | 汎用プロトコル送信 | Yes |
 
@@ -359,14 +359,14 @@ runMacro(scriptPath:) 受信 --> MacroParser が実行開始
 
 | コマンド | 引数 | 戻り値 | 説明 | オリジナル TT 互換 |
 |---------|------|--------|------|:------------------:|
-| `getpassword` | `<strvar> <prompt>` | -- | パスワードを取得（macOS ではスタブ） | Yes（スタブ） |
-| `setpassword` | `<name> <password>` | -- | パスワードを保存（macOS ではスタブ） | Yes（スタブ） |
-| `delpassword` | `<name>` | -- | パスワードを削除（macOS ではスタブ） | Yes（スタブ） |
-| `ispassword` | `<name>` | `result`: 1=存在, 0=不存在 | パスワードの存在確認（macOS ではスタブ） | Yes（スタブ） |
-| `getpassword2` | `<strvar> <prompt>` | -- | パスワード取得バリアント 2（macOS ではスタブ） | Yes（スタブ） |
-| `setpassword2` | `<name> <password>` | -- | パスワード保存バリアント 2（macOS ではスタブ） | Yes（スタブ） |
-| `delpassword2` | `<name>` | -- | パスワード削除バリアント 2（macOS ではスタブ） | Yes（スタブ） |
-| `ispassword2` | `<name>` | `result`: 1=存在, 0=不存在 | パスワード存在確認バリアント 2（macOS ではスタブ） | Yes（スタブ） |
+| `getpassword` | `<filename> <keyname> <varname>` | `result`: 1=成功, 0=失敗 | Keychain からパスワード取得。未登録時は入力ダイアログ表示後保存（§Keychain 連携仕様参照） | Yes（※macOS 版は Keychain 方式、§25 参照） |
+| `setpassword` | `<filename> <keyname> <password>` | -- | Keychain にパスワードを保存 | Yes（※macOS 版は Keychain 方式） |
+| `delpassword` | `<filename> <keyname>` | -- | Keychain からパスワードを削除 | Yes（※macOS 版は Keychain 方式） |
+| `ispassword` | `<filename> <keyname>` | `result`: 1=存在, 0=不存在 | Keychain のパスワード存在確認 | Yes（※macOS 版は Keychain 方式） |
+| `getpassword2` | `<filename> <keyname> <varname>` | `result`: 1=成功, 0=失敗 | `getpassword` と同等（バリアント 2） | Yes（※macOS 版は Keychain 方式） |
+| `setpassword2` | `<filename> <keyname> <password>` | -- | `setpassword` と同等（バリアント 2） | Yes（※macOS 版は Keychain 方式） |
+| `delpassword2` | `<filename> <keyname>` | -- | `delpassword` と同等（バリアント 2） | Yes（※macOS 版は Keychain 方式） |
+| `ispassword2` | `<filename> <keyname>` | `result`: 1=存在, 0=不存在 | `ispassword` と同等（バリアント 2） | Yes（※macOS 版は Keychain 方式） |
 
 ### その他
 
@@ -1151,6 +1151,116 @@ TTLMacro.app                          TeraTermMac.app
 
 ---
 
+## システム変数
+
+マクロ実行時に自動的に作成されるシステム変数：
+
+| 変数名 | 型 | 説明 |
+|--------|------|------|
+| `result` | 整数 | コマンドの実行結果。各コマンドで意味が異なる |
+| `inputstr` | 文字列 | ダイアログ入力、受信データ、`sprintf` 結果など |
+| `matchstr` | 文字列 | `strmatch` / `waitregex` でマッチした文字列 |
+| `timeout` | 整数 | `wait` 系コマンドのタイムアウト（秒）。デフォルト: 0（無制限） |
+| `mtimeout` | 整数 | タイムアウトの追加ミリ秒部分 |
+| `paramcnt` | 整数 | マクロに渡された引数の数 |
+| `param1`〜`param9` | 文字列 | マクロに渡された引数 |
+| `groupmatchstr1`〜`groupmatchstr9` | 文字列 | `waitregex`/`strmatch` のキャプチャグループ、`strsplit` の分割結果 |
+
+---
+
+## 式と演算子
+
+TTL では変数代入や条件式で以下の演算子が使用可能。
+
+### 算術演算子
+
+| 演算子 | 説明 | 例 |
+|--------|------|------|
+| `+` | 加算 | `a = b + c` |
+| `-` | 減算 | `a = b - c` |
+| `*` | 乗算 | `a = b * c` |
+| `/` | 除算 | `a = b / c` |
+| `%` | 剰余 | `a = b % c` |
+
+### 比較演算子
+
+| 演算子 | 説明 | 例 |
+|--------|------|------|
+| `==` | 等しい | `if a == 0 then` |
+| `!=` / `<>` | 等しくない | `if a != 0 then` |
+| `<` | 小さい | `if a < 10 then` |
+| `>` | 大きい | `if a > 10 then` |
+| `<=` | 以下 | `if a <= 10 then` |
+| `>=` | 以上 | `if a >= 10 then` |
+
+### 論理演算子
+
+| 演算子 | 説明 | 例 |
+|--------|------|------|
+| `&&` / `and` | 論理 AND | `if a && b then` |
+| `\|\|` / `or` | 論理 OR | `if a \|\| b then` |
+| `^^` / `xor` | 論理 XOR | `if a ^^ b then` |
+| `!` / `not` | 論理 NOT | `if !flag then` |
+
+### ビット演算子
+
+| 演算子 | 説明 | 例 |
+|--------|------|------|
+| `&` | ビット AND | `a = b & $FF` |
+| `\|` | ビット OR | `a = b \| $80` |
+| `^` | ビット XOR | `a = b ^ $FF` |
+| `~` | ビット NOT | `a = ~b` |
+| `<<` | 左シフト | `a = b << 2` |
+| `>>` | 算術右シフト | `a = b >> 2` |
+| `>>>` | 論理右シフト | `a = b >>> 2` |
+
+### 数値リテラル
+
+| 形式 | 説明 | 例 |
+|------|------|------|
+| `123` | 10 進数 | `a = 255` |
+| `$FF` | 16 進数 | `a = $FF` |
+| `#65` | 文字コード（ASCII） | `send #13`（CR を送信） |
+
+> `#XX` は `send` コマンド等で文字コードを直接指定する構文。`#13` = CR、`#10` = LF、`#27` = ESC。
+
+### 文字列リテラル
+
+```ttl
+s = 'single quotes'
+s = "double quotes"
+```
+
+---
+
+## macOS 固有の動作差異
+
+以下のコマンドは macOS 版でオリジナル Tera Term (Windows) と異なる動作をする。
+
+### 分類凡例
+
+| 分類 | 意味 |
+|------|------|
+| **OS** | macOS / Windows の OS レベルの違いに起因（API・権限・概念の非互換） |
+| **安全** | セキュリティ向上を目的とした意図的な変更 |
+
+### 差異一覧
+
+| コマンド | 分類 | オリジナル (Windows) | macOS 版 | 差異の理由 |
+|----------|:----:|---------------------|----------|-----------|
+| `cygconnect` | OS | Cygwin 環境への接続 | ローカルシェル（PTY）接続として動作（§起動フロー参照） | macOS に Cygwin は存在しない。同等のローカルシェル接続を PTY 経由で提供 |
+| `setdate` | OS | システム日付を変更 | 常に `result = -1` を返す | macOS では root 権限なしにシステム日付を変更できない |
+| `settime` | OS | システム時刻を変更 | 常に `result = -1` を返す | 同上 |
+| `filelock` / `fileunlock` | OS | ファイルの排他ロック | スタブ実装（常に `result = 0`） | macOS のファイルロックは advisory lock のみで Windows の mandatory lock と互換性がない |
+| `getmodemstatus` | OS | モデム制御線（DSR, CTS 等）の状態取得 | スタブ実装（常に 0 を返す） | macOS の PTY にはモデム制御線の概念がない |
+| `getspecialfolder` | OS | 文字列名で指定（CSIDL: `"Desktop"` 等） | 数値 ID で指定（0=Desktop, 1=Documents, 2=AppSupport, 3=Home, 4=Temp, 5=Downloads） | Windows の CSIDL 定数体系が macOS に存在しない |
+| `getver` | OS | 整数値（`major*10000 + minor*100 + patch`） | 文字列（CFBundleShortVersionString、例: `'1.0.0'`） | macOS のバージョン体系に合わせた |
+| `getpassword` 等 | 安全 | パスワードファイルに暗号化保存 | macOS Keychain に保存。XPC 経由で安全に送信 | Keychain は OS レベルの暗号化ストレージを提供 |
+| `sendbinary` | OS | 16進文字列パース（`'48656C6C6F'`→`"Hello"`） | 整数引数方式（各引数の下位1バイト送信） | 実装方式の相違。将来的に16進文字列パース対応を検討 |
+| `recvfile` | OS | `binary` フラグで ASCII/バイナリ切替 | `binary` フラグは無視（常にバイナリモード） | macOS 版の簡略化実装 |
+
+---
+
 ## 実装状況（Implementation Status）
 
 本セクションは TTLMacro_SPEC.md の各仕様に対する実装状況をまとめる。
@@ -1355,20 +1465,20 @@ MacroRunner には **120 以上のコマンド**が登録されており、全�
 | ~~C-1~~ | ~~sprintf / sprintf2 の入出力先が逆~~ | SPEC lines 143-144 は既に正しい（`sprintf`→`inputstr`, `sprintf2`→指定変数） |
 | ~~C-2~~ | ~~logautoclose → logautoclosemode~~ | SPEC line 320 は既に `logautoclosemode` と正しく記載 |
 
-##### Major（コマンド定義/引数の相違）— 8件（うち5件修正済み）
+##### Major（コマンド定義/引数の相違）— 8件（全件対応済み）
 
 | ID | 項目 | 内容 | 状態 |
 |----|------|------|------|
-| M-1 | getpassword の引数不一致 | CommandRef: 3引数(filename, keyname, varname) Keychain実装。SPEC: 2引数(strvar, prompt) スタブ。意図的拡張なら明記要 | 未対応 |
+| ~~M-1~~ | ~~getpassword の引数不一致~~ | ~~Keychain 3引数(filename, keyname, varname)に修正。macOS Keychain 方式を明記~~ | **修正済み** |
 | ~~M-2~~ | ~~filesearch の定義が異なる~~ | ~~ファイル内検索→ファイル存在チェックに修正~~ | **修正済み** |
 | ~~M-3~~ | ~~str2int の引数順が逆~~ | ~~`<intvar><string>` に修正~~ | **修正済み** |
 | M-4 | int2str の引数順確認 | 一致。str2int との SPEC 内部一貫性が崩れている | 不要（一致済み） |
 | ~~M-5~~ | ~~str2code / code2str の引数順が逆~~ | ~~出力変数を先に修正（2テーブル分）~~ | **修正済み** |
-| M-6 | recvfile の binary 引数説明不足 | 「binary: 常にバイナリモード固定」が SPEC に欠落 | 未対応 |
+| ~~M-6~~ | ~~recvfile の binary 引数説明不足~~ | ~~「binary: 無視（常にバイナリモード）」を補足、result値も修正~~ | **修正済み** |
 | ~~M-7~~ | ~~getver の戻り値型が異なる~~ | ~~`<strvar>` + CFBundleShortVersionString に修正~~ | **修正済み** |
 | ~~M-8~~ | ~~getspecialfolder マッピング不一致~~ | ~~実装を正としてマッピングを統一（0-5の6フォルダ）~~ | **修正済み** |
 
-##### Minor（計画対応・記述不足/表記差異）— 11件
+##### Minor（記述不足/表記差異）— 11件（うち2件修正済み）
 
 | ID | 項目 | 内容 |
 |----|------|------|
@@ -1381,7 +1491,7 @@ MacroRunner には **120 以上のコマンド**が登録されており、全�
 | m-7 | makedir が CommandReference に未記載 | SPEC 独自のエイリアス。実装根拠を明記すべき |
 | m-8 | MacroClientProtocol メソッド数の確認 | SPEC line 1179 に「57 メソッド」と記載。XPC テーブルの実数と照合要 |
 | m-9 | アーキテクチャ図のメソッドリスト不完全 | 10 メソッドのみ列挙、「等」の注記なし |
-| m-10 | sendtext の send との違い未説明 | 特殊コード解釈（`#13` 等）の有無の違いが説明されていない |
+| ~~m-10~~ | ~~sendtext の send との違い未説明~~ | ~~修正済み: `send` との差異（文字コード解釈なし・単一文字列引数）を明記~~ |
 | ~~m-11~~ | ~~sendbinary の実装乖離~~ | ~~SPEC を実装に合わせて修正済み（整数引数方式、オリジナル TT との差異を明記）~~ |
 | ~~m-12~~ | ~~for ループ例の sprintf 矛盾~~ | ~~INVALID: C-1 が解消済みのため矛盾なし~~ |
 
@@ -1422,17 +1532,17 @@ MacroRunner には **120 以上のコマンド**が登録されており、全�
 | 5 | M-8 | getspecialfolder: マッピング不一致 | 実装を正として統一: 0=デスクトップ, 1=書類, 2=App Support, 3=ホーム, 4=一時, 5=ダウンロード | **修正済み** |
 | 6 | M-11 | sendbinary: 16進文字列パース → 整数引数方式 | SPEC を実装に合わせて修正: 各引数を整数として解釈し下位1バイト送信。オリジナル TT との差異を明記 | **修正済み** |
 
-#### 優先度 2: 早期対応（Major/Minor — ドキュメント品質・正確性）
+#### ~~優先度 2: 早期対応（Major/Minor — ドキュメント品質・正確性）~~ — **対応済み（2026-03-17）**
 
-| # | ID | 残課題 | 対応方針 | 対象ファイル |
-|---|-----|--------|---------|-------------|
-| 7 | M-1 | getpassword: CommandRef は Keychain 3引数、SPEC は2引数スタブ | 意図的拡張（Keychain→プロンプト方式）なら macOS 差異として明記。そうでなければ CommandRef に合わせる | SPEC line 126 |
-| 8 | M-6 | recvfile: `binary` 引数が SPEC に欠落 | 「binary: 常にバイナリモード固定（macOS版）」を補足 | SPEC line 353 |
-| 9 | m-1 | `#XX` 文字コードリテラル構文の未記載 | 「数値リテラル」セクションを追加し `#13`=CR 等を説明 | SPEC 新規セクション |
-| 10 | m-2 | システム変数セクションの欠落 | `timeout`, `mtimeout`, `paramcnt`, `param1`〜`param9`, `result`, `inputstr`, `matchstr`, `groupmatchstr1..N` のセクション追加 | SPEC 新規セクション |
-| 11 | m-3 | 式と演算子セクションの欠落 | 算術/比較/論理/ビット演算子、数値・文字列リテラル説明を追加 | SPEC 新規セクション |
-| 12 | m-4 | macOS 固有動作差異セクションの欠落 | M-1, M-4, M-7, M-8 等の macOS 差異をまとめるセクション追加 | SPEC 新規セクション |
-| 13 | m-10 | sendtext と send の違いが未説明 | `send` は `#13` 等の特殊コード解釈あり、`sendtext` はなし、を明記 | SPEC line 117, CommandRef line 228 |
+| # | ID | 残課題 | 対応内容 | 状態 |
+|---|-----|--------|---------|------|
+| 7 | M-1 | getpassword: 2引数スタブ → Keychain 3引数 | Keychain 方式の3引数(filename, keyname, varname)に修正。password 系全8コマンド更新 | **修正済み** |
+| 8 | M-6 | recvfile: `binary` 引数説明欠落 | 「binary: 無視（常にバイナリモード）」を補足、result 値も詳細化 | **修正済み** |
+| 9 | m-1 | `#XX` 文字コードリテラル構文の未記載 | 「式と演算子」セクション内の「数値リテラル」に `#XX` 構文を記載 | **修正済み** |
+| 10 | m-2 | システム変数セクションの欠落 | 「システム変数」セクションを新設。result, inputstr, matchstr, timeout 等8変数を記載 | **修正済み** |
+| 11 | m-3 | 式と演算子セクションの欠落 | 「式と演算子」セクションを新設。算術/比較/論理/ビット演算子、数値・文字列リテラルを記載 | **修正済み** |
+| 12 | m-4 | macOS 固有動作差異セクションの欠落 | 「macOS 固有の動作差異」セクションを新設。10コマンドの差異一覧を記載 | **修正済み** |
+| 13 | m-10 | sendtext の send との違い未説明 | sendtext の説明に「文字コード解釈なし、単一文字列引数」を明記 | **修正済み** |
 
 #### 優先度 3: 改善対応（Minor/Info — 整合性・完全性）
 
@@ -1462,7 +1572,7 @@ MacroRunner には **120 以上のコマンド**が登録されており、全�
 | 優先度 | 件数 | 状態 |
 |--------|------|------|
 | ~~1: 即時対応~~ | ~~6~~ | **全件対応済み**（2026-03-17） |
-| 2: 早期対応 | 7 | 未着手（Major 2 + Minor 5） |
+| ~~2: 早期対応~~ | ~~7~~ | **全件対応済み**（2026-03-17） |
 | 3: 改善対応 | 11 | 未着手（Minor 6 + Info 5） |
 | 将来対応 | 2 | 環境依存 |
-| **合計** | **26** | うち **6件対応済み**、20件残 |
+| **合計** | **26** | うち **13件対応済み**、13件残 |
